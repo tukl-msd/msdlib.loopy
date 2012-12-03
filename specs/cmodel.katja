@@ -35,8 +35,8 @@ external Integer
 
 MFile ( String name, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
 MClass ( MModifiers modifiers, String name, MTypes extend, 
-	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods )
-MModifier = PRIVATE() | PUBLIC() | CONSTANT() // don't know if any more exist in c/c++
+	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
+MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() // don't know if any more exist in c/c++
 // modifiers obviously allow invalid combinations. We rely on the programmer to refrain from using these
 
 

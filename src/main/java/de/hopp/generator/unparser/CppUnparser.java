@@ -1,25 +1,8 @@
-/*
- * Katja
- * Copyright (C) 2003-2009 see README file for authors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
 package de.hopp.generator.unparser;
 
 import static de.hopp.generator.model.Model.*;
 
+import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
 
 import katja.common.NE;
@@ -31,8 +14,6 @@ import katja.common.NE;
  */
 public class CppUnparser extends CUnparser {
 
-    // the buffer to fill with this unparsing
-
     /**
      * Create a MFile unparser
      * @param buffer the buffer to unparse into
@@ -40,5 +21,43 @@ public class CppUnparser extends CUnparser {
     public CppUnparser(StringBuffer buffer, String name) {
         super(buffer, name);
     }
-}
+    
+//    @Override
+//    protected String qualifiedName(MMethodInFile method) {
+//        if(method.parent().parent() instanceof MFileInFile)
+//            return method.name().term();
+//        else if(method.parent().parent() instanceof MClassInFile)
+//            return qualifiedName((MClassInFile)method.parent().parent()) + "::" + method.name().term();
+//        throw new RuntimeException();
+//    }
+//    
+//    @Override
+//    protected String qualifiedName(MClassInFile mclass) {
+//        if(mclass.parent().parent() instanceof MFileInFile)
+//            return mclass.name().term();
+//        else if(mclass.parent().parent() instanceof MClassInFile)
+//            return qualifiedName((MClassInFile)mclass.parent().parent()) + "::" + mclass.name().term();
+//        throw new RuntimeException();
+//    }
+    
+    @Override
+    public void visit(MClassesInFile classes) throws InvalidConstruct {
+        if(classes.size() > 0) {
+            for(MClassInFile mclass : classes) {
+                visit(mclass);
+            }
+            buffer.append('\n');
+        }
+    }
+    
+    @Override
+    public void visit(MClassInFile mclass) throws InvalidConstruct {
 
+        visit(mclass.structs());
+        visit(mclass.enums());
+        visit(mclass.attributes());
+        visit(mclass.methods());
+        visit(mclass.nested());
+        
+    }
+}

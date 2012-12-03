@@ -45,7 +45,7 @@ public class CUnparser extends HUnparser {
     public void visit(MFileInFile file) throws InvalidConstruct {
 
         // import the header file
-        buffer.append("#include <" + name + " .h>\n");
+        buffer.append("#include <" + name + ".h>\n");
         
         // unparse components
         visit(file.structs());
@@ -89,7 +89,6 @@ public class CUnparser extends HUnparser {
 
     @Override
     public void visit(MAttributeInFile attribute) throws InvalidConstruct {
-        buffer.append("\n\n");
         if(attribute.modifiers().term().contains(CONSTANT())) buffer.append(" const");
         typeIdent = attribute.name().term();
         visit(attribute.type());
@@ -117,7 +116,7 @@ public class CUnparser extends HUnparser {
             for(StringInFile line : code.lines()) buffer.append(line.term() + "\n");
             buffer.unindent();
             buffer.append("}");
-        } else buffer.append("{ }");
+        } else buffer.append(" { }");
     }
 
     @Override

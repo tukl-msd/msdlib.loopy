@@ -11,6 +11,7 @@ import de.hopp.Configuration;
 import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
+import de.hopp.generator.unparser.CppUnparser;
 import de.hopp.generator.unparser.HUnparser;
 import de.hopp.generator.unparser.CUnparser;
 
@@ -37,7 +38,7 @@ public class Generator {
         
         try {
             new HUnparser(houtput, "Driver").visit(testFile());
-            new CUnparser(coutput, "Driver").visit(testFile());
+            new CppUnparser(coutput, "Driver").visit(testFile());
         } catch (InvalidConstruct e) {
             System.err.println("encountered invalid construct for plain c unparser:");
             System.err.println("  " + e.getMessage());
@@ -79,12 +80,13 @@ public class Generator {
     }
     
     private static MFileInFile testFile() {
-        MMethod m = MMethod(MModifiers(), MType("a"), "b", MParameters(), MCode(Strings()));
+        MMethod m = MMethod(MModifiers(PUBLIC(), CONSTANT()), MType("int"), "b", MParameters(), MCode(Strings("return 5;")));
         MMethod m2 = MMethod(MModifiers(), MPointerType(MType("int")), "c", MParameters(
                     MParameter(CONSTREF(), MPointerType(MArrayType(MPointerType(MType("int")), new Integer(5))), "p")
                 ), MCode(Strings()));
-//        MClass c = MClass(MModifiers(), "a", MStructs(), MEnums(), MAttributes(), MMethods(m));
-        MFile file = MFile("name", MStructs(), MEnums(), MAttributes(), MMethods(m, m2), MClasses());
+        MAttribute a = MAttribute(MModifiers(PUBLIC()), MArrayType(MType("int"), new Integer(34)), "myVariable", MCodeFragment(""));
+        MClass c = MClass(MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
+        MFile file = MFile("name", MStructs(), MEnums(), MAttributes(a), MMethods(m, m2), MClasses(c));
         
         return MFileInFile(file);
     }
