@@ -33,18 +33,11 @@ import de.hopp.generator.model.*;
 // TODO const modifier? (does it even make sense as modifier??)
 public class CUnparser extends HUnparser {
 
-//    // the buffer to fill with this unparsing
-//    protected IndentStringBuffer buffer;
-//    protected String typeIdent;
-//    protected String name;
     /**
      * Create a MFile unparser
      * @param buffer the buffer to unparse into
      */
     public CUnparser(StringBuffer buffer, String name) {
-//        this.cbuffer = new IndentStringBuffer(buffer);
-//        this.typeIdent = new String();
-//        this.name = name;
         super(buffer, name);
     }
 
@@ -63,74 +56,12 @@ public class CUnparser extends HUnparser {
     }
 
     @Override
-    public void visit(MStructsInFile structs) throws InvalidConstruct {
-        if(structs.size() > 0) {
-            buffer.append("\n// structs of " + name + "\n");
-            for(MStructInFile struct : structs) visit(struct);
-            buffer.append('\n');
-        }
-    }
-
-    @Override
-    public void visit(MEnumsInFile enums) throws InvalidConstruct {
-        if(enums.size() > 0) {
-            buffer.append("\n// enums of " + name);
-            for(MEnumInFile mEnum : enums) {
-                buffer.append("\n\n");
-                visit(mEnum);
-            }
-            buffer.append('\n');
-        }
-    }
-
-    @Override
-    public void visit(MAttributesInFile attributes) throws InvalidConstruct {
-        if(attributes.size() > 0) {
-            buffer.append("\n// fields of " + name);
-            for(MAttributeInFile attribute : attributes) {
-                buffer.append("\n\n");
-                visit(attribute);
-            }
-            buffer.append('\n');
-        }
-    }
-
-    @Override
-    public void visit(MMethodsInFile methods) throws InvalidConstruct {
-        if(methods.size() > 0) {
-            buffer.append("\n// procedures of " + name);
-            for(MMethodInFile attribute : methods) {
-                buffer.append("\n\n");
-                visit(attribute);
-            }
-            buffer.append('\n');
-        }  
-    }
-
-    @Override
     public void visit(MClassesInFile classes) throws InvalidConstruct {
         // In plain C no classes are allowed. So this has to be empty.
         if(!classes.isEmpty())
             throw new InvalidConstruct("encountered a class in C unparser");
     }
     
-    // TODO this is how it is done by paddy... maybe apply this as well?
-//    public void visit(MClassesInFile classes) {
-//
-//        // if no class at all return
-//        if(classes.isEmpty()) return;
-//
-//        // we go through the classes using the rsib method
-//        for(MClassInFile mclass = classes.first(); mclass != null; mclass = mclass.rsib()) {
-//
-//            // generate the class
-//            visit(mclass);
-//
-//            // if it wasn't the last class we need a seperating line
-//            if(mclass.rsib() != null) buffer.append("\n");
-//        }
-//    }
-
     @Override
     public void visit(MStructInFile struct) throws InvalidConstruct {
         buffer.append("struct " + struct.name().term() + " {\n");
@@ -166,14 +97,6 @@ public class CUnparser extends HUnparser {
         buffer.append(";\n");
     }
 
-//    @Override
-//    public void visit(MMethodInFile method) throws InvalidConstruct {
-//        visit(method.returnType());
-//        buffer.append(method.name().term());
-//        visit(method.parameter());
-//        visit(method.body());
-//    }
-
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
         // should never go here
@@ -181,24 +104,9 @@ public class CUnparser extends HUnparser {
     }
 
     @Override
-    public void visit(MModifiersInFile modifiers) throws InvalidConstruct {
-        // should never go here
-    }
-
-    @Override
     public void visit(MCodeFragmentInFile codefragment) throws InvalidConstruct {
         if(! codefragment.part().term().equals(""))
             buffer.append(" = " + codefragment.part().term());
-    }
-
-    @Override
-    public void visit(MParametersInFile parameters) throws InvalidConstruct {
-        buffer.append(" (");
-        for(MParameterInFile parameter : parameters) {
-            visit(parameter);
-            if(! parameter.equals(parameters.last())) buffer.append(',');
-        }
-        buffer.append(" ) ");
     }
 
     @Override
@@ -213,38 +121,6 @@ public class CUnparser extends HUnparser {
     }
 
     @Override
-    public void visit(MTypeInFile type) throws InvalidConstruct {
-        buffer.append(type.name().term() + " " + typeIdent);
-//        buffer.append(type.name() + " " + typeIdent);
-        typeIdent = new String();
-    }
-
-    @Override
-    public void visit(MArrayTypeInFile arrayType) throws InvalidConstruct {
-        typeIdent = "(" + typeIdent + ") [" + arrayType.length().term() + "]";
-        visit(arrayType.type());
-//        buffer.append('(');
-//        visit(arrayType.type());
-//        buffer.append("[" + "])");
-    }
-
-    @Override
-    public void visit(MPointerTypeInFile pointerType) throws InvalidConstruct {
-//        typeIdent = "(*" + typeIdent + ")";
-        typeIdent = "*" + typeIdent;
-        visit(pointerType.type());
-//        buffer.append("*");
-    }
-
-    @Override
-    public void visit(MConstPointerTypeInFile constPointerType) throws InvalidConstruct {
-//        typeIdent = "(*const" + typeIdent + ")";
-        typeIdent = "*const" + typeIdent;
-        visit(constPointerType.type());
-//        buffer.append("*const");
-    }
-
-    @Override
     public void visit(MNoneInFile none) throws InvalidConstruct {
         // this is used to simulate constructors in C++
         // Consequently, it should never be used in C
@@ -254,25 +130,5 @@ public class CUnparser extends HUnparser {
     @Override
     public void visit(MVoidInFile mvoid) throws InvalidConstruct {
         throw new InvalidConstruct("encountered void procedure in C unparser");
-    }
-
-    @Override
-    public void visit(MTypesInFile types) throws InvalidConstruct {
-        for(MTypeInFile type : types) {
-            visit(type);
-            if(! type.equals(types.last())) {
-                buffer.append(',');
-            }
-        }
-    }
-
-    @Override
-    public void visit(MParameterInFile parameter) throws InvalidConstruct {
-        buffer.append(' ');
-        typeIdent = parameter.name().term();
-        if(parameter.refType().term() instanceof CONSTREF) buffer.append("const ");
-        if(parameter.refType().term() instanceof CONSTREF || 
-           parameter.refType().term() instanceof REFERENCE) typeIdent = "&" + typeIdent ;
-        visit(parameter.type());
     }
 }

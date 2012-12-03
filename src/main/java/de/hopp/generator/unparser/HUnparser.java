@@ -13,6 +13,10 @@ import de.hopp.generator.model.*;
  * @author Thomas Fischer
  * 
  */
+
+// TODO nesting of stuff in header file??
+// TODO generally nesting of stuff in C? stucts? classes? methods?
+// TODO attributes / enums in header file?? what to put there, what not to put there?
 public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     // the buffer to fill with this unparsing
@@ -227,7 +231,6 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     @Override
     public void visit(MTypeInFile type) throws InvalidConstruct {
         buffer.append(type.name().term() + " " + typeIdent);
-//        buffer.append(type.name() + " " + typeIdent);
         typeIdent = new String();
     }
 
@@ -235,25 +238,18 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(MArrayTypeInFile arrayType) throws InvalidConstruct {
         typeIdent = "(" + typeIdent + ") [" + arrayType.length().term() + "]";
         visit(arrayType.type());
-//        buffer.append('(');
-//        visit(arrayType.type());
-//        buffer.append("[" + "])");
     }
 
     @Override
     public void visit(MPointerTypeInFile pointerType) throws InvalidConstruct {
-//        typeIdent = "(*" + typeIdent + ")";
         typeIdent = "*" + typeIdent;
         visit(pointerType.type());
-//        buffer.append("*");
     }
 
     @Override
     public void visit(MConstPointerTypeInFile constPointerType) throws InvalidConstruct {
-//        typeIdent = "(*const" + typeIdent + ")";
         typeIdent = "*const" + typeIdent;
         visit(constPointerType.type());
-//        buffer.append("*const");
     }
 
     @Override
