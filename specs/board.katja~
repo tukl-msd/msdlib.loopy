@@ -1,0 +1,11 @@
+specification Board
+
+backend java {
+    package de.hopp.generator.board
+}
+
+Board (Components components)
+
+Component = UART() | ETHERNET_LITE() | ETHERNET() | PCI() | LED() | BUTTONS()
+
+Components * Component

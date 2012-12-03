@@ -1,0 +1,86 @@
+apply plugin: 'java'
+
+version = '0.0.1'
+description = 'some interesting description'
+
+String libDir      = "$projectDir/lib"
+String specDir     = "$projectDir/specs"
+
+String boardSpec   = "$specDir/board.katja"
+String modelSpec   = "$specDir/cmodel.katja"
+
+String katja       = "$libDir/katja.jar"
+String katjaCommon = "$libDir/katja.common.jar"
+String board       = "$libDir/BoardSpec.jar"
+String model       = "$libDir/Model.jar"
+
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile files("$katjaCommon", "$model", "$board")
+  testCompile group: 'junit', name: 'junit', version: '4.+'
+}
+
+// removes generated c/c++ model and common files
+task removeBoard << {
+  delete "$board", "$katjaCommon"
+}
+
+// removes generated c/c++ model and common files
+task removeModel << {
+  delete "$model", "$katjaCommon"
+}
+
+// builds the ast of the board
+task buildBoard {
+  inputs.files("$katja", "$boardSpec")
+  outputs.files("$board")
+  doLast {
+    ant.java(jar:"$katja",fork:true) {
+      arg(value: "-b")
+      arg(value: "java")
+      arg(value: "-d")
+      arg(value: "lib")
+      arg(value: "-o")
+      arg(value: "$boardSpec")
+    }
+  }
+}
+
+// builds the c/c++ model used by the generator
+task buildModel {
+  inputs.files("$katja", "$modelSpec")
+  outputs.files("$katjaCommon", "$model")
+  doLast {
+    ant.java(jar:"$katja",fork:true) {
+      arg(value: "-b")
+      arg(value: "java")
+      arg(value: "-d")
+      arg(value: "lib")
+      arg(value: "-o")
+      arg(value: "-j")
+      arg(value: "$modelSpec")
+    }
+  }
+}
+
+task runKatja
+
+clean.dependsOn       removeBoard
+clean.dependsOn       removeModel
+runKatja.dependsOn    buildBoard
+runKatja.dependsOn    buildModel
+compileJava.dependsOn runKatja
+
+jar {
+  // add main class to manifest
+  manifest {
+    attributes("Main-Class": "de.hopp.Main")
+  }
+
+  // the following line is responsible for packaging all compile dependencies as well
+  from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}

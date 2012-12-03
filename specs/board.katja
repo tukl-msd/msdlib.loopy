@@ -1,0 +1,20 @@
+specification BoardSpec
+
+backend java {
+    package de.hopp.generator.board
+    import java.lang.String
+}
+
+external String
+
+Board (Components components)
+
+Component = UART()
+          | ETHERNET_LITE()
+          | ETHERNET()
+          | PCIE() 
+          | LEDS(String baseAddr)
+          | SWITCHES(String baseAddr)
+          | BUTTONS(String baseAddr) 
+
+Components * Component

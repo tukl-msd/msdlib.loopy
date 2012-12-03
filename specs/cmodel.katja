@@ -1,0 +1,93 @@
+/*
+    Katja
+    Copyright (C) 2003-2009 see README file for authors
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+specification Model
+
+backend java {
+    package de.hopp.generator.model
+    import java.lang.String
+    import java.lang.Boolean
+    import java.lang.Integer
+}
+
+root MFile InFile
+
+external String
+external Boolean
+external Integer
+
+
+// file and class model
+
+MFile ( String name, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
+MClass ( MModifiers modifiers, String name, MTypes extend, 
+	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods )
+MModifier = PRIVATE() | PUBLIC() | CONSTANT() // don't know if any more exist in c/c++
+// modifiers obviously allow invalid combinations. We rely on the programmer to refrain from using these
+
+
+// struct and enum model
+
+MStruct ( MModifiers modifiers, String name, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods )
+MEnum   ( MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
+                                                              // --> MValue(String name, String value), MValues * MValue
+
+
+// attribute model
+
+MAttribute ( MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
+MCodeFragment ( String part, MIncludes needed )
+
+
+// method model
+
+MMethod ( MModifiers modifiers, MReturnType returnType, String name, MParameters parameter,
+          // MTypes exceptions,  // not for now....
+	  MCode body )
+MReturnType = MAnyType // note, that this allows array types to be used for return values
+            | MVoid()  // however, introducing a new type would be overkill here
+            | MNone()  // we rely on the programmer to refrain from creating such types
+
+MParameter ( MParamType refType, MAnyType type, String name )
+MParamType = VALUE() | REFERENCE() | CONSTREF()
+MCode ( Strings lines, MIncludes needed )
+
+
+// type system model
+
+MAnyType = MType ( String name, Strings importNames )
+         | MArrayType ( MAnyType type, Integer length )
+         | MPointerType ( MAnyType type )
+         | MConstPointerType ( MAnyType type )
+
+MInclude (String name, MIncludeType type)
+
+MIncludeType = QUOTES() | BRACKETS()
+
+// list types
+
+Strings             * String
+MFiles              * MFile
+MClasses            * MClass
+MModifiers          * MModifier
+MStructs            * MStruct
+MEnums              * MEnum
+MAttributes         * MAttribute
+MMethods            * MMethod
+MParameters         * MParameter
+MTypes              * MType
+MIncludes           * MInclude

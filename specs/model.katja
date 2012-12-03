@@ -1,0 +1,98 @@
+/*
+    Katja
+    Copyright (C) 2003-2009 see README file for authors
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+specification Model
+
+backend java {
+    package de.hopp.generator.model
+    import java.lang.String
+    import java.lang.Boolean
+    import java.lang.Integer
+}
+
+root MFile InFile
+
+external String
+external Boolean
+external Integer
+
+
+// file and class model
+
+MFile ( String name, String packageName, MClasses classes )
+MClass ( MModifiers modifiers, MClassType type, MTypeDef name,
+         MTypes extend, MTypes implement,
+         MAttributes attributes, MMethods methods, MClasses nested )
+MClassType = INTERFACE () | CLASS()
+MModifier = PROTECTED () | PRIVATE () | PUBLIC () | STATIC () | ABSTRACT () | FINAL ()
+
+
+// attributes model
+
+MAttribute ( MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
+MCodeFragment ( String part, MTypes needed )
+
+
+// methods model
+
+MMethod ( MModifiers modifiers, MTypeVariables generics, MReturnType returnType, String name, MParameters parameter,
+          MTypes exceptions, MCode body )
+MReturnType = MNone()
+            | MAnyType
+MParameter ( MParamtypeDecl decl, String name )
+MParamtypeDecl = MParamtype
+               | MFinal ( MParamtype type )
+MParamtype = MVararg ( MAnyType type )
+           | MAnyType
+MCode ( Strings lines, MTypes needed )
+
+
+// type system model
+
+MNonGenericType = MJavaType ( String name, Strings importNames )
+                | MInnerType ( MNonGenericType outerClass, String innerClass )
+
+MType = MNonGenericType
+      | MGenericTypeApp ( MNonGenericType type, MTypeOrWildcards types )
+
+MTypeDef = MJavaType
+         | MGenericTypeDef ( MJavaType type, MTypeVariables typeVars )
+
+MTypeVariable ( String name, MTypes bounds )
+
+MAnyType = MType
+         | MArrayType ( MAnyType type )
+
+
+MTypeOrWildcard = MType
+                | MWildcard ()
+                | MWildcardLB ( MType bound )
+                | MWildcardUB ( MType bound )
+
+// list types
+
+Strings             * String
+MFiles              * MFile
+MClasses            * MClass
+MModifiers          * MModifier
+MAttributes         * MAttribute
+MMethods            * MMethod
+MParameters         * MParameter
+MAnyTypes           * MAnyType
+MTypes              * MType
+MTypeVariables      * MTypeVariable
+MTypeOrWildcards    * MTypeOrWildcard
