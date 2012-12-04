@@ -10,9 +10,9 @@ external String
 Board (Components components)
 
 Component = UART()
-          | ETHERNET_LITE()
-          | ETHERNET()
-          | PCIE() 
+          | ETHERNET_LITE() // Some parameters (ip, port) might be useful.
+          | ETHERNET()      // Cannot get these from .mhs though... specify through config?
+          | PCIE()          // Probably needs some identifier as well...
           | LEDS(String baseAddr)
           | SWITCHES(String baseAddr)
           | BUTTONS(String baseAddr) 

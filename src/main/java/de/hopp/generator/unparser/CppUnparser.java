@@ -5,8 +5,6 @@ import static de.hopp.generator.model.Model.*;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
 
-import katja.common.NE;
-
 /**
  * C++ unparser. Generates C++ code out of the given model.
  * Everything specifiable using the model will be unparsed.

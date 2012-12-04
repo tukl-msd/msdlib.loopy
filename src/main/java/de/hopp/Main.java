@@ -74,10 +74,10 @@ public class Main {
         
         // TODO parse source file and generate a board depending on the results
         Board board = new Parser(config).parse();
-        config.setBoard(board);
+//        config.setBoard(board);
         
         // instantiate and run generator with this configuration
-        Generator generator = new Generator(config);
+        Generator generator = new Generator(config, board);
         generator.generate();
         
         // finished
