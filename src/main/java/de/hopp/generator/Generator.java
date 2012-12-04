@@ -47,7 +47,7 @@ public class Generator {
             
         // set output file
         File houtFile = new File("Driver.h");
-        File coutFile = new File("Driver.c");
+        File coutFile = new File("Driver.cpp");
         
         // append destination path, if any
         if(config.getDest() != null) {
@@ -80,13 +80,15 @@ public class Generator {
     }
     
     private static MFileInFile testFile() {
-        MMethod m = MMethod(MModifiers(PUBLIC(), CONSTANT()), MType("int"), "b", MParameters(), MCode(Strings("return 5;")));
-        MMethod m2 = MMethod(MModifiers(), MPointerType(MType("int")), "c", MParameters(
+        MMethod m = MMethod(MModifiers(PRIVATE(), CONSTANT()), MType("int"), "b", MParameters(), MCode(Strings("return myVariable + myVariable2;")));
+        MMethod m2 = MMethod(MModifiers(), MType("int"), "c", MParameters(
                     MParameter(CONSTREF(), MPointerType(MArrayType(MPointerType(MType("int")), new Integer(5))), "p")
-                ), MCode(Strings()));
-        MAttribute a = MAttribute(MModifiers(PUBLIC()), MArrayType(MType("int"), new Integer(34)), "myVariable", MCodeFragment(""));
+                ), MCode(Strings("return myVariable;")));
+        MAttribute a = MAttribute(MModifiers(PUBLIC()), MType("int"), "myVariable", MCodeFragment("5"));
+        MAttribute a3 = MAttribute(MModifiers(PUBLIC()), MType("int"), "myVariable3", MCodeFragment("5"));
+        MAttribute a2 = MAttribute(MModifiers(PRIVATE()), MType("int"), "myVariable2", MCodeFragment("5"));
         MClass c = MClass(MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
-        MFile file = MFile("name", MStructs(), MEnums(), MAttributes(a), MMethods(m, m2), MClasses(c));
+        MFile file = MFile("name", MStructs(), MEnums(), MAttributes(a, a2, a3), MMethods(m2, m), MClasses(c));
         
         return MFileInFile(file);
     }

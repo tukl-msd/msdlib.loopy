@@ -22,42 +22,33 @@ public class CppUnparser extends CUnparser {
         super(buffer, name);
     }
     
-//    @Override
-//    protected String qualifiedName(MMethodInFile method) {
-//        if(method.parent().parent() instanceof MFileInFile)
-//            return method.name().term();
-//        else if(method.parent().parent() instanceof MClassInFile)
-//            return qualifiedName((MClassInFile)method.parent().parent()) + "::" + method.name().term();
-//        throw new RuntimeException();
-//    }
-//    
-//    @Override
-//    protected String qualifiedName(MClassInFile mclass) {
-//        if(mclass.parent().parent() instanceof MFileInFile)
-//            return mclass.name().term();
-//        else if(mclass.parent().parent() instanceof MClassInFile)
-//            return qualifiedName((MClassInFile)mclass.parent().parent()) + "::" + mclass.name().term();
-//        throw new RuntimeException();
-//    }
+    
+    protected String qualifiedName(MMethodInFile method) {
+        if(method.parent().parent() instanceof MFileInFile)
+            return method.name().term();
+        else if(method.parent().parent() instanceof MClassInFile)
+            return qualifiedName((MClassInFile)method.parent().parent()) + "::" + method.name().term();
+        throw new RuntimeException();
+    }
+    
+    protected String qualifiedName(MClassInFile mclass) {
+        if(mclass.parent().parent() instanceof MFileInFile)
+            return mclass.name().term();
+        else if(mclass.parent().parent() instanceof MClassInFile)
+            return qualifiedName((MClassInFile)mclass.parent().parent()) + "::" + mclass.name().term();
+        throw new RuntimeException();
+    }
     
     @Override
     public void visit(MClassesInFile classes) throws InvalidConstruct {
         if(classes.size() > 0) {
-            for(MClassInFile mclass : classes) {
+            // unparse "private" classes first
+            for(MClassInFile mclass : filter(classes, PRIVATE()))
                 visit(mclass);
-            }
+            // unparse "public" classes afterwards
+            for(MClassInFile mclass : classes.removeAll(filter(classes, PRIVATE()).term()))
+                visit(mclass);
             buffer.append('\n');
         }
-    }
-    
-    @Override
-    public void visit(MClassInFile mclass) throws InvalidConstruct {
-
-        visit(mclass.structs());
-        visit(mclass.enums());
-        visit(mclass.attributes());
-        visit(mclass.methods());
-        visit(mclass.nested());
-        
     }
 }

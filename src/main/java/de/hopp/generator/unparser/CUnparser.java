@@ -40,12 +40,12 @@ public class CUnparser extends HUnparser {
     public CUnparser(StringBuffer buffer, String name) {
         super(buffer, name);
     }
-
+    
     @Override
     public void visit(MFileInFile file) throws InvalidConstruct {
 
         // import the header file
-        buffer.append("#include <" + name + ".h>\n");
+        buffer.append("#include \"" + name + ".h\"\n");
         
         // unparse components
         visit(file.structs());
@@ -55,6 +55,30 @@ public class CUnparser extends HUnparser {
         visit(file.classes());
     }
 
+    @Override
+    public void visit(MAttributesInFile attributes) throws InvalidConstruct {
+        if(attributes.size() > 0) {
+            super.visit(filter(attributes, PRIVATE()));
+            super.visit(attributes.removeAll(filter(attributes, PRIVATE()).term()));
+        }  
+    }
+    
+    @Override
+    public void visit(MMethodsInFile methods) throws InvalidConstruct {
+        if(methods.parent() instanceof MClassInFile
+                && ((MClassInFile)methods.parent()).modifiers().term().contains(PRIVATE())) {
+            for(MMethodInFile method : filter(methods, PRIVATE()))
+                super.visit(method);
+            for(MMethodInFile method : methods.removeAll(filter(methods, PRIVATE()).term()))
+                super.visit(method);
+        } else {
+            if(methods.size() > 0) {
+                super.visit(filter(methods, PRIVATE()));
+                super.visit(methods.removeAll(filter(methods, PRIVATE()).term()));
+            }  
+        }
+    }
+    
     @Override
     public void visit(MClassesInFile classes) throws InvalidConstruct {
         // In plain C no classes are allowed. So this has to be empty.
@@ -67,11 +91,8 @@ public class CUnparser extends HUnparser {
         buffer.append("struct " + struct.name().term() + " {\n");
         buffer.indent();
         
-        // unparse components
-        visit(struct.structs());
-        visit(struct.enums());
+        // unparse contained attributes
         visit(struct.attributes());
-        visit(struct.methods());
         
         buffer.unindent();
         buffer.append("}\n");
@@ -89,17 +110,66 @@ public class CUnparser extends HUnparser {
 
     @Override
     public void visit(MAttributeInFile attribute) throws InvalidConstruct {
-        if(attribute.modifiers().term().contains(CONSTANT())) buffer.append(" const");
-        typeIdent = attribute.name().term();
+        
+        // start a new line for the attribute
+        buffer.append('\n');
+        
+        // set the type declaration to the attribute name
+        typeDecl = attribute.name().term();
+        
+        // "private" globals should always be declare "static"
+        if(attribute.parent().parent() instanceof MFileInFile)
+            if(attribute.modifiers().term().contains(PRIVATE())) buffer.append("static ");
+        // for attributes of classes, static has a different semantic and should not be set automatically
+        else if(attribute.modifiers().term().contains(STATIC())) buffer.append("static ");
+        
+        // attributes can be constant
+        if(attribute.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+        
+        // unparse the type
         visit(attribute.type());
+        
+        // for class attributes, the initial value is set in the header 
         visit(attribute.initial());
-        buffer.append(";\n");
+        
+        // append colon
+        buffer.append(";");
     }
+
+    @Override
+    public void visit(MMethodInFile method) throws InvalidConstruct {
+        
+        // append keywords if appropriate
+        if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+        if(method.parent().parent() instanceof MFileInFile
+                && method.modifiers().term().contains(PRIVATE()))
+            // "private" functions should always be declared static
+            buffer.append("static ");
+        else if(method.modifiers().term().contains(STATIC())) buffer.append("static ");
+        
+        // unparse the return type
+        visit(method.returnType());
+        
+        // append the identifier of the method
+        buffer.append(qualifiedName(method));
+        
+        // unparse the parameter list
+        visit(method.parameter());
+        
+        // unparse the method body
+        visit(method.body());
+    }
+
 
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
         // should never go here
-        throw new InvalidConstruct("encountered class in C unparser");
+        
+        visit(mclass.structs());
+        visit(mclass.enums());
+        visit(mclass.attributes());
+        visit(mclass.methods());
+        visit(mclass.nested());
     }
 
     @Override

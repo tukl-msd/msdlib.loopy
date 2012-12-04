@@ -42,7 +42,7 @@ MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() // don't know if any mo
 
 // struct and enum model
 
-MStruct ( MModifiers modifiers, String name, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods )
+MStruct ( MModifiers modifiers, String name, MAttributes attributes )
 MEnum   ( MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
                                                               // --> MValue(String name, String value), MValues * MValue
 
@@ -70,13 +70,15 @@ MCode ( Strings lines, MIncludes needed )
 // type system model
 
 MAnyType = MType ( String name, Strings importNames )
+//       | StructType ( String name, Strings importNames ) // can also be done with "usual" type by adding "struct "
+//       | EnumType ( String name, Strings importNames )   // can also be done with "usual" type by adding "enum "
          | MArrayType ( MAnyType type, Integer length )
          | MPointerType ( MAnyType type )
          | MConstPointerType ( MAnyType type )
 
 MInclude (String name, MIncludeType type)
 
-MIncludeType = QUOTES() | BRACKETS()
+MIncludeType = QUOTES() | BRACKETS() // | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
 
 // list types
 

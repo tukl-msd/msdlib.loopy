@@ -20,12 +20,12 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     // the buffer to fill with this unparsing
     protected IndentStringBuffer buffer;
-    protected String typeIdent;
+    protected String typeDecl;
     protected String name;
     
     public HUnparser(StringBuffer buffer, String name) {
         this.buffer = new IndentStringBuffer(buffer);
-        this.typeIdent = new String();
+        this.typeDecl = new String();
         this.name = name;
     }
     
@@ -33,7 +33,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MStructsInFile rslt = structs;
         for(MStructInFile struct : structs)
             if(!struct.modifiers().term().contains(modifier))
-                rslt.remove(struct.term());
+                rslt = rslt.remove(struct.term());
         
         return rslt;
     }
@@ -41,7 +41,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MEnumsInFile rslt = menums;
         for(MEnumInFile menum : menums)
             if(!menum.modifiers().term().contains(modifier))
-                rslt.remove(menum.term());
+                rslt = rslt.remove(menum.term());
         
         return rslt;
     }
@@ -49,7 +49,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MAttributesInFile rslt = attributes;
         for(MAttributeInFile attribute : attributes)
             if(!attribute.modifiers().term().contains(modifier))
-                rslt.remove(attribute.term());
+                rslt = rslt.remove(attribute.term());
         
         return rslt;
     }
@@ -57,7 +57,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MMethodsInFile rslt = methods;
         for(MMethodInFile method : methods)
             if(!method.modifiers().term().contains(modifier))
-                rslt.remove(method.term());
+                rslt = rslt.remove(method.term());
         
         return rslt;
     }
@@ -65,7 +65,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MClassesInFile rslt = mclasses;
         for(MClassInFile mclass : mclasses)
             if(!mclass.modifiers().term().contains(modifier))
-                rslt.remove(mclass.term());
+                rslt = rslt.remove(mclass.term());
         
         return rslt;
     }
@@ -84,19 +84,11 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
     
     protected String qualifiedName(MMethodInFile method) {
-        if(method.parent().parent() instanceof MFileInFile)
-            return method.name().term();
-        else if(method.parent().parent() instanceof MClassInFile)
-            return qualifiedName((MClassInFile)method.parent().parent()) + "::" + method.name().term();
-        throw new RuntimeException();
+        return method.name().term();
     }
     
     protected String qualifiedName(MClassInFile mclass) {
-        if(mclass.parent().parent() instanceof MFileInFile)
-            return mclass.name().term();
-        else if(mclass.parent().parent() instanceof MClassInFile)
-            return qualifiedName((MClassInFile)mclass.parent().parent()) + "::" + mclass.name().term();
-        throw new RuntimeException();
+        return mclass.name().term();
     }
     
     @Override
@@ -162,7 +154,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
                 name = ((MClassInFile)structs.parent()).name().term();
             
             // append comment
-            buffer.append("\n// structs of " + name + "\n");
+            buffer.append("\n// structs of " + name + "");
             
             // unparse the contained structs
             for(MStructInFile struct : structs) visit(struct);
@@ -187,7 +179,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             
             // unparse contained enums
             for(MEnumInFile mEnum : enums) {
-                buffer.append("\n\n");
+                buffer.append('\n');
                 visit(mEnum);
             }
             buffer.append('\n');
@@ -207,11 +199,11 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
                 name = ((MClassInFile)attributes.parent()).name().term();
             
             // append comment
-            buffer.append("\n// fields of " + name);
+            buffer.append("\n// attributes of " + name);
             
             // unparse contained attributes
             for(MAttributeInFile attribute : attributes) {
-                buffer.append("\n\n");
+//                buffer.append('\n');
                 visit(attribute);
             }
             buffer.append('\n');
@@ -226,15 +218,15 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             if(methods.parent() instanceof MFileInFile) {
                 buffer.append("\n// procedures of " + this.name);
             } else if(methods.parent() instanceof MStructInFile) {
-                buffer.append("\n// procedures of " + ((MStructInFile)methods.parent()).name().term());
+                buffer.append("\n// procedures of struct " + ((MStructInFile)methods.parent()).name().term());
             } else if(methods.parent() instanceof MClassInFile) {
-                buffer.append("\n// methods of " + ((MClassInFile)methods.parent()).name().term());
+                buffer.append("\n// methods of class " + ((MClassInFile)methods.parent()).name().term());
             }
             
             // unparse contained methods
-            for(MMethodInFile attribute : methods) {
-                buffer.append("\n\n");
-                visit(attribute);
+            for(MMethodInFile method : methods) {
+                buffer.append('\n');
+                visit(method);
             }
             buffer.append('\n');
         }  
@@ -242,26 +234,38 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MClassesInFile classes) throws InvalidConstruct {
-        if(classes.size() > 0) {
-            // set local name for the comment to file name
-            String name = this.name;
+        
+        // if no class at all return
+        if(classes.isEmpty()) return;
+        
+        // set local name for the comment to file name
+        String name = this.name;
             
-            // if the parent is a struct or class, use this name instead
-            if(classes.parent() instanceof MStructInFile)
-                name = ((MStructInFile)classes.parent()).name().term();
-            if(classes.parent() instanceof MClassInFile)
-                name = qualifiedName((MClassInFile)classes.parent());
+        // if the parent is a struct or class, use this name instead
+        if(classes.parent() instanceof MStructInFile)
+            name = ((MStructInFile)classes.parent()).name().term();
+        if(classes.parent() instanceof MClassInFile)
+            name = qualifiedName((MClassInFile)classes.parent());
+        
+        // append comment
+        buffer.append("\n// classes of " + name);
+        
+        // go through the classes using rsib method
+        for(MClassInFile mclass = classes.first(); mclass != null; mclass = mclass.rsib()) {
+
+            // unparse the class
+            visit(mclass);
             
-            // append comment
-            buffer.append("\n// classes of " + name);
-            
-            // unparse contained classes
-            for(MClassInFile mclass : classes) {
-                buffer.append("\n\n");
-                visit(mclass);
-            }
-            buffer.append('\n');
+            // append newline if it isn't the last class
+            if(mclass.rsib() != null) buffer.append('\n');
         }
+        
+//        // unparse contained classes
+//        for(MClassInFile mclass : classes) {
+//            buffer.append("\n\n");
+//            visit(mclass);
+//        }
+        buffer.append('\n');
     }
     
     // TODO this is how it is done by paddy... maybe apply this as well?
@@ -283,21 +287,28 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MStructInFile struct) throws InvalidConstruct {
-        buffer.append("struct " + struct.name().term() + " {\n");
+        
+        // do not put "private" global structs in the header
+        if(struct.parent().parent() instanceof MFileInFile 
+                && struct.modifiers().term().contains(PRIVATE())) return;
+        
+        buffer.append("\nstruct " + struct.name().term() + " {\n");
         buffer.indent();
         
-        // unparse components
-        visit(struct.structs());
-        visit(struct.enums());
+        // unparse contained attributes
         visit(struct.attributes());
-        visit(struct.methods());
         
         buffer.unindent();
-        buffer.append("}\n");
+        buffer.append("}");
     }
 
     @Override
     public void visit(MEnumInFile mEnum) throws InvalidConstruct {
+        
+        // do not put "private" global enums in the header
+        if(mEnum.parent().parent() instanceof MFileInFile 
+                && mEnum.modifiers().term().contains(PRIVATE())) return;
+        
         buffer.append("enum " + mEnum.name().term() + " { ");
         if(mEnum.size() > 0) {
             for(StringInFile value : mEnum.values()) buffer.append(value.term());
@@ -308,16 +319,50 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MAttributeInFile attribute) throws InvalidConstruct {
-        if(attribute.modifiers().term().contains(CONSTANT())) buffer.append(" const");
-        typeIdent = attribute.name().term();
-        visit(attribute.type());
-        visit(attribute.initial());
+
+        // globals are treated differently
+        if(attribute.parent().parent() instanceof MFileInFile) {
+            
+            // "private" globals should not appear int the header at all
+            if(attribute.modifiers().term().contains(PRIVATE())) return;
+            
+            // "public" globals should always be declared "extern"
+            buffer.append("\nextern ");
+            
+            // they maybe constant as well
+            if(attribute.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+            
+            // set the type declaration to the attribute name and unparse the type
+            typeDecl = attribute.name().term();
+            visit(attribute.type());
+        } else {
+            buffer.append("\n");
+            // for attributes of classes, static has a different semantic and should not be set automatically
+            if(attribute.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+            if(attribute.modifiers().term().contains(STATIC()))   buffer.append("static ");
+            
+            // set the type declaration to the attribute name and unparse the type
+            typeDecl = attribute.name().term();
+            visit(attribute.type());
+            
+            // for class attributes, the initial value is set in the header 
+            // TODO wait... WHAT??? WHY??? This should (at best) make sense for static, but not always!
+            visit(attribute.initial());
+        }
+        
+        // append colon and newline
         buffer.append(";\n");
     }
 
     @Override
     public void visit(MMethodInFile method) throws InvalidConstruct {
+        
+        // do not put "private" global methods in the header
+        if(method.parent().parent() instanceof MFileInFile 
+                && method.modifiers().term().contains(PRIVATE())) return;
+        
         if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+        if(method.modifiers().term().contains(STATIC()))   buffer.append("static ");
         visit(method.returnType());
         buffer.append(qualifiedName(method));
         visit(method.parameter());
@@ -326,11 +371,21 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
-        buffer.append("class " + mclass.name().term() + " {\n");
+        
+        // do not put "private" global classes in the header
+        if(mclass.parent().parent() instanceof MFileInFile 
+                && mclass.modifiers().term().contains(PRIVATE())) return;
+        
+        buffer.append("\nclass " + mclass.name().term() + " {");
+        
+        // TODO more efficient solution?
+        //      This effectively runs three times over all components
+        //      Could probably make this more efficient with usage of local buffers
+        //      (yet this would mean circumventing list visitors)
         
         // print all public members of the class
         if(contains(mclass, PUBLIC())) {
-            buffer.append("\npublic:\n");
+            buffer.append("\npublic:");
             buffer.indent();
 
             visit(filter(mclass.structs(),    PUBLIC()));
@@ -344,7 +399,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
         // print all private members of the class
         if(contains(mclass, PRIVATE())) {
-            buffer.append("\nprivate:\n");
+            buffer.append("\nprivate:");
             buffer.indent();
             
             visit(filter(mclass.structs(),    PRIVATE()));
@@ -383,25 +438,25 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MTypeInFile type) throws InvalidConstruct {
-        buffer.append(type.name().term() + " " + typeIdent);
-        typeIdent = new String();
+        buffer.append(type.name().term() + " " + typeDecl);
+        typeDecl = new String();
     }
 
     @Override
     public void visit(MArrayTypeInFile arrayType) throws InvalidConstruct {
-        typeIdent = "(" + typeIdent + ") [" + arrayType.length().term() + "]";
+        typeDecl = "(" + typeDecl + ") [" + arrayType.length().term() + "]";
         visit(arrayType.type());
     }
 
     @Override
     public void visit(MPointerTypeInFile pointerType) throws InvalidConstruct {
-        typeIdent = "*" + typeIdent;
+        typeDecl = "*" + typeDecl;
         visit(pointerType.type());
     }
 
     @Override
     public void visit(MConstPointerTypeInFile constPointerType) throws InvalidConstruct {
-        typeIdent = "*const" + typeIdent;
+        typeDecl = "*const" + typeDecl;
         visit(constPointerType.type());
     }
 
@@ -428,17 +483,18 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     @Override
     public void visit(MParameterInFile parameter) throws InvalidConstruct {
         buffer.append(' ');
-        typeIdent = parameter.name().term();
+        typeDecl = parameter.name().term();
         if(parameter.refType().term() instanceof CONSTREF) buffer.append("const ");
         if(parameter.refType().term() instanceof CONSTREF || 
-           parameter.refType().term() instanceof REFERENCE) typeIdent = "&" + typeIdent ;
+           parameter.refType().term() instanceof REFERENCE) typeDecl = "&" + typeDecl ;
         visit(parameter.type());
     }
     
     // should never go here
-    public void visit(MModifiersInFile mods) { }
+    public void visit(MModifiersInFile term) { }
     public void visit(PRIVATEInFile term)    { }
     public void visit(PUBLICInFile term)     { }
+    public void visit(STATICInFile term)     { }
     public void visit(CONSTANTInFile term)   { }
     public void visit(VALUEInFile term)      { }
     public void visit(REFERENCEInFile term)  { }
@@ -448,6 +504,6 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(IntegerInFile term)    { }
     public void visit(MIncludesInFile term)  { }
     public void visit(MIncludeInFile term)   { }
-    public void visit(QUOTESInFile arg0)     { }
+    public void visit(QUOTESInFile term)     { }
     public void visit(BRACKETSInFile term)   { }
 }

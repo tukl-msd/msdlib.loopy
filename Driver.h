@@ -1,22 +1,17 @@
 
-// fields of Driver
+// attributes of Driver
+extern int myVariable;
 
-int (myVariable) [34];
+extern int myVariable3;
 
 
 // procedures of Driver
+int c ( const int *(*&p) [5] );
 
-const int b ( );
-
-int *c ( const int *(*&p) [5] );
 
 // classes of Driver
-
 class a {
-
-public:
-
-    // methods of a
-
-    const int a::b ( );
+private:
+    // methods of class a
+    const int b ( );
 };
