@@ -141,6 +141,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
     }
 
+    // TODO make public/private distinction here to provide better comments?
     @Override
     public void visit(MStructsInFile structs) throws InvalidConstruct {
         if(structs.size() > 0) {
@@ -225,7 +226,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             
             // unparse contained methods
             for(MMethodInFile method : methods) {
-                buffer.append('\n');
+//                buffer.append('\n');
                 visit(method);
             }
             buffer.append('\n');
@@ -351,7 +352,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
         
         // append colon and newline
-        buffer.append(";\n");
+        buffer.append(";");
     }
 
     @Override
@@ -361,6 +362,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         if(method.parent().parent() instanceof MFileInFile 
                 && method.modifiers().term().contains(PRIVATE())) return;
         
+        buffer.append('\n');
         if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
         if(method.modifiers().term().contains(STATIC()))   buffer.append("static ");
         visit(method.returnType());

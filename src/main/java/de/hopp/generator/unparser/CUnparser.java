@@ -139,6 +139,8 @@ public class CUnparser extends HUnparser {
     @Override
     public void visit(MMethodInFile method) throws InvalidConstruct {
         
+        buffer.append('\n');
+        
         // append keywords if appropriate
         if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
         if(method.parent().parent() instanceof MFileInFile
