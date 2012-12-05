@@ -3,35 +3,84 @@ apply plugin: 'java'
 version = '0.0.1'
 description = 'some interesting description'
 
-String libDir      = "$projectDir/lib"
-String specDir     = "$projectDir/specs"
+String libDir       = "$projectDir/lib"
+String specDir      = "$projectDir/specs"
+String genDir       = "$projectDir/src-gen"
+String parserGenDir = "$genDir/de/hopp/generator/parser"
 
-String boardSpec   = "$specDir/board.katja"
-String modelSpec   = "$specDir/cmodel.katja"
+String flexSpec     = "$specDir/mhs.flex";
+String cupSpec      = "$specDir/mhs.cup"
+String mhsSpec      = "$specDir/mhs.katja"
+String boardSpec    = "$specDir/board.katja"
+String modelSpec    = "$specDir/cmodel.katja"
 
-String katja       = "$libDir/katja.jar"
-String katjaCommon = "$libDir/katja.common.jar"
-String board       = "$libDir/BoardSpec.jar"
-String model       = "$libDir/Model.jar"
+String flexLib      = "$libDir/JFlex.jar"
+String cupLib       = "$libDir/java-cup-11a.jar"
+String katja        = "$libDir/katja.jar"
+String katjaCommon  = "$libDir/katja.common.jar"
 
+String mhs          = "$libDir/MHS.jar"
+String board        = "$libDir/BoardSpec.jar"
+String model        = "$libDir/Model.jar"
+
+String cupParser    = "$parserGenDir/parser.java"
+String flexScanner  = "$parserGenDir/Lexer.java"
+String symTab       = "$parserGenDir/sym.java"
 
 repositories {
   mavenCentral()
 }
 
 dependencies {
-  compile files("$katjaCommon", "$model", "$board")
+  compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
+//  compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
+  compile files("$cupLib")
+  compile files("$katjaCommon", "$model", "$board", "$mhs")
   testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
-// removes generated c/c++ model and common files
+sourceSets {
+  main {
+    java {
+      srcDirs "src-gen"
+    }
+  }
+}
+
+// removes src-gen folder
+task removeGen << {
+  delete "$genDir"
+}
+
+// removes generated AST
+task removeAST << {
+  delete "$mhs"
+}
+
+// removes generated board model
 task removeBoard << {
-  delete "$board", "$katjaCommon"
+  delete "$board"
 }
 
 // removes generated c/c++ model and common files
 task removeModel << {
   delete "$model", "$katjaCommon"
+}
+
+// builds the ast model used by the cup parser
+task buildAST {
+  inputs.files("$katja", "$mhsSpec")
+  outputs.files("$mhs")
+  doLast {
+    ant.java(jar:"$katja",fork:true) {
+      arg(value: "-b")
+      arg(value: "java")
+      arg(value: "-d")
+      arg(value: "lib")
+      arg(value: "-o")
+      arg(value: "$mhsSpec")
+    }
+  }
 }
 
 // builds the ast of the board
@@ -69,11 +118,41 @@ task buildModel {
 
 task runKatja
 
-clean.dependsOn       removeBoard
-clean.dependsOn       removeModel
-runKatja.dependsOn    buildBoard
-runKatja.dependsOn    buildModel
-compileJava.dependsOn runKatja
+task runJFlex {
+  inputs.files(flexSpec, flexLib)
+  outputs.file(flexScanner)
+  doLast {
+    ant.taskdef name: 'jflex', classname: 'JFlex.anttask.JFlexTask', classpath: flexLib
+    ant.jflex(file: flexSpec, outdir: parserGenDir)
+  }
+}
+
+task runCup {
+  inputs.files(cupSpec, cupLib)
+  outputs.files(cupParser, symTab)
+  doLast {
+    ant.taskdef name: 'jcup', classname: 'java_cup.anttask.CUPTask', classpath: cupLib
+    ant.jcup(srcfile: cupSpec, destdir: genDir)
+// srcfile, destdir, interface = true/false, package
+  }
+}
+
+task generateResources
+
+clean.dependsOn removeGen
+clean.dependsOn removeAST
+clean.dependsOn removeBoard
+clean.dependsOn removeModel
+
+runKatja.dependsOn buildAST
+runKatja.dependsOn buildBoard
+runKatja.dependsOn buildModel
+
+generateResources.dependsOn runKatja
+generateResources.dependsOn runJFlex
+generateResources.dependsOn runCup
+
+compileJava.dependsOn generateResources
 
 jar {
   // add main class to manifest

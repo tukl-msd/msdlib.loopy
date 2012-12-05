@@ -7,7 +7,7 @@ import java.util.List;
 import de.hopp.generator.Generator;
 import de.hopp.generator.board.Board;
 import de.hopp.generator.exceptions.ExecutionFailed;
-import de.hopp.generator.parser.Parser;
+import de.hopp.generator.parser.Parser2;
 
 public class Main {
     
@@ -73,12 +73,20 @@ public class Main {
         config.setSourceFile(schemaFile);
         
         // TODO parse source file and generate a board depending on the results
-        Board board = new Parser(config).parse();
-//        config.setBoard(board);
+        File mhs = new File("sample.mhs");
+
+        System.out.println();
+        System.out.println("starting parser");
+        Board board = new Parser2(config).parse(mhs);
+        System.out.println("parser finished");
+        System.out.println("got the following board: " + board.toString());
         
         // instantiate and run generator with this configuration
+        System.out.println();
+        System.out.println("starting c/c++ generator");
         Generator generator = new Generator(config, board);
         generator.generate();
+        System.out.println("generator finished");
         
         // finished
         System.out.println("Done");
