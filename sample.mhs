@@ -104,6 +104,7 @@ BEGIN lmb_bram_if_cntlr
  BUS_INTERFACE SLMB = microblaze_0_dlmb
  BUS_INTERFACE BRAM_PORT = microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block
 END
+
 BEGIN bram_block
  PARAMETER INSTANCE = microblaze_0_bram_block
  PARAMETER HW_VER = 1.00.a
