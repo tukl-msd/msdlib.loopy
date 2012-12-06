@@ -4,6 +4,8 @@ syntax: glob
 .project
 .project~
 .settings
+src-gen
+lib/MHS.jar
 target
 build
 

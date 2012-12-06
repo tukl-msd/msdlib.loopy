@@ -1,0 +1,35 @@
+specification MHS
+
+backend java {
+  package de.hopp.generator.parser
+  import java.lang.String
+  import java.lang.Integer
+}
+
+root MHSFile Pos;
+
+external String
+external Integer
+
+MHSFile   ( Attributes attributes, Blocks blocks )
+Block     ( String name, Attributes attributes )
+Attribute ( Type type, Assignments assignments )
+
+Type = BUS_INTERFACE() | PARAMETER() | PORT()
+
+Assignment ( String name, Expression expression )
+
+Expression = Value | AndExp
+
+Value = DotList | Ident | Number | MemAddr | Range
+
+Ident   ( String val )
+Number  ( Integer val )
+MemAddr ( String val )
+Range   ( Integer l, Integer u )
+
+Blocks      * Block
+Attributes  * Attribute
+Assignments * Assignment
+AndExp      * Value
+DotList     * String

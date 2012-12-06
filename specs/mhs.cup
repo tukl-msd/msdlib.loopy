@@ -1,0 +1,81 @@
+package de.hopp.generator.parser;
+
+import java_cup.runtime.*;
+import de.hopp.generator.board.*;
+
+/* Preliminaries to set up and use the scanner.  */
+//init with {: scanner.init();              :};
+//scan with {: return getScanner().next_token(); :};
+
+parser code {:
+  protected Board board = BoardSpec.Board();
+
+  public Board getBoard() {
+    return board;
+  }
+:}
+
+/* terminals */
+terminal BEGIN, END;
+terminal BUS_INTERFACE, PARAMETER, PORT;
+terminal EQ, AND, DOT, OBR, CBR, COL, COM;
+terminal String ID, HEX, VER;
+terminal Integer DEC;
+
+/* non terminals */
+non terminal MHSFile file;
+non terminal Blocks block_list;
+non terminal Block block;
+non terminal Attributes attr_list;
+non terminal Attribute attr;
+non terminal Type type;
+non terminal Assignments assgn_list;
+non terminal Assignment assgn;
+non terminal Expression expression;
+non terminal Value val, lit;
+non terminal Range range;
+
+/* grammar */
+start with file;
+
+file       ::= attr_list:a block_list:b   {: RESULT = MHS.MHSFile (a,b); :}
+             ;
+/* blocks */
+block_list ::= block:hd block_list:tl     {: RESULT = tl.appFront(hd); :} 
+             |                            {: RESULT = MHS.Blocks(); :}
+             ;
+block      ::= BEGIN ID:i attr_list:l END {: RESULT = MHS.Block(i,l); :}
+             ;
+type       ::= BUS_INTERFACE              {: RESULT = MHS.BUS_INTERFACE(); :}
+             | PARAMETER                  {: RESULT = MHS.PARAMETER(); :}
+             | PORT                       {: RESULT = MHS.PORT(); :}
+             ;
+
+/* attributes */
+attr_list  ::= attr:hd attr_list:tl       {: RESULT = tl.appFront(hd); :}
+             |                            {: RESULT = MHS.Attributes(); :}
+	     ;
+attr       ::= type:t assgn_list:l        {: RESULT = MHS.Attribute(t,l); :}
+             ;
+assgn_list ::= assgn:hd COM assgn_list:tl {: RESULT = tl.appFront(hd); :}
+             | assgn:a                    {: RESULT = MHS.Assignments(a); :}
+             ;
+assgn      ::= ID:i EQ expression:e       {: RESULT = MHS.Assignment(i,e); :}
+             ;
+expression ::= val:v AND expression:e     {: RESULT = e instanceof AndExp ? ((AndExp)e).appFront(v) :
+                                               MHS.AndExp(v,(Value)e); :}
+             | val:v                      {: RESULT = v; :}
+             ;
+val        ::= lit:l DOT val:v            {: RESULT = v instanceof DotList ? ((DotList)v).appFront(l.toString()) : MHS.DotList(l.toString(),v.toString()); :}
+             | lit:l                      {: RESULT = l; :}
+             ;
+lit        ::= ID:i                       {: RESULT = MHS.Ident(i); :}
+             | DEC:d                      {: RESULT = MHS.Number(d); :}
+             | HEX:h                      {: RESULT = MHS.MemAddr(h); :}
+             | VER:v                      {: RESULT = MHS.Ident(v); :}
+             | range:r                    {: RESULT = r; :}                  
+             ;
+range      ::= OBR DEC:l COL DEC:u CBR    {: RESULT = MHS.Range(l,u); :}
+             ;
+
+
