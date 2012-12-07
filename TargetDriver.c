@@ -128,8 +128,8 @@ int IntcInterruptSetup() {
 	Xil_ExceptionInit();
 
 	// Register the interrupt controller handler with the exception table.
-	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT,
-			(Xil_ExceptionHandler)XIntc_DeviceInterruptHandler, (void*) 0);
+//	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_DeviceInterruptHandler, &intc);
+	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_InterruptHandler, &intc);
 
 	// Enable exceptions.
 	Xil_ExceptionEnable();
@@ -167,48 +167,42 @@ void GpioHandlerButtons(void *CallbackRef) {
 	XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);
 }
 
-int GpioSetupIntrSystem() {
-//	int result;
-
-	u16 IntrIdButtons  = XPAR_MICROBLAZE_0_INTC_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_INTR;
-	u16 IntrIdSwitches = XPAR_MICROBLAZE_0_INTC_DIP_SWITCHES_8BITS_IP2INTC_IRPT_INTR;
-
-
+int GpioSetupIntrSystem(XGpio *instancePtr, u16 intrId, Xil_ExceptionHandler handler) {
 	if(DEBUG == 1) xil_printf("\n  hooking up interrupt service routines ...");
 
+		// TODO I think THIS is the only interesting line and the rest can be removed (except perhaps exception management)
+		// Hook up interrupt service routines
+		// TODO provide better data than &buttons/&switches??
+		XIntc_Connect(&intc, intrId,  handler, instancePtr);
 
-	// TODO I think THIS is the only interesting line and the rest can be removed (except perhaps exception management)
-	// Hook up interrupt service routines
-	XIntc_Connect(&intc, IntrIdButtons,  (Xil_ExceptionHandler)GpioHandlerButtons,  &buttons);
-	XIntc_Connect(&intc, IntrIdSwitches, (Xil_ExceptionHandler)GpioHandlerSwitches, &switches);
+		if(DEBUG == 1) xil_printf(" done\n  enabling interrupt vectors at interrupt controller ...");
 
-	if(DEBUG == 1) xil_printf(" done\n  enabling interrupt vectors at interrupt controller ...");
+		// Enable the interrupt vector at the interrupt controller
+		XIntc_Enable(&intc, intrId);
 
-	// Enable the interrupt vector at the interrupt controller
-	XIntc_Enable(&intc, IntrIdButtons);
-	XIntc_Enable(&intc, IntrIdSwitches);
+		if(DEBUG == 1) xil_printf(" done\n  enabling GPIO channel interrupts ...");
 
-	if(DEBUG == 1) xil_printf(" done\n  enabling GPIO channel interrupts ...");
+		// Start the interrupt controller such that interrupts are recognized and handled by the processor
+		//	result = XIntc_Start(&intc, XIN_REAL_MODE);
+		//	if (result != XST_SUCCESS) return result;
 
-	// Start the interrupt controller such that interrupts are recognized and handled by the processor
-//	result = XIntc_Start(&intc, XIN_REAL_MODE);
-//	if (result != XST_SUCCESS) return result;
+		/*
+		 * Enable the GPIO channel interrupts so that push button can be
+		 * detected and enable interrupts for the GPIO device
+		 */
+		XGpio_InterruptEnable(instancePtr, GPIO_CHANNEL1);
+		XGpio_InterruptGlobalEnable(instancePtr);
 
-	/*
-	 * Enable the GPIO channel interrupts so that push button can be
-	 * detected and enable interrupts for the GPIO device
-	 */
-	XGpio_InterruptEnable(&buttons,  GPIO_CHANNEL1);
-	XGpio_InterruptEnable(&switches, GPIO_CHANNEL1);
-	XGpio_InterruptGlobalEnable(&buttons);
-	XGpio_InterruptGlobalEnable(&switches);
+		//	if(DEBUG == 1) xil_printf(" done\n  registering exception handler ...");
+		// maybe we need Xil_ExceptionInit() and Xil_ExceptionEnable() as well...
 
-	if(DEBUG == 1) xil_printf(" done\n  registering exception handler ...");
+		if(DEBUG == 1) xil_printf(" done");
 
-	// maybe we need Xil_ExceptionInit() and Xil_ExceptionEnable() as well...
-	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_InterruptHandler, &intc);
+		return XST_SUCCESS;
+}
 
-	if(DEBUG == 1) xil_printf(" done");
+int GpioSetupIntrSystemFull() {
+
 
 	return XST_SUCCESS;
 }
@@ -238,10 +232,10 @@ int init() {
 	// setup interrupts
 	if (DEBUG == 1) xil_printf(" done\nsetting up interrupt serive ...");
 	if (IntcInterruptSetup() != XST_SUCCESS) return XST_FAILURE;
-//	if (GpioSetupIntrSystem(&buttons, XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID,
-//			XPAR_MICROBLAZE_0_INTC_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_INTR) != XST_SUCCESS) return XST_FAILURE;
-	if (GpioSetupIntrSystem() != XST_SUCCESS) return XST_FAILURE;
-
+	if (GpioSetupIntrSystem(&buttons,  XPAR_MICROBLAZE_0_INTC_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_INTR,
+            (Xil_ExceptionHandler)GpioHandlerButtons) != XST_SUCCESS) return XST_FAILURE;
+	if (GpioSetupIntrSystem(&switches, XPAR_MICROBLAZE_0_INTC_DIP_SWITCHES_8BITS_IP2INTC_IRPT_INTR,
+            (Xil_ExceptionHandler)GpioHandlerSwitches) != XST_SUCCESS) return XST_FAILURE;
 	// return
 	if(DEBUG == 1) xil_printf("\nfinished initialisation\n");
 	return XST_SUCCESS;
@@ -266,7 +260,7 @@ int cleanup() {
 //	 #endif
 
 int main() {
-	if(DEBUG == 1) print("\nstarting up\n");
+	if(DEBUG == 1) xil_printf("\nstarting up\n");
 
 	// initialize everything
     init();

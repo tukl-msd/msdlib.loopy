@@ -141,6 +141,9 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
     }
 
+    @Override
+    public void visit(MDefinitionsInFile defs) throws InvalidConstruct { }
+
     // TODO make public/private distinction here to provide better comments?
     @Override
     public void visit(MStructsInFile structs) throws InvalidConstruct {
@@ -285,7 +288,12 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 //            if(mclass.rsib() != null) buffer.append("\n");
 //        }
 //    }
-
+    
+    @Override
+    public void visit(MDefinitionInFile term) throws InvalidConstruct {
+        buffer.append("\n#define " + term.name().term() + " " + term.value().term());
+    }
+    
     @Override
     public void visit(MStructInFile struct) throws InvalidConstruct {
         
@@ -508,4 +516,5 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(MIncludeInFile term)   { }
     public void visit(QUOTESInFile term)     { }
     public void visit(BRACKETSInFile term)   { }
+
 }

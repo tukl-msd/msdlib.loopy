@@ -33,7 +33,7 @@ external Integer
 
 // file and class model
 
-MFile ( String name, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
+MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
 MClass ( MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() // don't know if any more exist in c/c++
@@ -42,6 +42,7 @@ MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() // don't know if any mo
 
 // struct and enum model
 
+MDefinition ( String name, String value)
 MStruct ( MModifiers modifiers, String name, MAttributes attributes )
 MEnum   ( MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
                                                               // --> MValue(String name, String value), MValues * MValue
@@ -86,6 +87,7 @@ Strings             * String
 MFiles              * MFile
 MClasses            * MClass
 MModifiers          * MModifier
+MDefinitions        * MDefinition
 MStructs            * MStruct
 MEnums              * MEnum
 MAttributes         * MAttribute

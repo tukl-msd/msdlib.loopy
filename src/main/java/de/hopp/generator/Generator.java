@@ -23,7 +23,7 @@ public class Generator {
     private Configuration config;
     private Board board;
     
-    private static final MFile DUMMY_FILE = MFile("", MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
+    private static final MFile DUMMY_FILE = MFile("", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
     
     private enum UnparserType { HEADER, C, CPP }
 
@@ -105,6 +105,20 @@ public class Generator {
     }
 
     private MFile generateBoardDriver() {
+        
+        
+        /* 
+         * Generally there are two options for generating the board:
+         * a) add stuff for each component individually
+         * b) cycle through methods and add parts for all components there
+         * 
+         * the first will probably result in a cleaner generator, the second in a cleaner generated file
+         * 
+         * a) also requires forward definitions, i.e. two visitors...
+         * 
+         * we'll go with a slight mix of the two, focusing on a),
+         * but using b) for generation of the init method and necessary definitions 
+         */
         MFile boardDriver = DUMMY_FILE.replaceName("Driver");
         
         for(Component comp : board.components()) {
@@ -197,6 +211,7 @@ public class Generator {
      */
     private static MFile mergeFiles(MFile file1, MFile file2) {
         MFile file = MFile(file1.name(),
+                file1.defs().addAll(file2.defs()),
                 file1.structs().addAll(file2.structs()), 
                 file1.enums().addAll(file2.enums()),
                 file1.attributes().addAll(file2.attributes()),
@@ -214,7 +229,7 @@ public class Generator {
         MAttribute a3 = MAttribute(MModifiers(PUBLIC()), MType("int"), "myVariable3", MCodeFragment("5"));
         MAttribute a2 = MAttribute(MModifiers(PRIVATE()), MType("int"), "myVariable2", MCodeFragment("5"));
         MClass c = MClass(MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
-        MFile file = MFile("name", MStructs(), MEnums(), MAttributes(a, a2, a3), MMethods(m2, m), MClasses(c));
+        MFile file = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(a, a2, a3), MMethods(m2, m), MClasses(c));
         
         return MFileInFile(file);
     }

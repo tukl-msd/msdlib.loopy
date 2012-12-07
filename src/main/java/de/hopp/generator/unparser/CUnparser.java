@@ -56,6 +56,18 @@ public class CUnparser extends HUnparser {
     }
 
     @Override
+    public void visit(MDefinitionsInFile defs) throws InvalidConstruct {
+        if(defs.size() > 0) {
+            // append comment
+            buffer.append("\n// definitions of " + name + "");
+            
+            // unparse the contained structs
+            for(MDefinitionInFile def : defs) visit(def);
+            buffer.append('\n');
+        }
+    }
+
+    @Override
     public void visit(MAttributesInFile attributes) throws InvalidConstruct {
         if(attributes.size() > 0) {
             super.visit(filter(attributes, PRIVATE()));
