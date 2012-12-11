@@ -1,14 +1,18 @@
 
 // attributes of Driver
-extern int myVariable;
-extern int myVariable3;
+extern XIntc intc;
+extern XGpio buttons;
+extern XGpio leds;
+extern XGpio switches;
 
 // procedures of Driver
-int c ( const int *(*&p) [5] );
-
-// classes of Driver
-class a {
-private:
-    // methods of class a
-    const int b ( );
-};
+int IntcInterruptSetup ( );
+int GpioSetupIntrSystem ( XGpio *instancePtr, u16 intrId, Xil_ExceptionHandler handler );
+int getButtons ( );
+void GpioHandlerButtons ( void *CallbackRef );
+int setLED ( u32 value );
+int getSwitches ( );
+void GpioHandlerSwitches ( void *CallbackRef );
+int init ( );
+int cleanup ( );
+int main ( );

@@ -119,20 +119,9 @@ public class Generator {
          * we'll go with a slight mix of the two, focusing on a),
          * but using b) for generation of the init method and necessary definitions 
          */
-        MFile boardDriver = DUMMY_FILE.replaceName("Driver");
-        
-        for(Component comp : board.components()) {
-            boardDriver = mergeFiles(boardDriver, comp.Switch(new Component.Switch<MFile, NE>() {
-                public MFile CaseUART(UART term)                   { return DUMMY_FILE; }
-                public MFile CaseETHERNET_LITE(ETHERNET_LITE term) { return DUMMY_FILE; }
-                public MFile CaseETHERNET(ETHERNET term)           { return DUMMY_FILE; }
-                public MFile CasePCIE(PCIE term)                   { return DUMMY_FILE; }
-                public MFile CaseLEDS(LEDS term)                   { return DUMMY_FILE; }
-                public MFile CaseSWITCHES(SWITCHES term)           { return DUMMY_FILE; }
-                public MFile CaseBUTTONS(BUTTONS term)             { return DUMMY_FILE; }
-            }));
-        }
-        return boardDriver;
+        BoardVisitor visit = new BoardVisitor(true);
+        visit.visit(board);
+        return visit.getFile().replaceName("Driver");
     }
 
     private void printMFile(MFileInFile mfile, UnparserType type) {
@@ -153,7 +142,7 @@ public class Generator {
         }
                
         // set output file
-        File target = new File("");;
+        File target = new File(".");;
         if(config.getDest() != null)
             target = new File(config.getDest(), target.getName());
 
@@ -198,6 +187,7 @@ public class Generator {
             fileWriter.close();
             
         } catch (IOException e) {
+            e.printStackTrace();
             System.err.println("io error on file " + target.getPath());
             throw new IllegalStateException();
         }

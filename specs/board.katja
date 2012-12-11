@@ -3,18 +3,24 @@ specification BoardSpec
 backend java {
     package de.hopp.generator.board
     import java.lang.String
+    import java.lang.Integer as int
 }
 
 external String
+external int
 
 Board (Components components)
 
 Component = UART()
-          | ETHERNET_LITE() // Some parameters (ip, port) might be useful.
-          | ETHERNET()      // Cannot get these from .mhs though... specify through config?
-          | PCIE()          // Probably needs some identifier as well...
-          | LEDS(String baseAddr)
-          | SWITCHES(String baseAddr)
-          | BUTTONS(String baseAddr) 
+          | ETHERNET_LITE(IP ip, int port) // Some parameters (ips, port) might be useful.
+          | ETHERNET(IP ip, int port)      // Cannot get these from .mhs though... specify through config?
+          | PCIE()                         // Probably needs some identifier as well...
+          | LEDS()
+          | SWITCHES()
+          | BUTTONS() 
+
+IP (int, int, int, int)
+
+Mode = RAW() | SOCKET()
 
 Components * Component

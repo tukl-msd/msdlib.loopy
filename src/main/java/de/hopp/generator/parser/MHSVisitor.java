@@ -73,9 +73,9 @@ public class MHSVisitor extends MHSFile.Visitor<NE> {
         } else if(term.name().equals(UART)) {
             c = UART();
         } else if(term.name().equals(ETHERNET_LITE)) {
-            c = ETHERNET_LITE();
+            c = ETHERNET_LITE(IP(192,168,1,10),8844);
         } else if(term.name().equals(ETHERNET)) {
-            c = ETHERNET();
+            c = ETHERNET(IP(192,168,1,10),8844);
         } else if(term.name().equals(PCIE)) {            
             c = PCIE();
         } else if(term.name().equals(IO_PERIPHERAL)) {
@@ -107,9 +107,9 @@ public class MHSVisitor extends MHSFile.Visitor<NE> {
             if(baseAddr == null) throw new RuntimeException();
             
             switch(type) {
-            case LEDS    : c = LEDS(baseAddr);     break;
-            case SWITCHES: c = SWITCHES(baseAddr); break;
-            case BUTTONS : c = BUTTONS(baseAddr);  break;
+            case LEDS    : c = LEDS();     break;
+            case SWITCHES: c = SWITCHES(); break;
+            case BUTTONS : c = BUTTONS();  break;
             }
         } 
         if(c != null) board = board.replaceComponents(board.components().add(c)); 

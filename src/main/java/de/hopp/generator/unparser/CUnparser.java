@@ -48,6 +48,7 @@ public class CUnparser extends HUnparser {
         buffer.append("#include \"" + name + ".h\"\n");
         
         // unparse components
+        visit(file.defs());
         visit(file.structs());
         visit(file.enums());
         visit(file.attributes());
@@ -201,6 +202,7 @@ public class CUnparser extends HUnparser {
             buffer.unindent();
             buffer.append("}");
         } else buffer.append(" { }");
+        buffer.append("\n");
     }
 
     @Override

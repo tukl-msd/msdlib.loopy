@@ -46,6 +46,6 @@ public class Test {
     }
 	
     public static Board defaultBoard() {
-        return Board(UART(), ETHERNET_LITE());
+        return Board(UART(), ETHERNET_LITE(IP(192,168,1,10),8844));
     }
 }

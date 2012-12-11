@@ -1,8 +1,11 @@
 package de.hopp.generator.parser;
 
+import static de.hopp.generator.board.BoardSpec.BUTTONS;
 import static de.hopp.generator.board.BoardSpec.Board;
 import static de.hopp.generator.board.BoardSpec.ETHERNET_LITE;
-import static de.hopp.generator.board.BoardSpec.UART;
+import static de.hopp.generator.board.BoardSpec.IP;
+import static de.hopp.generator.board.BoardSpec.LEDS;
+import static de.hopp.generator.board.BoardSpec.SWITCHES;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,8 +14,6 @@ import java.io.FileReader;
 import java_cup.runtime.Symbol;
 import de.hopp.Configuration;
 import de.hopp.generator.board.Board;
-
-import static de.hopp.generator.parser.MHS.*;
 
 public class Parser2 {
 
@@ -54,7 +55,7 @@ public class Parser2 {
     }
     
     private static Board defaultBoard() {
-        return Board(UART(), ETHERNET_LITE());
+        return Board(ETHERNET_LITE(IP(192,168,1,10),8844), LEDS(), SWITCHES(), BUTTONS());
     }
     
 }
