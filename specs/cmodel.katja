@@ -36,7 +36,7 @@ external Integer
 MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
 MClass ( MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
-MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() // don't know if any more exist in c/c++
+MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't know if more are required
 // modifiers obviously allow invalid combinations. We rely on the programmer to refrain from using these
 
 
@@ -70,16 +70,16 @@ MCode ( Strings lines, MIncludes needed )
 
 // type system model
 
-MAnyType = MType ( String name, Strings importNames )
+MAnyType = MType ( String name )
 //       | StructType ( String name, Strings importNames ) // can also be done with "usual" type by adding "struct "
 //       | EnumType ( String name, Strings importNames )   // can also be done with "usual" type by adding "enum "
          | MArrayType ( MAnyType type, Integer length )
          | MPointerType ( MAnyType type )
          | MConstPointerType ( MAnyType type )
 
-MInclude (String name, MIncludeType type)
+MInclude ( String name, MIncludeType type )
 
-MIncludeType = QUOTES() | BRACKETS() // | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
+MIncludeType = QUOTES() | BRACKETS()// | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
 
 // list types
 

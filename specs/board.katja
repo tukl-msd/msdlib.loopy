@@ -12,8 +12,8 @@ external int
 Board (Components components)
 
 Component = UART()
-          | ETHERNET_LITE(IP ip, int port) // Some parameters (ips, port) might be useful.
-          | ETHERNET(IP ip, int port)      // Cannot get these from .mhs though... specify through config?
+          | ETHERNET_LITE(IP ip, IP mask, IP gw, int port) // Some parameters (ips, port) might be useful.
+          | ETHERNET(IP ip, IP mask, IP gw, int port)      // Cannot get these from .mhs though... specify through config?
           | PCIE()                         // Probably needs some identifier as well...
           | LEDS()
           | SWITCHES()

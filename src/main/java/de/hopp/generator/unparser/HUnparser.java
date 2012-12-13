@@ -1,6 +1,7 @@
 package de.hopp.generator.unparser;
 
 import static de.hopp.generator.model.Model.*;
+import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
 
@@ -95,22 +96,19 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(MFileInFile file) throws InvalidConstruct {
 
         // create the list of all needed import names needed for types used in this file
-        Strings importLines = Strings();
+        MIncludes importLines = MIncludes();
         
         // go through the file and gather all imports / includes required
         for(Model.SortInFile pos = file; pos != null; pos = pos.preOrder()) {
 
             // only add if current position is a MType and we do not already have this type
-            if(pos instanceof MTypeInFile) {
+            if(pos instanceof MIncludeInFile) {
 
                 // get the type
-                MType type = (MType) pos.term();
+                MInclude include = (MInclude) pos.term();
 
-                for(String imp : ((MType) type).importNames()) {
-
-                    // do not import if is already imported
-                    if(!importLines.contains(imp)) importLines = importLines.add(imp);
-                }
+                // do not import if is already imported
+                if(!importLines.contains(include)) importLines = importLines.add(include);
             }
         }
         
@@ -119,12 +117,15 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             buffer.append("#ifndef " + name.toUpperCase() + "_H_\n"
                         + "#define " + name.toUpperCase() + "_H_\n");
             
-            // TODO i have no idea how this can be handled,
-            //      esp. to work with c as well as c++
-            //      are there even imports in plain c??
-            //      only of complete other files i guess??
-            for(String importName : importLines)
-                buffer.append("\n#include " + importName);
+            for(final MInclude include : importLines)
+                buffer.append(include.type().Switch(new MIncludeType.Switch<String, NE>() {
+                    public String CaseBRACKETS(BRACKETS term) {
+                        return "\n#include <"  + include.name() + ">";
+                    }
+                    public String CaseQUOTES(QUOTES arg0) {
+                        return "\n#include \"" + include.name() + "\"";
+                    }
+                }));
             
             buffer.append('\n');
         }
@@ -137,7 +138,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         visit(file.classes());
         
         if(!importLines.isEmpty()) {
-            buffer.append("#endif /* " + name.toUpperCase() + "_H_ */");
+            buffer.append("\n#endif /* " + name.toUpperCase() + "_H_ */");
         }
     }
 
@@ -371,6 +372,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
                 && method.modifiers().term().contains(PRIVATE())) return;
         
         buffer.append('\n');
+        if(method.modifiers().term().contains(CONSTANT())) buffer.append("inline ");
         if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
         if(method.modifiers().term().contains(STATIC()))   buffer.append("static ");
         visit(method.returnType());
@@ -505,6 +507,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(PRIVATEInFile term)    { }
     public void visit(PUBLICInFile term)     { }
     public void visit(STATICInFile term)     { }
+    public void visit(INLINEInFile term)     { }
     public void visit(CONSTANTInFile term)   { }
     public void visit(VALUEInFile term)      { }
     public void visit(REFERENCEInFile term)  { }

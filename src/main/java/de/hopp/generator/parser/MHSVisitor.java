@@ -73,9 +73,9 @@ public class MHSVisitor extends MHSFile.Visitor<NE> {
         } else if(term.name().equals(UART)) {
             c = UART();
         } else if(term.name().equals(ETHERNET_LITE)) {
-            c = ETHERNET_LITE(IP(192,168,1,10),8844);
+            c = ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1), 8844);
         } else if(term.name().equals(ETHERNET)) {
-            c = ETHERNET(IP(192,168,1,10),8844);
+            c = ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1), 8844);
         } else if(term.name().equals(PCIE)) {            
             c = PCIE();
         } else if(term.name().equals(IO_PERIPHERAL)) {
