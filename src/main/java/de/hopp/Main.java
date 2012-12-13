@@ -40,7 +40,17 @@ public class Main {
     
         // show flags
         System.out.println("Options:");
-        System.out.println(" -h --help             show this help.");
+        System.out.println(" --mac <mac>           modify mac address of the board.");
+        System.out.println(" --ip <ip>             modify ip address of the board.");
+        System.out.println(" --mask <mask>         modify the network mask of the board.");
+        System.out.println("                       The default value is 255.255.255.0");
+        System.out.println(" --gw <gw>             modify standard gateway of the board.");
+        System.out.println(" --port <port>         modify the standard port of the board.");
+        System.out.println("                       The default port ist 8844");
+        System.out.println();
+        System.out.println(" --debug               enables debug mode for the generated driver,");
+        System.out.println("                       which will cause it to produc additional");
+        System.out.println("                       console output.");
         System.out.println(" -n <name>");
         System.out.println(" --name <name>         generate classfile with filename <name>.");
         System.out.println("                       If this is not set, the default name");
@@ -49,37 +59,43 @@ public class Main {
         System.out.println(" --dest <dir>          generate classfile to <dir>.");
         System.out.println("                       If this is not set, the classfile is generated to");
         System.out.println("                       the current working directory.");
-        System.out.println(" -p <dir>");
-        System.out.println(" --package <package>   adds a package declaration with the given name");
-        System.out.println("                       to the generated classfile. If this is not set,");
-        System.out.println("                       files are generated to the default package.");
+        System.out.println(" -h --help             show this help.");
         System.out.println();
     }
 
     private void run(String[] args) throws ExecutionFailed {
         
         // parse all cli parameters
-        String schema = "";//parseParameters(args);
+        String schema = parseParameters(args);
+        
         File schemaFile = new File(schema);
         
-        // check if the given string indeed references an existing file
-//        if(!schemaFile.exists()) {
-//            System.err.println("ERROR: Could not find file " + schemaFile.getPath());
-//            throw new ExecutionFailed();
-//        } else if(!schemaFile.isFile()) {
-//            System.err.println("ERROR: " + schemaFile.getPath() + " is no file");
-//            throw new ExecutionFailed();
-//        }
-        config.setSourceFile(schemaFile);
+        // check if the given string references an existing file
+        if(!schemaFile.exists()) {
+            System.err.println("ERROR: Could not find file " + schemaFile.getPath());
+            throw new ExecutionFailed();
+        } else if(!schemaFile.isFile()) {
+            System.err.println("ERROR: " + schemaFile.getPath() + " is no file");
+            throw new ExecutionFailed();
+        }
         
-        // TODO parse source file and generate a board depending on the results
-        File mhs = new File("sample.mhs");
+        // print parsed cli parameters
+        System.out.println();
+        System.out.println("started HOPP Driver Generator with the following command line parameters:");
+        System.out.println("  source .mhs file : " + schemaFile);
+        System.out.println("  target folder    : " + config.getDest());
+        System.out.println("  MAC address      : " + unparseMAC(config.getMAC()));
+        System.out.println("  IP address       : " + unparseIP( config.getIP()));
+        System.out.println("  network mask     : " + unparseIP( config.getMask()));
+        System.out.println("  standard gateway : " + unparseIP( config.getGW()));
+        System.out.println("  used port        : " + config.getPort());
 
+        // start parser and 
         System.out.println();
         System.out.println("starting parser");
-        Board board = new Parser2(config).parse(mhs);
+        Board board = new Parser2(config).parse(schemaFile);
         System.out.println("parser finished");
-        System.out.println("got the following board: " + board.toString());
+        System.out.println("  DEBUG: got the following board: " + board.toString());
         
         // instantiate and run generator with this configuration
         System.out.println();
@@ -140,15 +156,58 @@ public class Main {
         // go through all parameters
         for(int i = 0; i < args.length; i++) {
 
-            // SCHEMANAME flags
-            if(args[i].equals("-n") || args[i].equals("--name")) {
-                
+            // MAC flag
+            if(args[i].equals("--mac")) {
                 if(i + 1 >= args.length) {
                     System.err.println("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
-//                config.setName(args[++i]);
+                config.setMac(args[++i].split(":"));
                 
+            // IP Address related flags
+            } else if(args[i].equals("--ip")) {
+                if(i + 1 >= args.length) {
+                    System.err.println("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                config.setIP(args[++i].split("[.]"));
+            } else if(args[i].equals("--mask")) {
+                if(i + 1 >= args.length) {
+                    System.err.println("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                config.setMask(args[++i].split("[.]"));
+            } else if(args[i].equals("--gw")) {
+                if(i + 1 >= args.length) {
+                    System.err.println("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                config.setGW(args[++i].split("[.]"));
+            } else if(args[i].equals("--port")) {
+                if(i + 1 >= args.length) {
+                    System.err.println("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                try {
+                    int port = Integer.valueOf(args[++i]);
+                    if(port < 0) throw new NumberFormatException();
+                    config.setPort(port);
+                } catch(NumberFormatException e) {
+                    throw new IllegalArgumentException("invalid value for port. Has to be an integer >= 0");
+                }
+            // DEBUG flag
+            } else if(args[i].equals("--debug")) {
+                config.enableDebug();
+                
+                // SCHEMANAME flags
+            } else if(args[i].equals("-n") || args[i].equals("--name")) {
+                    
+                if(i + 1 >= args.length) {
+                    System.err.println("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+//              config.setName(args[++i]);
+  
             // DESTDIR flags
             } else if(args[i].equals("-d") || args[i].equals("--dest")) {
                 
@@ -158,15 +217,6 @@ public class Main {
                 }
                 config.setDestDir(new File(args[++i]));
             
-            // PACKAGE flags
-            } else if(args[i].equals("-p") || args[i].equals("--package")) {
-                
-                if(i + 1 >= args.length) {
-                    System.err.println("no argument left for "+args[i]);
-                    throw new ExecutionFailed();
-                }
-//                config.setPackageName(args[++i]);
-            
             // usage help
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 showUsage();
@@ -175,5 +225,12 @@ public class Main {
         }
         
         return remaining.toArray(new String[0]);
+    }
+    
+    private String unparseIP(int[] ip) {
+        return java.util.Arrays.toString(ip).replace(", ", ".").replace("[", "").replace("]", "");
+    }
+    private String unparseMAC(String[] ip) {
+        return java.util.Arrays.toString(ip).replace(", ", ":").replace("[", "").replace("]", "");
     }
 }

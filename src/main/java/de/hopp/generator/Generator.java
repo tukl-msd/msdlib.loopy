@@ -33,7 +33,7 @@ public class Generator {
     }
     
     public void generate() {
-        
+
         // generate the board and host drivers
         System.out.println("  generating board side driver model ...");
         MFileInFile boardDriver = MFileInFile(generateBoardDriver());
@@ -119,7 +119,7 @@ public class Generator {
          * we'll go with a slight mix of the two, focusing on a),
          * but using b) for generation of the init method and necessary definitions 
          */
-        BoardVisitor visit = new BoardVisitor(true);
+        DriverVisitor visit = new DriverVisitor(config);
         visit.visit(board);
         return visit.getFile().replaceName("Driver");
     }
@@ -208,19 +208,5 @@ public class Generator {
                 file1.methods().addAll(file2.methods()),
                 file1.classes().addAll(file2.classes()));
         return file;
-    }
-
-    private static MFileInFile testFile() {
-        MMethod m = MMethod(MModifiers(PRIVATE(), CONSTANT()), MType("int"), "b", MParameters(), MCode(Strings("return myVariable + myVariable2;")));
-        MMethod m2 = MMethod(MModifiers(), MType("int"), "c", MParameters(
-                    MParameter(CONSTREF(), MPointerType(MArrayType(MPointerType(MType("int")), new Integer(5))), "p")
-                ), MCode(Strings("return myVariable;")));
-        MAttribute a = MAttribute(MModifiers(PUBLIC()), MType("int"), "myVariable", MCodeFragment("5"));
-        MAttribute a3 = MAttribute(MModifiers(PUBLIC()), MType("int"), "myVariable3", MCodeFragment("5"));
-        MAttribute a2 = MAttribute(MModifiers(PRIVATE()), MType("int"), "myVariable2", MCodeFragment("5"));
-        MClass c = MClass(MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
-        MFile file = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(a, a2, a3), MMethods(m2, m), MClasses(c));
-        
-        return MFileInFile(file);
     }
 }

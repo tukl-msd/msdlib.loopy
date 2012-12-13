@@ -12,15 +12,16 @@ external int
 Board (Components components)
 
 Component = UART()
-          | ETHERNET_LITE(IP ip, IP mask, IP gw, int port) // Some parameters (ips, port) might be useful.
-          | ETHERNET(IP ip, IP mask, IP gw, int port)      // Cannot get these from .mhs though... specify through config?
-          | PCIE()                         // Probably needs some identifier as well...
+          | ETHERNET_LITE() // Put ip, port, etc. in board or leave it in config?
+          | ETHERNET()      // Cannot get these from .mhs, so they have to be stored in config anyway...
+          | PCIE()          // Probably needs some identifier as well...
           | LEDS()
           | SWITCHES()
           | BUTTONS() 
 
-IP (int, int, int, int)
+// IP (int, int, int, int)
 
-Mode = RAW() | SOCKET()
+// TODO support raw and socket mode??
+//Mode = RAW() | SOCKET()
 
 Components * Component
