@@ -1,6 +1,9 @@
 package de.hopp.generator.unparser;
 
 import static de.hopp.generator.model.Model.*;
+
+import java.util.Comparator;
+
 import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
@@ -113,11 +116,27 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
         
         if(!importLines.isEmpty()) {
+            
             // TODO is this possible / necessary in C? or only ++?
             buffer.append("#ifndef " + name.toUpperCase() + "_H_\n"
                         + "#define " + name.toUpperCase() + "_H_\n");
             
-            for(final MInclude include : importLines)
+            MInclude[] includes = importLines.toArray();
+            java.util.Arrays.sort(includes, new Comparator<MInclude>() {
+                // basically, duplicate includes should not appear, so equality should not occur here
+                public int compare(MInclude o1, MInclude o2) {
+                    // compare the names, if they are unequal return the result
+                    int i = o1.name().compareTo(o2.name());
+                    if(i != 0) return i;
+                    // in case of equal names, compare the include type
+                    if(o1.type().equals(o2.type()))  return 0;
+                    // if they are not equal, print <> includes first
+                    if(o1.type().equals(BRACKETS())) return -1;
+                    return 1;
+                }
+            });
+            
+            for(final MInclude include : includes)
                 buffer.append(include.type().Switch(new MIncludeType.Switch<String, NE>() {
                     public String CaseBRACKETS(BRACKETS term) {
                         return "\n#include <"  + include.name() + ">";

@@ -8,4 +8,11 @@ src-gen
 lib/MHS.jar
 target
 build
-
+doc/tex/*.aux
+doc/tex/*.bak
+doc/tex/*.bbl
+doc/tex/*.blg
+doc/tex/*.log
+doc/tex/*.out
+doc/tex/*.synctex.gz
+doc/tex/*.toc
