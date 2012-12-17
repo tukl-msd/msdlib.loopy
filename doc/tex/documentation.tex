@@ -1,10 +1,10 @@
-\documentclass{article}
+\documentclass{report}
 
 \usepackage{graphicx}
 \usepackage[utf8]{inputenc}
 \usepackage[english,german]{babel}
 \usepackage[pdftex, pdfborder={0 0 0}]{hyperref}
-%\usepackage[nameinlink]{tex}
+\usepackage[nameinlink]{cleveref}
 %\usepackage{alltt}
 %\usepackage{multirow}
 %\usepackage{rotating}
@@ -51,6 +51,7 @@
   keywords={element, attribute, assert, exists, not exists, size, count, sum, tally, insert, update, delete, if, then, else, fi, at, to, using},
   comment=[l]{//},morecomment=[n]{/*}{*/}
 }
+
 \lstset{
    %language=katja,
    basicstyle=\footnotesize,
@@ -64,6 +65,8 @@
 \clubpenalty=300
 
 \begin{document}
+
+\selectlanguage{english}
 \title{HOPP Driver Generator Documentation}
 \author{Thomas Fischer}
 \date{\today}
@@ -76,32 +79,125 @@
 \thispagestyle{empty}
 \newpage
 
-\section{Introduction}
+\chapter{Introduction}
+This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. Users can find an easy to understand explanation of the generator as well as usage examples in \Cref{sec:userDoc}. Developers and other interested readers can find details about the architecture and implementation of the generator in \Cref{sec:devDoc}.
 Here be an introduction to the system \cite{fischer12}.
 
-\section{User-Documentation}
+%define scope of the generator
+The HOPP Driver Generator is intended to provide embedded system developers %that's kinda vague
+with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
 
-\section{Developer-Documentation}
+\chapter{User-Documentation}
+\label{sec:userDoc}
 
-\subsection{Overview}
 
-\subsubsection{JFlex \& Cup}
+\section{Command Line Interface}
+The HOPP Driver Generator can be called using the command line interface (CLI). While the tool generates C/C++ code, it is written in Java and therefore requires an installation of Java 6 or above. The CLI offers several parameters to futher configure the run of the generator.
 
-\subsubsection{Katja}
+\begin{table}
+\centering
+\begin{tabular}{ cc | p{9cm} }
+-d & --dest & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
+& --debug & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
+-h & --help & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.
+\end{tabular}
+\end{table}
 
-\subsection{Generation Backend}
+Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like \texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.
 
-\subsubsection{CModel}
+\section{Resulting Artifacts}
+The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
 
-\subsubsection{Unparser}
+\subsection{Board Part}
+For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
+
+\subsection{Client Part}
+The client side currently also consists only of a header and a plain c source file. These files can be imported in any client side projects and be used to wrap communication. Currently, it is only possible to set the LEDs of the board.
+
+\chapter{Developer-Documentation}
+\label{sec:devDoc}
+This section is addressed to future developers of the Driver Generator and describe the architecture and implementation of the generator itself.
+
+\section{Overview}
+
+
+
+\subsection{JFlex \& Cup}
+This can be kept short with a reference to the JFlex/Cup documentation
+
+\subsection{Katja}
+The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the C/C++ language described in detail in \Cref{sec:cmodel}.
+
+\section{Generation Backend}
+This section is used to introduce the C generation backend. A reference to the third Katja report might be useful.
+
+\subsection{CModel}
+\label{sec:cmodel}
+The c model provides data types representing a c/c++ program. Note, that the model is neither complete nor always valid, i.e. not all c programs can be described using this model and it is possible to specify a model not translating into valid c. Still, the model simplifies the process of code generation. The model is used for generating C as well as C++ code.
+
+\begin{lstlisting}[language=java, breaklines=true]
+MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
+MClass ( MModifiers modifiers, String name, MTypes extend, 
+	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
+MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE()
+\end{lstlisting}
+
+First of all, each file has a name. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes.
+The allowed modifiers are private, public, constant, static, and inline. Note, that not all of these modifiers are class modifiers, and several combinations of modifiers are invalid (e.g. private and public). The model relies on the developer to choose modifiers according to the modified program part.
+
+\begin{lstlisting}[language=java, breaklines=true]
+MDefinition ( String name, String value)
+MStruct ( MModifiers modifiers, String name, MAttributes attributes )
+MEnum   ( MModifiers modifiers, String name, Strings values )
+\end{lstlisting}
+
+Definitions, structs and enums mark rather trivial tuple productions. A definition simply assigns a name to a value. %something about structs
+Enums list a number of possible values.
+
+\begin{lstlisting}[language=java, breaklines=true]
+MAttribute ( MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
+MCodeFragment ( String part, MIncludes needed )
+\end{lstlisting}
+
+Attributes are similar to definitions, but are typed and may also be left unassigned, using an empty code fragment. The \texttt{MIncludes} is required if the type of the attribute is not defined within this c file itself.
+
+\begin{lstlisting}[language=java, breaklines=true]
+MMethod ( MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, MCode body )
+MParameter ( MParamType refType, MAnyType type, String name )
+MReturnType = MAnyType | MVoid()     | MNone()
+MParamType  = VALUE()  | REFERENCE() | CONSTREF()
+MCode ( Strings lines, MIncludes needed )
+\end{lstlisting}
+
+Methods have a return type and a list of parameters. The method body is also more complex than a simple code fragment and can consist of several lines, which are not checked any further in this model. The return type can be any c type as well as void. For constructors in c++, the return type \texttt{MNone} is used. Parameters also have a type and name. Furthermore, the mode of parameter passing has to be specified.
+
+\begin{lstlisting}[language=java, breaklines=true]
+MAnyType = MType             ( String name )
+         | MArrayType        ( MAnyType type, Integer length )
+         | MPointerType      ( MAnyType type )
+         | MConstPointerType ( MAnyType type )
+\end{lstlisting}
+
+The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing c type, e.g. "int" or "struct student". This type can then be extended using pointer or array types. So \texttt{MarrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in C. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
+
+\subsection{Unparser}
+Explain the unparser of the model. Shouldn't be TOO involved.
 
 \paragraph{Header Unparser}
+The header unparser is used for both, unparsing C as well as C++ code. Consequently, it doesn't filter any constructs, but accepts everything specifiable with the model.
+
+This unparser generates only signatures for all methods and only the declarations of attributes and enums. However, the header file will contain all includes referenced within the model.
 
 \paragraph{Plain C Unparser}
+Since plain C doesn't have any concept of classes, using a model with classes in this unparser will result in exceptions. Otherwise, all components and combinations are accepted. The source file will only import the corresponding header file, no other headers or sourcefiles.
 
 \paragraph{C++ Unparser}
+For the C++ unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
 
-\subsection{Transformation}
+\section{Transformation}
+Explain the transformation of the source file into the c model. Maybe also explain the generated code??
+
+\addtocontents{toc}{\protect\vspace*{\fill}}
 
 \newpage
 \pagestyle{empty}
