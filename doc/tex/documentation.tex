@@ -27,10 +27,17 @@
 \pgfdeclarelayer{foreground}
 \pgfsetlayers{background,main,foreground}
 
-\tikzstyle{group}=[inner sep=10pt,draw=gray, very thick, dotted, rounded corners=4pt]
-\tikzstyle{arr}=[->, >=stealth', thick, shorten <=0.2mm, shorten >=0.2mm,gray]
+% boxes
+\tikzstyle{class}=[draw, text width=8em, minimum height=2.5em, text centered]
 \tikzstyle{tool}= [draw, text width=8em, minimum height=2.5em, text centered, draw=RoyalBlue, fill=blue!15 ]
 \tikzstyle{file} = [draw, text width=8em, minimum height=2.5em, text centered, draw=ForestGreen, fill=light-green, rounded corners]
+\tikzstyle{group}=[inner sep=10pt,draw=gray, very thick, dotted, rounded corners=4pt]
+
+% arrows
+\tikzstyle{arr}=[->, >=stealth', thick, shorten <=0.2mm, shorten >=0.2mm,gray]
+\tikzstyle{aggregate}=[arr, >=diamond]
+
+%others
 \tikzstyle{ann} = [above, text width=5em, text centered]
 
 \lstset{literate=%
@@ -99,6 +106,10 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \begin{tabular}{ cc | p{9cm} }
 -d & --dest & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
 & --debug & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
+& --mac & used to set the mac address of a possible Ethernet interface of the board. Notation: XX:XX:XX:XX:XX:XX, where each X marks a hexadecimal number (allowing lower as well as upper cases).\\
+& --ip & used to set the ip address of a possible Ethernet interface of the board. Notation: X.X.X.X, where each X marks a decimal number ranging from 0 to 255. The same notation is required for the following two parameters.\\
+& --mask & used to set the network mask of a possible Ethernet interface of the board.\\
+& --gw & used to set the standard gateway of a possible Ethernet interface of the board. \color{red}{Note that these four parameters are only contemporary and will be replaced by the new board description language (I hope).}\\ \hline
 -h & --help & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.
 \end{tabular}
 \end{table}
@@ -112,21 +123,106 @@ The output of the generator consists of two groups of files. The first group con
 For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
 
 \subsection{Client Part}
-The client side currently also consists only of a header and a plain c source file. These files can be imported in any client side projects and be used to wrap communication. Currently, it is only possible to set the LEDs of the board.
+The client side currently consists only of a header and a plain c source file as well. These files can be imported in any client side project and be used to wrap communication. Currently, it is only possible to set the LEDs of the board.
+
+\section{API}
+%why not do all this stuff statically? Can there be more than one? When the driver has been generated for this specific board?? Or should I do the configuration more dynamically??
+%Question: more general classes and then instantiate at runtime? Or should I provide concrete classes with fixed methods extending the general classes? 
+%While the first one would probably be more flexible and also allow relatively easy modifications of the driver without rebuilding, the latter provides more type safety, since the more generic methods taking parameters (like the internal port identifier or memory address to write to) can be completely hidden from the user. I prefer the latter one... (which would probably again underline possibility of a more model...
+
+\subsection{Component}
+For each port on the component, a method returning the corresponding port object will be generated.
+
+\subsection{Port}
+A port object contains methods for receiving or sending data, depending on the type of the port. Naturally, receiving ports only contain methods for receiving data and sending ports only for sending. Dual ports contain the methods of both. Ports are restricted to a specific data type, i.e. bitwidth.
 
 \chapter{Developer-Documentation}
 \label{sec:devDoc}
-This section is addressed to future developers of the Driver Generator and describe the architecture and implementation of the generator itself.
+This section is addressed to future developers of the Driver Generator and describes the architecture and implementation of the generator itself.
 
 \section{Overview}
-
-
 
 \subsection{JFlex \& Cup}
 This can be kept short with a reference to the JFlex/Cup documentation
 
 \subsection{Katja}
 The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the C/C++ language described in detail in \Cref{sec:cmodel}.
+
+\section{Architecture}
+The overall idea of the driver generator is described by \Cref{fig:process}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs all required header- and source files.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+\node[tool] (gen) at (0,0) {Generator};
+
+\node[file, above=1cm] (ast) at (gen) {Board AST};
+\node[tool, above=1cm] (parser) at (ast) {Parser};
+\node[file, above=1cm] (mhs) at (parser) {.mhs file};
+
+%make filegroups out of these... yes, it's not trivial ;)
+\node[file, below left = 1.5cm and 0cm of gen] (boardh) {Board.h};
+\node[file, below right = 1.5cm and 0cm of gen] (hosth) {Host.h};
+
+\node[file, below=1cm] (boardc) at (boardh) {Board.c};
+\node[file, below=1cm] (hostc) at (hosth) {Host.c};
+
+\node[group, fit=(boardh) (boardc), label={95:board side}] (board) {};
+\node[group, fit=(hosth) (hostc), label={75:host side}] (host) {};
+
+\draw[arr] (mhs) to node[auto] {input} (parser);
+\draw[arr] (parser) to node[auto] {generates} (ast);
+\draw[arr] (ast) to node[auto] {input} (gen);
+\draw[arr] (gen) to node[left] {generates} (board);
+\draw[arr] (gen) to node[right] {generates} (host);
+
+\draw[arr, <->] (board) to node[below] {communicates} (host);
+\end{tikzpicture}
+\caption{A rough sketch of the translation process so far}
+\label{fig:process}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+\node[class] (component) at (0,0) {Component};
+\node[class, below left=2.5cm and 1.5cm] (interface) at (component) {Interface};
+\node[class, below right=2.5cm and 1.5cm] (port) at (component) {Port};
+
+\node[above=8em] (anchor1) at (interface) {};
+\node[above=8em] (anchor2) at (port) {};
+
+\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor1);
+\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor2);
+
+\draw[aggregate, shorten <= -0.35em] (anchor1) to node[auto] {} (component);
+\draw[aggregate, shorten <= -0.35em] (anchor2) to node[auto] {} (component);
+
+\node[ann, above left = 0em and 3.25em] (arr1) at (component) {1};
+\node[ann, above right = 0em and 3.25em] (arr2) at (component) {1};
+
+\node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
+\node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
+
+\end{tikzpicture}
+\caption{Architecture of the host part (to come)}
+\label{fig:archHost}
+\end{figure}
+
+The (intended) architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
+
+\subsection{Component}
+A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. date is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.
+
+These components are described using VHDL. Such VHDL definitions can then be referenced in the board description language provided by the HOPP Driver Generator. The VHDL files are parsed and translated into components with corresponding ports as defined within the files.
+
+\subsection{Port}
+Ports are used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or dual ports. They can have an arbitrary bitwidth. Since the bitwidth of the microblaze as well as the arm processor is limited to 32-bit, the port class has to split greater bitwidths in several 32-bit packages, but hide this process from the user. The encoding format, i.e. order of bits, also is hidden from the user.
+
+\subsection{Communication Interface}
+The communication interface is hidden from the user. Each component has exactly one such interface and a communication interface has to be attached to a component. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical interface and provides a homogeneous api for components and ports. Network interface specific initialization is generated as well and is not required by the user (other than annotating configuration details in the board description).
 
 \section{Generation Backend}
 This section is used to introduce the C generation backend. A reference to the third Katja report might be useful.
@@ -181,7 +277,7 @@ MAnyType = MType             ( String name )
 The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing c type, e.g. "int" or "struct student". This type can then be extended using pointer or array types. So \texttt{MarrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in C. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
 
 \subsection{Unparser}
-Explain the unparser of the model. Shouldn't be TOO involved.
+Different unparsers are used, to translate the C model in actual code. For each instance of the model, a header file and a corresponding source file, either C or C++, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain C, files intended for the client side can also be C++ files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
 
 \paragraph{Header Unparser}
 The header unparser is used for both, unparsing C as well as C++ code. Consequently, it doesn't filter any constructs, but accepts everything specifiable with the model.
