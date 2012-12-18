@@ -54,10 +54,12 @@
 }
 
 %listing languages
-\lstdefinelanguage{xcend}{
-  keywords={element, attribute, assert, exists, not exists, size, count, sum, tally, insert, update, delete, if, then, else, fi, at, to, using},
-  comment=[l]{//},morecomment=[n]{/*}{*/}
-}
+%\lstdefinelanguage{xcend}{
+%  keywords={element, attribute, assert, exists, not exists, size, count, sum, tally, insert, update, delete, if, then, else, fi, at, to, %using},
+%  comment=[l]{//},morecomment=[n]{/*}{*/}
+%}
+
+%\lstdefinelanguage{java}{backgroundcolor=\color{light-green}}
 
 \lstset{
    %language=katja,
@@ -68,8 +70,10 @@
 }
 
 \renewcommand\arraystretch{1.2}
-\widowpenalty=300
-\clubpenalty=300
+
+\brokenpenalty=1000
+\widowpenalty=1000
+\clubpenalty=1000
 
 \begin{document}
 
@@ -99,19 +103,23 @@ with a simple, convenient interface to communicate with their designed hardware 
 
 
 \section{Command Line Interface}
-The HOPP Driver Generator can be called using the command line interface (CLI). While the tool generates C/C++ code, it is written in Java and therefore requires an installation of Java 6 or above. The CLI offers several parameters to futher configure the run of the generator.
+The HOPP Driver Generator can be called using the command line interface (CLI). While the tool generates C/C++ code, it is written in Java and therefore requires an installation of Java 6 or above. The CLI offers several parameters to futher configure the run of the generator, listed in \Cref{tab:cliParams}.
 
 \begin{table}
 \centering
-\begin{tabular}{ cc | p{9cm} }
--d & --dest & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
-& --debug & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
-& --mac & used to set the mac address of a possible Ethernet interface of the board. Notation: XX:XX:XX:XX:XX:XX, where each X marks a hexadecimal number (allowing lower as well as upper cases).\\
-& --ip & used to set the ip address of a possible Ethernet interface of the board. Notation: X.X.X.X, where each X marks a decimal number ranging from 0 to 255. The same notation is required for the following two parameters.\\
-& --mask & used to set the network mask of a possible Ethernet interface of the board.\\
-& --gw & used to set the standard gateway of a possible Ethernet interface of the board. \color{red}{Note that these four parameters are only contemporary and will be replaced by the new board description language (I hope).}\\ \hline
--h & --help & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.
+\begin{tabular}{ ll | p{9cm} } 
+\hline
+\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
+& \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
+& \verb!--mac! & used to set the mac address of a possible Ethernet interface of the board. Notation: XX:XX:XX:XX:XX:XX, where each X marks a hexadecimal number (allowing lower as well as upper cases).\\
+& \verb!--ip! & used to set the ip address of a possible Ethernet interface of the board. Notation: X.X.X.X, where each X marks a decimal number ranging from 0 to 255. The same notation is required for the following two parameters.\\
+& \verb!--mask! & used to set the network mask of a possible Ethernet interface of the board.\\
+& \verb!--gw! & used to set the standard gateway of a possible Ethernet interface of the board.\\
+& \verb!--port! & used to set the communication port of a possible Ethernet interface of the board. \color{red}{Note that these five parameters are only contemporary and will be replaced by the new board description language (I hope).}\\ \hline
+\verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
 \end{tabular}
+\label{tab:cliParams}
+\caption{summary of currently possible CLI parameters}
 \end{table}
 
 Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like \texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.
@@ -216,13 +224,23 @@ The (intended) architecture of the host software is depicted in \Cref{fig:archHo
 \subsection{Component}
 A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. date is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.
 
-These components are described using VHDL. Such VHDL definitions can then be referenced in the board description language provided by the HOPP Driver Generator. The VHDL files are parsed and translated into components with corresponding ports as defined within the files.
+Components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. They are parsed and translated into corresponding software components with ports as defined in VHDL.
 
 \subsection{Port}
 Ports are used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or dual ports. They can have an arbitrary bitwidth. Since the bitwidth of the microblaze as well as the arm processor is limited to 32-bit, the port class has to split greater bitwidths in several 32-bit packages, but hide this process from the user. The encoding format, i.e. order of bits, also is hidden from the user.
 
 \subsection{Communication Interface}
-The communication interface is hidden from the user. Each component has exactly one such interface and a communication interface has to be attached to a component. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical interface and provides a homogeneous api for components and ports. Network interface specific initialization is generated as well and is not required by the user (other than annotating configuration details in the board description).
+The communication interface is hidden from the user. Each component has exactly one such interface and a communication interface has to be attached to a component. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical network interface and provides a homogeneous api for components and ports. Network interface specific initialization is generated as well and is not required by the user (other than annotating configuration details in the board description).
+
+Currently, three communication interfaces are envisioned:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{Ethernet}, which is already implemented
+\item \textbf{USB/UART}, which is considered as second interface and
+\item \textbf{PCIE}, which will not be implemented in the initial driver generator.
+\end{itemize}
+
+\paragraph{Ethernet}
+Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{For documentation, a wiki exists for the lwip stack at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
 
 \section{Generation Backend}
 This section is used to introduce the C generation backend. A reference to the third Katja report might be useful.
@@ -233,9 +251,12 @@ The c model provides data types representing a c/c++ program. Note, that the mod
 
 \begin{lstlisting}[language=java, breaklines=true]
 MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
+
 MClass ( MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
+
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE()
+// this is a comment
 \end{lstlisting}
 
 First of all, each file has a name. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes.
@@ -259,9 +280,12 @@ Attributes are similar to definitions, but are typed and may also be left unassi
 
 \begin{lstlisting}[language=java, breaklines=true]
 MMethod ( MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, MCode body )
+
+MReturnType = MAnyType | MVoid() | MNone()
+
 MParameter ( MParamType refType, MAnyType type, String name )
-MReturnType = MAnyType | MVoid()     | MNone()
-MParamType  = VALUE()  | REFERENCE() | CONSTREF()
+MParamType  = VALUE() | REFERENCE() | CONSTREF()
+
 MCode ( Strings lines, MIncludes needed )
 \end{lstlisting}
 
@@ -274,7 +298,7 @@ MAnyType = MType             ( String name )
          | MConstPointerType ( MAnyType type )
 \end{lstlisting}
 
-The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing c type, e.g. "int" or "struct student". This type can then be extended using pointer or array types. So \texttt{MarrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in C. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
+The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing c type, e.g. "int" or "struct student". This type can then be extended using pointer or array types. So \texttt{MArrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in C. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
 
 \subsection{Unparser}
 Different unparsers are used, to translate the C model in actual code. For each instance of the model, a header file and a corresponding source file, either C or C++, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain C, files intended for the client side can also be C++ files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
