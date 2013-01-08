@@ -153,6 +153,8 @@ This section should provide the user with a conceptual overview of the client pa
 After downloading and setting up doxygen, you can generate the API for your specific driver using the command \texttt{doxygen config.cfg} in either the client or server folder (which will generate the client or server documentation respectively). These config files are generated together with the c code.
 As a result, a \texttt{doc} folder containing both html and tex descriptions will be generated.
 
+\subsection{Overview}
+
 \subsection{Component}
 For each port on the component, a method returning the corresponding port object will be generated.
 
@@ -184,15 +186,17 @@ The overall idea of the driver generator is described by \Cref{fig:process}. The
 \node[tool, above=1cm] (parser) at (ast) {Parser};
 \node[file, above=1cm] (mhs) at (parser) {.mhs file};
 
-%make filegroups out of these... yes, it's not trivial ;)
-\node[file, below left = 1.5cm and 0cm of gen] (boardh) {Board.h};
-\node[file, below right = 1.5cm and 0cm of gen] (hosth) {Host.h};
+%TODO there is probably a better way to draw this with tikz - but there always is a better way ;)
+\node[file, below left = 1.5cm and 0cm of gen] (board3) {};
+\node[file, above right = -2.8em and -9em of board3] (board2) {};
+\node[file, above right = -2.8em and -9em of board2] (board1) {board files};
 
-\node[file, below=1cm] (boardc) at (boardh) {Board.c};
-\node[file, below=1cm] (hostc) at (hosth) {Host.c};
+\node[file, below right = 1.5cm and 0cm of gen] (host3) {};
+\node[file, above right = -2.8em and -9em of host3] (host2) {};
+\node[file, above right = -2.8em and -9em of host2] (host1) {host files};
 
-\node[group, fit=(boardh) (boardc), label={95:board side}] (board) {};
-\node[group, fit=(hosth) (hostc), label={75:host side}] (host) {};
+\node[group, fit=(board1) (board2) (board3), label={95:board side}] (board) {};
+\node[group, fit=(host1) (host2) (host3), label={75:host side}] (host) {};
 
 \draw[arr] (mhs) to node[auto] {input} (parser);
 \draw[arr] (parser) to node[auto] {generates} (ast);
@@ -200,7 +204,7 @@ The overall idea of the driver generator is described by \Cref{fig:process}. The
 \draw[arr] (gen) to node[left] {generates} (board);
 \draw[arr] (gen) to node[right] {generates} (host);
 
-\draw[arr, <->] (board) to node[below] {communicates} (host);
+\draw[arr, <->] (board) to node[below] {communicate} (host);
 \end{tikzpicture}
 \caption{A rough sketch of the translation process so far}
 \label{fig:process}
@@ -217,17 +221,17 @@ The overall idea of the driver generator is described by \Cref{fig:process}. The
 \node[above=6em] (anchor_comp_if) at (interface) {};
 \node[above=6em] (anchor_comp_port) at (port) {};
 
-\node[class, below=9em] (uart) at (interface) {USB/UART};
-\node[class, left=4em] (ethernet) at (uart) {Ethernet};
-\node[class, right=4em] (pcie) at (uart) {PCIE};
+\node[class, gray, below=9em] (uart) at (interface) {USB/UART};
+\node[class, gray, left=4em] (ethernet) at (uart) {Ethernet};
+\node[class, gray, right=4em] (pcie) at (uart) {PCIE};
 
 \node[above=2em] (anchor_ethernet) at (ethernet) {};
 \node[above=2em] (anchor_uart) at (uart) {};
 \node[above=2em] (anchor_pcie) at (pcie) {};
 
-\node[class, below left=4em and 0.5em] (in) at (port) {IN};
-\node[class, below right=4em and 0.5em] (out) at (port) {OUT};
-\node[class, below=9em] (dual) at (port) {DUAL};
+\node[class, gray, below left=4em and 0.5em] (in) at (port) {IN};
+\node[class, gray, below right=4em and 0.5em] (out) at (port) {OUT};
+\node[class, gray, below=9em] (dual) at (port) {DUAL};
 
 \node[below=2.75em] (anchor_port) at (port) {};
 \node[above=1.75em] (anchor_in_a) at (in) {};
@@ -265,7 +269,7 @@ The overall idea of the driver generator is described by \Cref{fig:process}. The
 \draw[extend, shorten <= -0.4em] (anchor_out_b) to node[auto] {} (out);
 
 \end{tikzpicture}
-\caption{Architecture of the host part (to come)}
+\caption{Architecture of the host part \textcolor{red}{(to come)}}
 \label{fig:archHost}
 \end{figure}
 
@@ -320,7 +324,12 @@ Currently, three communication interfaces are envisioned:
 \end{itemize}
 
 \paragraph{Ethernet}
-Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{For documentation, a wiki exists for the lwip stack at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
+Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
+
+\textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
+
+\section{Transformation}
+\textcolor{red}{Explain the transformation of the source file into the c model (and what files, classes and methods exactly are generated).}
 
 \section{Generation Backend}
 This section is used to introduce the C generation backend. \textcolor{red}{A reference to the third Katja report might be useful.}
@@ -332,34 +341,33 @@ The c model provides data types representing a c/c++ program. Note, that the mod
 \begin{lstlisting}[language=java, breaklines=true]
 MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
 
-MClass ( MModifiers modifiers, String name, MTypes extend, 
+MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE()
-// this is a comment
 \end{lstlisting}
 
-First of all, each file has a name. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes.
+First of all, each file has a name. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes. Classes also can be documented using an \texttt{MDocumentation} element.
 The allowed modifiers are private, public, constant, static, and inline. Note, that not all of these modifiers are class modifiers, and several combinations of modifiers are invalid (e.g. private and public). The model relies on the developer to choose modifiers according to the modified program part.
 
 \begin{lstlisting}[language=java, breaklines=true]
-MDefinition ( String name, String value)
-MStruct ( MModifiers modifiers, String name, MAttributes attributes )
-MEnum   ( MModifiers modifiers, String name, Strings values )
+MDefinition ( MDocumentation doc, String name, String value)
+MStruct ( MDocumentation doc, MModifiers modifiers, String name, MAttributes attributes )
+MEnum   ( MDocumentation doc, MModifiers modifiers, String name, Strings values )
 \end{lstlisting}
 
 Definitions, structs and enums mark rather trivial tuple productions. A definition simply assigns a name to a value. %something about structs
-Enums list a number of possible values.
+Enums list a number of possible values. All three can be documented.
 
 \begin{lstlisting}[language=java, breaklines=true]
-MAttribute ( MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
+MAttribute ( MDocumentation doc, MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
 MCodeFragment ( String part, MIncludes needed )
 \end{lstlisting}
 
-Attributes are similar to definitions, but are typed and may also be left unassigned, using an empty code fragment. The \texttt{MIncludes} is required if the type of the attribute is not defined within this c file itself.
+Attributes are similar to definitions, but are typed and may also be left unassigned, using an empty code fragment. The \texttt{MIncludes} is required if the type of the attribute is not defined within this c file itself. They also can be documented.
 
 \begin{lstlisting}[language=java, breaklines=true]
-MMethod ( MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, MCode body )
+MMethod ( MDocumentation doc, MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, MCode body )
 
 MReturnType = MAnyType | MVoid() | MNone()
 
@@ -380,6 +388,18 @@ MAnyType = MType             ( String name )
 
 The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing c type, e.g. "int" or "struct student". This type can then be extended using pointer or array types. So \texttt{MArrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in C. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
 
+\begin{lstlisting}[language=java, breaklines=true]
+MDocumentation ( Strings doc, MTags tags )
+
+MTag = PARAM      ( String name, Strings details )
+     | RETURN     ( Strings details )
+     | THROWS     ( String type, Strings details )
+     | DEPRECATED ( Strings details ) 
+     | SEE        ( String see )
+\end{lstlisting}
+
+For generation of the API, Javadoc style documentation has to be added to the model. A \texttt{MDocumentation} element contains documentation for the following block as well as possibly several tags. Tags can be parameter or return value descriptions of a method/procedure, descriptions for exception behaviour, deprecation descriptions or references to other elements of the code. Since neither the driver generator nor doxygen perform sanity checks, we rely on the user to only introduce meaningful tags for a documentation element. note, that the \texttt{JAVADOC\_AUTOBRIEF} option is set in the generated doxygen config files, resulting in the first sentence (concluded by a dot and following space or newline) will be used as short description for the documented program part.
+
 \subsection{Unparser}
 Different unparsers are used, to translate the C model in actual code. For each instance of the model, a header file and a corresponding source file, either C or C++, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain C, files intended for the client side can also be C++ files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
 
@@ -393,9 +413,6 @@ Since plain C doesn't have any concept of classes, using a model with classes in
 
 \paragraph{C++ Unparser}
 For the C++ unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
-
-\section{Transformation}
-\textcolor{red}{Explain the transformation of the source file into the c model.}
 
 \addtocontents{toc}{\protect\vspace*{\fill}}
 
