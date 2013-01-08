@@ -47,6 +47,9 @@ public class CUnparser extends HUnparser {
         // import the header file
         buffer.append("#include \"" + name + ".h\"\n");
         
+        // include file to documentation
+        buffer.append("/** @file */\n");
+        
         // unparse components
         visit(file.defs());
         visit(file.structs());
@@ -101,6 +104,7 @@ public class CUnparser extends HUnparser {
     
     @Override
     public void visit(MStructInFile struct) throws InvalidConstruct {
+        visit(struct.doc());
         buffer.append("struct " + struct.name().term() + " {\n");
         buffer.indent();
         
@@ -113,6 +117,7 @@ public class CUnparser extends HUnparser {
 
     @Override
     public void visit(MEnumInFile mEnum) throws InvalidConstruct {
+        visit(mEnum.doc());
         buffer.append("enum " + mEnum.name().term() + " { ");
         if(mEnum.size() > 0) {
             for(StringInFile value : mEnum.values()) buffer.append(value.term());
@@ -126,6 +131,9 @@ public class CUnparser extends HUnparser {
         
         // start a new line for the attribute
         buffer.append('\n');
+        
+        // append documentation
+//        visit(attribute.doc());
         
         // set the type declaration to the attribute name
         typeDecl = attribute.name().term();
@@ -154,6 +162,9 @@ public class CUnparser extends HUnparser {
         
         buffer.append('\n');
         
+        // append documentation
+        visit(method.doc());
+        
         // append keywords if appropriate
         if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
         if(method.parent().parent() instanceof MFileInFile
@@ -179,7 +190,7 @@ public class CUnparser extends HUnparser {
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
         // should never go here
-        
+        visit(mclass.doc());
         visit(mclass.structs());
         visit(mclass.enums());
         visit(mclass.attributes());

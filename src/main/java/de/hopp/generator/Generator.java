@@ -73,7 +73,7 @@ public class Generator {
                     
                     // generate method to set LED register
                     MMethod setLEDs = MMethod(
-                            MModifiers(), MVoid(), "setLEDs", MParameters(
+                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
                                 MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
                             ), MCode(
                                 Strings(
@@ -83,7 +83,7 @@ public class Generator {
                     
                     // generate method to read LED register
                     MMethod getLEDs = MMethod(
-                            MModifiers(), MVoid(), "setLEDs", MParameters(
+                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
                                 MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
                             ), MCode(
                                 Strings(

@@ -34,7 +34,7 @@ external Integer
 // file and class model
 
 MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
-MClass ( MModifiers modifiers, String name, MTypes extend, 
+MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't know if more are required
 // modifiers obviously allow invalid combinations. We rely on the programmer to refrain from using these
@@ -42,23 +42,21 @@ MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't kno
 
 // struct and enum model
 
-MDefinition ( String name, String value)
-MStruct ( MModifiers modifiers, String name, MAttributes attributes )
-MEnum   ( MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
+MDefinition ( MDocumentation doc, String name, String value )
+MStruct     ( MDocumentation doc, MModifiers modifiers, String name, MAttributes attributes )
+MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
                                                               // --> MValue(String name, String value), MValues * MValue
 
 
 // attribute model
 
-MAttribute ( MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
+MAttribute ( MDocumentation doc, MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
 MCodeFragment ( String part, MIncludes needed )
 
 
 // method model
 
-MMethod ( MModifiers modifiers, MReturnType returnType, String name, MParameters parameter,
-          // MTypes exceptions,  // not for now....
-	  MCode body )
+MMethod ( MDocumentation doc, MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, /* MTypes exceptions, */ MCode body )
 MReturnType = MAnyType // note, that this allows array types to be used for return values
             | MVoid()  // however, introducing a new type would be overkill here
             | MNone()  // we rely on the programmer to refrain from creating such types
@@ -70,7 +68,7 @@ MCode ( Strings lines, MIncludes needed )
 
 // type system model
 
-MAnyType = MType ( String name )
+MAnyType = MType ( String name, Strings doc )
 //       | StructType ( String name, Strings importNames ) // can also be done with "usual" type by adding "struct "
 //       | EnumType ( String name, Strings importNames )   // can also be done with "usual" type by adding "enum "
          | MArrayType ( MAnyType type, Integer length )
@@ -80,6 +78,14 @@ MAnyType = MType ( String name )
 MInclude ( String name, MIncludeType type )
 
 MIncludeType = QUOTES() | BRACKETS()// | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
+
+// documentation
+MDocumentation ( Strings doc, MTags tags )
+
+MTag = DEPRECATED( Strings details )
+     | SEE ( String see )
+     | PARAM ( String name, Strings details )
+     | RETURN ( Strings details )
 
 // list types
 
@@ -95,3 +101,4 @@ MMethods            * MMethod
 MParameters         * MParameter
 MTypes              * MType
 MIncludes           * MInclude
+MTags               * MTag

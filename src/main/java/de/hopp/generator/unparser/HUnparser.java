@@ -505,9 +505,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(MTypesInFile types) throws InvalidConstruct {
         for(MTypeInFile type : types) {
             visit(type);
-            if(! type.equals(types.last())) {
-                buffer.append(',');
-            }
+            if(! type.equals(types.last())) buffer.append(',');
         }
     }
 
@@ -538,5 +536,52 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     public void visit(MIncludeInFile term)   { }
     public void visit(QUOTESInFile term)     { }
     public void visit(BRACKETSInFile term)   { }
+
+    // documentation
+    public void visit(MDocumentationInFile doc) throws InvalidConstruct {
+        // if it is an empty documentation block, return
+        if(doc.doc().isEmpty() && doc.tags().isEmpty()) return;
+        
+        // start documentation block
+        buffer.append("/**\n");
+        
+        // append documentation text
+        for(String s : doc.doc().term()) buffer.append(" * " + s + "\n");
+        
+        // append tags, if any
+        visit(doc.tags());
+        
+        // end documentation block
+        buffer.append(" */\n");
+    }
+    public void visit(MTagsInFile tags) throws InvalidConstruct { 
+        for(MTagInFile tag : tags) visit(tag); 
+    }
+    public void visit(DEPRECATEDInFile term) {
+        buffer.append(" * @deprecated\n");
+    }
+    public void visit(SEEInFile term) {
+        buffer.append(" * @see " + term.see().term() + "\n");
+    }
+    public void visit(PARAMInFile term) {
+        // skip empty param documentations
+        if(term.details().isEmpty()) return;
+        
+        buffer.append(" * @param " + term.name().term() + " " + term.details().first().term() + "\n");
+        for(String s : term.details().term().back()) {
+            buffer.append(" *        ");
+            for(int i = 0; i < term.name().term().length(); i++) buffer.append(" ");
+            buffer.append(s + "\n");
+        }
+    }
+    public void visit(RETURNInFile term) {
+        // skip empty return documentations
+        if(term.details().isEmpty()) return;
+        
+        buffer.append(" * @return " + term.details().first().term() + "\n");
+        for(String s : term.details().term().back()) {
+            buffer.append(" *         " + s + "\n");
+        }
+    }
 
 }

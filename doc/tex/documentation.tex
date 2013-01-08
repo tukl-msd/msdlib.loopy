@@ -28,15 +28,15 @@
 \pgfsetlayers{background,main,foreground}
 
 % boxes
-\tikzstyle{class}=[draw, text width=8em, minimum height=2.5em, text centered]
+\tikzstyle{class}=[draw, text width=6em, minimum height=2.5em, text centered]
 \tikzstyle{tool}= [draw, text width=8em, minimum height=2.5em, text centered, draw=RoyalBlue, fill=blue!15 ]
 \tikzstyle{file} = [draw, text width=8em, minimum height=2.5em, text centered, draw=ForestGreen, fill=light-green, rounded corners]
 \tikzstyle{group}=[inner sep=10pt,draw=gray, very thick, dotted, rounded corners=4pt]
 
 % arrows
-\tikzstyle{arr}=[->, >=stealth', thick, shorten <=0.2mm, shorten >=0.2mm,gray]
-\tikzstyle{aggregate}=[arr, >=diamond]
-
+\tikzstyle{arr}=[->, >=stealth', thick, gray, shorten >= 0.2mm]
+\tikzstyle{aggregate}=[arr, >=open diamond]
+\tikzstyle{extend}=[arr, >=open triangle 90]
 %others
 \tikzstyle{ann} = [above, text width=5em, text centered]
 
@@ -92,17 +92,25 @@
 
 \chapter{Introduction}
 This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. Users can find an easy to understand explanation of the generator as well as usage examples in \Cref{sec:userDoc}. Developers and other interested readers can find details about the architecture and implementation of the generator in \Cref{sec:devDoc}.
-Here be an introduction to the system \cite{fischer12}.
 
 %define scope of the generator
 The HOPP Driver Generator is intended to provide embedded system developers %that's kinda vague
 with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
 
+\textcolor{red}{This sentence is just some test for bibliography management...} \cite{fischer12}.
 \chapter{User-Documentation}
 \label{sec:userDoc}
+The purpose of this section is to explain new users how to use the generator as well as interact with the generated drivers.
 
+\section{Getting started}
+This part should contain all steps required in order to run the generator and acquire drivers for the specified board.
 
-\section{Command Line Interface}
+\subsection{Building the project}
+First of all, the project has to be checked out. As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.}
+
+After checking out the project, all sources have to be compiled and packaged. This can be done using the gradle build tool.\footnote{Gradle is available at \url{http://www.gradle.org/}. The command to build a jar package is \texttt{gradle jar}. Simply type it in a terminal in the project root repository, where the file \texttt{build.gradle} is located. Also, JDK 6 or above is required to build the project.} Running the build file will generate an executable jar package under the path \texttt{<project>/build/lib}. Navigate there and try running it using the command \texttt{java -jar <name of the jar package>}.\footnote{This should result in an error, since no .mhs file has been specified.} 
+
+\subsection{Command Line Interface}
 The HOPP Driver Generator can be called using the command line interface (CLI). While the tool generates C/C++ code, it is written in Java and therefore requires an installation of Java 6 or above. The CLI offers several parameters to futher configure the run of the generator, listed in \Cref{tab:cliParams}.
 
 \begin{table}
@@ -118,25 +126,32 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 & \verb!--port! & used to set the communication port of a possible Ethernet interface of the board. \color{red}{Note that these five parameters are only contemporary and will be replaced by the new board description language (I hope).}\\ \hline
 \verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
 \end{tabular}
+\caption{Summary of currently possible CLI parameters}
 \label{tab:cliParams}
-\caption{summary of currently possible CLI parameters}
 \end{table}
 
 Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like \texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.
 
-\section{Resulting Artifacts}
+\subsection{Resulting Artifacts}
 The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
 
-\subsection{Board Part}
+\subsubsection{Board Part}
 For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
 
-\subsection{Client Part}
-The client side currently consists only of a header and a plain c source file as well. These files can be imported in any client side project and be used to wrap communication. Currently, it is only possible to set the LEDs of the board.
+\subsubsection{Client Part}
+The client side consists of several cpp sources and headers files. These files can be imported in any client side project and be used to wrap communication with components on the board.
 
 \section{API}
 %why not do all this stuff statically? Can there be more than one? When the driver has been generated for this specific board?? Or should I do the configuration more dynamically??
 %Question: more general classes and then instantiate at runtime? Or should I provide concrete classes with fixed methods extending the general classes? 
 %While the first one would probably be more flexible and also allow relatively easy modifications of the driver without rebuilding, the latter provides more type safety, since the more generic methods taking parameters (like the internal port identifier or memory address to write to) can be completely hidden from the user. I prefer the latter one... (which would probably again underline possibility of a more model...
+This section should provide the user with a conceptual overview of the client part of the driver (which should be the only piece of software, you get in contact with). For a more detailed documentation of the code and provided methods, Javadoc style comments are provided, which can be transformed into an html or tex representation similar to the Java API using \textit{doxygen}\footnote{\url{www.doxygen.org/}}.
+
+\paragraph{Generating the API}
+\textcolor{red}{Maybe, generate a script to do this (bashscript should suffice... it's a single command) or (even better) include this generation step in a more high level script calling the generator}
+
+After downloading and setting up doxygen, you can generate the API for your specific driver using the command \texttt{doxygen config.cfg} in either the client or server folder (which will generate the client or server documentation respectively). These config files are generated together with the c code.
+As a result, a \texttt{doc} folder containing both html and tex descriptions will be generated.
 
 \subsection{Component}
 For each port on the component, a method returning the corresponding port object will be generated.
@@ -196,28 +211,91 @@ The overall idea of the driver generator is described by \Cref{fig:process}. The
 \begin{tikzpicture}[scale=1, transform shape]
 \coordinate(center);
 \node[class] (component) at (0,0) {Component};
-\node[class, below left=2.5cm and 1.5cm] (interface) at (component) {Interface};
-\node[class, below right=2.5cm and 1.5cm] (port) at (component) {Port};
+\node[class, below left=5em and 6em] (interface) at (component) {Interface};
+\node[class, below right=5em and 6em] (port) at (component) {Port};
 
-\node[above=8em] (anchor1) at (interface) {};
-\node[above=8em] (anchor2) at (port) {};
+\node[above=6em] (anchor_comp_if) at (interface) {};
+\node[above=6em] (anchor_comp_port) at (port) {};
 
-\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor1);
-\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor2);
+\node[class, below=9em] (uart) at (interface) {USB/UART};
+\node[class, left=4em] (ethernet) at (uart) {Ethernet};
+\node[class, right=4em] (pcie) at (uart) {PCIE};
 
-\draw[aggregate, shorten <= -0.35em] (anchor1) to node[auto] {} (component);
-\draw[aggregate, shorten <= -0.35em] (anchor2) to node[auto] {} (component);
+\node[above=2em] (anchor_ethernet) at (ethernet) {};
+\node[above=2em] (anchor_uart) at (uart) {};
+\node[above=2em] (anchor_pcie) at (pcie) {};
 
-\node[ann, above left = 0em and 3.25em] (arr1) at (component) {1};
-\node[ann, above right = 0em and 3.25em] (arr2) at (component) {1};
+\node[class, below left=4em and 0.5em] (in) at (port) {IN};
+\node[class, below right=4em and 0.5em] (out) at (port) {OUT};
+\node[class, below=9em] (dual) at (port) {DUAL};
+
+\node[below=2.75em] (anchor_port) at (port) {};
+\node[above=1.75em] (anchor_in_a) at (in) {};
+\node[above=1.75em] (anchor_out_a) at (out) {};
+
+\node[above=1.75em] (anchor_dual) at (dual) {};
+\node[below=2.5em] (anchor_in_b) at (in) {};
+\node[below=2.5em] (anchor_out_b) at (out) {};
+
+\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor_comp_if);
+\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
+
+\draw[aggregate, shorten <= -0.35em] (anchor_comp_if) to node[auto] {} (component);
+\draw[aggregate, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
+
+\node[ann, above left = 0em and 2.5em] (arr1) at (component) {1};
+\node[ann, above right = 0em and 2.5em] (arr2) at (component) {1};
 
 \node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
 \node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
+
+\draw[arr,-, shorten >= -0.4em] (ethernet) to node[auto] {} (anchor_ethernet);
+\draw[arr,-, shorten >= -0.4em] (pcie) to node[auto] {} (anchor_pcie);
+\draw[arr,-, shorten >= -0.4em, shorten <= -0.4em] (anchor_ethernet) to node[auto] {} (anchor_pcie);
+\draw[extend] (uart) to node[auto] {} (interface);
+
+\draw[arr,-,shorten >= -0.4em] (in) to node[auto] {} (anchor_in_a);
+\draw[arr,-,shorten >= -0.4em] (out) to node[auto] {} (anchor_out_a);
+\draw[arr,-,shorten >= -0.4em, shorten <= -0.4em] (anchor_in_a) to node[auto] {} (anchor_out_a);
+\draw[extend, shorten <= -0.4em] (anchor_port) to node[auto] {} (port);
+
+\draw[arr,-,shorten >= -0.4em] (dual) to node[auto] {} (anchor_dual);
+\draw[arr,-,shorten >= -0.4em, shorten <= -0.4em] (anchor_in_b) to node[auto] {} (anchor_out_b);
+\draw[extend, shorten <= -0.4em] (anchor_in_b) to node[auto] {} (in);
+\draw[extend, shorten <= -0.4em] (anchor_out_b) to node[auto] {} (out);
 
 \end{tikzpicture}
 \caption{Architecture of the host part (to come)}
 \label{fig:archHost}
 \end{figure}
+
+%\begin{figure}
+%\centering
+%\begin{tikzpicture}[scale=1, transform shape]
+%\coordinate(center);
+%\node[class] (component) at (0,0) {Component};
+%\node[class, below left=2.5cm and 1.5cm] (interface) at (component) {Interface};
+%\node[class, below right=2.5cm and 1.5cm] (port) at (component) {Port};
+%
+%\node[above=8em] (anchor1) at (interface) {};
+%\node[above=8em] (anchor2) at (port) {};
+%
+%\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor1);
+%\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor2);
+%
+%\draw[aggregate, shorten <= -0.35em] (anchor1) to node[auto] {} (component);
+%\draw[aggregate, shorten <= -0.35em] (anchor2) to node[auto] {} (component);
+%
+%\node[ann, above left = 0em and 3.25em] (arr1) at (component) {1};
+%\node[ann, above right = 0em and 3.25em] (arr2) at (component) {1};
+%
+%\node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
+%\node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
+%
+%\end{tikzpicture}
+%\caption{Architecture of the host part (to come)}
+%\label{fig:archHost}
+%\end{figure}
 
 The (intended) architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
 
@@ -232,6 +310,8 @@ Ports are used to send data to or receive data from components. A port is always
 \subsection{Communication Interface}
 The communication interface is hidden from the user. Each component has exactly one such interface and a communication interface has to be attached to a component. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical network interface and provides a homogeneous api for components and ports. Network interface specific initialization is generated as well and is not required by the user (other than annotating configuration details in the board description).
 
+Note, that a board is also only allowed to use a single interface. Consequently, components using the same interface are physically located on the same board.
+
 Currently, three communication interfaces are envisioned:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
 \item \textbf{Ethernet}, which is already implemented
@@ -243,7 +323,7 @@ Currently, three communication interfaces are envisioned:
 Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{For documentation, a wiki exists for the lwip stack at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
 
 \section{Generation Backend}
-This section is used to introduce the C generation backend. A reference to the third Katja report might be useful.
+This section is used to introduce the C generation backend. \textcolor{red}{A reference to the third Katja report might be useful.}
 
 \subsection{CModel}
 \label{sec:cmodel}
@@ -315,7 +395,7 @@ Since plain C doesn't have any concept of classes, using a model with classes in
 For the C++ unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
 
 \section{Transformation}
-Explain the transformation of the source file into the c model. Maybe also explain the generated code??
+\textcolor{red}{Explain the transformation of the source file into the c model.}
 
 \addtocontents{toc}{\protect\vspace*{\fill}}
 
