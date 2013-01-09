@@ -10,7 +10,9 @@ import java.io.File;
  */
 public class Configuration {
 
-    private File  destDir;
+//    private File destDir;
+    private File serverDir;
+    private File clientDir;
     
     private boolean debug = false;
     
@@ -22,10 +24,23 @@ public class Configuration {
 //    /** setup an empty driver generator configuration */
 //    public Configuration() { }
     
-    /** set the directory, into which the driver should be generated */
-    public void setDestDir(File dir) {
-        this.destDir = dir;
+    /** set the directory, into which the client-side files of the driver should be generated */
+    public void setClientDir(File dir) {
+        this.clientDir = dir;
     }
+    
+    /** set the directory, into which the server-side files of the driver should be generated */
+    public void setServerDir(File dir) {
+        this.serverDir = dir;
+    }
+    
+//    /** set the directory, into which the driver should be generated */
+//    public void setDestDir(File dir) {
+//        this.destDir = dir;
+////        serverDir = new File(destDir, "server");
+//        serverDir = destDir;
+//        clientDir = new File(destDir, "client");
+//    }
     
     /** enables the debug flag, which will result in additional console prints of the driver */
     public void enableDebug() {
@@ -115,38 +130,22 @@ public class Configuration {
         return targ;
     }
     
-    /** get the directory, into which the driver should be generated */
-    public File getDest() {
-        return destDir;
-    }
-    
+//    /** get the directory, into which the driver should be generated */
+//    public File getDest()    { return destDir; }
+    /** get the directory, into which the server files should be generated */
+    public File serverDir()  { return serverDir; }
+    /** get the directory, into which the client files should be generated */
+    public File clientDir()  { return clientDir; }
     /** get the debug flag indicating additional console print outs*/
-    public boolean debug() {
-        return debug;
-    }
-    
+    public boolean debug()   { return debug; }
     /** get the MAC address for the board */
-    public String[] getMAC() {
-        return mac;
-    }
-    
+    public String[] getMAC() { return mac; }
     /** get the IP address for the board */
-    public int[] getIP() {
-        return ip;
-    }
-    
+    public int[] getIP()     { return ip; }
     /** get the subnet mask for the board */
-    public int[] getMask() {
-        return mask;
-    }
-    
+    public int[] getMask()   { return mask; }
     /** get the standard gateway for the board */
-    public int[] getGW() {
-        return gw;
-    }
-    
+    public int[] getGW()     { return gw; }
     /** get the port over which Ethernet communication should be sent */
-    public int getPort() {
-        return port;
-    }
+    public int getPort()     { return port; }
 }

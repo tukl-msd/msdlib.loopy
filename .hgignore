@@ -6,8 +6,8 @@ syntax: glob
 .settings
 src-gen
 lib/MHS.jar
-target
 build
+build-eclipse
 doc/tex/*.aux
 doc/tex/*.bak
 doc/tex/*.bbl

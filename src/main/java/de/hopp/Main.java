@@ -83,7 +83,8 @@ public class Main {
         System.out.println();
         System.out.println("started HOPP Driver Generator with the following command line parameters:");
         System.out.println("  source .mhs file : " + schemaFile);
-        System.out.println("  target folder    : " + config.getDest());
+        System.out.println("  client folder    : " + config.clientDir());
+        System.out.println("  server folder    : " + config.serverDir());
         System.out.println("  MAC address      : " + unparseMAC(config.getMAC()));
         System.out.println("  IP address       : " + unparseIP( config.getIP()));
         System.out.println("  network mask     : " + unparseIP( config.getMask()));
@@ -209,14 +210,27 @@ public class Main {
 //              config.setName(args[++i]);
   
             // DESTDIR flags
-            } else if(args[i].equals("-d") || args[i].equals("--dest")) {
-                
-                if(i + 1 >= args.length) {
-                    System.err.println("no argument left for "+args[i]);
-                    throw new ExecutionFailed();
-                }
-                config.setDestDir(new File(args[++i]));
-            
+//            } else if(args[i].equals("-d") || args[i].equals("--dest")) {
+//                
+//                if(i + 1 >= args.length) {
+//                    System.err.println("no argument left for "+args[i]);
+//                    throw new ExecutionFailed();
+//                }
+//                config.setDestDir(new File(args[++i]));
+            } else if(args[i].equals("-c") || args[i].equals("--client")) {
+              
+              if(i + 1 >= args.length) {
+                  System.err.println("no argument left for "+args[i]);
+                  throw new ExecutionFailed();
+              }
+              config.setClientDir(new File(args[++i]));
+            } else if(args[i].equals("-s") || args[i].equals("--server")) {
+              
+              if(i + 1 >= args.length) {
+                  System.err.println("no argument left for "+args[i]);
+                  throw new ExecutionFailed();
+              }
+              config.setServerDir(new File(args[++i]));
             // usage help
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 showUsage();

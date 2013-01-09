@@ -1,6 +1,7 @@
 package de.hopp.generator;
 
 import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.utils.Files.copy;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,7 +18,6 @@ import de.hopp.generator.model.*;
 import de.hopp.generator.unparser.CppUnparser;
 import de.hopp.generator.unparser.CUnparser;
 import de.hopp.generator.unparser.HUnparser;
-
 public class Generator {
 
     private Configuration config;
@@ -34,11 +34,29 @@ public class Generator {
     
     public void generate() {
 
-        // generate the board and host drivers
+        // setup required folders
+        System.out.println("  setting up required folders ...");
+//        if(! config.getDest().exists()) config.getDest().mkdirs();
+        if(! config.serverDir().exists()) config.serverDir().mkdirs();
+        if(! config.clientDir().exists()) config.clientDir().mkdirs();
+        
+        // copy fixed parts (i.e. client side api and doxygen configs)
+        System.out.println("  deploying generic client and server code ...");
+        
+        try {
+            copy("deploy/client", config.clientDir());
+            copy("deploy/server", config.serverDir());
+        } catch (IOException e) {
+            System.out.println("    ERROR: " + e.getMessage());
+            throw new ExecutionFailed();
+        }
+        
+        // generate the board and client drivers
         System.out.println("  generating board side driver model ...");
         MFileInFile boardDriver = MFileInFile(generateBoardDriver());
-        System.out.println("  generating host side driver model ...");
-        MFileInFile hostDriver  = MFileInFile(generateHostDriver());
+        System.out.println("  generating client side driver model ...");
+        @SuppressWarnings("unused")
+        MFileInFile clientDriver  = MFileInFile(generateClientDriver());
         
         // setup output file
         System.out.println("  finished model generation");
@@ -46,24 +64,24 @@ public class Generator {
 
         System.out.println("    generating board side driver files ...");
         System.out.println("      generating header file ...");
-        printMFile(boardDriver, UnparserType.HEADER);
+        printMFile(boardDriver, false, UnparserType.HEADER);
         
         System.out.println("      generating source file ...");
-        printMFile(boardDriver, UnparserType.C);
+        printMFile(boardDriver, false, UnparserType.C);
         
-        System.out.println("    generating host side driver files ...");
-        System.out.println("      generating header file ...");
-        printMFile(hostDriver, UnparserType.HEADER);
-        
-        System.out.println("      generating source file ...");
-        printMFile(hostDriver, UnparserType.CPP);
+//        System.out.println("    generating client side driver files ...");
+//        System.out.println("      generating header file ...");
+//        printMFile(clientDriver, true, UnparserType.HEADER);
+//        
+//        System.out.println("      generating source file ...");
+//        printMFile(clientDriver, true, UnparserType.CPP);
     }
     
-    private MFile generateHostDriver() {
-        MFile hostDriver = DUMMY_FILE.replaceName("Host");
+    private MFile generateClientDriver() {
+        MFile clientDriver = DUMMY_FILE.replaceName("Client");
         
         for(Component comp : board.components()) {
-            hostDriver = mergeFiles(hostDriver, comp.Switch(new Component.Switch<MFile, NE>() {
+            clientDriver = mergeFiles(clientDriver, comp.Switch(new Component.Switch<MFile, NE>() {
                 public MFile CaseUART(UART term)                   { return DUMMY_FILE; }
                 public MFile CaseETHERNET_LITE(ETHERNET_LITE term) { return DUMMY_FILE; }
                 public MFile CaseETHERNET(ETHERNET term)           { return DUMMY_FILE; }
@@ -101,11 +119,10 @@ public class Generator {
             }));
         }
         
-        return hostDriver;
+        return clientDriver;
     }
 
     private MFile generateBoardDriver() {
-        
         
         /* 
          * Generally there are two options for generating the board:
@@ -124,7 +141,7 @@ public class Generator {
         return visit.getFile().replaceName("Driver");
     }
 
-    private void printMFile(MFileInFile mfile, UnparserType type) {
+    private void printMFile(MFileInFile mfile, boolean client, UnparserType type) {
         
         // setup buffer
         StringBuffer buf = new StringBuffer(16384);
@@ -142,9 +159,13 @@ public class Generator {
         }
                
         // set output file
-        File target = new File(".");;
-        if(config.getDest() != null)
-            target = new File(config.getDest(), target.getName());
+        File target = client ? config.clientDir() : config.serverDir();
+             target = new File(target, "src");
+             target = new File(target, new File(".").getName());
+        
+//        if(client) target = new File(config.clientDir(), target.getName());
+//        if(config.getDest() != null)
+//            target = new File(config.getDest(), target.getName());
 
         switch(type) {
         case HEADER : target = new File(target, mfile.name().term() +   ".h"); break;
@@ -209,4 +230,77 @@ public class Generator {
                 file1.classes().addAll(file2.classes()));
         return file;
     }
+    
+//    /* 
+//     * Copies an entire folder out of a jar to a physical location.  
+//     */
+//        private static void copyJarFolder(String jarName, String folderName) {
+//        try {
+//            ZipFile z = new ZipFile(jarName);
+//            Enumeration entries = z.entries();
+//            while (entries.hasMoreElements()) {
+//                ZipEntry entry = (ZipEntry)entries.nextElement();
+//                if (entry.getName().contains(folderName)) {
+//                    File f = new File(entry.getName());
+//                    if (entry.isDirectory()) {
+//                        f.mkdir();
+//                    }
+//                    else if (!f.exists()) {
+//                        if (copyFromJar(entry.getName(), f)) {
+//                            System.out.println("Copied: " + entry.getName());
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//
+//
+//        /* 
+//     * Copies a file out of the jar to a physical location.  
+//     *    Doesn't need to be private, uses a resource stream, so may have
+//     *    security errors if ran from webstart application 
+//     */
+//    public static boolean copyFromJar(String sResource, File fDest) {
+//        if (sResource == null || fDest == null) return false;
+//        InputStream sIn = null;
+//        OutputStream sOut = null;
+//        File sFile = null;
+//        try {
+//            fDest.getParentFile().mkdirs();
+//            sFile = new File(sResource);
+//        }
+//        catch(Exception e) {}
+//        try {
+//            int nLen = 0;
+//            sIn = Generator.class.getResourceAsStream(sResource);
+//            if (sIn == null)
+//                throw new IOException("Error copying from jar"  + 
+//                    "(" + sResource + " to " + fDest.getPath() + ")");
+//            sOut = new FileOutputStream(fDest);
+//            byte[] bBuffer = new byte[1024];
+//            while ((nLen = sIn.read(bBuffer)) > 0)
+//                sOut.write(bBuffer, 0, nLen);
+//            sOut.flush();
+//        }
+//        catch(IOException ex) {
+//            ex.printStackTrace();
+//        }
+//        finally {
+//            try {
+//                if (sIn != null)
+//                    sIn.close();
+//                if (sOut != null)
+//                    sOut.close();
+//            }
+//            catch (IOException eError) {
+//                eError.printStackTrace();
+//            }
+//        }
+//        return fDest.exists();
+//    }
 }

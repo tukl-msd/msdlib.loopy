@@ -13,7 +13,6 @@ import java.io.FileReader;
 import java_cup.runtime.Symbol;
 import de.hopp.Configuration;
 import de.hopp.generator.board.Board;
-import de.hopp.generator.board.ETHERNET_LITE;
 
 public class Parser2 {
 

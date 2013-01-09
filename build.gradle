@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'eclipse'
 
 version = '0.0.1'
 description = 'some interesting description'
@@ -44,6 +45,18 @@ sourceSets {
     java {
       srcDirs "src-gen"
     }
+    resources {
+     // srcDirs "deploy"
+     //	srcDir projectDir 
+     // include 'deploy/'
+      srcDirs 'src/main/resources' 
+    }
+  }
+}
+
+eclipse {
+  classpath {
+    defaultOutputDir = file('build-eclipse')
   }
 }
 
@@ -162,4 +175,7 @@ jar {
 
   // the following line is responsible for packaging all compile dependencies as well
   from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+
+  // also add the deploy folder
+  //from "deploy"
 }
