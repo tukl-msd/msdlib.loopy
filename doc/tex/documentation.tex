@@ -117,13 +117,16 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \centering
 \begin{tabular}{ ll | p{9cm} } 
 \hline
-\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
-& \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
+%\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
+\verb!-s! & \verb!--server! & Specifies the destination of the server directory. All files for the server (i.e. files used to generate the board side driver) will be generated into the specified directory. If none is specified, a directory "server" will be generated inside the current working directory.\\
+\verb!-c! & \verb!--client! & Specifies the destination of the client directory. All client for the server will be generated into the specified directory. If none is specified, a directory "client" will be generated inside the current working directory.\\ \hline
+\verb!-v! & \verb!--verbose! & The driver generator will print out additional console output. This makes it easier to track errors in the driver generator or the used source file.\\
+\verb!-d! & \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
 & \verb!--mac! & used to set the mac address of a possible Ethernet interface of the board. Notation: XX:XX:XX:XX:XX:XX, where each X marks a hexadecimal number (allowing lower as well as upper cases).\\
 & \verb!--ip! & used to set the ip address of a possible Ethernet interface of the board. Notation: X.X.X.X, where each X marks a decimal number ranging from 0 to 255. The same notation is required for the following two parameters.\\
 & \verb!--mask! & used to set the network mask of a possible Ethernet interface of the board.\\
 & \verb!--gw! & used to set the standard gateway of a possible Ethernet interface of the board.\\
-& \verb!--port! & used to set the communication port of a possible Ethernet interface of the board. \color{red}{Note that these five parameters are only contemporary and will be replaced by the new board description language (I hope).}\\ \hline
+& \verb!--port! & used to set the communication port of a possible Ethernet interface of the board. \color{red}{Note that these five parameters are only contemporary and will be replaced by the new board description language (I hope - together with the debug parameter. It may be used for actually debugging the generator then ...).}\\ \hline
 \verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
 \end{tabular}
 \caption{Summary of currently possible CLI parameters}
@@ -150,7 +153,7 @@ This section should provide the user with a conceptual overview of the client pa
 \paragraph{Generating the API}
 \textcolor{red}{Maybe, generate a script to do this (bashscript should suffice... it's a single command) or (even better) include this generation step in a more high level script calling the generator}
 
-After downloading and setting up doxygen, you can generate the API for your specific driver using the command \texttt{doxygen config.cfg} in either the client or server folder (which will generate the client or server documentation respectively). These config files are generated together with the c code.
+After downloading and setting up doxygen, you can generate the API for your specific driver using the command \texttt{doxygen doxygen.cfg} in either the client or server folder (which will generate the client or server documentation respectively). These config files are generated together with the c code.
 As a result, a \texttt{doc} folder containing both html and tex descriptions will be generated.
 
 \subsection{Overview}

@@ -48,7 +48,7 @@ public class Main {
         System.out.println(" --port <port>         modify the standard port of the board.");
         System.out.println("                       The default port ist 8844");
         System.out.println();
-        System.out.println(" --debug               enables debug mode for the generated driver,");
+        System.out.println(" -d --debug            enables debug mode for the generated driver,");
         System.out.println("                       which will cause THE DRIVER to produce additional");
         System.out.println("                       console output.");
         System.out.println(" -v --verbose          makes the driver generator produce additional");
@@ -57,10 +57,18 @@ public class Main {
 //        System.out.println(" --name <name>         generate classfile with filename <name>.");
 //        System.out.println("                       If this is not set, the default name");
 //        System.out.println("                       " + "" + " is used.");
-        System.out.println(" -d <dir>");
-        System.out.println(" --dest <dir>          generate classfile to <dir>.");
-        System.out.println("                       If this is not set, the classfile is generated to");
-        System.out.println("                       the current working directory.");
+//        System.out.println(" -d <dir>");
+//        System.out.println(" --dest <dir>          generate classfile to <dir>.");
+//        System.out.println("                       If this is not set, the classfile is generated to");
+//        System.out.println("                       the current working directory.");
+        System.out.println(" -s <dir> ");
+        System.out.println(" --server <dir>        generate server files fo <dir>. If this is not set,");
+        System.out.println("                       the server files are generated to ./" +
+                Configuration.defaultServerDir + ".");
+        System.out.println(" -c <dir> ");
+        System.out.println(" --client <dir>        generate client files fo <dir>. If this is not set, ");
+        System.out.println("                       the client files are generated to ./" +
+                Configuration.defaultClientDir + ".");
         System.out.println(" -h --help             show this help.");
         System.out.println();
     }
@@ -92,13 +100,14 @@ public class Main {
         System.out.println("  network mask     : " + unparseIP( config.getMask()));
         System.out.println("  standard gateway : " + unparseIP( config.getGW()));
         System.out.println("  used port        : " + config.getPort());
-
-        // start parser and 
+        System.out.println("  debug driver     : " + (config.debug() ? "yes" : "no"));
+        
+        // start parser
         System.out.println();
         System.out.println("starting parser");
         Board board = new Parser2(config).parse(schemaFile);
         System.out.println("parser finished");
-        System.out.println("  DEBUG: got the following board: " + board.toString());
+        if(config.verbose()) System.out.println("  DEBUG: got the following board: " + board.toString());
         
         // instantiate and run generator with this configuration
         System.out.println();
@@ -198,8 +207,8 @@ public class Main {
                     throw new IllegalArgumentException("invalid value for port. Has to be an integer >= 0");
                 }
                 
-            // DEBUG flag
-            } else if(args[i].equals("--debug")) {
+            // DEBUG flags
+            } else if(args[i].equals("-d") || args[i].equals("--debug")) {
                 config.enableDebug();
              
             // VERBOSE flags

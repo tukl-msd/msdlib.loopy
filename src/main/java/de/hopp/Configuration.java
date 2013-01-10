@@ -10,6 +10,9 @@ import java.io.File;
  */
 public class Configuration {
 
+    public final static String defaultServerDir = "server";
+    public final static String defaultClientDir = "client";
+    
 //    private File destDir;
     private File serverDir;
     private File clientDir;
