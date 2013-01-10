@@ -106,6 +106,7 @@ public class Main {
         System.out.println("generator finished");
         
         // finished
+        System.out.println();
         System.out.println("Done");
     }
 

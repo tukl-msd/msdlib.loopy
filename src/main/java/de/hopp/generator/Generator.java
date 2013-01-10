@@ -44,8 +44,9 @@ public class Generator {
         System.out.println("  deploying generic client and server code ...");
         
         try {
-            copy("deploy/client", config.clientDir());
-            copy("deploy/server", config.serverDir());
+            copy("deploy/client", config.clientDir(), config.debug());
+            copy("deploy/server", config.serverDir(), config.debug());
+            if(config.debug()) System.out.println();
         } catch (IOException e) {
             System.out.println("    ERROR: " + e.getMessage());
             throw new ExecutionFailed();
@@ -62,11 +63,11 @@ public class Generator {
         System.out.println("  finished model generation");
         System.out.println();
 
-        System.out.println("    generating board side driver files ...");
-        System.out.println("      generating header file ...");
+        System.out.println("  generating board side driver files ...");
+        System.out.println("    generating header file ...");
         printMFile(boardDriver, false, UnparserType.HEADER);
         
-        System.out.println("      generating source file ...");
+        System.out.println("    generating source file ...");
         printMFile(boardDriver, false, UnparserType.C);
         
 //        System.out.println("    generating client side driver files ...");

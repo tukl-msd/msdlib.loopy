@@ -14,7 +14,7 @@ public class Configuration {
     private File serverDir;
     private File clientDir;
     
-    private boolean debug = false;
+    private boolean debug = true;
     
     // Ethernet related properties
     private String[] mac;
