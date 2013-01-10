@@ -5,6 +5,7 @@ version = '0.0.1'
 description = 'some interesting description'
 
 String libDir       = "$projectDir/lib"
+String genLibDir    = "$projectDir/lib"
 String specDir      = "$projectDir/specs"
 String genDir       = "$projectDir/src-gen"
 String parserGenDir = "$genDir/de/hopp/generator/parser"
@@ -18,11 +19,11 @@ String modelSpec    = "$specDir/cmodel.katja"
 String flexLib      = "$libDir/JFlex.jar"
 String cupLib       = "$libDir/java-cup-11a.jar"
 String katja        = "$libDir/katja.jar"
-String katjaCommon  = "$libDir/katja.common.jar"
+String katjaCommon  = "$genLibDir/katja.common.jar"
 
-String mhs          = "$libDir/MHS.jar"
-String board        = "$libDir/BoardSpec.jar"
-String model        = "$libDir/Model.jar"
+String mhs          = "$genLibDir/MHS.jar"
+String board        = "$genLibDir/BoardSpec.jar"
+String model        = "$genLibDir/Model.jar"
 
 String cupParser    = "$parserGenDir/parser.java"
 String flexScanner  = "$parserGenDir/Lexer.java"
@@ -34,7 +35,7 @@ repositories {
 
 dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
-//  compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
+  // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
   compile files("$katjaCommon", "$model", "$board", "$mhs")
   testCompile group: 'junit', name: 'junit', version: '4.+'
@@ -46,9 +47,9 @@ sourceSets {
       srcDirs "src-gen"
     }
     resources {
-     // srcDirs "deploy"
-     //	srcDir projectDir 
-     // include 'deploy/'
+      // srcDirs "deploy"
+      // srcDir projectDir 
+      // include 'deploy/'
       srcDirs 'src/main/resources' 
     }
   }
@@ -63,6 +64,7 @@ eclipse {
 // removes src-gen folder
 task removeGen << {
   delete "$genDir"
+  delete "$genLibDir"
 }
 
 // removes generated AST
@@ -89,7 +91,7 @@ task buildAST {
       arg(value: "-b")
       arg(value: "java")
       arg(value: "-d")
-      arg(value: "lib")
+      arg(value: "$genLibDir")
       arg(value: "-o")
       arg(value: "$mhsSpec")
     }
@@ -105,7 +107,7 @@ task buildBoard {
       arg(value: "-b")
       arg(value: "java")
       arg(value: "-d")
-      arg(value: "lib")
+      arg(value: "$genLibDir")
       arg(value: "-o")
       arg(value: "$boardSpec")
     }
@@ -121,7 +123,7 @@ task buildModel {
       arg(value: "-b")
       arg(value: "java")
       arg(value: "-d")
-      arg(value: "lib")
+      arg(value: "$genLibDir")
       arg(value: "-o")
       arg(value: "-j")
       arg(value: "$modelSpec")

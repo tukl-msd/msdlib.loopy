@@ -49,12 +49,14 @@ public class Main {
         System.out.println("                       The default port ist 8844");
         System.out.println();
         System.out.println(" --debug               enables debug mode for the generated driver,");
-        System.out.println("                       which will cause it to produc additional");
+        System.out.println("                       which will cause THE DRIVER to produce additional");
         System.out.println("                       console output.");
-        System.out.println(" -n <name>");
-        System.out.println(" --name <name>         generate classfile with filename <name>.");
-        System.out.println("                       If this is not set, the default name");
-        System.out.println("                       " + "" + " is used.");
+        System.out.println(" -v --verbose          makes the driver generator produce additional");
+        System.out.println("                       console output.");
+//        System.out.println(" -n <name>");
+//        System.out.println(" --name <name>         generate classfile with filename <name>.");
+//        System.out.println("                       If this is not set, the default name");
+//        System.out.println("                       " + "" + " is used.");
         System.out.println(" -d <dir>");
         System.out.println(" --dest <dir>          generate classfile to <dir>.");
         System.out.println("                       If this is not set, the classfile is generated to");
@@ -158,15 +160,13 @@ public class Main {
         // go through all parameters
         for(int i = 0; i < args.length; i++) {
 
-            // MAC flag
+            // ETHERNET CONFIG flags
             if(args[i].equals("--mac")) {
                 if(i + 1 >= args.length) {
                     System.err.println("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
                 config.setMac(args[++i].split(":"));
-                
-            // IP Address related flags
             } else if(args[i].equals("--ip")) {
                 if(i + 1 >= args.length) {
                     System.err.println("no argument left for "+args[i]);
@@ -197,27 +197,25 @@ public class Main {
                 } catch(NumberFormatException e) {
                     throw new IllegalArgumentException("invalid value for port. Has to be an integer >= 0");
                 }
+                
             // DEBUG flag
             } else if(args[i].equals("--debug")) {
                 config.enableDebug();
+             
+            // VERBOSE flags
+            } else if(args[i].equals("-v") || args[i].equals("--verbose")) {
+                config.enableVerbose();
                 
-                // SCHEMANAME flags
-            } else if(args[i].equals("-n") || args[i].equals("--name")) {
-                    
-                if(i + 1 >= args.length) {
-                    System.err.println("no argument left for "+args[i]);
-                    throw new ExecutionFailed();
-                }
-//              config.setName(args[++i]);
-  
-            // DESTDIR flags
-//            } else if(args[i].equals("-d") || args[i].equals("--dest")) {
-//                
+//            // SCHEMANAME flags
+//            } else if(args[i].equals("-n") || args[i].equals("--name")) {
+//                    
 //                if(i + 1 >= args.length) {
 //                    System.err.println("no argument left for "+args[i]);
 //                    throw new ExecutionFailed();
 //                }
-//                config.setDestDir(new File(args[++i]));
+//              config.setName(args[++i]);
+  
+            // DESTDIR flags
             } else if(args[i].equals("-c") || args[i].equals("--client")) {
               
               if(i + 1 >= args.length) {
@@ -232,7 +230,15 @@ public class Main {
                   throw new ExecutionFailed();
               }
               config.setServerDir(new File(args[++i]));
-            // usage help
+//            } else if(args[i].equals("-d") || args[i].equals("--dest")) {
+//              
+//              if(i + 1 >= args.length) {
+//                  System.err.println("no argument left for "+args[i]);
+//                  throw new ExecutionFailed();
+//              }
+//              config.setDestDir(new File(args[++i]));
+                
+            // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 showUsage();
                 throw new ExecutionFailed();

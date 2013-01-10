@@ -44,9 +44,9 @@ public class Generator {
         System.out.println("  deploying generic client and server code ...");
         
         try {
-            copy("deploy/client", config.clientDir(), config.debug());
-            copy("deploy/server", config.serverDir(), config.debug());
-            if(config.debug()) System.out.println();
+            copy("deploy/client", config.clientDir(), config.verbose());
+            copy("deploy/server", config.serverDir(), config.verbose());
+            if(config.verbose()) System.out.println();
         } catch (IOException e) {
             System.out.println("    ERROR: " + e.getMessage());
             throw new ExecutionFailed();

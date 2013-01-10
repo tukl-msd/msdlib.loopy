@@ -15,6 +15,7 @@ public class Configuration {
     private File clientDir;
     
     private boolean debug = false;
+    private boolean verbose = false;
     
     // Ethernet related properties
     private String[] mac;
@@ -45,6 +46,10 @@ public class Configuration {
     /** enables the debug flag, which will result in additional console prints of the driver */
     public void enableDebug() {
         debug = true;
+    }
+    /** enables the verbose flag, which will result in additional console prints of the driver generator */
+    public void enableVerbose() {
+        verbose = true;
     }
 
     /** set mac address, which should be generated in driver. The mac
@@ -136,8 +141,10 @@ public class Configuration {
     public File serverDir()  { return serverDir; }
     /** get the directory, into which the client files should be generated */
     public File clientDir()  { return clientDir; }
-    /** get the debug flag indicating additional console print outs*/
+    /** get the debug flag indicating additional console print outs of the generated driver */
     public boolean debug()   { return debug; }
+    /** get the verbose flag indicating additional console print outs of the driver generator */
+    public boolean verbose() { return verbose; }
     /** get the MAC address for the board */
     public String[] getMAC() { return mac; }
     /** get the IP address for the board */
