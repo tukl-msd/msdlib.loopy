@@ -2,10 +2,13 @@ syntax: glob
 .classpath
 .gradle
 .project
-.project~
+*.*~
 .settings
 src-gen
+lib/BoardSpec.jar
 lib/MHS.jar
+lib/Model.jar
+lib/katja.common.jar
 build
 build-eclipse
 doc/tex/*.aux
