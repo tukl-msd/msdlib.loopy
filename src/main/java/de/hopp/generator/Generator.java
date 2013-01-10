@@ -69,8 +69,16 @@ public class Generator {
         
         System.out.println("    generating source file ...");
         printMFile(boardDriver, false, UnparserType.C);
+//        
+        System.out.println("    generating client side driver files ...");
+        // generate the constants file with the debug flag
+        printMFile(MFileInFile(MFile("constants", MDefinitions(
+                    MDefinition(MDocumentation(Strings(
+                            "If set, enables additional console output for debugging purposes"
+                    )), "DEBUG", "1"
+                )), MStructs(), MEnums(), MAttributes(), MMethods())),
+                true, UnparserType.C);
         
-//        System.out.println("    generating client side driver files ...");
 //        System.out.println("      generating header file ...");
 //        printMFile(clientDriver, true, UnparserType.HEADER);
 //        

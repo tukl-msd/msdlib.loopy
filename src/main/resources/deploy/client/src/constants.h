@@ -1,1 +1,1 @@
-bool DEBUG = true;
+#define DEBUG 1

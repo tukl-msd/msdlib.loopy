@@ -311,6 +311,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     
     @Override
     public void visit(MDefinitionInFile term) throws InvalidConstruct {
+        visit(term.doc());
         buffer.append("\n#define " + term.name().term() + " " + term.value().term());
     }
     
@@ -543,7 +544,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         if(doc.doc().isEmpty() && doc.tags().isEmpty()) return;
         
         // start documentation block
-        buffer.append("/**\n");
+        buffer.append("\n/**\n");
         
         // append documentation text
         for(String s : doc.doc().term()) buffer.append(" * " + s + "\n");
@@ -552,7 +553,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         visit(doc.tags());
         
         // end documentation block
-        buffer.append(" */\n");
+        buffer.append(" */");
     }
     public void visit(MTagsInFile tags) throws InvalidConstruct { 
         for(MTagInFile tag : tags) visit(tag); 
