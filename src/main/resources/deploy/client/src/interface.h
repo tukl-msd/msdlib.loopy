@@ -10,31 +10,58 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-//int DEBUG = 1;
-
-class inter {
+class interface {
 public:
+	// -------------------- destructor -----------------------------
+	virtual ~interface() {}
 
-	// constructor & destructor
-//	inter() {};
-	virtual ~inter() {};
+	// -------------------- connection management -----------------------------
+	/**
+	 * Set up the connection between client and server.
+	 * This method has to be overridden in all subclasses and performs
+	 * interface-specific setup operations.
+	 */
+	virtual void setup() = 0;
+	/**
+	 * Shuts down the connection between client and server.
+	 * This method has to be overridden in all subclasses and performs
+	 * interface-specific shut down operations.
+	 */
+	virtual void teardown() = 0;
 
-	// connection management
-	virtual void setup() {};
-	virtual void teardown() {};
+	// -------------------- communication -----------------------------
+	/**
+	 * Sends an integer value to the board.
+	 * @param val the integer value to be sent.
+	 * @returns true if successful, false otherwise.
+	 */
+	virtual bool send(int val) = 0;
 
-	// communication
-	virtual void send(int val) {};
-
-	// test application
-	virtual void test() {};
+	// -------------------- test application -----------------------------
+	/** Executes the test application */
+	virtual void test() = 0;
 };
 
-class ethernet : public inter {
+class ethernet : public interface {
 public:
 	// constructor & destructor
+	/**
+	 * Constructor for an ethernet-type interface.
+	 * @param ip ip address of the interface
+	 * @param port port for the communications
+	 */
 	ethernet(const char *ip, unsigned short int port);
 	~ethernet();
+
+	// connection management
+	void setup();
+	void teardown();
+
+	// communication
+	bool send(int val);
+
+	// test application
+	void test();
 
 private:
 	int Data_SocketFD;
@@ -42,36 +69,27 @@ private:
 	unsigned short int port;
 
 	// connection management
-	void setup();
-	void teardown();
-
-	// communication
-	void send(int val);
-
-	int writeValues(int buf[], int size);
-	int readInt    (int buf[], int size);
+	bool writeValues(int buf[], int size);
+	bool readInt    (int buf[], int size);
 
 	// test application
-	void test();
-
-	int setLEDStateByArr(int state[8]);
-	int setLEDState(int state);
+	bool setLEDStateByArr(bool state[8]);
+	bool setLEDState(int state);
 };
 
-class uart : public inter {
+class uart : public interface {
 public:
 	// constructor & destructor
 	uart();
 	~uart();
 
 private:
-
 	// connection management
 	void setup();
 	void teardown();
 
 	// communication
-	void send(int val);
+	bool send(int val);
 
 	// test application
 	void test();

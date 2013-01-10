@@ -4,6 +4,7 @@
  */
 
 #include "interface.h"
+#include "constants.h"
 
 #include <stdio.h>
 
@@ -18,26 +19,33 @@
 #include <errno.h>
 
 // conversion from "boolean" array to single value
-int convertToInt(int values[8]) {
+int convertToInt(bool values[8]) {
 
-//	if(DEBUG) printf("\n  converting 8-bit array to single value ...");
+	if(DEBUG) printf("\n  converting 8-bit array to single value ...");
 
 	int i, rslt = 0;
 	for(i = 0; i < 8; i++)
-		if(values[i] != 0) rslt = rslt + (int)pow(2, i);
+		if(values[i]) rslt = rslt + (int)pow(2, i);
 
-//	if(DEBUG) printf(" done\n  hex value after conversion: 0x%X", rslt);
+	if(DEBUG) printf(" done\n  hex value after conversion: 0x%X", rslt);
 
 	return rslt;
 }
 
-// conversion from single int value to a "boolean" array (1 = true, 0 = false)
-int convertToArr(int size, int values[], int dataRead) {
-//	if(DEBUG) printf("\n    converting single value to %d-bit array ...", size);
+/**
+ * converts a single integer value to a binary number represented by a boolean array.
+ * true marks a 1 value, false a 0 value.
+ * @param size size of the binary number and therefore boolean array
+ * @param values pointer to the array where the result will be stored
+ * @param val the integer number which will be converted
+ * @returns returns true if the conversion was successful, false otherwise
+ */
+bool convertToArr(int size, bool values[], int val) {
+	if(DEBUG) printf("\n    converting single value to %d-bit array ...", size);
 
 	// check, if given value is to large for specified array
-	if(dataRead >= (int)pow(2,size)) {
-//		if(DEBUG) printf("\n  ERROR: value was to large for given array");
+	if(val >= (int)pow(2,size)) {
+		if(DEBUG) printf("\n  ERROR: value was to large for given array");
 		return 1;
 	}
 
@@ -45,17 +53,17 @@ int convertToArr(int size, int values[], int dataRead) {
 	int i;
 	for(i = size-1; i >= 0; i--) {
 		int cur = (int)pow(2,i);
-		if(dataRead / cur > 0) {
-			values[i] = 1;
-			dataRead -= cur;
-		} else values[i] = 0;
+		if(val / cur > 0) {
+			values[i] = true;
+			val -= cur;
+		} else values[i] = false;
 	}
 
-//	if(DEBUG) {
+	if(DEBUG) {
 		printf(" done\n  value after conversion: [");
 		for(i = 0; i < size; i++) printf(" %d", values[i]);
 		printf(" ]");
-//	}
+	}
 
 	return 0;
 }
@@ -98,9 +106,28 @@ int decodeHeader(int header) {
 	return 0;
 }
 
+/**
+ * Minimal value for the LED test application.
+ * This value marks the two least significant LEDs to be set.
+ */
 #define MIN_VALUE 3
+/**
+ * Maximal value for the LED test application.
+ * This value marks the two most significant LEDs to be set.
+ */
 #define MAX_VALUE 192
 
+/** Sets the next LED out of the current LED state and a direction. The next
+ * LED state is considered to be the current state shifted one LED into direction
+ * if possible, otherwise shifted in the opposite direction.
+ *
+ * @param direction the current direction, into which the LEDs should are shifted.
+ *        0 will shift to the right, 1 will shift to the left (I guess)
+ * @return the direction for the next step of LED shifting.
+ * @param state pointer to the current LED state. The state will be changed by
+ *        this procedure
+ * @return nope - just trolling... no second return value
+ */
 int next(int direction, int * state) {
 	if(direction) {
 		if(*state == MAX_VALUE) return next(!direction, state);
@@ -112,13 +139,16 @@ int next(int direction, int * state) {
 	return direction;
 }
 
-ethernet::ethernet(const char *ip, unsigned short int port) {
-	Data_SocketFD = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	this->ip = ip;
-	this->port = port;
-}
-
+//ethernet::ethernet(const char *ip, unsigned short int port) {
+//	Data_SocketFD = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+//
+//	this->ip = ip;
+//	this->port = port;
+//}
+// new constructor using member initialisation list
+ethernet::ethernet(const char *ip, unsigned short int port):
+		Data_SocketFD(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
+		ip(ip), port(port) {}
 
 ethernet::~ethernet() {
 	// TODO Auto-generated destructor stub
@@ -131,7 +161,7 @@ void ethernet::setup() {
 	//	char *ip = "131.246.92.144";
 	//	char *ip = "192.168.1.10";
 
-//	if(DEBUG) printf("setting up data socket @%s:%d ...", ip, port);
+	if(DEBUG) printf("setting up data socket @%s:%d ...", ip, port);
 
 	if (-1 == Data_SocketFD){ //|| -1 == Config_SocketFD){
 		printf(" failed to create socket");
@@ -159,7 +189,6 @@ void ethernet::setup() {
 
 	if (-1 == connect(Data_SocketFD, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))){
 		printf(" connect failed: %s (%d)", strerror(errno), errno);
-//		printf("errorcode: %d", errno);
 		close(Data_SocketFD);
 		exit(EXIT_FAILURE);
 	}
@@ -173,8 +202,8 @@ void ethernet::teardown() {
 	close(Data_SocketFD);
 }
 
-void ethernet::send(int val) {
-
+bool ethernet::send(int val) {
+	return false;
 }
 
 // test application
@@ -194,9 +223,9 @@ void ethernet::test() {
 
 // all following procedures & methods are helpers for the test application
 
-int ethernet::writeValues(int buf[], int size) {
+bool ethernet::writeValues(int buf[], int size) {
 
-//	if(DEBUG) {
+	if(DEBUG) {
 		printf("\nsending package of size %d with values: ", size);
 		int i;
 		for(i = 0; i < size; i++) {
@@ -204,44 +233,49 @@ int ethernet::writeValues(int buf[], int size) {
 			if(i < size-1) printf(", ");
 		}
 		printf(" ...");
-//	}
+	}
 
 	// write data
 	if(write(Data_SocketFD, buf, size*4) < 0) {
 		// catch write errors
-//		if(DEBUG) printf(" ERROR writing to socket");
-		return 1;
+		if(DEBUG) printf(" ERROR writing to socket");
+		return false;
 	}
 
-//	if(DEBUG) printf(" done");
+	if(DEBUG) printf(" done");
 
-	return 0;
+	return true;
 }
 
-int ethernet::readInt(int buf[], int size) {
+bool ethernet::readInt(int buf[], int size) {
 
-//	if(DEBUG) printf("\nreading package of size %d ... ", size);
+	if(DEBUG) printf("\nreading package of size %d ... ", size);
 
 	// read data
 	if(read(Data_SocketFD, buf, size*4) < 0) {
 		// catch read errors
-//		if(DEBUG) printf(" ERROR reading from socket");
-		return 1;
+		if(DEBUG) printf(" ERROR reading from socket");
+		return false;
 	}
 
-//	if(DEBUG) {
+	if(DEBUG) {
 		printf(" values: ");
 		int i;
 		for(i = 0; i < size; i++) {
 			printf("%d", buf[i]);
 			if(i < size-1) printf(", ");
 		}
-//	}
+	}
 
-	return 0;
+	return true;
 }
 
-int ethernet::setLEDStateByArr(int state[8]) {
+/**
+ * Sets the LED state using an array of integer values.
+ * @param state The new LED state represented by an integer array of size 8.
+ *              Each value has to be either 1 for a glowing LED or 0 otherwise.
+ */
+bool ethernet::setLEDStateByArr(bool state[8]) {
 	int send [2];
 
 	send[0] = constructHeader(1,0,1);
@@ -250,7 +284,12 @@ int ethernet::setLEDStateByArr(int state[8]) {
 	return writeValues(send, 8);
 }
 
-int ethernet::setLEDState(int state) {
+/**
+ * Sets the LED state using a single integer value.
+ * @param state The new LED state represented by a single integer value.
+ *              The value has to be in the interval [0;255].
+ */
+bool ethernet::setLEDState(int state) {
 	int send [2];
 
 	send[0] = constructHeader(1,0,1);

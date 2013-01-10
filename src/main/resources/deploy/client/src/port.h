@@ -6,14 +6,14 @@
 #ifndef PORT_H_
 #define PORT_H_
 
-class por {
+class port {
 public:
-	virtual ~por() = 0;
+	virtual ~port() = 0;
 
 	virtual void setup() = 0;
 };
 
-class in : public por {
+class in : public port {
 public:
 	in() {}
 	~in() {}
@@ -21,7 +21,7 @@ public:
 	bool writeData(int val);
 };
 
-class out : public por {
+class out : public port {
 public:
 	out() {}
 	~out() {}

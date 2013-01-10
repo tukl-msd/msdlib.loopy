@@ -9,6 +9,6 @@
 int main(void){
 	ethernet a("131.246.92.144", 8844);
 	// ethernet a("192.168.1.10", 8844);
-	inter *b = &a;
+	interface *b = &a;
 	b->test();
 }

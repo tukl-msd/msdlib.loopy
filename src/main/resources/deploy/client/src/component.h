@@ -12,15 +12,15 @@
 class component {
 private:
 	// connection interface
-	inter *interface;
+	interface *intrfc;
 
 	// port pointer array
-	por *ports[];
+	port *ports[];
 
 public:
 	// setup interface and ports
-	void setup(inter *i, por *p[], int n) {
-		interface = i;
+	void setup(interface *i, port *p[], int n) {
+		intrfc = i;
 //		ports = &p;
 
 		i->setup();
