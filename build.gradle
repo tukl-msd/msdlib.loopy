@@ -64,7 +64,7 @@ eclipse {
 // removes src-gen folder
 task removeGen << {
   delete "$genDir"
-  delete "$genLibDir"
+  // delete "$genLibDir"
 }
 
 // removes generated AST

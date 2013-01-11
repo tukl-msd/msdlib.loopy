@@ -10,20 +10,30 @@ import java.io.File;
  */
 public class Configuration {
 
+    // destination folders
     public final static String defaultServerDir = "server";
     public final static String defaultClientDir = "client";
-    
-//    private File destDir;
-    private File serverDir;
-    private File clientDir;
-    
-    private boolean debug = false;
-    private boolean verbose = false;
+
+//  private File destDir = new File();
+    private File serverDir = new File(defaultServerDir);
+    private File clientDir = new File(defaultClientDir);
     
     // Ethernet related properties
-    private String[] mac;
-    private int [] ip, gw, mask = { 255, 255, 255, 0 };
-    private int port = 8844;
+    public final static String[] defaultMAC  = {"00","0a","35","00","01","02"};
+    public final static int[]    defaultIP   = {192,169,  1, 10},
+                                 defaultGW   = {192,169,  1, 23},
+                                 defaultMask = {255,255,255,  0};
+    public final static int      defaultPort = 8844;
+
+    private String[] mac  = defaultMAC;
+    private int []   ip   = defaultIP,
+                     gw   = defaultGW,
+                     mask = defaultMask;
+    private int      port = defaultPort;
+    
+    // debug flags
+    private boolean debug   = false;
+    private boolean verbose = false;
     
 //    /** setup an empty driver generator configuration */
 //    public Configuration() { }

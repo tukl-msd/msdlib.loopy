@@ -3,10 +3,12 @@ package de.hopp.generator;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.Files.copy;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import katja.common.NE;
 
@@ -23,7 +25,8 @@ public class Generator {
     private Configuration config;
     private Board board;
     
-    private static final MFile DUMMY_FILE = MFile("", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
+    private static final MFile DUMMY_FILE = 
+            MFile("", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
     
     private enum UnparserType { HEADER, C, CPP }
 
@@ -84,8 +87,27 @@ public class Generator {
 //        
 //        System.out.println("      generating source file ...");
 //        printMFile(clientDriver, true, UnparserType.CPP);
+        
+        System.out.println("  generate documentation ...");
+        doxygen(config.clientDir());
+//        doxygen(config.serverDir());
     }
     
+    private static void doxygen(File dir) {
+        try {
+            String line;
+            Process p = new ProcessBuilder("doxygen", "doxygen.cfg").directory(dir).redirectErrorStream(true).start();
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            System.out.println(p.waitFor());
+            while ((line = input.readLine()) != null) {
+                System.out.println(line);
+            }
+            input.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private MFile generateClientDriver() {
         MFile clientDriver = DUMMY_FILE.replaceName("Client");
         
@@ -103,9 +125,7 @@ public class Generator {
                             MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
                                 MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
                             ), MCode(
-                                Strings(
-                                    "// set LED register accordingly"
-                                )
+                                Strings("// set LED register accordingly")
                             ));
                     
                     // generate method to read LED register
@@ -113,9 +133,7 @@ public class Generator {
                             MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
                                 MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
                             ), MCode(
-                                Strings(
-                                    "// read LED register and put it into array"
-                                )
+                                Strings("// read LED register and put it into array")
                             ));
                     
                     // put methods into returned file
@@ -176,6 +194,7 @@ public class Generator {
 //        if(config.getDest() != null)
 //            target = new File(config.getDest(), target.getName());
 
+        // append file extension according to used unparser
         switch(type) {
         case HEADER : target = new File(target, mfile.name().term() +   ".h"); break;
         case C      : target = new File(target, mfile.name().term() +   ".c"); break;
@@ -227,7 +246,8 @@ public class Generator {
      * Creates a new file by adding all components of a file to another file.
      * @param file1 file to which components should be added
      * @param file2 file which components should be added
-     * @return the "merged" file containing all components and the name of the first file
+     * @return the "merged" file with the name of the first file containing
+     *         all components from both files
      */
     private static MFile mergeFiles(MFile file1, MFile file2) {
         MFile file = MFile(file1.name(),
@@ -239,77 +259,4 @@ public class Generator {
                 file1.classes().addAll(file2.classes()));
         return file;
     }
-    
-//    /* 
-//     * Copies an entire folder out of a jar to a physical location.  
-//     */
-//        private static void copyJarFolder(String jarName, String folderName) {
-//        try {
-//            ZipFile z = new ZipFile(jarName);
-//            Enumeration entries = z.entries();
-//            while (entries.hasMoreElements()) {
-//                ZipEntry entry = (ZipEntry)entries.nextElement();
-//                if (entry.getName().contains(folderName)) {
-//                    File f = new File(entry.getName());
-//                    if (entry.isDirectory()) {
-//                        f.mkdir();
-//                    }
-//                    else if (!f.exists()) {
-//                        if (copyFromJar(entry.getName(), f)) {
-//                            System.out.println("Copied: " + entry.getName());
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//
-//
-//        /* 
-//     * Copies a file out of the jar to a physical location.  
-//     *    Doesn't need to be private, uses a resource stream, so may have
-//     *    security errors if ran from webstart application 
-//     */
-//    public static boolean copyFromJar(String sResource, File fDest) {
-//        if (sResource == null || fDest == null) return false;
-//        InputStream sIn = null;
-//        OutputStream sOut = null;
-//        File sFile = null;
-//        try {
-//            fDest.getParentFile().mkdirs();
-//            sFile = new File(sResource);
-//        }
-//        catch(Exception e) {}
-//        try {
-//            int nLen = 0;
-//            sIn = Generator.class.getResourceAsStream(sResource);
-//            if (sIn == null)
-//                throw new IOException("Error copying from jar"  + 
-//                    "(" + sResource + " to " + fDest.getPath() + ")");
-//            sOut = new FileOutputStream(fDest);
-//            byte[] bBuffer = new byte[1024];
-//            while ((nLen = sIn.read(bBuffer)) > 0)
-//                sOut.write(bBuffer, 0, nLen);
-//            sOut.flush();
-//        }
-//        catch(IOException ex) {
-//            ex.printStackTrace();
-//        }
-//        finally {
-//            try {
-//                if (sIn != null)
-//                    sIn.close();
-//                if (sOut != null)
-//                    sOut.close();
-//            }
-//            catch (IOException eError) {
-//                eError.printStackTrace();
-//            }
-//        }
-//        return fDest.exists();
-//    }
 }

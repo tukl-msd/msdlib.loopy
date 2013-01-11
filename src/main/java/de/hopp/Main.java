@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
+import static de.hopp.generator.utils.Ethernet.*;
+
 import de.hopp.generator.Generator;
 import de.hopp.generator.board.Board;
 import de.hopp.generator.exceptions.ExecutionFailed;
@@ -32,27 +34,14 @@ public class Main {
     }
     
     private static void showUsage() {
-        
          // show usage line
         System.out.println("Usage: java de.xcend.binding.Main [options] <filename>");
-        
         System.out.println();
     
         // show flags
         System.out.println("Options:");
-        System.out.println(" --mac <mac>           modify mac address of the board.");
-        System.out.println(" --ip <ip>             modify ip address of the board.");
-        System.out.println(" --mask <mask>         modify the network mask of the board.");
-        System.out.println("                       The default value is 255.255.255.0");
-        System.out.println(" --gw <gw>             modify standard gateway of the board.");
-        System.out.println(" --port <port>         modify the standard port of the board.");
-        System.out.println("                       The default port ist 8844");
         System.out.println();
-        System.out.println(" -d --debug            enables debug mode for the generated driver,");
-        System.out.println("                       which will cause THE DRIVER to produce additional");
-        System.out.println("                       console output.");
-        System.out.println(" -v --verbose          makes the driver generator produce additional");
-        System.out.println("                       console output.");
+        System.out.println(" ---------- directory related ----------");
 //        System.out.println(" -n <name>");
 //        System.out.println(" --name <name>         generate classfile with filename <name>.");
 //        System.out.println("                       If this is not set, the default name");
@@ -61,6 +50,7 @@ public class Main {
 //        System.out.println(" --dest <dir>          generate classfile to <dir>.");
 //        System.out.println("                       If this is not set, the classfile is generated to");
 //        System.out.println("                       the current working directory.");
+
         System.out.println(" -s <dir> ");
         System.out.println(" --server <dir>        generate server files fo <dir>. If this is not set,");
         System.out.println("                       the server files are generated to ./" +
@@ -69,7 +59,26 @@ public class Main {
         System.out.println(" --client <dir>        generate client files fo <dir>. If this is not set, ");
         System.out.println("                       the client files are generated to ./" +
                 Configuration.defaultClientDir + ".");
+        System.out.println();
+        System.out.println(" ---------- miscellaneous ----------");
+        System.out.println(" -d --debug            enables debug mode for the generated driver,");
+        System.out.println("                       which will cause THE DRIVER to produce additional");
+        System.out.println("                       console output.");
+        System.out.println(" -v --verbose          makes the driver generator produce additional");
+        System.out.println("                       console output.");
         System.out.println(" -h --help             show this help.");
+        System.out.println();
+        System.out.println(" ---------- ethernet related ----------");
+        System.out.println(" --mac <mac>           modify mac address of the board.");
+        System.out.println("                       The default value is " + unparseMAC(Configuration.defaultMAC));
+        System.out.println(" --ip <ip>             modify ip address of the board.");
+        System.out.println("                       The default value is " + unparseIP(Configuration.defaultIP));
+        System.out.println(" --mask <mask>         modify the network mask of the board.");
+        System.out.println("                       The default value is " + unparseIP(Configuration.defaultMask));
+        System.out.println(" --gw <gw>             modify standard gateway of the board.");
+        System.out.println("                       The default value is " + unparseIP(Configuration.defaultGW));
+        System.out.println(" --port <port>         modify the standard port of the board.");
+        System.out.println("                       The default port is " + Configuration.defaultPort);
         System.out.println();
     }
 
@@ -168,9 +177,41 @@ public class Main {
         
         // go through all parameters
         for(int i = 0; i < args.length; i++) {
-
+            
+          // DESTDIR flags
+          if(args[i].equals("-c") || args[i].equals("--client")) {
+            
+            if(i + 1 >= args.length) {
+                System.err.println("no argument left for "+args[i]);
+                throw new ExecutionFailed();
+            }
+            config.setClientDir(new File(args[++i]));
+          } else if(args[i].equals("-s") || args[i].equals("--server")) {
+            
+            if(i + 1 >= args.length) {
+                System.err.println("no argument left for "+args[i]);
+                throw new ExecutionFailed();
+            }
+            config.setServerDir(new File(args[++i]));
+//          } else if(args[i].equals("-d") || args[i].equals("--dest")) {
+//            
+//            if(i + 1 >= args.length) {
+//                System.err.println("no argument left for "+args[i]);
+//                throw new ExecutionFailed();
+//            }
+//            config.setDestDir(new File(args[++i]));
+//            
+//          // SCHEMANAME flags
+//          } else if(args[i].equals("-n") || args[i].equals("--name")) {
+//                  
+//              if(i + 1 >= args.length) {
+//                  System.err.println("no argument left for "+args[i]);
+//                  throw new ExecutionFailed();
+//              }
+//            config.setName(args[++i]);
+            
             // ETHERNET CONFIG flags
-            if(args[i].equals("--mac")) {
+            } else if(args[i].equals("--mac")) {
                 if(i + 1 >= args.length) {
                     System.err.println("no argument left for "+args[i]);
                     throw new ExecutionFailed();
@@ -214,39 +255,7 @@ public class Main {
             // VERBOSE flags
             } else if(args[i].equals("-v") || args[i].equals("--verbose")) {
                 config.enableVerbose();
-                
-//            // SCHEMANAME flags
-//            } else if(args[i].equals("-n") || args[i].equals("--name")) {
-//                    
-//                if(i + 1 >= args.length) {
-//                    System.err.println("no argument left for "+args[i]);
-//                    throw new ExecutionFailed();
-//                }
-//              config.setName(args[++i]);
-  
-            // DESTDIR flags
-            } else if(args[i].equals("-c") || args[i].equals("--client")) {
-              
-              if(i + 1 >= args.length) {
-                  System.err.println("no argument left for "+args[i]);
-                  throw new ExecutionFailed();
-              }
-              config.setClientDir(new File(args[++i]));
-            } else if(args[i].equals("-s") || args[i].equals("--server")) {
-              
-              if(i + 1 >= args.length) {
-                  System.err.println("no argument left for "+args[i]);
-                  throw new ExecutionFailed();
-              }
-              config.setServerDir(new File(args[++i]));
-//            } else if(args[i].equals("-d") || args[i].equals("--dest")) {
-//              
-//              if(i + 1 >= args.length) {
-//                  System.err.println("no argument left for "+args[i]);
-//                  throw new ExecutionFailed();
-//              }
-//              config.setDestDir(new File(args[++i]));
-                
+
             // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 showUsage();
@@ -255,12 +264,5 @@ public class Main {
         }
         
         return remaining.toArray(new String[0]);
-    }
-    
-    private String unparseIP(int[] ip) {
-        return java.util.Arrays.toString(ip).replace(", ", ".").replace("[", "").replace("]", "");
-    }
-    private String unparseMAC(String[] ip) {
-        return java.util.Arrays.toString(ip).replace(", ", ":").replace("[", "").replace("]", "");
     }
 }
