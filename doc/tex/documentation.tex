@@ -90,55 +90,65 @@
 \thispagestyle{empty}
 \newpage
 
-%Documentation Structure:
-%
-%Former:
-%
-%Strict distinction between user and developer documentation resulting in parts documented twice
-%
-%1. Intro
-%2. User Documentation
-%2.1 Getting started
-%2.2 API
-%3. Developer Documentation
-%3.1 Overview
-%3.2 Architecture
-%3.3 Transformation
-%3.4 Generation Backend
-%
-%New: 
-%
-%less strict distinction, document slowly moving from user doc to dev doc
-%
-%1. Intro
-%2. Getting started (2.1 of old document)
-%3. Architecture    (explanation of generated code, mixture of former 2.2 and 3.2)
-%3.1 Client         (explanation of client side api, 2.2)
-%3.2 Server         (explanation of server side "api", somewhere in 3.2/3.3)
-%4. Generator       (explanation of the generator itself, former 3.3/3.4)
+
 
 \chapter{Introduction}
-This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. Users can find an easy to understand explanation of the generator as well as usage examples in \Cref{sec:userDoc}. Developers and other interested readers can find details about the architecture and implementation of the generator in \Cref{sec:devDoc}.
+\label{sec:intro}
+This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. While the first chapters are more addressed towards users of the generator, the later ones are more addressed towards developers. 
 
 %define scope of the generator
-The HOPP Driver Generator is intended to provide embedded system developers %that's kinda vague
+The HOPP Driver Generator itself is intended to provide embedded system developers %that's kinda vague
 with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
 
 \textcolor{red}{This sentence is just some test for bibliography management...} \cite{fischer12}.
-\chapter{User-Documentation}
-\label{sec:userDoc}
-The purpose of this section is to explain new users how to use the generator as well as interact with the generated drivers.
 
-\section{Getting started}
-This part should contain all steps required in order to run the generator and acquire drivers for the specified board.
+\section{Origins and Goals}
+\label{sec:goals}
+\textcolor{red}{probably better filled out by the EIT department ;)}
 
-\subsection{Building the project}
+\section{Terminology}
+\label{sec:term}
+This section explains the terminology used in this document and the project in general.
+
+\paragraph{Board / board-side}
+The driver is split in two parts, one of which has to be uploaded and executed to the fpga itself. This part of the driver is referred to as board-side driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead.
+
+\paragraph{Host / host-side}
+In contrast to the board-side driver, the host-side driver is the part of the driver which is located on the communicating computer. Sometimes, the term \textit{client} and \textit{client-side} might be used instead.
+
+
+
+\chapter{Getting Started}
+\label{sec:start}
+The purpose of this chapter is to explain how to properly build and use the generator. This part contains all steps required in order to run the generator and acquire drivers for the specified board.
+
+\section{Setup}
+\label{sec:setup}
+In the following, the tools required to build and execute the driver generator are introduced. Please note, that all tools have to be executable from the command line. This requires (for example) Windows users to adjust their \texttt{PATH} variable.
+
+\paragraph{Java}
+The generator is implemented in Java due to tool support and the environment of the Software Technology Group. Consequently, a JDK version 6 or above is required. 
+
+\paragraph{Gradle}
+Gradle\footnote{available at \url{http://www.gradle.org/}} is a build tool, similar to \textit{Maven} or \textit{Ant} (like \textit{Make}, but - for the most part - easier to manage within larger projects). It supports the dependency management from Maven while retaining the flexibility of Ant. Plugins required by the build process are automatically downloaded by Gradle.
+
+\paragraph{Mercurial}
+Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distributed versioning tool, comparable with \textit{GIT}, \textit{Bazar} or \textit{Subversion}. The sources of the driver generator are located in a mercurial repository. If you acquired the sources (and this document) through other means mercurial is not required.
+
+\paragraph{Doxygen}
+Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generation of a Javadoc-like html description of the driver api. While this generation is not required for the driver, it is highly recommended for easier integration of the generated driver.
+
+\section{Process}
+\label{sec:process}
+If the tools described in \Cref{sec:setup} are correctly installed, the following steps should provide you with a working version of the driver generator.
+
+\subsection{Building the Generator}
 First of all, the project has to be checked out. As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.}
 
-After checking out the project, all sources have to be compiled and packaged. This can be done using the gradle build tool.\footnote{Gradle is available at \url{http://www.gradle.org/}. The command to build a jar package is \texttt{gradle jar}. Simply type it in a terminal in the project root repository, where the file \texttt{build.gradle} is located. Also, JDK 6 or above is required to build the project.} Running the build file will generate an executable jar package under the path \texttt{<project>/build/lib}. Navigate there and try running it using the command \texttt{java -jar <name of the jar package>}.\footnote{This should result in an error, since no .mhs file has been specified.} 
+After checking out the project, all sources have to be compiled and packaged. This can be done using the gradle build tool. The command to build a jar package is \texttt{gradle jar}. Simply type it in a shell in the project root repository, where the file \texttt{build.gradle} is located. Running the build file will generate an executable jar package under the path \texttt{<project>/build/libs}. Navigate there and try running it using the command \texttt{java -jar <name of the jar package>}.\footnote{This should result in the usage help and an error, since no .mhs file has been specified.} 
 
-\subsection{Command Line Interface}
-The HOPP Driver Generator can be called using the command line interface (CLI). While the tool generates C/C++ code, it is written in Java and therefore requires an installation of Java 6 or above. The CLI offers several parameters to futher configure the run of the generator, listed in \Cref{tab:cliParams}.
+\subsection{Running the Generator}
+The HOPP Driver Generator can be called using the command line interface (CLI). The CLI offers several parameters to further configure the run of the generator, listed in \Cref{tab:cliParams}.
 
 \begin{table}
 \centering
@@ -162,82 +172,17 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 
 Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like \texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.
 
-\subsection{Resulting Artifacts}
 The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
 
-\subsubsection{Board Part}
-For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
+In addition to the required sources, documentation for both host- and board-side sources is generated, using doxygen.
 
-\subsubsection{Client Part}
+\chapter{Driver Description}
+This section should provide a conceptual overview of the driver parts. For pure users of the driver generator, only parts of the client side are really relevant. Developers might also be interested in the server part.
+
+For a more detailed documentation of the code and provided methods, Javadoc style comments are provided, which can be transformed into an html or tex representation similar to the Java API specification using doxygen (see \Cref{sec:start} for details on how to enable documentation generation).
+
+\section{Host Side}
 The client side consists of several cpp sources and headers files. These files can be imported in any client side project and be used to wrap communication with components on the board.
-
-\section{API}
-%why not do all this stuff statically? Can there be more than one? When the driver has been generated for this specific board?? Or should I do the configuration more dynamically??
-%Question: more general classes and then instantiate at runtime? Or should I provide concrete classes with fixed methods extending the general classes? 
-%While the first one would probably be more flexible and also allow relatively easy modifications of the driver without rebuilding, the latter provides more type safety, since the more generic methods taking parameters (like the internal port identifier or memory address to write to) can be completely hidden from the user. I prefer the latter one... (which would probably again underline possibility of a more model...
-This section should provide the user with a conceptual overview of the client part of the driver (which should be the only piece of software, you get in contact with). For a more detailed documentation of the code and provided methods, Javadoc style comments are provided, which can be transformed into an html or tex representation similar to the Java API using \textit{doxygen}\footnote{\url{www.doxygen.org/}}.
-
-\paragraph{Generating the API}
-%\textcolor{red}{Maybe, generate a script to do this (bashscript should suffice... it's a single command) or (even better) include this generation step in a more high level script calling the generator}
-
-After downloading and setting up doxygen, you can generate the API for your specific driver using the \texttt{--doc} parameter (for Windows users: \texttt{doxygen.exe} has to be added to your \texttt{PATH} variable). This will generate client as well as server documentation beside the respective source files in a \texttt{doc} folder.
-
-\subsection{Overview}
-
-\subsection{Component}
-For each port on the component, a method returning the corresponding port object will be generated.
-
-\subsection{Port}
-A port object contains methods for receiving or sending data, depending on the type of the port. Naturally, receiving ports only contain methods for receiving data and sending ports only for sending. Dual ports contain the methods of both. Ports are restricted to a specific data type, i.e. bitwidth.
-
-\chapter{Developer-Documentation}
-\label{sec:devDoc}
-This section is addressed to future developers of the Driver Generator and describes the architecture and implementation of the generator itself.
-
-\section{Overview}
-
-\subsection{JFlex \& Cup}
-This can be kept short with a reference to the JFlex/Cup documentation
-
-\subsection{Katja}
-The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the C/C++ language described in detail in \Cref{sec:cmodel}.
-
-\section{Architecture}
-The overall idea of the driver generator is described by \Cref{fig:process}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs all required header- and source files.
-
-\begin{figure}
-\centering
-\begin{tikzpicture}[scale=1, transform shape]
-\coordinate(center);
-\node[tool] (gen) at (0,0) {Generator};
-
-\node[file, above=1cm] (ast) at (gen) {Board AST};
-\node[tool, above=1cm] (parser) at (ast) {Parser};
-\node[file, above=1cm] (mhs) at (parser) {.mhs file};
-
-%TODO there is probably a better way to draw this with tikz - but there always is a better way ;)
-\node[file, below left = 1.5cm and 0cm of gen] (board3) {};
-\node[file, above right = -2.8em and -9em of board3] (board2) {};
-\node[file, above right = -2.8em and -9em of board2] (board1) {board files};
-
-\node[file, below right = 1.5cm and 0cm of gen] (host3) {};
-\node[file, above right = -2.8em and -9em of host3] (host2) {};
-\node[file, above right = -2.8em and -9em of host2] (host1) {host files};
-
-\node[group, fit=(board1) (board2) (board3), label={95:board side}] (board) {};
-\node[group, fit=(host1) (host2) (host3), label={75:host side}] (host) {};
-
-\draw[arr] (mhs) to node[auto] {input} (parser);
-\draw[arr] (parser) to node[auto] {generates} (ast);
-\draw[arr] (ast) to node[auto] {input} (gen);
-\draw[arr] (gen) to node[left] {generates} (board);
-\draw[arr] (gen) to node[right] {generates} (host);
-
-\draw[arr, <->] (board) to node[below] {communicate} (host);
-\end{tikzpicture}
-\caption{A rough sketch of the translation process so far}
-\label{fig:process}
-\end{figure}
 
 \begin{figure}
 \centering
@@ -302,34 +247,6 @@ The overall idea of the driver generator is described by \Cref{fig:process}. The
 \label{fig:archHost}
 \end{figure}
 
-%\begin{figure}
-%\centering
-%\begin{tikzpicture}[scale=1, transform shape]
-%\coordinate(center);
-%\node[class] (component) at (0,0) {Component};
-%\node[class, below left=2.5cm and 1.5cm] (interface) at (component) {Interface};
-%\node[class, below right=2.5cm and 1.5cm] (port) at (component) {Port};
-%
-%\node[above=8em] (anchor1) at (interface) {};
-%\node[above=8em] (anchor2) at (port) {};
-%
-%\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor1);
-%\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor2);
-%
-%\draw[aggregate, shorten <= -0.35em] (anchor1) to node[auto] {} (component);
-%\draw[aggregate, shorten <= -0.35em] (anchor2) to node[auto] {} (component);
-%
-%\node[ann, above left = 0em and 3.25em] (arr1) at (component) {1};
-%\node[ann, above right = 0em and 3.25em] (arr2) at (component) {1};
-%
-%\node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
-%\node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
-%
-%\end{tikzpicture}
-%\caption{Architecture of the host part (to come)}
-%\label{fig:archHost}
-%\end{figure}
-
 The (intended) architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
 
 \subsection{Component}
@@ -357,13 +274,62 @@ Communication over Ethernet is based on the lightweight IP stack, originally dev
 
 \textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
 
-\section{Transformation}
-\textcolor{red}{Explain the transformation of the source file into the c model (and what files, classes and methods exactly are generated).}
+\section{Board Side}
+For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
 
-\section{Generation Backend}
-This section is used to introduce the C generation backend. \textcolor{red}{A reference to the third Katja report might be useful.}
 
-\subsection{CModel}
+
+\chapter{Generator}
+This chapter is used to introduce the C generation backend. \textcolor{red}{A reference to the third Katja report might be useful.}
+
+\section{Used Tools}
+This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction.
+
+\subsection{JFlex \& Cup}
+\textcolor{red}{This can be kept short with a reference to the JFlex/Cup documentation}
+
+\subsection{Katja}
+The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the C/C++ language described in detail in \Cref{sec:cmodel}.
+
+\section{Process}
+\label{sec:process}
+The overall process of the driver generator is described by \Cref{fig:process}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs all required header- and source files.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+\node[tool] (gen) at (0,0) {Generator};
+
+\node[file, above=1cm] (ast) at (gen) {Board AST};
+\node[tool, above=1cm] (parser) at (ast) {Parser};
+\node[file, above=1cm] (mhs) at (parser) {.mhs file};
+
+%TODO there is probably a better way to draw this with tikz - but there always is a better way ;)
+\node[file, below left = 1.5cm and 0cm of gen] (board3) {};
+\node[file, above right = -2.8em and -9em of board3] (board2) {};
+\node[file, above right = -2.8em and -9em of board2] (board1) {board files};
+
+\node[file, below right = 1.5cm and 0cm of gen] (host3) {};
+\node[file, above right = -2.8em and -9em of host3] (host2) {};
+\node[file, above right = -2.8em and -9em of host2] (host1) {host files};
+
+\node[group, fit=(board1) (board2) (board3), label={95:board side}] (board) {};
+\node[group, fit=(host1) (host2) (host3), label={75:host side}] (host) {};
+
+\draw[arr] (mhs) to node[auto] {input} (parser);
+\draw[arr] (parser) to node[auto] {generates} (ast);
+\draw[arr] (ast) to node[auto] {input} (gen);
+\draw[arr] (gen) to node[left] {generates} (board);
+\draw[arr] (gen) to node[right] {generates} (host);
+
+\draw[arr, <->] (board) to node[below] {communicate} (host);
+\end{tikzpicture}
+\caption{A rough sketch of the translation process so far}
+\label{fig:process}
+\end{figure}
+
+\section{CModel}
 \label{sec:cmodel}
 The c model provides data types representing a c/c++ program. Note, that the model is neither complete nor always valid, i.e. not all c programs can be described using this model and it is possible to specify a model not translating into valid c. Still, the model simplifies the process of code generation. The model is used for generating C as well as C++ code.
 
@@ -429,7 +395,7 @@ MTag = PARAM      ( String name, Strings details )
 
 For generation of the API, Javadoc style documentation has to be added to the model. A \texttt{MDocumentation} element contains documentation for the following block as well as possibly several tags. Tags can be parameter or return value descriptions of a method/procedure, descriptions for exception behaviour, deprecation descriptions or references to other elements of the code. The \texttt{JAVADOC\_AUTOBRIEF} option is set in the generated doxygen config files, resulting in the first sentence (concluded by a dot and following space or newline) will be used as short description for the documented program part. Since neither the driver generator nor doxygen perform sanity checks, we rely on the user to only introduce meaningful tags for a documentation element. Note further, that the order of tags influences the order of elements in the generated API description.
 
-\subsection{Unparser}
+\section{Unparser}
 Different unparsers are used, to translate the C model in actual code. For each instance of the model, a header file and a corresponding source file, either C or C++, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain C, files intended for the client side can also be C++ files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
 
 \paragraph{Header Unparser}
@@ -442,6 +408,8 @@ Since plain C doesn't have any concept of classes, using a model with classes in
 
 \paragraph{C++ Unparser}
 For the C++ unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
+
+
 
 \addtocontents{toc}{\protect\vspace*{\fill}}
 
