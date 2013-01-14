@@ -38,7 +38,7 @@ public class Files {
             copy(in, out, debug);
         } else {
             // if the file pointing to the resource doesn't exist, it probably is inside a jar file
-            if(debug) System.out.println("      resource " + in + " seems to point inside a jar file");
+            if(debug) System.out.println("      resource seems to point inside a jar file");
             
             // get the jar file, where the resource is contained
             JarFile jarFile = ((JarURLConnection)url.openConnection()).getJarFile(); 

@@ -1,6 +1,10 @@
 package de.hopp;
 
+import static de.hopp.generator.utils.Ethernet.unparseIP;
+import static de.hopp.generator.utils.Ethernet.unparseMAC;
+
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Configuration of the generator run itself, not of the board
@@ -168,4 +172,28 @@ public class Configuration {
     public int[] getGW()     { return gw; }
     /** get the port over which Ethernet communication should be sent */
     public int getPort()     { return port; }
+    
+    public static void printConfig(Configuration config) {
+        
+        System.out.print("  client folder    : ");
+        try {
+            System.out.println(config.clientDir().getCanonicalPath());
+        } catch (IOException e) {
+            System.out.println(config.clientDir());
+        }
+        
+        System.out.print("  server folder    : ");
+        try {
+            System.out.println(config.serverDir().getCanonicalPath());
+        } catch (IOException e) {
+            System.out.println(config.serverDir());
+        }
+        
+        System.out.println("  MAC address      : " + unparseMAC(config.getMAC()));
+        System.out.println("  IP address       : " + unparseIP( config.getIP()));
+        System.out.println("  network mask     : " + unparseIP( config.getMask()));
+        System.out.println("  standard gateway : " + unparseIP( config.getGW()));
+        System.out.println("  used port        : " + config.getPort());
+        System.out.println("  debug driver     : " + (config.debug() ? "yes" : "no"));
+    }
 }

@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static de.hopp.generator.utils.Ethernet.*;
+import static de.hopp.generator.utils.BoardUtils.printBoard;
 
 import de.hopp.generator.Generator;
 import de.hopp.generator.board.Board;
@@ -102,27 +103,21 @@ public class Main {
         System.out.println();
         System.out.println("started HOPP Driver Generator with the following command line parameters:");
         System.out.println("  source .mhs file : " + schemaFile);
-        System.out.println("  client folder    : " + config.clientDir());
-        System.out.println("  server folder    : " + config.serverDir());
-        System.out.println("  MAC address      : " + unparseMAC(config.getMAC()));
-        System.out.println("  IP address       : " + unparseIP( config.getIP()));
-        System.out.println("  network mask     : " + unparseIP( config.getMask()));
-        System.out.println("  standard gateway : " + unparseIP( config.getGW()));
-        System.out.println("  used port        : " + config.getPort());
-        System.out.println("  debug driver     : " + (config.debug() ? "yes" : "no"));
+        Configuration.printConfig(config);
         
         // start parser
         System.out.println();
         System.out.println("starting parser");
         Board board = new Parser2(config).parse(schemaFile);
         System.out.println("parser finished");
-        if(config.verbose()) System.out.println("  DEBUG: got the following board: " + board.toString());
+        if(config.verbose()) System.out.println("  DEBUG: " + printBoard(board));
         
         // instantiate and run generator with this configuration
         System.out.println();
         System.out.println("starting c/c++ generator");
         Generator generator = new Generator(config, board);
         generator.generate();
+        System.out.println();
         System.out.println("generator finished");
         
         // finished

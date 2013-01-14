@@ -41,4 +41,34 @@ public class BoardUtils {
         }
         return false;
     }
+    
+    public static String printBoard(Board board) {
+        String rslt = "board has the following components";
+        for(Component comp : board.components()) {
+            rslt += comp.Switch(new Component.Switch<String, NE>(){
+                public String CaseUART(UART term) {
+                    return "\n    -uart";
+                }
+                public String CaseETHERNET_LITE(ETHERNET_LITE term) {
+                    return "\n    -ethernet lite";
+                }
+                public String CaseETHERNET(ETHERNET term) {
+                    return "\n    -ethernet";
+                }
+                public String CasePCIE(PCIE term) {
+                    return "\n    -pcie";
+                }
+                public String CaseLEDS(LEDS term) {
+                    return "\n    -leds";
+                }
+                public String CaseSWITCHES(SWITCHES term) {
+                    return "\n    -switches";
+                }
+                public String CaseBUTTONS(BUTTONS term) {
+                    return "\n    -buttons";
+                }
+            });
+        }
+        return rslt;
+    }
 }

@@ -96,9 +96,10 @@ public class Generator {
     private static void doxygen(File dir) {
         try {
             String line;
+            // TODO probably need .exe extension for windows?
             Process p = new ProcessBuilder("doxygen", "doxygen.cfg").directory(dir).redirectErrorStream(true).start();
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            System.out.println(p.waitFor());
+            p.waitFor();
             while ((line = input.readLine()) != null) {
                 System.out.println(line);
             }

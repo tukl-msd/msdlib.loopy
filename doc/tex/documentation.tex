@@ -90,6 +90,33 @@
 \thispagestyle{empty}
 \newpage
 
+%Documentation Structure:
+%
+%Former:
+%
+%Strict distinction between user and developer documentation resulting in parts documented twice
+%
+%1. Intro
+%2. User Documentation
+%2.1 Getting started
+%2.2 API
+%3. Developer Documentation
+%3.1 Overview
+%3.2 Architecture
+%3.3 Transformation
+%3.4 Generation Backend
+%
+%New: 
+%
+%less strict distinction, document slowly moving from user doc to dev doc
+%
+%1. Intro
+%2. Getting started (2.1 of old document)
+%3. Architecture    (explanation of generated code, mixture of former 2.2 and 3.2)
+%3.1 Client         (explanation of client side api, 2.2)
+%3.2 Server         (explanation of server side "api", somewhere in 3.2/3.3)
+%4. Generator       (explanation of the generator itself, former 3.3/3.4)
+
 \chapter{Introduction}
 This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. Users can find an easy to understand explanation of the generator as well as usage examples in \Cref{sec:userDoc}. Developers and other interested readers can find details about the architecture and implementation of the generator in \Cref{sec:devDoc}.
 
@@ -151,10 +178,9 @@ The client side consists of several cpp sources and headers files. These files c
 This section should provide the user with a conceptual overview of the client part of the driver (which should be the only piece of software, you get in contact with). For a more detailed documentation of the code and provided methods, Javadoc style comments are provided, which can be transformed into an html or tex representation similar to the Java API using \textit{doxygen}\footnote{\url{www.doxygen.org/}}.
 
 \paragraph{Generating the API}
-\textcolor{red}{Maybe, generate a script to do this (bashscript should suffice... it's a single command) or (even better) include this generation step in a more high level script calling the generator}
+%\textcolor{red}{Maybe, generate a script to do this (bashscript should suffice... it's a single command) or (even better) include this generation step in a more high level script calling the generator}
 
-After downloading and setting up doxygen, you can generate the API for your specific driver using the command \texttt{doxygen doxygen.cfg} in either the client or server folder (which will generate the client or server documentation respectively). These config files are generated together with the c code.
-As a result, a \texttt{doc} folder containing both html and tex descriptions will be generated.
+After downloading and setting up doxygen, you can generate the API for your specific driver using the \texttt{--doc} parameter (for Windows users: \texttt{doxygen.exe} has to be added to your \texttt{PATH} variable). This will generate client as well as server documentation beside the respective source files in a \texttt{doc} folder.
 
 \subsection{Overview}
 
