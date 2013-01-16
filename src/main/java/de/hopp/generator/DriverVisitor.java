@@ -1,7 +1,6 @@
 package de.hopp.generator;
 
 import katja.common.NE;
-import de.hopp.Configuration;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
 import de.hopp.generator.model.*;

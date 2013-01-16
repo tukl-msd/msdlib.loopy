@@ -5,7 +5,7 @@ version = '0.0.1'
 description = 'some interesting description'
 
 String libDir       = "$projectDir/lib"
-String genLibDir    = "$projectDir/lib"
+String genLibDir    = "$projectDir/lib-gen"
 String specDir      = "$projectDir/specs"
 String genDir       = "$projectDir/src-gen"
 String parserGenDir = "$genDir/de/hopp/generator/parser"
@@ -25,9 +25,10 @@ String mhs          = "$genLibDir/MHS.jar"
 String board        = "$genLibDir/BoardSpec.jar"
 String model        = "$genLibDir/Model.jar"
 
-String cupParser    = "$parserGenDir/parser.java"
-String flexScanner  = "$parserGenDir/Lexer.java"
-String symTab       = "$parserGenDir/sym.java"
+String cupParserFile = "parser"
+String cupParser     = "$parserGenDir/{$cupParserFile}.java"
+String flexScanner   = "$parserGenDir/Lexer.java"
+String symTab        = "$parserGenDir/sym.java"
 
 repositories {
   mavenCentral()
@@ -64,7 +65,7 @@ eclipse {
 // removes src-gen folder
 task removeGen << {
   delete "$genDir"
-  // delete "$genLibDir"
+  delete "$genLibDir"
 }
 
 // removes generated AST
@@ -147,7 +148,7 @@ task runCup {
   outputs.files(cupParser, symTab)
   doLast {
     ant.taskdef name: 'jcup', classname: 'java_cup.anttask.CUPTask', classpath: cupLib
-    ant.jcup(srcfile: cupSpec, destdir: genDir)
+    ant.jcup(srcfile: cupSpec, destdir: genDir, parser: cupParserFile)
 // srcfile, destdir, interface = true/false, package
   }
 }
@@ -155,9 +156,9 @@ task runCup {
 task generateResources
 
 clean.dependsOn removeGen
-clean.dependsOn removeAST
-clean.dependsOn removeBoard
-clean.dependsOn removeModel
+// clean.dependsOn removeAST
+// clean.dependsOn removeBoard
+// clean.dependsOn removeModel
 
 runKatja.dependsOn buildAST
 runKatja.dependsOn buildBoard

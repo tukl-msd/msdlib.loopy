@@ -11,20 +11,23 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 
 import java_cup.runtime.Symbol;
-import de.hopp.Configuration;
+import de.hopp.generator.Configuration;
+import de.hopp.generator.IOHandler;
 import de.hopp.generator.board.Board;
 
 public class Parser2 {
 
     Configuration config;
+    IOHandler IO;
     
     public Parser2(Configuration config) {
         this.config = config;
+        this.IO = config.IOHANDLER();
     }
     
     public Board parse(File f) {
         try {
-            System.out.println("  parsing .mhs file ...");
+            IO.println("  parsing .mhs file ...");
 
             // setup lexer and parser
             FileReader fr = new FileReader(f);
@@ -35,7 +38,7 @@ public class Parser2 {
             Symbol ast = parser.parse();
             MHSFile mhs = (MHSFile) ast.value;
             
-            System.out.println("  generating board model ...");
+            IO.println("  generating board model ...");
             MHSVisitor visitor = new MHSVisitor();
             visitor.visit(mhs);
             

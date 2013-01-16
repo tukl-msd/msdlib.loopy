@@ -1,10 +1,9 @@
-package de.hopp;
+package de.hopp.generator;
 
 import static de.hopp.generator.utils.Ethernet.unparseIP;
 import static de.hopp.generator.utils.Ethernet.unparseMAC;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * Configuration of the generator run itself, not of the board
@@ -12,6 +11,8 @@ import java.io.IOException;
  * @author Thomas Fischer
  *
  */
+
+
 public class Configuration {
 
     // destination folders
@@ -23,12 +24,19 @@ public class Configuration {
     private File clientDir = new File(defaultClientDir);
     
     // Ethernet related properties
-    public final static String[] defaultMAC  = {"00","0a","35","00","01","02"};
-    public final static int[]    defaultIP   = {192,169,  1, 10},
+    public static final String[] defaultMAC  = {"00","0a","35","00","01","02"};
+    public static final int[]    defaultIP   = {192,169,  1, 10},
                                  defaultGW   = {192,169,  1, 23},
                                  defaultMask = {255,255,255,  0};
-    public final static int      defaultPort = 8844;
+    public static final int      defaultPort = 8844;
 
+    public static final int LOG_QUIET   = 0;
+    public static final int LOG_INFO    = 1;
+    public static final int LOG_VERBOSE = 2;
+    public static final int LOG_DEBUG   = 3;
+
+    private int loglevel = 1;
+    
     private String[] mac  = defaultMAC;
     private int []   ip   = defaultIP,
                      gw   = defaultGW,
@@ -37,10 +45,14 @@ public class Configuration {
     
     // debug flags
     private boolean debug   = false;
-    private boolean verbose = false;
+//    private boolean verbose = false;
+    
+    private IOHandler IO;
     
 //    /** setup an empty driver generator configuration */
-//    public Configuration() { }
+    public Configuration() { 
+        IO = new IOHandler(this);
+    }
     
     /** set the directory, into which the client-side files of the driver should be generated */
     public void setClientDir(File dir) {
@@ -63,10 +75,15 @@ public class Configuration {
     /** enables the debug flag, which will result in additional console prints of the driver */
     public void enableDebug() {
         debug = true;
+//        loglevel = PRINT_DEBUG;
     }
     /** enables the verbose flag, which will result in additional console prints of the driver generator */
     public void enableVerbose() {
-        verbose = true;
+        loglevel = LOG_VERBOSE;
+//        verbose = true;
+    }
+    public void enableQuiet() {
+        loglevel = LOG_QUIET;
     }
 
     /** set mac address, which should be generated in driver. The mac
@@ -129,6 +146,12 @@ public class Configuration {
         this.port = port;
     }
    
+    public void setPrintLevel(int printLevel) {
+             if (printLevel < LOG_QUIET) loglevel = LOG_QUIET;
+        else if (printLevel > LOG_DEBUG) loglevel = LOG_DEBUG;
+        else loglevel = printLevel;
+    }
+
     /** converts ip addresses represented as string arrays int integer arrays.
      * Also does validity checks for the given ip address.
      * @throws IllegalArgumentException The given string array does not fulfill
@@ -151,6 +174,7 @@ public class Configuration {
         }
         return targ;
     }
+
     
 //    /** get the directory, into which the driver should be generated */
 //    public File getDest()    { return destDir; }
@@ -161,7 +185,7 @@ public class Configuration {
     /** get the debug flag indicating additional console print outs of the generated driver */
     public boolean debug()   { return debug; }
     /** get the verbose flag indicating additional console print outs of the driver generator */
-    public boolean verbose() { return verbose; }
+//    public boolean verbose() { return verbose; }
     /** get the MAC address for the board */
     public String[] getMAC() { return mac; }
     /** get the IP address for the board */
@@ -172,28 +196,32 @@ public class Configuration {
     public int[] getGW()     { return gw; }
     /** get the port over which Ethernet communication should be sent */
     public int getPort()     { return port; }
+    /** check if the generator is set to produce no console output */
+    public boolean QUIET()   { return loglevel == LOG_QUIET; }
+    /** check if the generator is set to produce more console output */
+    public boolean VERBOSE() { return loglevel >= LOG_VERBOSE; }
+    /** check if the generator is set to produce debug console output */
+    public boolean DEBUG()   { return loglevel >= LOG_DEBUG; }
     
-    public static void printConfig(Configuration config) {
+    public IOHandler IOHANDLER() { return IO; }
+    
+    public void printConfig() {
+        IO.println("- client folder    : " + clientDir().getAbsolutePath());
+        IO.println("- server folder    : " + serverDir().getAbsolutePath());
         
-        System.out.print("  client folder    : ");
-        try {
-            System.out.println(config.clientDir().getCanonicalPath());
-        } catch (IOException e) {
-            System.out.println(config.clientDir());
+        IO.print  ("- log level        : ");
+        switch(loglevel) {
+        case 1: IO.println("info");    break;
+        case 2: IO.println("verbose"); break;
+        case 3: IO.println("debug");   break;
+        default: // should never happen
         }
         
-        System.out.print("  server folder    : ");
-        try {
-            System.out.println(config.serverDir().getCanonicalPath());
-        } catch (IOException e) {
-            System.out.println(config.serverDir());
-        }
-        
-        System.out.println("  MAC address      : " + unparseMAC(config.getMAC()));
-        System.out.println("  IP address       : " + unparseIP( config.getIP()));
-        System.out.println("  network mask     : " + unparseIP( config.getMask()));
-        System.out.println("  standard gateway : " + unparseIP( config.getGW()));
-        System.out.println("  used port        : " + config.getPort());
-        System.out.println("  debug driver     : " + (config.debug() ? "yes" : "no"));
+        IO.println("- MAC address      : " + unparseMAC(getMAC()));
+        IO.println("- IP address       : " + unparseIP( getIP()));
+        IO.println("- network mask     : " + unparseIP( getMask()));
+        IO.println("- standard gateway : " + unparseIP( getGW()));
+        IO.println("- used port        : " + getPort());
+        IO.println("- debug driver     : " + (debug() ? "yes" : "no"));
     }
 }

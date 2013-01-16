@@ -5,6 +5,7 @@ syntax: glob
 *.*~
 .settings
 src-gen
+lib-gen
 lib/BoardSpec.jar
 lib/MHS.jar
 lib/Model.jar
@@ -15,7 +16,10 @@ doc/tex/*.aux
 doc/tex/*.bak
 doc/tex/*.bbl
 doc/tex/*.blg
+doc/tex/*.fls
+doc/tex/*.fdb_latexmk
 doc/tex/*.log
 doc/tex/*.out
 doc/tex/*.synctex.gz
 doc/tex/*.toc
+

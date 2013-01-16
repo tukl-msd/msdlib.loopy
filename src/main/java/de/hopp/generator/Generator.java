@@ -12,17 +12,22 @@ import java.io.InputStreamReader;
 
 import katja.common.NE;
 
-import de.hopp.Configuration;
 import de.hopp.generator.board.*;
+import de.hopp.generator.exceptions.Error;
 import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.InvalidConstruct;
+import de.hopp.generator.exceptions.UsageError;
+import de.hopp.generator.exceptions.Warning;
 import de.hopp.generator.model.*;
 import de.hopp.generator.unparser.CppUnparser;
 import de.hopp.generator.unparser.CUnparser;
 import de.hopp.generator.unparser.HUnparser;
+
 public class Generator {
 
     private Configuration config;
+    private IOHandler IO;
+    private ErrorCollection errors;
     private Board board;
     
     private static final MFile DUMMY_FILE = 
@@ -30,50 +35,46 @@ public class Generator {
     
     private enum UnparserType { HEADER, C, CPP }
 
-    public Generator(Configuration config, Board board) {
-        this.config = config;
+    public Generator(Main main, Board board) {
+        this.config = main.config();
+        this.IO     = main.io();
+        this.errors = main.errors();
         this.board  = board;
     }
     
     public void generate() {
 
         // setup required folders
-        System.out.println("  setting up required folders ...");
+        IO.println("  setting up required folders ...");
 //        if(! config.getDest().exists()) config.getDest().mkdirs();
         if(! config.serverDir().exists()) config.serverDir().mkdirs();
         if(! config.clientDir().exists()) config.clientDir().mkdirs();
         
-        // copy fixed parts (i.e. client side api and doxygen configs)
-        System.out.println("  deploying generic client and server code ...");
-        
-        try {
-            copy("deploy/client", config.clientDir(), config.verbose());
-            copy("deploy/server", config.serverDir(), config.verbose());
-            if(config.verbose()) System.out.println();
-        } catch (IOException e) {
-            System.out.println("    ERROR: " + e.getMessage());
-            throw new ExecutionFailed();
-        }
-        
-        // generate the board and client drivers
-        System.out.println("  generating board side driver model ...");
+        // generate the board and client driver models
+        IO.println("  generating driver models ...");
         MFileInFile boardDriver = MFileInFile(generateBoardDriver());
-        System.out.println("  generating client side driver model ...");
         @SuppressWarnings("unused")
         MFileInFile clientDriver  = MFileInFile(generateClientDriver());
         
-        // setup output file
-        System.out.println("  finished model generation");
-        System.out.println();
-
-        System.out.println("  generating board side driver files ...");
-        System.out.println("    generating header file ...");
-        printMFile(boardDriver, false, UnparserType.HEADER);
+        // if there are errors abort here
+        if(errors.hasErrors()) return;
         
-        System.out.println("    generating source file ...");
-        printMFile(boardDriver, false, UnparserType.C);
-//        
-        System.out.println("    generating client side driver files ...");
+        // copy fixed parts (i.e. client side api and doxygen configs)
+        IO.println("  deploying generic client and server code ...");
+        
+        try {
+            copy("deploy/client", config.clientDir(), IO);
+            copy("deploy/server", config.serverDir(), IO);
+            IO.verbose("");
+        } catch (IOException e) {
+            errors.addError(new UsageError(e.getMessage()));
+//            IO.println("    ERROR: " + e.getMessage());
+//            throw new ExecutionFailed();
+        }
+        
+        // abort if any errors occurred
+        if(errors.hasErrors()) return;
+        
         // generate the constants file with the debug flag
         printMFile(MFileInFile(MFile("constants", MDefinitions(
                     MDefinition(MDocumentation(Strings(
@@ -82,30 +83,69 @@ public class Generator {
                 )), MStructs(), MEnums(), MAttributes(), MMethods())),
                 true, UnparserType.C);
         
-//        System.out.println("      generating header file ...");
+        // unparse generated models to corresponding files
+        IO.println("  generating board side driver files ...");
+        printMFile(boardDriver, false, UnparserType.HEADER);
+        printMFile(boardDriver, false, UnparserType.C);
+        
+        // abort if any errors occurred
+        if(errors.hasErrors()) return;
+        
+        IO.println("  generating client side driver files ...");
+        
+//        IO.println("      generating header file ...");
 //        printMFile(clientDriver, true, UnparserType.HEADER);
 //        
-//        System.out.println("      generating source file ...");
+//        IO.println("      generating source file ...");
 //        printMFile(clientDriver, true, UnparserType.CPP);
         
-        System.out.println("  generate documentation ...");
+        if(errors.hasErrors()) return;
+        
+        // run doxygen generation
+        IO.println("  generate api specification ...");
+        IO.println("    generate host-side api specification ... ");
         doxygen(config.clientDir());
-//        doxygen(config.serverDir());
+//        IO.println("    generate board-side api specification ... ");
+//        doxygen(config.serverDir(), config.verbose()));            
+
     }
     
-    private static void doxygen(File dir) {
+    private void doxygen(File dir) {
+        BufferedReader input = null;
+        
         try {
             String line;
             // TODO probably need .exe extension for windows?
+            // run doxygen in the provided directory
             Process p = new ProcessBuilder("doxygen", "doxygen.cfg").directory(dir).redirectErrorStream(true).start();
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            p.waitFor();
-            while ((line = input.readLine()) != null) {
-                System.out.println(line);
+            input     = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            // wait for the process to terminate and store the result
+            int rslt = p.waitFor();
+
+            // if something went wrong, print a warning
+            if(rslt != 0) {
+                errors.addWarning(new Warning("failed to generate api specification at " +
+                        dir.getPath() + ".run in verbose mode for more information"));
+                if(! config.VERBOSE()) return;
             }
-            input.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            
+            // if verbose, echo the output of doxygen
+//            if(input.ready())
+//                IO.verbose("    doxygen encountered the following warnings/errors:");
+            while ((line = input.readLine()) != null)
+                IO.verbose("      " + line);
+            
+            // throw an exception if something went wrong (in case the surrounding call treats failures somehow)
+//            if(rslt != 0) throw new ExecutionFailed();
+            
+        } catch (IOException | InterruptedException e) {
+            errors.addWarning(new Warning("failed to generate api specification at " + 
+                    dir.getPath() + "due to: " + e.getMessage()));
+        } finally {
+            try { 
+                if(input != null) input.close();
+            } catch(IOException e) { /* well... memory leak... */ }
         }
     }
 
@@ -181,9 +221,7 @@ public class Generator {
         try {
             visitor.visit(mfile);
         } catch (InvalidConstruct e) {
-           System.err.println("encountered invalid construct for plain c unparser:");
-           System.err.println("  " + e.getMessage());
-           throw new ExecutionFailed();
+           errors.addError(new UsageError(e.getMessage()));
         }
                
         // set output file
@@ -200,11 +238,15 @@ public class Generator {
         case HEADER : target = new File(target, mfile.name().term() +   ".h"); break;
         case C      : target = new File(target, mfile.name().term() +   ".c"); break;
         case CPP    : target = new File(target, mfile.name().term() + ".cpp"); break;
-        default     : throw new IllegalStateException();
+        default     : errors.addError(new UsageError("invalid unparser")); return;
         }
         
         // print buffer contents to file
-        printBuffer(buf, target);
+        try {
+            printBuffer(buf, target);
+        } catch(IOException e) {
+            errors.addError(new UsageError(e.getMessage()));
+        }
     }
 
     private static MFileInFile.Visitor<InvalidConstruct> createUnparser(UnparserType type, StringBuffer buf, String name) {
@@ -223,24 +265,17 @@ public class Generator {
      * @param target file into which the buffer content should be printed
      * @throws IOException error during file creation or the print
      */
-    private static void printBuffer(StringBuffer buf, File target) {
-        try {
-            // create the files and parent directories if they don't exist
-            if(target.getParentFile() != null && ! target.getParentFile().exists())
-                target.getParentFile().mkdirs();
-            if(! target.exists())
-                target.createNewFile();
+    private static void printBuffer(StringBuffer buf, File target) throws IOException {
+        // create the files and parent directories if they don't exist
+        if(target.getParentFile() != null && ! target.getParentFile().exists())
+            target.getParentFile().mkdirs();
+        if(! target.exists())
+            target.createNewFile();
             
-            // write output into file
-            FileWriter fileWriter = new FileWriter(target);
-            new BufferedWriter(fileWriter).append(buf).flush();
-            fileWriter.close();
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("io error on file " + target.getPath());
-            throw new IllegalStateException();
-        }
+        // write output into file
+        FileWriter fileWriter = new FileWriter(target);
+        new BufferedWriter(fileWriter).append(buf).flush();
+        fileWriter.close();
     }
 
     /**

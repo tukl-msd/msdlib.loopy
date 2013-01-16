@@ -17,7 +17,6 @@ import static de.hopp.generator.model.Model.MType;
 import static de.hopp.generator.model.Model.QUOTES;
 import static de.hopp.generator.model.Model.Strings;
 import katja.common.NE;
-import de.hopp.Configuration;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
 import de.hopp.generator.model.MFile;
@@ -27,8 +26,6 @@ public class ClientVisitor extends Visitor<NE> {
 
     private Configuration config;
     
-    private boolean debug;
-    
     private MFile file;
     
     private MMethod init;
@@ -37,7 +34,6 @@ public class ClientVisitor extends Visitor<NE> {
     
     public ClientVisitor(Configuration config) {
         this.config = config;
-        this.debug = config.debug();
         
         // setup basic methods
         file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());

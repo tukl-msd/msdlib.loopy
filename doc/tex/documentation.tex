@@ -19,7 +19,7 @@
 \definecolor{light-green}{rgb}{0.9,1,0.85}
 
 \usepackage{tikz}
-\usetikzlibrary{matrix,arrows,shadows,positioning,fit,calc,decorations.pathreplacing,decorations.pathmorphing,decorations.shapes,decorations.text,automata}
+\usetikzlibrary{shapes,matrix,arrows,shadows,positioning,fit,calc,decorations.pathreplacing,decorations.pathmorphing,decorations.shapes,decorations.text,automata}
 \tikzset{math mode/.style = {execute at begin node=$, execute at end node=$}}
 
 %tikz
@@ -32,6 +32,7 @@
 \tikzstyle{tool}= [draw, text width=8em, minimum height=2.5em, text centered, draw=RoyalBlue, fill=blue!15 ]
 \tikzstyle{file} = [draw, text width=8em, minimum height=2.5em, text centered, draw=ForestGreen, fill=light-green, rounded corners]
 \tikzstyle{group}=[inner sep=10pt,draw=gray, very thick, dotted, rounded corners=4pt]
+\tikzstyle{netCloud}=[draw, text width=4em, minimum width =10em, minimum height=2em, text centered, cloud, cloud puffs = 15]
 
 % arrows
 \tikzstyle{arr}=[->, >=stealth', thick, gray, shorten >= 0.2mm]
@@ -99,22 +100,39 @@ This document is intended to give an overview over the HOPP Driver Generator for
 %define scope of the generator
 The HOPP Driver Generator itself is intended to provide embedded system developers %that's kinda vague
 with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
+To our knowledge, such an interface for communication with VHDL components has not been done so far, though extensive research exists concerning efficient communication between PCs and FPGAs over different interfaces \cite{lofgren05, alachiotis10, alachiotis12}.
 
-\textcolor{red}{This sentence is just some test for bibliography management...} \cite{fischer12}.
+It has been prototyped with a C++ frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet, but can be easily extended to support other frontend languages, FPGA boards or transport media.
 
 \section{Origins and Goals}
 \label{sec:goals}
-\textcolor{red}{probably better filled out by the EIT department ;)}
+The HOPP Driver Generator was originally and currently is developed by the Software Technology Group of the University of Kaiserslautern in cooperation with the Microelectronic Design Research Group of the University of Kaiserslautern.
+
+The design goals of this project are:
+
+\begin{itemize}
+%those are not really "design" goals, but hey... text... for now
+\item \textcolor{red}{Probably better filled out by the EIT department ;)}
+\item Both, the generator and the driver, should be easy-to-use and setup
+\item It should be easy to write programs using the generated driver api
+
+\item Well-documented api
+\item Modularity and extensibility
+\item Meaningful error description
+\end{itemize}
 
 \section{Terminology}
 \label{sec:term}
 This section explains the terminology used in this document and the project in general.
 
+\paragraph{Driver}
+The complete software product is called the \textit{driver}. It enables  \textcolor{red}{software-side} communication with the hardware platform.
+
 \paragraph{Board / board-side}
-The driver is split in two parts, one of which has to be uploaded and executed to the fpga itself. This part of the driver is referred to as board-side driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead.
+The driver is split in two parts, one of which has to be uploaded and executed to the hardware platform itself. This part of the driver is referred to as board-side driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead.
 
 \paragraph{Host / host-side}
-In contrast to the board-side driver, the host-side driver is the part of the driver which is located on the communicating computer. Sometimes, the term \textit{client} and \textit{client-side} might be used instead.
+In contrast to the board-side driver, the host-side driver is the part of the driver which is located on the communicating computer. This part contains the actual API, embedded developers will work with. Sometimes, the term \textit{client} and \textit{client-side} might be used instead.
 
 
 
@@ -138,9 +156,46 @@ Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distri
 \paragraph{Doxygen}
 Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generation of a Javadoc-like html description of the driver api. While this generation is not required for the driver, it is highly recommended for easier integration of the generated driver.
 
+\paragraph{C/C++ Compiler}
+Since the host side driver is written in C++, it is also required to have a C/C++ compiler present.
+
+\paragraph{Xilinx Toolsuite}
+In order to generate an .elf file that can is used to program the fpga, the Xilinx toolsuite is required. This includes ISE for generating IPs out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform \textcolor{red}{(it MIGHT also be possible to generate .mhs files or whatever the newer format is out of our DSL or replace our DSL with this language, which reduces the number of files that have to be written by the user...)}.
+
 \section{Process}
 \label{sec:process}
 If the tools described in \Cref{sec:setup} are correctly installed, the following steps should provide you with a working version of the driver generator.
+
+%\begin{figure}
+%\centering
+%\begin{tikzpicture}
+%\node[ann] (anchor) at (0,0) {};
+%
+%\node[class, below left = 0em and 4em] (build) at (anchor) {build generator (only once)};
+%\node[class, below right = 0em and 4em] (dsl) at (anchor) {define VHDL files and DSL file};
+%
+%\node[class, below left = 6em and 4em] (gen) at (dsl) {run generator};
+%\node[class, below right = 6em and 4em] (app) at (dsl) {write client application};
+%
+%\node[class, below left = 6em and 4em] (edk) at (gen) {build .elf with Xilinx EDK};
+%\node[class, below right = 6em and 4em] (compile) at (gen) {compile composed application};
+%
+%\node[class, below left = 6em and 4em] (run) at (compile) {program fpga and run application};
+%
+%\draw[arr] (build) to node[auto] {} (gen);
+%\draw[arr] (dsl) to node[auto] {} (gen);
+%\draw[arr] (dsl) to node[auto] {} (app);
+%
+%\draw[arr] (gen) to node[auto] {} (edk);
+%\draw[arr] (gen) to node[auto] {} (compile);
+%\draw[arr] (app) to node[auto] {} (compile);
+%
+%\draw[arr] (edk) to node[auto] {} (run);
+%\draw[arr] (compile) to node[auto] {} (run);
+%\end{tikzpicture}
+%\label{fig:workflow}
+%\caption{Workflow when using the driver generator}
+%\end{figure}
 
 \subsection{Building the Generator}
 First of all, the project has to be checked out. As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.}
@@ -158,13 +213,14 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \verb!-s! & \verb!--server! & Specifies the destination of the server directory. All files for the server (i.e. files used to generate the board side driver) will be generated into the specified directory. If none is specified, a directory "server" will be generated inside the current working directory.\\
 \verb!-c! & \verb!--client! & Specifies the destination of the client directory. All client for the server will be generated into the specified directory. If none is specified, a directory "client" will be generated inside the current working directory.\\ \hline
 \verb!-v! & \verb!--verbose! & The driver generator will print out additional console output. This makes it easier to track errors in the driver generator or the used source file.\\
-\verb!-d! & \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\ \hline
+\verb!-d! & \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\
+\verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
 & \verb!--mac! & used to set the mac address of a possible Ethernet interface of the board. Notation: XX:XX:XX:XX:XX:XX, where each X marks a hexadecimal number (allowing lower as well as upper cases).\\
 & \verb!--ip! & used to set the ip address of a possible Ethernet interface of the board. Notation: X.X.X.X, where each X marks a decimal number ranging from 0 to 255. The same notation is required for the following two parameters.\\
 & \verb!--mask! & used to set the network mask of a possible Ethernet interface of the board.\\
 & \verb!--gw! & used to set the standard gateway of a possible Ethernet interface of the board.\\
 & \verb!--port! & used to set the communication port of a possible Ethernet interface of the board. \color{red}{Note that these five parameters are only contemporary and will be replaced by the new board description language (I hope - together with the debug parameter. It may be used for actually debugging the generator then ...).}\\ \hline
-\verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
+
 \end{tabular}
 \caption{Summary of currently possible CLI parameters}
 \label{tab:cliParams}
@@ -175,6 +231,8 @@ Additionally, the \texttt{.mhs} file of the system is required by the generator.
 The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
 
 In addition to the required sources, documentation for both host- and board-side sources is generated, using doxygen.
+
+
 
 \chapter{Driver Description}
 This section should provide a conceptual overview of the driver parts. For pure users of the driver generator, only parts of the client side are really relevant. Developers might also be interested in the server part.
@@ -218,11 +276,11 @@ The client side consists of several cpp sources and headers files. These files c
 \draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor_comp_if);
 \draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
 
-\draw[aggregate, shorten <= -0.35em] (anchor_comp_if) to node[auto] {} (component);
-\draw[aggregate, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
+\draw[arr,-, shorten <= -0.35em] (anchor_comp_if) to node[auto] {} (component);
+\draw[arr,-, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
 
-\node[ann, above left = 0em and 2.5em] (arr1) at (component) {1};
-\node[ann, above right = 0em and 2.5em] (arr2) at (component) {1};
+\node[ann, above left = 0em and 1.5em] (arr1) at (component) {1};
+\node[ann, above right = 0em and 1.5em] (arr2) at (component) {1};
 
 \node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
 \node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
@@ -247,6 +305,57 @@ The client side consists of several cpp sources and headers files. These files c
 \label{fig:archHost}
 \end{figure}
 
+\begin{figure}
+\centering
+\begin{tikzpicture}
+\node[class] (client) at (0,0) {client application};
+\node[class,fill=red!15, left=6em] (cdriver) at (client) {client-side driver};
+\node[class,fill=red!15, left=6em] (bdriver) at (cdriver) {board-side driver};
+
+\node[class,fill=white, left=6em] (vhdl3) at (bdriver) {};
+\node[class,fill=white, above right = -2.8em and -6.9em of vhdl3] (vhdl2) {};
+\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
+
+\node[group, fit=(client) (cdriver), label={30:host side}] (hostSide) {};
+\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={145:board side}] (boardSide) {};
+
+\draw[arr,<->] (client) to node [auto] {} (cdriver);
+\draw[arr,<->] (cdriver) to node [auto] {} (bdriver);
+\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
+
+\end{tikzpicture}
+\caption{The order in which data is sent from a client application to a VHDL component}
+\label{fig:dataFlow}
+\end{figure}
+
+\begin{figure}
+\centering
+
+\begin{tikzpicture}
+%maybe also add networking components here... i.e. split the driver in two components - one handling communication with application/hardware, one handling networking - with another clearly defined interface. This allows better modularity and exchange of both parts individually. For example one could switch the communication channel without having to completely recompile the client-side communication. The question will be, how this can be made easy-to-use... Still, this modularity will ensure, that other transport mediums can be easily implemented. So if a transport over PCIE should be realised later, it is clear what functionality has to be provided --> clear interface definition!!
+
+\node[netCloud] at (0,0) (cloud) {Transport Medium};
+
+\node[class,fill=red!15, right=9em] (cdriver) at (cloud) {client-side driver};
+\node[class, above=4em] (client) at (cdriver) {client application};
+
+\node[class,fill=red!15, left=9em] (bdriver) at (cloud) {board-side driver};
+\node[class,fill=white, below=4em] (vhdl3) at (bdriver) {};
+\node[class,fill=white, above right = -2.8em and -6.9em of vhdl3] (vhdl2) {};
+\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
+
+\node[group, fit=(client) (cdriver), label={85:host side}] (hostSide) {};
+\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={93:board side}] (boardSide) {};
+
+\draw[arr,<->] (client) to node [auto] {} (cdriver);
+\draw[arr,<->] (cdriver) to node [auto] {} (cloud);
+\draw[arr,<->] (cloud) to node [auto] {} (bdriver);
+\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
+\end{tikzpicture}
+\caption{A second version of data sending order with transport medium and correct layering}
+\label{fig:dataFlow2}
+\end{figure}
+
 The (intended) architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
 
 \subsection{Component}
@@ -255,7 +364,7 @@ A component is a piece of designed hardware. It has multiple ports over which co
 Components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. They are parsed and translated into corresponding software components with ports as defined in VHDL.
 
 \subsection{Port}
-Ports are used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or dual ports. They can have an arbitrary bitwidth. Since the bitwidth of the microblaze as well as the arm processor is limited to 32-bit, the port class has to split greater bitwidths in several 32-bit packages, but hide this process from the user. The encoding format, i.e. order of bits, also is hidden from the user.
+ A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or dual ports. They can have an arbitrary bitwidth. Since the bitwidth of the microblaze as well as the arm processor is limited to 32-bit, the port class has to split greater bitwidths in several 32-bit packages, but hide this process from the user. The encoding format, i.e. order of bits, also is hidden from the user.
 
 \subsection{Communication Interface}
 The communication interface is hidden from the user. Each component has exactly one such interface and a communication interface has to be attached to a component. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical network interface and provides a homogeneous api for components and ports. Network interface specific initialization is generated as well and is not required by the user (other than annotating configuration details in the board description).
@@ -266,13 +375,18 @@ Currently, three communication interfaces are envisioned:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
 \item \textbf{Ethernet}, which is already implemented
 \item \textbf{USB/UART}, which is considered as second interface and
-\item \textbf{PCIE}, which will not be implemented in the initial driver generator.
+\item \textbf{PCI Express}, which will not be implemented in the initial driver generator.
 \end{itemize}
 
 \paragraph{Ethernet}
 Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
 
+It is possible to implement more efficient Ethernet communication using dedicated VHDL components instead of running the lwip stack on the general purpose CPU. Such a component could easily be integrated in form of a new Communication Interface. An example for a dedicated VHDL communication component together with a client API is described in \cite{alachiotis10, alachiotis12}.
+
 \textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
+
+\paragraph{PCI Express}
+\textcolor{red}{According to \cite{alachiotis10}, there should be a Xilinx wrapper for PCIE communication.}
 
 \section{Board Side}
 For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
@@ -282,18 +396,19 @@ For the board, only two relevant files are generated, a header and a plain c sou
 \chapter{Generator}
 This chapter is used to introduce the C generation backend. \textcolor{red}{A reference to the third Katja report might be useful.}
 
-\section{Used Tools}
-This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction.
+\section{Used Libraries}
+This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction. Still, as the generator code depends on them, they are introduced here for future developers.
 
-\subsection{JFlex \& Cup}
+\subsection{JFlex \& CUP}
 \textcolor{red}{This can be kept short with a reference to the JFlex/Cup documentation}
+Flex is a scanner generator, CUP a parser generator. Both together are currently used to parse \texttt{.mhs} files into abstract syntax trees. \textcolor{red}{In future versions, they will be used to parse the DSL of the driver generator.}
 
 \subsection{Katja}
 The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the C/C++ language described in detail in \Cref{sec:cmodel}.
 
-\section{Process}
-\label{sec:process}
-The overall process of the driver generator is described by \Cref{fig:process}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs all required header- and source files.
+\section{Generation Process}
+\label{sec:genprocess}
+The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs all required header- and source files.
 
 \begin{figure}
 \centering
@@ -326,7 +441,7 @@ The overall process of the driver generator is described by \Cref{fig:process}. 
 \draw[arr, <->] (board) to node[below] {communicate} (host);
 \end{tikzpicture}
 \caption{A rough sketch of the translation process so far}
-\label{fig:process}
+\label{fig:genprocess}
 \end{figure}
 
 \section{CModel}
