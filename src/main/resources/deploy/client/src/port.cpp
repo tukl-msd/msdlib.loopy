@@ -5,10 +5,34 @@
 
 #include "port.h"
 
+//in::~in() {
+//
+//}
+//
+//out::~out() {
+//
+//}
+//
+//dual::~dual() {
+//
+//}
+
 bool in::writeData(int val) {
 	return true;
 }
 
 bool out::readData(int val[]) {
 	return true;
+}
+
+void in::setup() {
+
+}
+
+void out::setup() {
+
+}
+
+void dual::setup() {
+
 }

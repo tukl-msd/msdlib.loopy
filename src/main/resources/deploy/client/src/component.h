@@ -15,20 +15,12 @@ private:
 	interface *intrfc;
 
 	// port pointer array
+	int portCount;
 	port *ports[];
 
 public:
-	// setup interface and ports
-	void setup(interface *i, port *p[], int n) {
-		intrfc = i;
-//		ports = &p;
-
-		i->setup();
-		int j;
-		for(j = 0; j < n; j++) {
-			p[j]->setup();
-		}
-	}
+	void setup();
+	~component();
 };
 
 #endif /* COMPONENT_H_ */

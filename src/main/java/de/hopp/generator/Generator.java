@@ -13,8 +13,6 @@ import java.io.InputStreamReader;
 import katja.common.NE;
 
 import de.hopp.generator.board.*;
-import de.hopp.generator.exceptions.Error;
-import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.exceptions.Warning;
@@ -93,11 +91,11 @@ public class Generator {
         
         IO.println("  generating client side driver files ...");
         
-//        IO.println("      generating header file ...");
-//        printMFile(clientDriver, true, UnparserType.HEADER);
-//        
-//        IO.println("      generating source file ...");
-//        printMFile(clientDriver, true, UnparserType.CPP);
+        IO.println("      generating header file ...");
+        printMFile(clientDriver, true, UnparserType.HEADER);
+        
+        IO.println("      generating source file ...");
+        printMFile(clientDriver, true, UnparserType.CPP);
         
         if(errors.hasErrors()) return;
         
@@ -149,47 +147,54 @@ public class Generator {
         }
     }
 
-    private MFile generateClientDriver() {
-        MFile clientDriver = DUMMY_FILE.replaceName("Client");
-        
-        for(Component comp : board.components()) {
-            clientDriver = mergeFiles(clientDriver, comp.Switch(new Component.Switch<MFile, NE>() {
-                public MFile CaseUART(UART term)                   { return DUMMY_FILE; }
-                public MFile CaseETHERNET_LITE(ETHERNET_LITE term) { return DUMMY_FILE; }
-                public MFile CaseETHERNET(ETHERNET term)           { return DUMMY_FILE; }
-                public MFile CasePCIE(PCIE term)                   { return DUMMY_FILE; }
-                public MFile CaseLEDS(LEDS term)                   {
-                    MFile ledsFile = DUMMY_FILE;
-                    
-                    // generate method to set LED register
-                    MMethod setLEDs = MMethod(
-                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
-                                MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
-                            ), MCode(
-                                Strings("// set LED register accordingly")
-                            ));
-                    
-                    // generate method to read LED register
-                    MMethod getLEDs = MMethod(
-                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
-                                MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
-                            ), MCode(
-                                Strings("// read LED register and put it into array")
-                            ));
-                    
-                    // put methods into returned file
-                    ledsFile.replaceMethods(MMethods(setLEDs, getLEDs));
-                    
-                    return ledsFile;
-                }
-                public MFile CaseSWITCHES(SWITCHES term)           { return DUMMY_FILE; }
-                public MFile CaseBUTTONS(BUTTONS term)             { return DUMMY_FILE; }
-            }));
-        }
-        
-        return clientDriver;
-    }
+//    private MFile generateClientDriver() {
+//        MFile clientDriver = DUMMY_FILE.replaceName("Client");
+//        
+//        for(Component comp : board.components()) {
+//            clientDriver = mergeFiles(clientDriver, comp.Switch(new Component.Switch<MFile, NE>() {
+//                public MFile CaseUART(UART term)                   { return DUMMY_FILE; }
+//                public MFile CaseETHERNET_LITE(ETHERNET_LITE term) { return DUMMY_FILE; }
+//                public MFile CaseETHERNET(ETHERNET term)           { return DUMMY_FILE; }
+//                public MFile CasePCIE(PCIE term)                   { return DUMMY_FILE; }
+//                public MFile CaseLEDS(LEDS term)                   {
+//                    MFile ledsFile = DUMMY_FILE;
+//                    
+//                    // generate method to set LED register
+//                    MMethod setLEDs = MMethod(
+//                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
+//                                MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
+//                            ), MCode(
+//                                Strings("// set LED register accordingly")
+//                            ));
+//                    
+//                    // generate method to read LED register
+//                    MMethod getLEDs = MMethod(
+//                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
+//                                MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
+//                            ), MCode(
+//                                Strings("// read LED register and put it into array")
+//                            ));
+//                    
+//                    // put methods into returned file
+//                    ledsFile.replaceMethods(MMethods(setLEDs, getLEDs));
+//                    
+//                    return ledsFile;
+//                }
+//                public MFile CaseSWITCHES(SWITCHES term)           { return DUMMY_FILE; }
+//                public MFile CaseBUTTONS(BUTTONS term)             { return DUMMY_FILE; }
+//                public MFile CaseVHDL(VHDL term)                   { return DUMMY_FILE; }
+//            }));
+//        }
+//        
+//        return clientDriver;
+//    }
 
+    private MFile generateClientDriver() {
+        ClientVisitor visit = new ClientVisitor(config);
+        visit.visit(board);
+        return visit.getCompsFile();
+    }
+    
     private MFile generateBoardDriver() {
         
         /* 

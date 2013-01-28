@@ -1,6 +1,8 @@
 package de.hopp.tests;
 
-import static de.hopp.generator.board.BoardSpec.*;
+import static de.hopp.generator.board.BoardSpec.Board;
+import static de.hopp.generator.board.BoardSpec.ETHERNET_LITE;
+import static de.hopp.generator.board.BoardSpec.UART;
 import static de.hopp.generator.model.Model.*;
 
 import java.io.BufferedWriter;

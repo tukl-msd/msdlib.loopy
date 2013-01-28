@@ -133,7 +133,7 @@ public class CUnparser extends HUnparser {
         buffer.append('\n');
         
         // append documentation
-//        visit(attribute.doc());
+        visit(attribute.doc());
         
         // set the type declaration to the attribute name
         typeDecl = attribute.name().term();

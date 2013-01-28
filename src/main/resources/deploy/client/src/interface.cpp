@@ -155,6 +155,10 @@ ethernet::~ethernet() {
 }
 
 void ethernet::setup() {
+
+	// return, if the setup for this interface has already been finished
+	if(isSetup) return;
+
 	struct sockaddr_in stSockAddr;
 	int Res;
 

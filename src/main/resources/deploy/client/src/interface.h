@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 
 class interface {
+protected:
+	bool isSetup;
 public:
 	// -------------------- destructor -----------------------------
 	virtual ~interface() {}

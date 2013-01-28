@@ -5,6 +5,25 @@
 
 #include "component.h"
 
+/**
+ * setup interface and ports
+ */
+void component::setup() {
+	// setup interface
+	intrfc->setup();
+
+	// setup ports
+	int j;
+	for(j = 0; j < portCount; j++)
+		ports[j]->setup();
+}
+
+component::~component() {
+	delete intrfc;
+	int j;
+	for(j = 0; j < portCount; j++)
+		delete ports[j];
+}
 
 int main(void){
 	ethernet a("131.246.92.144", 8844);

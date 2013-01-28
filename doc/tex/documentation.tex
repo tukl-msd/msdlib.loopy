@@ -132,7 +132,7 @@ The complete software product is called the \textit{driver}. It enables  \textco
 The driver is split in two parts, one of which has to be uploaded and executed to the hardware platform itself. This part of the driver is referred to as board-side driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead.
 
 \paragraph{Host / host-side}
-In contrast to the board-side driver, the host-side driver is the part of the driver which is located on the communicating computer. This part contains the actual API, embedded developers will work with. Sometimes, the term \textit{client} and \textit{client-side} might be used instead.
+In contrast to the board-side driver, the host-side driver is the part of the driver which is located on the communicating computer. This part contains the actual API, embedded developers will work with. Sometimes, the terms \textit{client} and \textit{client-side} might be used instead.
 
 
 
@@ -151,10 +151,10 @@ The generator is implemented in Java due to tool support and the environment of 
 Gradle\footnote{available at \url{http://www.gradle.org/}} is a build tool, similar to \textit{Maven} or \textit{Ant} (like \textit{Make}, but - for the most part - easier to manage within larger projects). It supports the dependency management from Maven while retaining the flexibility of Ant. Plugins required by the build process are automatically downloaded by Gradle.
 
 \paragraph{Mercurial}
-Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distributed versioning tool, comparable with \textit{GIT}, \textit{Bazar} or \textit{Subversion}. The sources of the driver generator are located in a mercurial repository. If you acquired the sources (and this document) through other means mercurial is not required.
+Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distributed versioning tool, comparable with \textit{GIT}, \textit{Bazar} or (to some degree) \textit{Subversion}. The sources of the driver generator are located in a mercurial repository. If you acquired the sources (and this document) through other means mercurial is not required.
 
 \paragraph{Doxygen}
-Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generation of a Javadoc-like html description of the driver api. While this generation is not required for the driver, it is highly recommended for easier integration of the generated driver.
+Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generation of a Java API-like html description of the driver API. While this generation is not required for the driver, it is highly recommended for easier integration of the generated driver.
 
 \paragraph{C/C++ Compiler}
 Since the host side driver is written in C++, it is also required to have a C/C++ compiler present.
@@ -232,12 +232,68 @@ The output of the generator consists of two groups of files. The first group con
 
 In addition to the required sources, documentation for both host- and board-side sources is generated, using doxygen.
 
+\subsection{Executing your Application}
+Now the regular design process from Xilinx can be continued. The next step would be writing a host application that uses the generated host-side driver and API. After programming your FPGA with the \texttt{.elf} file generated using the board-side driver, your program should be able to communicate with VHDL components on the FPGA through this API.
+
 
 
 \chapter{Driver Description}
 This section should provide a conceptual overview of the driver parts. For pure users of the driver generator, only parts of the client side are really relevant. Developers might also be interested in the server part.
 
 For a more detailed documentation of the code and provided methods, Javadoc style comments are provided, which can be transformed into an html or tex representation similar to the Java API specification using doxygen (see \Cref{sec:start} for details on how to enable documentation generation).
+
+%\begin{figure}
+%\centering
+%\begin{tikzpicture}
+%\node[class] (client) at (0,0) {client application};
+%\node[class,fill=red!15, left=6em] (cdriver) at (client) {client-side driver};
+%\node[class,fill=red!15, left=6em] (bdriver) at (cdriver) {board-side driver};
+%
+%\node[class,fill=white, left=6em] (vhdl3) at (bdriver) {};
+%\node[class,fill=white, above right = -2.72em and -6.9em of vhdl3] (vhdl2) {};
+%\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
+%
+%\node[group, fit=(client) (cdriver), label={30:host side}] (hostSide) {};
+%\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={145:board side}] (boardSide) {};
+%
+%\draw[arr,<->] (client) to node [auto] {} (cdriver);
+%\draw[arr,<->] (cdriver) to node [auto] {} (bdriver);
+%\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
+%
+%\end{tikzpicture}
+%\caption{The order in which data is sent from a client application to a VHDL component}
+%\label{fig:dataFlow}
+%\end{figure}
+
+\begin{figure}[h]
+\centering
+
+\begin{tikzpicture}
+%maybe also add networking components here... i.e. split the driver in two components - one handling communication with application/hardware, one handling networking - with another clearly defined interface. This allows better modularity and exchange of both parts individually. For example one could switch the communication channel without having to completely recompile the client-side communication. The question will be, how this can be made easy-to-use... Still, this modularity will ensure, that other transport mediums can be easily implemented. So if a transport over PCIE should be realised later, it is clear what functionality has to be provided --> clear interface definition!!
+
+\node[netCloud] at (0,0) (cloud) {Transport Medium};
+
+\node[class,fill=red!15, right=9em] (cdriver) at (cloud) {client-side driver};
+\node[class, above=4em] (client) at (cdriver) {client application};
+
+\node[class,fill=red!15, left=9em] (bdriver) at (cloud) {board-side driver};
+\node[class,fill=white, below=4em] (vhdl3) at (bdriver) {};
+\node[class,fill=white, above right = -2.72em and -6.9em of vhdl3] (vhdl2) {};
+\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
+
+\node[group, fit=(client) (cdriver), label={85:host side}] (hostSide) {};
+\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={93:board side}] (boardSide) {};
+
+\draw[arr,<->] (client) to node [auto] {} (cdriver);
+\draw[arr,<->] (cdriver) to node [auto] {} (cloud);
+\draw[arr,<->] (cloud) to node [auto] {} (bdriver);
+\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
+\end{tikzpicture}
+\caption{A second version of data sending order with transport medium and correct layering}
+\label{fig:dataFlow}
+\end{figure}
+
+\Cref{fig:dataFlow} depicts the overall design of the driver. Data is sent from an embedding client application to the client side driver. This driver communicates over some transport medium with the board side driver, which in turn distributes the received data to corresponding VHDL components on the FPGA. Results are sent back through the same chain.
 
 \section{Host Side}
 The client side consists of several cpp sources and headers files. These files can be imported in any client side project and be used to wrap communication with components on the board.
@@ -305,57 +361,6 @@ The client side consists of several cpp sources and headers files. These files c
 \label{fig:archHost}
 \end{figure}
 
-\begin{figure}
-\centering
-\begin{tikzpicture}
-\node[class] (client) at (0,0) {client application};
-\node[class,fill=red!15, left=6em] (cdriver) at (client) {client-side driver};
-\node[class,fill=red!15, left=6em] (bdriver) at (cdriver) {board-side driver};
-
-\node[class,fill=white, left=6em] (vhdl3) at (bdriver) {};
-\node[class,fill=white, above right = -2.8em and -6.9em of vhdl3] (vhdl2) {};
-\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
-
-\node[group, fit=(client) (cdriver), label={30:host side}] (hostSide) {};
-\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={145:board side}] (boardSide) {};
-
-\draw[arr,<->] (client) to node [auto] {} (cdriver);
-\draw[arr,<->] (cdriver) to node [auto] {} (bdriver);
-\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
-
-\end{tikzpicture}
-\caption{The order in which data is sent from a client application to a VHDL component}
-\label{fig:dataFlow}
-\end{figure}
-
-\begin{figure}
-\centering
-
-\begin{tikzpicture}
-%maybe also add networking components here... i.e. split the driver in two components - one handling communication with application/hardware, one handling networking - with another clearly defined interface. This allows better modularity and exchange of both parts individually. For example one could switch the communication channel without having to completely recompile the client-side communication. The question will be, how this can be made easy-to-use... Still, this modularity will ensure, that other transport mediums can be easily implemented. So if a transport over PCIE should be realised later, it is clear what functionality has to be provided --> clear interface definition!!
-
-\node[netCloud] at (0,0) (cloud) {Transport Medium};
-
-\node[class,fill=red!15, right=9em] (cdriver) at (cloud) {client-side driver};
-\node[class, above=4em] (client) at (cdriver) {client application};
-
-\node[class,fill=red!15, left=9em] (bdriver) at (cloud) {board-side driver};
-\node[class,fill=white, below=4em] (vhdl3) at (bdriver) {};
-\node[class,fill=white, above right = -2.8em and -6.9em of vhdl3] (vhdl2) {};
-\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
-
-\node[group, fit=(client) (cdriver), label={85:host side}] (hostSide) {};
-\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={93:board side}] (boardSide) {};
-
-\draw[arr,<->] (client) to node [auto] {} (cdriver);
-\draw[arr,<->] (cdriver) to node [auto] {} (cloud);
-\draw[arr,<->] (cloud) to node [auto] {} (bdriver);
-\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
-\end{tikzpicture}
-\caption{A second version of data sending order with transport medium and correct layering}
-\label{fig:dataFlow2}
-\end{figure}
-
 The (intended) architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
 
 \subsection{Component}
@@ -394,7 +399,7 @@ For the board, only two relevant files are generated, a header and a plain c sou
 
 
 \chapter{Generator}
-This chapter is used to introduce the C generation backend. \textcolor{red}{A reference to the third Katja report might be useful.}
+This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator.\textcolor{red}{A reference to the third Katja report might be useful.}
 
 \section{Used Libraries}
 This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction. Still, as the generator code depends on them, they are introduced here for future developers.
@@ -408,7 +413,7 @@ The driver generator uses the Katja tool, developed by the Software Technology G
 
 \section{Generation Process}
 \label{sec:genprocess}
-The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs all required header- and source files.
+The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs models of all required header- and source files. These models are translated into files by the C/C++ unparser.
 
 \begin{figure}
 \centering
@@ -417,7 +422,7 @@ The overall process of the driver generator is described by \Cref{fig:genprocess
 \node[tool] (gen) at (0,0) {Generator};
 
 \node[file, above=1cm] (ast) at (gen) {Board AST};
-\node[tool, above=1cm] (parser) at (ast) {Parser};
+\node[tool, above=1cm] (parser) at (ast) {Scanner/Parser};
 \node[file, above=1cm] (mhs) at (parser) {.mhs file};
 
 %TODO there is probably a better way to draw this with tikz - but there always is a better way ;)
@@ -446,7 +451,7 @@ The overall process of the driver generator is described by \Cref{fig:genprocess
 
 \section{CModel}
 \label{sec:cmodel}
-The c model provides data types representing a c/c++ program. Note, that the model is neither complete nor always valid, i.e. not all c programs can be described using this model and it is possible to specify a model not translating into valid c. Still, the model simplifies the process of code generation. The model is used for generating C as well as C++ code.
+The c model provides data types representing a C/C++ program. Note, that the model is neither complete nor always valid, i.e. not all c programs can be described using this model and it is possible to specify a model not translating into valid c. Still, the model simplifies the process of code generation. The model is used for generating C as well as C++ code.
 
 \begin{lstlisting}[language=java, breaklines=true]
 MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )

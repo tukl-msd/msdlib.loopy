@@ -4,6 +4,7 @@ import katja.common.NE;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
 import de.hopp.generator.model.*;
+import de.hopp.generator.model.Strings;
 
 import static de.hopp.generator.model.Model.*;
 
@@ -342,6 +343,7 @@ public class DriverVisitor extends Visitor<NE>{
 
     // literals
     public void visit(Integer term) { }
+    public void visit(String term)  { }
 
     // helper methods to append components to a file
     private static MFile append(MFile file, MDefinition def) {
@@ -833,5 +835,26 @@ public class DriverVisitor extends Visitor<NE>{
         }
         // append value
         return rslt + val;
+    }
+
+    public void visit(VHDLCore term) {
+        // TODO Auto-generated method stub
+    }
+    public void visit(VHDL term) {
+        // TODO Auto-generated method stub
+    }
+    public void visit(Ports term) {
+        // TODO Auto-generated method stub
+    }
+    public void visit(IN term) {
+        // TODO Auto-generated method stub
+    }
+    public void visit(OUT term) {
+        // TODO Auto-generated method stub
+    }
+    public void visit(DUAL term) {
+        // TODO Auto-generated method stub
+    }
+    public void visit(de.hopp.generator.board.Strings term) {
     }
 }

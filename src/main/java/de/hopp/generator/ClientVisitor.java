@@ -1,24 +1,11 @@
 package de.hopp.generator;
 
-import static de.hopp.generator.model.Model.MAttributes;
-import static de.hopp.generator.model.Model.MClasses;
-import static de.hopp.generator.model.Model.MCode;
-import static de.hopp.generator.model.Model.MDefinitions;
-import static de.hopp.generator.model.Model.MDocumentation;
-import static de.hopp.generator.model.Model.MEnums;
-import static de.hopp.generator.model.Model.MFile;
-import static de.hopp.generator.model.Model.MInclude;
-import static de.hopp.generator.model.Model.MMethod;
-import static de.hopp.generator.model.Model.MMethods;
-import static de.hopp.generator.model.Model.MModifiers;
-import static de.hopp.generator.model.Model.MParameters;
-import static de.hopp.generator.model.Model.MStructs;
-import static de.hopp.generator.model.Model.MType;
-import static de.hopp.generator.model.Model.QUOTES;
-import static de.hopp.generator.model.Model.Strings;
+import static de.hopp.generator.model.Model.*;
 import katja.common.NE;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
+import de.hopp.generator.model.MAttribute;
+import de.hopp.generator.model.MClass;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MMethod;
 
@@ -27,7 +14,8 @@ public class ClientVisitor extends Visitor<NE> {
     private Configuration config;
     
     private MFile file;
-    
+    private MFile comps;
+    private MClass comp;
     private MMethod init;
 //    private MMethod clean;
     private MMethod main;
@@ -37,7 +25,7 @@ public class ClientVisitor extends Visitor<NE> {
         
         // setup basic methods
         file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
-        
+        comps = MFile("components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
         init  = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
                 MParameters(), MCode(Strings("")));
 //        clean = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
@@ -49,12 +37,15 @@ public class ClientVisitor extends Visitor<NE> {
     public MFile getFile() {
         return file;
     }
-    
-    public void visit(Board term) {
-        // TODO Auto-generated method stub
+    public MFile getCompsFile() {
+        return comps;
     }
-    public void visit(Components term) {
-        // TODO Auto-generated method stub
+    
+    public void visit(Board board) {
+        visit(board.components());
+    }
+    public void visit(Components comps) {
+        for(Component c : comps) visit(c);
     }
     public void visit(UART term) {
         // TODO Auto-generated method stub
@@ -120,6 +111,51 @@ public class ClientVisitor extends Visitor<NE> {
     public void visit(BUTTONS term) {
         // TODO Auto-generated method stub
     }
-    public void visit(Integer term) { }
+    public void visit(VHDL vhdl) {
+        // generate a class for the vhdl core
+        visit(vhdl.core());
+        
+        // add an attribute for each used name
+        for(String name : vhdl.names())
+            comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()),
+                MPointerType(MType(vhdl.core().file())), name, MCodeFragment("new " + vhdl.core().file() + " ()")));
+    }
+    public void visit(VHDLCore core) {
+        comp = MClass(MDocumentation(Strings()), MModifiers(), core.file(), MTypes(MType("component")),
+                MStructs(), MEnums(), MAttributes(), MMethods());
+        visit(core.ports());
+        comps = add(comps, comp);
+    }
+    public void visit(Ports ports) {
+        for(Port p : ports) { visit(p); }
+    }
+    public void visit(IN in) {
+        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("in")),
+                in.name(), MCodeFragment("new in()", MInclude("component.h", QUOTES()))));
+    }
+    public void visit(OUT out) {
+        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("out")),
+                out.name(), MCodeFragment("new out()", MInclude("component.h", QUOTES()))));
+    }
+    public void visit(DUAL dual) {
+        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("dual")),
+                dual.name(), MCodeFragment("new dual()", MInclude("component.h", QUOTES()))));
+    }
 
+    public void visit(Integer term) { }
+    public void visit(Strings term) { }
+    public void visit(String term)  { }
+    
+    private static MFile add(MFile file, MClass c) {
+        return file.replaceClasses(file.classes().add(c));
+    }
+    private static MFile add(MFile file, MAttribute a) {
+        return file.replaceAttributes(file.attributes().add(a));
+    }
+    private static MClass add(MClass c, MAttribute a) {
+        return c.replaceAttributes(c.attributes().add(a));
+    }
+//    private static MClass add(MClass c, MMethod m) {
+//        return c.replaceMethods(c.methods().add(m));
+//    }
 }

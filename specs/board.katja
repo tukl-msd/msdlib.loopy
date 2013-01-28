@@ -9,7 +9,7 @@ backend java {
 external String
 external int
 
-Board (Components components)
+Board (Components components /*, VHDLCores cores*/ )
 
 Component = UART()
           | ETHERNET_LITE() // Put ip, port, etc. in board or leave it in config?
@@ -18,6 +18,15 @@ Component = UART()
           | LEDS()
           | SWITCHES()
           | BUTTONS() 
+          | VHDL
+
+VHDL (VHDLCore core, Strings names)
+
+VHDLCore (String file, Ports ports)
+
+Port = IN   (String name)
+     | OUT  (String name)
+     | DUAL (String name)
 
 // IP (int, int, int, int)
 
@@ -25,3 +34,6 @@ Component = UART()
 //Mode = RAW() | SOCKET()
 
 Components * Component
+Ports      * Port
+Strings    * String
+// VHDLCores  * VHDLCore

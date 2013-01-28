@@ -10,6 +10,7 @@ import de.hopp.generator.board.LEDS;
 import de.hopp.generator.board.PCIE;
 import de.hopp.generator.board.SWITCHES;
 import de.hopp.generator.board.UART;
+import de.hopp.generator.board.VHDL;
 
 public class BoardUtils {
     public static boolean hasGpioComponent(Board board) {
@@ -22,6 +23,7 @@ public class BoardUtils {
                 public Boolean CaseLEDS(LEDS term)                   { return true;  }
                 public Boolean CaseSWITCHES(SWITCHES term)           { return true;  }
                 public Boolean CaseBUTTONS(BUTTONS term)             { return true;  }
+                public Boolean CaseVHDL(VHDL term)                   { return false; }
             })) return true;
         }
         return false;
@@ -37,6 +39,7 @@ public class BoardUtils {
                 public Boolean CaseLEDS(LEDS term)                   { return false; }
                 public Boolean CaseSWITCHES(SWITCHES term)           { return true;  }
                 public Boolean CaseBUTTONS(BUTTONS term)             { return true;  }
+                public Boolean CaseVHDL(VHDL term)                   { return false; }
             })) return true;
         }
         return false;
@@ -66,6 +69,12 @@ public class BoardUtils {
                 }
                 public String CaseBUTTONS(BUTTONS term) {
                     return "\n    -buttons";
+                }
+                public String CaseVHDL(VHDL term) {
+                    String s = "";
+                    for(String name : term.names())
+                        s += "\n    -VHDL Component: " + name + " (" + term.core().file() + ")";
+                    return s;
                 }
             });
         }

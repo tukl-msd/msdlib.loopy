@@ -49,4 +49,14 @@ public class CppUnparser extends CUnparser {
             buffer.append('\n');
         }
     }
+    
+    @Override
+    public void visit(MClassInFile mclass) throws InvalidConstruct {
+        visit(mclass.methods());
+        visit(mclass.nested());
+    }
+
+//    @Override
+    // Do not unparse attributes in sourcefile
+//    public void visit(MAttributesInFile attributes) { }
 }

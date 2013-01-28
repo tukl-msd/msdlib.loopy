@@ -152,9 +152,9 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         // unparse components
         visit(file.structs());
         visit(file.enums());
+        visit(file.classes());
         visit(file.attributes());
         visit(file.methods());
-        visit(file.classes());
         
         if(!importLines.isEmpty()) {
             buffer.append("\n#endif /* " + name.toUpperCase() + "_H_ */");
@@ -377,7 +377,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             
             // for class attributes, the initial value is set in the header 
             // TODO wait... WHAT??? WHY??? This should (at best) make sense for static, but not always!
-            visit(attribute.initial());
+//            visit(attribute.initial());
         }
         
         // append colon and newline
@@ -408,7 +408,19 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         if(mclass.parent().parent() instanceof MFileInFile 
                 && mclass.modifiers().term().contains(PRIVATE())) return;
         
-        buffer.append("\nclass " + mclass.name().term() + " {");
+        buffer.append("\nclass " + mclass.name().term());
+        
+        // append extended classes
+        if(!mclass.extend().isEmpty()) {
+            MTypeInFile type = mclass.extend().first();
+            // TODO only public imports for now
+            buffer.append(" : public " + type.term().name());
+        }
+        for(MTypeInFile type : mclass.extend().back()) {
+            buffer.append(", " + type.term().name());
+        }
+        
+        buffer.append(" {");
         
         // TODO more efficient solution?
         //      This effectively runs three times over all components

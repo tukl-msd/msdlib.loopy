@@ -1,10 +1,6 @@
 package de.hopp.generator.parser;
 
-import static de.hopp.generator.board.BoardSpec.BUTTONS;
-import static de.hopp.generator.board.BoardSpec.Board;
-import static de.hopp.generator.board.BoardSpec.ETHERNET_LITE;
-import static de.hopp.generator.board.BoardSpec.LEDS;
-import static de.hopp.generator.board.BoardSpec.SWITCHES;
+import static de.hopp.generator.board.BoardSpec.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,6 +10,7 @@ import java_cup.runtime.Symbol;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.board.Board;
+import de.hopp.generator.board.VHDL;
 
 public class Parser2 {
 
@@ -42,8 +39,8 @@ public class Parser2 {
             MHSVisitor visitor = new MHSVisitor();
             visitor.visit(mhs);
             
-            return visitor.getCurrentBoard();
-            
+//            return visitor.getCurrentBoard();
+            return defaultBoard();
             
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -56,7 +53,9 @@ public class Parser2 {
     
     private static Board defaultBoard() {
 //        return Board(ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1),8844), LEDS(), SWITCHES(), BUTTONS());
-        return Board(ETHERNET_LITE(), BUTTONS(), SWITCHES(), LEDS());
+        return Board(ETHERNET_LITE(), BUTTONS(), SWITCHES(), LEDS(),
+                VHDL(VHDLCore("adder", Ports(IN("in1"), IN("in2"), OUT("sum"))), Strings("adder_a", "adder_b"))
+            );
     }
     
 }

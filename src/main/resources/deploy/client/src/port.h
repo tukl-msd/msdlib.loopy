@@ -8,7 +8,7 @@
 
 class port {
 public:
-	virtual ~port() = 0;
+	virtual ~port() {};
 
 	virtual void setup() = 0;
 };
@@ -19,6 +19,7 @@ public:
 	~in() {}
 
 	bool writeData(int val);
+	void setup();
 };
 
 class out : public port {
@@ -27,12 +28,14 @@ public:
 	~out() {}
 
 	bool readData(int val[]);
+	void setup();
 };
 
 class dual : public in, public out {
 public:
 	dual() {}
 	~dual() {}
+	void setup();
 };
 
 #endif /* PORT_H_ */
