@@ -38,10 +38,9 @@ public:
 	 * @returns true if successful, false otherwise.
 	 */
 	virtual bool send(int val) = 0;
+	virtual bool send(int val[], int size) = 0;
+	bool setLEDState(int val);
 
-	// -------------------- test application -----------------------------
-	/** Executes the test application */
-	virtual void test() = 0;
 };
 
 class ethernet : public interface {
@@ -55,12 +54,9 @@ public:
 	ethernet(const char *ip, unsigned short int port);
 	~ethernet();
 
-	// connection management
-	void setup();
-	void teardown();
-
 	// communication
 	bool send(int val);
+	bool send(int val[], int size);
 
 	// test application
 	void test();
@@ -71,12 +67,12 @@ private:
 	unsigned short int port;
 
 	// connection management
-	bool writeValues(int buf[], int size);
-	bool readInt    (int buf[], int size);
+	void setup();
+	void teardown();
 
-	// test application
-	bool setLEDStateByArr(bool state[8]);
-	bool setLEDState(int state);
+	// communication
+//	bool writeValues(int buf[], int size);
+	bool readInt    (int buf[], int size);
 };
 
 class uart : public interface {
@@ -92,9 +88,6 @@ private:
 
 	// communication
 	bool send(int val);
-
-	// test application
-	void test();
 };
 
 #endif /* INTERFACE_H_ */

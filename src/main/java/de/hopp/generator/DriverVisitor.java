@@ -18,10 +18,10 @@ public class DriverVisitor extends Visitor<NE>{
     
     private MFile file;
     
-    private MMethod init;
-    private MMethod intr;
-    private MMethod main;
-    private MMethod clean;
+    private MProcedure init;
+    private MProcedure intr;
+    private MProcedure main;
+    private MProcedure clean;
     
     public DriverVisitor(Configuration config) {
         this.config = config;
@@ -30,15 +30,15 @@ public class DriverVisitor extends Visitor<NE>{
         this.debug = config.debug();
         
         // setup basic methods
-        file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
+        file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         
-        init  = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
+        init  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
                 MParameters(), MCode(Strings("", "init_platform();"), MInclude("platform.h", QUOTES())));
-        intr  = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "intrSetup", 
+        intr  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "intrSetup", 
                 MParameters(), MCode(Strings("")));
-        clean = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
+        clean = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
                 MParameters(), MCode(Strings(""), MInclude("platform.h", QUOTES())));
-        main  = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "main", 
+        main  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "main", 
                 MParameters(), MCode(Strings("", "// initialize board components", "init();")));
         
     }
@@ -100,10 +100,25 @@ public class DriverVisitor extends Visitor<NE>{
                 MArrayType(MType("unsigned char"), 6),
                 "mac_ethernet_address", MCodeFragment("{ " + unparseMAC(config.getMAC()) + " }")));
         file = append(file, MAttribute(MDocumentation(Strings()), MModifiers(),
-                MType("struct ip_addr"), "ipaddr, netmask, gw", MCodeFragment("")));
+                MType("struct ip_addr"), "ip, mask, gw", MCodeFragment("")));
         file = append(file, MAttribute(MDocumentation(Strings()), MModifiers(),
                 MType("struct netif"), "netif", MCodeFragment("")));
-        
+
+        // add print methods to print ip configuration
+        file = append(file, MProcedure(MDocumentation(Strings()), MModifiers(PRIVATE()), MVoid(), "print_ip", MParameters(
+                        MParameter(VALUE(),MPointerType(MType("char")), "msg"),
+                        MParameter(VALUE(), MPointerType(MType("struct ip_addr")), "ip")
+                    ), MCode(Strings(
+                        "xil_printf(msg);",
+                        "xil_printf(\"%d.%d.%d.%d\\n\", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));"
+                    ))));
+        file = append(file, MProcedure(MDocumentation(Strings()), MModifiers(PRIVATE()), MVoid(),
+                    "print_ip_settings", MParameters(), MCode(Strings(
+                        "print_ip(\"Board IP: \", &ip);",
+                        "print_ip(\"Netmask : \", &mask);",
+                        "print_ip(\"Gateway : \", &gw);"
+                    ))));
+
         // Initialise ip addresses in init method
         int [] ip = {192,168,  1, 10};
         int [] gw = {192,168,  1, 23};
@@ -112,14 +127,18 @@ public class DriverVisitor extends Visitor<NE>{
                 "// initialize IP addresses to be used",
                 "// IP4_ADDR(&ipaddr,  " + unparseIP(config.getIP())   + ");",
                 "// IP4_ADDR(&gw,      " + unparseIP(config.getGW())   + ");",
-                "IP4_ADDR(&ipaddr,  " + unparseIP(ip)   + ");",
-                "IP4_ADDR(&gw,      " + unparseIP(gw)   + ");",
-                "IP4_ADDR(&netmask, " + unparseIP(config.getMask()) + ");",
+                "IP4_ADDR(&ip,   " + unparseIP(ip)   + ");",
+                "IP4_ADDR(&gw,   " + unparseIP(gw)   + ");",
+                "IP4_ADDR(&mask, " + unparseIP(config.getMask()) + ");",
                 "",
+                "// initialise lwip stack",
                 "lwip_init();",
                 "",
+                "// print ip settings on console",
+                "print_ip_settings();",
+                "",
                 "// add network interface to the netif_list, and set it as default",
-                "if (!xemac_add(&netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR)) {",
+                "if (!xemac_add(&netif, &ip, &mask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR)) {",
                 "    xil_printf(\"Error adding N/W interface\\r\\n\");",
                 "    return -1;",
                 "}",
@@ -217,7 +236,7 @@ public class DriverVisitor extends Visitor<NE>{
                 "XGpio_DiscreteWrite(&leds, GPIO_CHANNEL1, value);",
                 "return XST_SUCCESS;");
         
-        MMethod setState = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "setLED", MParameters(
+        MProcedure setState = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "setLED", MParameters(
                 MParameter(VALUE(), MType("u32"), "value")), MCode(setStateCode));
 
         file = append(file, setState);
@@ -261,7 +280,7 @@ public class DriverVisitor extends Visitor<NE>{
         // add a method for reading the current switch state
         Strings getStateCode = Strings("return XGpio_DiscreteRead(&switches, GPIO_CHANNEL1);");
         
-        MMethod getState = MMethod(MDocumentation(Strings()), MModifiers(), MType("u32"), "getSwitches",
+        MProcedure getState = MProcedure(MDocumentation(Strings()), MModifiers(), MType("u32"), "getSwitches",
                 MParameters(), MCode(getStateCode));
         file = append(file, getState);
         
@@ -276,7 +295,7 @@ public class DriverVisitor extends Visitor<NE>{
                 "XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);"
                 );
         
-        MMethod intr = MMethod(MDocumentation(Strings()), MModifiers(), MType("void"), "GpioHandlerSwitches",
+        MProcedure intr = MProcedure(MDocumentation(Strings()), MModifiers(), MType("void"), "GpioHandlerSwitches",
                 MParameters(MParameter(VALUE(), MPointerType(MType("void")), "CallbackRef")),
                 MCode(intrCode, MInclude("xgpio.h", QUOTES())));
         file = append(file, intr);
@@ -320,7 +339,7 @@ public class DriverVisitor extends Visitor<NE>{
         // add a method for reading the current button state
         Strings getStateCode = Strings("return XGpio_DiscreteRead(&buttons, GPIO_CHANNEL1);");
         
-        MMethod getState = MMethod(MDocumentation(Strings()), MModifiers(), MType("u32"), "getButtons",
+        MProcedure getState = MProcedure(MDocumentation(Strings()), MModifiers(), MType("u32"), "getButtons",
                 MParameters(), MCode(getStateCode));
         file = append(file, getState);
         
@@ -335,7 +354,7 @@ public class DriverVisitor extends Visitor<NE>{
                 "XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);"
                 );
         
-        MMethod intr = MMethod(MDocumentation(Strings()), MModifiers(), MType("void"), "GpioHandlerButtons",
+        MProcedure intr = MProcedure(MDocumentation(Strings()), MModifiers(), MType("void"), "GpioHandlerButtons",
                 MParameters(MParameter(VALUE(), MPointerType(MType("void")), "CallbackRef")),
                 MCode(intrCode, MInclude("xgpio.h", QUOTES())));
         file = append(file, intr);
@@ -355,23 +374,23 @@ public class DriverVisitor extends Visitor<NE>{
     private static MFile append(MFile file, MStruct struct) {
         return file.replaceStructs(file.structs().add(struct));
     }
-    private static MFile append(MFile file, MMethod method) {
-        return file.replaceMethods(file.methods().add(method));
+    private static MFile append(MFile file, MProcedure proc) {
+        return file.replaceMethods(file.methods().add(proc));
     }
     private static MFile append(MFile file, MEnum menum) {
         return file.replaceEnums(file.enums().add(menum));
     }
-    private static MCode appendCode(MCode code0, MCode code) {
-        return MCode(code0.lines().addAll(code.lines()),
-                     code0.needed().addAll(code.needed()));
+    private static MCode appendCode(MCode code0, MCode code1) {
+        return MCode(code0.lines().addAll(code1.lines()),
+                     code0.needed().addAll(code1.needed()));
     }
-    private static MMethod appendCode(MMethod method, MCode code) {
-        return method.replaceBody(appendCode(method.body(), code));
+    private static MProcedure appendCode(MProcedure proc, MCode code) {
+        return proc.replaceBody(appendCode(proc.body(), code));
     }
     
     private MFile addCallbackMethods() {
         // TODO add convenience methods used by sample application
-//        file = append(file, MMethod(MModifiers(), MType("int"), "readInt", MParameters(
+//        file = append(file, MProcedure(MModifiers(), MType("int"), "readInt", MParameters(
 //                    MParameter(VALUE(), MPointerType(MType("struct pbuf")), "p")
 //                ), MCode(Strings(
 //                    "// reads the first value of the buffer as an integer. REMOVES THIS VALUE FROM THE BUFFER!",
@@ -379,7 +398,7 @@ public class DriverVisitor extends Visitor<NE>{
 //                    "p->payload = p->payload + 4;",
 //                    "return data;"            
 //                ))));
-//        file = append(file, MMethod(MModifiers(), MType("int"), "printBuffer", MParameters(
+//        file = append(file, MProcedure(MModifiers(), MType("int"), "printBuffer", MParameters(
 //                    MParameter(VALUE(), MType("struct pbuf"), "p")
 //                ), MCode(Strings(
 //                    "// TODO rather inefficient, since we copy the complete buffer - only for test application here ;)",
@@ -389,7 +408,7 @@ public class DriverVisitor extends Visitor<NE>{
 //                    "return 0;"
 //                ))));
 //
-//        file = append(file, MMethod(MModifiers(), MType("int"), "sum", MParameters(
+//        file = append(file, MProcedure(MModifiers(), MType("int"), "sum", MParameters(
 //                    MParameter(VALUE(), MType("struct pbuf"), "p")
 //                ), MCode(Strings(
 //                    "int i, sum = 0;",
@@ -397,7 +416,7 @@ public class DriverVisitor extends Visitor<NE>{
 //                    "return sum;"
 //                ))));
         
-        MMethod recv = MMethod(MDocumentation(Strings()), MModifiers(), MType("err_t"), "recv_callback",
+        MProcedure recv = MProcedure(MDocumentation(Strings()), MModifiers(), MType("err_t"), "recv_callback",
                 MParameters(
                     MParameter(VALUE(), MPointerType(MType("void")), "arg"),
                     MParameter(VALUE(), MPointerType(MType("struct tcp_pcb")), "tpcb"),
@@ -438,7 +457,7 @@ public class DriverVisitor extends Visitor<NE>{
                     "return ERR_OK;"
             ), /*MInclude("netif/xadapter.h", QUOTES()),*/ MInclude("lwip/tcp.h", QUOTES())));
 
-        MMethod accept = MMethod(MDocumentation(Strings()), MModifiers(), MType("err_t"), "accept_callback",
+        MProcedure accept = MProcedure(MDocumentation(Strings()), MModifiers(), MType("err_t"), "accept_callback",
                 MParameters(
                     MParameter(VALUE(), MPointerType(MType("void")), "arg"),
                     MParameter(VALUE(), MPointerType(MType("struct tcp_pcb")), "newpcb"),
@@ -503,7 +522,7 @@ public class DriverVisitor extends Visitor<NE>{
                 "return 0;"
                 ));
                 
-         return append(file, MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "start_application",
+         return append(file, MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "start_application",
                  MParameters(), MCode(startMethodCode,
                          MInclude("netif/xadapter.h", QUOTES()),
                          MInclude("lwip/tcp.h",       QUOTES()))));       
@@ -512,7 +531,7 @@ public class DriverVisitor extends Visitor<NE>{
     private MFile addAlignmentMethods() {
         
         // write a 32bit value to an unaligned address
-        MMethod setUnaligned = MMethod(MDocumentation(Strings()), MModifiers(INLINE()), MType("void"), "set_unaligned",
+        MProcedure setUnaligned = MProcedure(MDocumentation(Strings()), MModifiers(INLINE()), MType("void"), "set_unaligned",
                 MParameters(
                     MParameter(VALUE(), MPointerType(MType("int")), "target"),
                     MParameter(VALUE(), MPointerType(MType("int")), "data")
@@ -529,7 +548,7 @@ public class DriverVisitor extends Visitor<NE>{
                         )));
         
         // read a 32bit value from an unaligned address
-        MMethod getUnaligned = MMethod(MDocumentation(Strings()), MModifiers(INLINE()), MType("int"), "get_unaligned",
+        MProcedure getUnaligned = MProcedure(MDocumentation(Strings()), MModifiers(INLINE()), MType("int"), "get_unaligned",
                 MParameters(
                     MParameter(VALUE(), MPointerType(MType("int")), "data")
                 ), MCode(Strings( 
@@ -608,7 +627,7 @@ public class DriverVisitor extends Visitor<NE>{
                 MInclude("xil_exception.h", QUOTES()),
                 MInclude("xintc.h",         QUOTES())));
         
-//        file = append(file, MMethod(MModifiers(), MType("int"), "IntcInterruptSetup", 
+//        file = append(file, MProcedure(MModifiers(), MType("int"), "IntcInterruptSetup", 
 //                MParameters(), MCode(intrSetupCode)));
         
         // add a convenience method for setup of components triggering interrupts
@@ -656,7 +675,7 @@ public class DriverVisitor extends Visitor<NE>{
         
         intrSetupCode = intrSetupCode.addAll(Strings("", "return XST_SUCCESS;"));
         
-        MMethod gpioIntrSetup = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "GpioSetupIntrSystem",
+        MProcedure gpioIntrSetup = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "GpioSetupIntrSystem",
                 MParameters(
                     MParameter(VALUE(), MPointerType(MType("XGpio")), "instancePtr"),
                     MParameter(VALUE(), MType("u16"), "intrId"),
@@ -801,7 +820,7 @@ public class DriverVisitor extends Visitor<NE>{
                 "",
                 "return XST_SUCCESS;")));
         
-        return append(file, MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "read",
+        return append(file, MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "read",
                 MParameters(
                     MParameter(VALUE(), MPointerType(MType("struct pbuf")), "p")
                 ), readCode));

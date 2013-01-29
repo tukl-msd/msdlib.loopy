@@ -1,13 +1,19 @@
 package de.hopp.generator;
 
 import static de.hopp.generator.model.Model.*;
+
 import katja.common.NE;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
 import de.hopp.generator.model.MAttribute;
 import de.hopp.generator.model.MClass;
+import de.hopp.generator.model.MCode;
+import de.hopp.generator.model.MConstr;
+import de.hopp.generator.model.MDestr;
 import de.hopp.generator.model.MFile;
+import de.hopp.generator.model.MMemberInit;
 import de.hopp.generator.model.MMethod;
+import de.hopp.generator.model.MProcedure;
 
 public class ClientVisitor extends Visitor<NE> {
 
@@ -15,7 +21,13 @@ public class ClientVisitor extends Visitor<NE> {
     
     private MFile file;
     private MFile comps;
-    private MClass comp;
+
+    // local methods for construction of more specific components
+    private MClass  comp;
+    private MConstr constructor;
+    private MDestr  destructor;
+    
+    // local variables for global default methods
     private MMethod init;
 //    private MMethod clean;
     private MMethod main;
@@ -24,13 +36,13 @@ public class ClientVisitor extends Visitor<NE> {
         this.config = config;
         
         // setup basic methods
-        file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
-        comps = MFile("components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
-        init  = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
+        file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+        comps = MFile("components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+        init  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
                 MParameters(), MCode(Strings("")));
 //        clean = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
 //                MParameters(), MCode(Strings(""), MInclude("platform.h", QUOTES())));
-        main  = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "main", 
+        main  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "main", 
                 MParameters(), MCode(Strings("", "// initialize board components", "init();")));
     }
     
@@ -48,53 +60,14 @@ public class ClientVisitor extends Visitor<NE> {
         for(Component c : comps) visit(c);
     }
     public void visit(UART term) {
-        // TODO Auto-generated method stub
+//        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+//                MPointerType(MType("interface")), "intrfc",
+//                MCodeFragment("new uart()", MInclude("interface.h", QUOTES()))));
     }
     public void visit(ETHERNET_LITE term) {
-        
-//        int setup(int *Data_SocketFD) {
-//            struct sockaddr_in stSockAddr;
-//            int Res;
-//            char *ip = "131.246.92.144";
-//        //  char *ip = "192.168.1.10";
-//
-//            if(DEBUG) printf("setting up data socket @%s:%d ...", ip, NW_DATA_PORT);
-//
-//            if (-1 == *Data_SocketFD){ //|| -1 == Config_SocketFD){
-//                printf(" failed to create socket");
-//                exit(EXIT_FAILURE);
-//            }
-//
-//            // Initialize Socket memory
-//            memset(&stSockAddr, 0, sizeof(stSockAddr));
-//
-//            // Connect the Input Socket
-//            stSockAddr.sin_family = AF_INET;
-//            stSockAddr.sin_port = htons(NW_DATA_PORT);
-//            Res = inet_pton(AF_INET, ip, &stSockAddr.sin_addr);
-//
-//            if (0 > Res){
-//                printf(" error: first parameter is not a valid address family");
-//                close(*Data_SocketFD);
-//                exit(EXIT_FAILURE);
-//            }
-//            else if (0 == Res){
-//                printf(" char string (second parameter does not contain valid ip address)");
-//                close(*Data_SocketFD);
-//                exit(EXIT_FAILURE);
-//            }
-//
-//            if (-1 == connect(*Data_SocketFD, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))){
-//                printf(" connect failed: %s (%d)", strerror(errno), errno);
-////              printf("errorcode: %d", errno);
-//                close(*Data_SocketFD);
-//                exit(EXIT_FAILURE);
-//            }
-//
-//            printf(" done\n");
-//
-//            return 0;
-//        }
+        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+                MPointerType(MType("interface")), "intrfc",
+                MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MInclude("interface.h", QUOTES()))));
     }
     public void visit(ETHERNET term) {
         // TODO Auto-generated method stub
@@ -103,13 +76,25 @@ public class ClientVisitor extends Visitor<NE> {
         // TODO Auto-generated method stub
     }
     public void visit(LEDS term) {
-        // TODO Auto-generated method stub
+        comps = add(comps, MAttribute(MDocumentation(Strings(
+                    "The board's LED component.",
+                    "This object is used to manipulate the state of the LEDs of the board."
+                )), MModifiers(), MPointerType(MType("leds")),
+                "gpio_leds", MCodeFragment("new leds(intrfc)", MInclude("gpio.h", QUOTES()))));
     }
     public void visit(SWITCHES term) {
-        // TODO Auto-generated method stub
+        comps = add(comps, MAttribute(MDocumentation(Strings(
+                    "The board's switch component.",
+                    "This object is used to read the state of the switches of the board."
+                )), MModifiers(), MPointerType(MType("switches")),
+                "gpio_switches", MCodeFragment("new switches(intrfc)", MInclude("gpio.h", QUOTES()))));
     }
     public void visit(BUTTONS term) {
-        // TODO Auto-generated method stub
+        comps = add(comps, MAttribute(MDocumentation(Strings(
+                    "The board's button component.",
+                    "This object is used to read the state of the buttons of the board."
+                )), MModifiers(), MPointerType(MType("buttons")),
+                "gpio_buttons", MCodeFragment("new buttons(intrfc)", MInclude("gpio.h", QUOTES()))));
     }
     public void visit(VHDL vhdl) {
         // generate a class for the vhdl core
@@ -117,31 +102,65 @@ public class ClientVisitor extends Visitor<NE> {
         
         // add an attribute for each used name
         for(String name : vhdl.names())
-            comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()),
-                MPointerType(MType(vhdl.core().file())), name, MCodeFragment("new " + vhdl.core().file() + " ()")));
+            comps = add(comps, MAttribute(MDocumentation(Strings(
+                    "An instance of the #" + vhdl.core().file() + " core."
+                )), MModifiers(PUBLIC()),
+                MPointerType(MType(vhdl.core().file())), name, MCodeFragment("new " + vhdl.core().file() + " (intrfc)")));
     }
     public void visit(VHDLCore core) {
-        comp = MClass(MDocumentation(Strings()), MModifiers(), core.file(), MTypes(MType("component")),
+        comp = MClass(MDocumentation(Strings(
+                    "Class representation of #" + core.file() + " cores."
+                ), SEE("components.cpp for a list of specific core instances in this board driver.")
+                ), MModifiers(), core.file(), MTypes(MType("component")),
                 MStructs(), MEnums(), MAttributes(), MMethods());
+
+        constructor = MConstr(MDocumentation(Strings(
+                    "Constructor for #" + core.file() + " cores.",
+                    "Creates a new " + core.file() + " object using the provided communication medium."
+                ), MTags(PARAM("intrfc", "The communication medium, the cores board is attached with.")
+                )), MModifiers(PUBLIC()), MParameters(
+                    MParameter(VALUE(), MPointerType(MType("interface")), "intrfc")
+                ), MInit(MConstrCall("component", "intrfc")), MCode(Strings()));
+        destructor  = MDestr(MDocumentation(Strings(
+                    "Destructor for #" + core.file() + " cores.",
+                    "Deletes registered ports and unregisters the core from the communication medium."
+                )), MModifiers(PUBLIC()), MParameters(), MCode(Strings()));
+        
         visit(core.ports());
+        
+        comp  = add(comp,  constructor);
+        comp  = add(comp,  destructor);
         comps = add(comps, comp);
     }
     public void visit(Ports ports) {
         for(Port p : ports) { visit(p); }
     }
-    public void visit(IN in) {
-        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("in")),
-                in.name(), MCodeFragment("new in()", MInclude("component.h", QUOTES()))));
+//    public void visit(IN in) {
+//        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("in")),
+//                in.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
+//    }
+//    public void visit(OUT out) {
+//        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("out")),
+//                out.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
+//    }
+//    public void visit(DUAL dual) {
+//        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("dual")),
+//                dual.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
+//    }
+    public void visit(IN   port) { addPort(port.name(),   "in"); }
+    public void visit(OUT  port) { addPort(port.name(),  "out"); }
+    public void visit(DUAL port) { addPort(port.name(), "dual"); }
+    
+    private void addPort(String name, String type) {
+        comp = add(comp, MAttribute(MDocumentation(Strings(
+                    type + " port.",
+                    "Communicate with the #" + comp.name() + " core through this port."
+                )), MModifiers(PUBLIC()), MPointerType(MType(type)),
+                name, MCodeFragment("", MInclude("component.h", QUOTES()))));
+        constructor = addInit(constructor, MMemberInit(name, "new " + type + "()"));
+        destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
-    public void visit(OUT out) {
-        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("out")),
-                out.name(), MCodeFragment("new out()", MInclude("component.h", QUOTES()))));
-    }
-    public void visit(DUAL dual) {
-        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("dual")),
-                dual.name(), MCodeFragment("new dual()", MInclude("component.h", QUOTES()))));
-    }
-
+    
     public void visit(Integer term) { }
     public void visit(Strings term) { }
     public void visit(String term)  { }
@@ -155,7 +174,22 @@ public class ClientVisitor extends Visitor<NE> {
     private static MClass add(MClass c, MAttribute a) {
         return c.replaceAttributes(c.attributes().add(a));
     }
-//    private static MClass add(MClass c, MMethod m) {
-//        return c.replaceMethods(c.methods().add(m));
-//    }
+    private static MClass add(MClass c, MMethod m) {
+        return c.replaceMethods(c.methods().add(m));
+    }
+    private static MConstr addInit( MConstr c, MMemberInit i ) {
+        return c.replaceInit(c.init().replaceVals(c.init().vals().add(i)));
+    }
+    private static MProcedure addLines(MProcedure m, MCode c) {
+        return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
+                .replaceNeeded(m.body().needed().addAll(c.needed())));
+    }
+    private static MConstr addLines(MConstr m, MCode c) {
+        return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
+                .replaceNeeded(m.body().needed().addAll(c.needed())));
+    }
+    private static MDestr addLines(MDestr m, MCode c) {
+        return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
+                .replaceNeeded(m.body().needed().addAll(c.needed())));
+    }
 }

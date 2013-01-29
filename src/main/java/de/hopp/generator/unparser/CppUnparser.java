@@ -5,6 +5,8 @@ import static de.hopp.generator.model.Model.*;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
 
+import katja.common.NE;
+
 /**
  * C++ unparser. Generates C++ code out of the given model.
  * Everything specifiable using the model will be unparsed.
@@ -22,11 +24,23 @@ public class CppUnparser extends CUnparser {
     
     
     protected String qualifiedName(MMethodInFile method) {
-        if(method.parent().parent() instanceof MFileInFile)
-            return method.name().term();
-        else if(method.parent().parent() instanceof MClassInFile)
-            return qualifiedName((MClassInFile)method.parent().parent()) + "::" + method.name().term();
-        throw new RuntimeException();
+        return method.Switch(new MMethodInFile.Switch<String, NE>() {
+            public String CaseMProcedureInFile(MProcedureInFile proc) {
+                if(proc.parent().parent() instanceof MFileInFile)
+                    return proc.name().term();
+                else if(proc.parent().parent() instanceof MClassInFile)
+                    return qualifiedName((MClassInFile)proc.parent().parent()) + "::" + proc.name().term();
+                throw new RuntimeException();
+            }
+            public String CaseMConstrInFile(MConstrInFile constr) {
+                String name = constr.parent().parent().name().term();
+                return name + "::" + name;
+            }
+            public String CaseMDestrInFile(MDestrInFile destr) {
+                String name = destr.parent().parent().name().term();
+                return name + "::~" + name;
+            }
+        });
     }
     
     protected String qualifiedName(MClassInFile mclass) {
@@ -56,6 +70,25 @@ public class CppUnparser extends CUnparser {
         visit(mclass.nested());
     }
 
+    @Override
+    public void visit(MVoidInFile mvoid) { buffer.append("void"); }
+    
+    @Override
+    public void visit(MInitInFile init) {
+        visit(init.con());
+        visit(init.vals());
+    }
+    
+    public void visit(MConstrInFile constr) throws InvalidConstruct {
+        visit(constr.doc());
+        super.visit(constr);
+    }
+    
+    public void visit(MDestrInFile destr) throws InvalidConstruct {
+        visit(destr.doc());
+        super.visit(destr);
+    }
+    
 //    @Override
     // Do not unparse attributes in sourcefile
 //    public void visit(MAttributesInFile attributes) { }

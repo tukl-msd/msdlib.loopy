@@ -33,7 +33,7 @@ external Integer
 
 // file and class model
 
-MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
+MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures methods, MClasses classes )
 MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't know if more are required
@@ -56,15 +56,25 @@ MCodeFragment ( String part, MIncludes needed )
 
 // method model
 
-MMethod ( MDocumentation doc, MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, /* MTypes exceptions, */ MCode body )
+MProcedure ( MDocumentation doc, MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, /* MTypes exceptions, */ MCode body )
 MReturnType = MAnyType // note, that this allows array types to be used for return values
             | MVoid()  // however, introducing a new type would be overkill here
-            | MNone()  // we rely on the programmer to refrain from creating such types
+//            | MConstr  // we rely on the programmer to refrain from creating such types
 
 MParameter ( MParamType refType, MAnyType type, String name )
 MParamType = VALUE() | REFERENCE() | CONSTREF()
 MCode ( Strings lines, MIncludes needed )
 
+// constructors and destructors
+MConstr ( MDocumentation doc, MModifiers modifiers, MParameters parameter, MInit init, MCode body )
+MDestr  ( MDocumentation doc, MModifiers modifiers, MParameters parameter, MCode body )
+
+MInit   ( MConstrCall con, MMemberInits vals ) // call one super constructor followed by a 
+                                               // list of member initialisations
+MMemberInit  ( String param, String val )
+MConstrCall ( String name, Strings params )
+
+MMethod = MProcedure | MConstr | MDestr
 
 // type system model
 
@@ -97,8 +107,10 @@ MDefinitions        * MDefinition
 MStructs            * MStruct
 MEnums              * MEnum
 MAttributes         * MAttribute
+MProcedures         * MProcedure
 MMethods            * MMethod
 MParameters         * MParameter
 MTypes              * MType
 MIncludes           * MInclude
 MTags               * MTag
+MMemberInits        * MMemberInit

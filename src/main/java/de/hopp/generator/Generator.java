@@ -10,8 +10,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import katja.common.NE;
-
 import de.hopp.generator.board.*;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.UsageError;
@@ -27,9 +25,6 @@ public class Generator {
     private IOHandler IO;
     private ErrorCollection errors;
     private Board board;
-    
-    private static final MFile DUMMY_FILE = 
-            MFile("", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses());
     
     private enum UnparserType { HEADER, C, CPP }
 
@@ -50,9 +45,8 @@ public class Generator {
         
         // generate the board and client driver models
         IO.println("  generating driver models ...");
-        MFileInFile boardDriver = MFileInFile(generateBoardDriver());
-        @SuppressWarnings("unused")
-        MFileInFile clientDriver  = MFileInFile(generateClientDriver());
+        MFileInFile boardDriver  = MFileInFile(generateBoardDriver());
+        MFileInFile clientDriver = MFileInFile(generateClientDriver());
         
         // if there are errors abort here
         if(errors.hasErrors()) return;
@@ -78,7 +72,7 @@ public class Generator {
                     MDefinition(MDocumentation(Strings(
                             "If set, enables additional console output for debugging purposes"
                     )), "DEBUG", "1"
-                )), MStructs(), MEnums(), MAttributes(), MMethods())),
+                )), MStructs(), MEnums(), MAttributes(), MProcedures())),
                 true, UnparserType.C);
         
         // unparse generated models to corresponding files

@@ -158,32 +158,32 @@ public class CUnparser extends HUnparser {
     }
 
     @Override
-    public void visit(MMethodInFile method) throws InvalidConstruct {
+    public void visit(MProcedureInFile proc) throws InvalidConstruct {
         
         buffer.append('\n');
         
         // append documentation
-        visit(method.doc());
+        visit(proc.doc());
         
         // append keywords if appropriate
-        if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
-        if(method.parent().parent() instanceof MFileInFile
-                && method.modifiers().term().contains(PRIVATE()))
+        if(proc.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+        if(proc.parent().parent() instanceof MFileInFile
+                && proc.modifiers().term().contains(PRIVATE()))
             // "private" functions should always be declared static
             buffer.append("static ");
-        else if(method.modifiers().term().contains(STATIC())) buffer.append("static ");
+        else if(proc.modifiers().term().contains(STATIC())) buffer.append("static ");
         
         // unparse the return type
-        visit(method.returnType());
+        visit(proc.returnType());
         
         // append the identifier of the method
-        buffer.append(qualifiedName(method));
+        buffer.append(qualifiedName(proc));
         
         // unparse the parameter list
-        visit(method.parameter());
+        visit(proc.parameter());
         
         // unparse the method body
-        visit(method.body());
+        visit(proc.body());
     }
 
 
@@ -216,15 +216,8 @@ public class CUnparser extends HUnparser {
         buffer.append("\n");
     }
 
-    @Override
-    public void visit(MNoneInFile none) throws InvalidConstruct {
-        // this is used to simulate constructors in C++
-        // Consequently, it should never be used in C
-        throw new InvalidConstruct("encountered constructor method in C unparser");        
-    }
-
-    @Override
-    public void visit(MVoidInFile mvoid) throws InvalidConstruct {
-        throw new InvalidConstruct("encountered void procedure in C unparser");
-    }
+//    @Override
+//    public void visit(MVoidInFile mvoid) throws InvalidConstruct {
+//        throw new InvalidConstruct("encountered void procedure in C unparser");
+//    }
 }

@@ -22,9 +22,9 @@ public class Test {
     public static void main (String[] args) {
         System.out.println("some primitive test");
         
-        MMethod m = MMethod(MDocumentation(Strings()), MModifiers(), MType("a"), "b", MParameters(), MCode(Strings("abc")));
+        MMethod m = MProcedure(MDocumentation(Strings()), MModifiers(), MType("a"), "b", MParameters(), MCode(Strings("abc")));
         MClass c = MClass(MDocumentation(Strings()), MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
-        MFile file = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MMethods(), MClasses(c));
+        MFile file = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses(c));
         
         File outFile = new File("out");
         StringBuffer output = new StringBuffer(16384);

@@ -10,7 +10,6 @@ import java_cup.runtime.Symbol;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.board.Board;
-import de.hopp.generator.board.VHDL;
 
 public class Parser2 {
 
@@ -54,7 +53,8 @@ public class Parser2 {
     private static Board defaultBoard() {
 //        return Board(ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1),8844), LEDS(), SWITCHES(), BUTTONS());
         return Board(ETHERNET_LITE(), BUTTONS(), SWITCHES(), LEDS(),
-                VHDL(VHDLCore("adder", Ports(IN("in1"), IN("in2"), OUT("sum"))), Strings("adder_a", "adder_b"))
+                VHDL(VHDLCore("add", Ports(IN("in1"), IN("in2"), OUT("sum"))), Strings("adder_a", "adder_b")),
+                VHDL(VHDLCore("mult", Ports(IN("in1"), IN("in2"), OUT("prod"))), Strings("mult_a"))
             );
     }
     

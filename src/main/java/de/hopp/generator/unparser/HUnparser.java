@@ -61,7 +61,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MMethodsInFile rslt = methods;
         for(MMethodInFile method : methods)
             if(!method.modifiers().term().contains(modifier))
-                rslt = rslt.remove(method.term());
+                rslt = rslt.remove(method.termMMethod());
         
         return rslt;
     }
@@ -88,7 +88,17 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
     
     protected String qualifiedName(MMethodInFile method) {
-        return method.name().term();
+        return method.Switch(new MMethodInFile.Switch<String, NE>() {
+            public String CaseMProcedureInFile(MProcedureInFile term) {
+                return term.name().term();
+            }
+            public String CaseMConstrInFile(MConstrInFile term) {
+                return term.parent().parent().name().term();
+            }
+            public String CaseMDestrInFile(MDestrInFile term) {
+                return "~" + term.parent().parent().name().term();
+            }
+        });
     }
     
     protected String qualifiedName(MClassInFile mclass) {
@@ -235,23 +245,20 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
 
     @Override
-    public void visit(MMethodsInFile methods) throws InvalidConstruct {
-        if(methods.size() > 0) {
+    public void visit(MProceduresInFile procs) throws InvalidConstruct {
+        if(procs.size() > 0) {
             
-            // append fitting comment, depending on parent
-            if(methods.parent() instanceof MFileInFile) {
+            // append comment
+//            if(methods.parent() instanceof MFileInFile) {
                 buffer.append("\n// procedures of " + this.name);
-            } else if(methods.parent() instanceof MStructInFile) {
-                buffer.append("\n// procedures of struct " + ((MStructInFile)methods.parent()).name().term());
-            } else if(methods.parent() instanceof MClassInFile) {
-                buffer.append("\n// methods of class " + ((MClassInFile)methods.parent()).name().term());
-            }
+//            } else if(methods.parent() instanceof MStructInFile) {
+//                buffer.append("\n// procedures of struct " + ((MStructInFile)methods.parent()).name().term());
+//            } else if(methods.parent() instanceof MClassInFile) {
+//                buffer.append("\n// methods of class " + ((MClassInFile)methods.parent()).name().term());
+//            }
             
             // unparse contained methods
-            for(MMethodInFile method : methods) {
-//                buffer.append('\n');
-                visit(method);
-            }
+            for(MProcedureInFile method : procs) visit(method);
             buffer.append('\n');
         }  
     }
@@ -356,6 +363,8 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             // "private" globals should not appear int the header at all
             if(attribute.modifiers().term().contains(PRIVATE())) return;
             
+//            visit(attribute.doc());
+            
             // "public" globals should always be declared "extern"
             buffer.append("\nextern ");
             
@@ -367,6 +376,9 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             visit(attribute.type());
         } else {
             buffer.append("\n");
+            
+            visit(attribute.doc());
+            
             // for attributes of classes, static has a different semantic and should not be set automatically
             if(attribute.modifiers().term().contains(CONSTANT())) buffer.append("const ");
             if(attribute.modifiers().term().contains(STATIC()))   buffer.append("static ");
@@ -385,28 +397,31 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
 
     @Override
-    public void visit(MMethodInFile method) throws InvalidConstruct {
+    public void visit(MProcedureInFile proc) throws InvalidConstruct {
         
         // do not put "private" global methods in the header
-        if(method.parent().parent() instanceof MFileInFile 
-                && method.modifiers().term().contains(PRIVATE())) return;
+        if(proc.parent().parent() instanceof MFileInFile 
+                && proc.modifiers().term().contains(PRIVATE())) return;
         
         buffer.append('\n');
-        if(method.modifiers().term().contains(CONSTANT())) buffer.append("inline ");
-        if(method.modifiers().term().contains(CONSTANT())) buffer.append("const ");
-        if(method.modifiers().term().contains(STATIC()))   buffer.append("static ");
-        visit(method.returnType());
-        buffer.append(qualifiedName(method));
-        visit(method.parameter());
-        visit(method.body());
+        if(proc.modifiers().term().contains(CONSTANT())) buffer.append("inline ");
+        if(proc.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+        if(proc.modifiers().term().contains(STATIC()))   buffer.append("static ");
+        visit(proc.returnType());
+        buffer.append(qualifiedName(proc));
+        visit(proc.parameter());
+        visit(proc.body());
     }
 
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
         
         // do not put "private" global classes in the header
+        // TODO dafuq... such things should not exist in C++...
         if(mclass.parent().parent() instanceof MFileInFile 
                 && mclass.modifiers().term().contains(PRIVATE())) return;
+        
+        visit(mclass.doc());
         
         buffer.append("\nclass " + mclass.name().term());
         
@@ -505,11 +520,6 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
 
     @Override
-    public void visit(MNoneInFile none) throws InvalidConstruct { 
-        // do nothing - constructor method
-    }
-
-    @Override
     public void visit(MVoidInFile mvoid) throws InvalidConstruct {
         buffer.append("void ");
     }
@@ -565,7 +575,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         visit(doc.tags());
         
         // end documentation block
-        buffer.append(" */");
+        buffer.append(" */\n");
     }
     public void visit(MTagsInFile tags) throws InvalidConstruct { 
         for(MTagInFile tag : tags) visit(tag); 
@@ -597,4 +607,66 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
     }
 
+    @Override
+    public void visit(MMethodsInFile methods) throws InvalidConstruct {
+        if(methods.size() > 0) {
+            
+            // append comment
+//            if(methods.parent() instanceof MFileInFile) {
+//                buffer.append("\n// procedures of " + this.name);
+//            } else if(methods.parent() instanceof MStructInFile) {
+//                buffer.append("\n// procedures of struct " + ((MStructInFile)methods.parent()).name().term());
+//            } else if(methods.parent() instanceof MClassInFile) {
+                buffer.append("\n// methods of class " + (methods.parent()).name().term());
+//            }
+            
+            // unparse contained methods
+            for(MMethodInFile method : methods) visit(method);
+            buffer.append('\n');
+        }  
+    }
+
+    @Override
+    public void visit(MConstrInFile constr) throws InvalidConstruct {
+        buffer.append('\n');
+        buffer.append(qualifiedName(constr));
+        visit(constr.parameter());
+        visit(constr.init());
+        visit(constr.body());
+    }
+
+    @Override
+    public void visit(MDestrInFile destr) throws InvalidConstruct {
+        buffer.append('\n');
+        buffer.append(qualifiedName(destr));
+        visit(destr.parameter());
+        visit(destr.body());
+    }
+
+    @Override
+    public void visit(MInitInFile term) throws InvalidConstruct {
+        // Do not unparse the init block in the header file
+    }
+
+    @Override
+    public void visit(MConstrCallInFile term) {
+        buffer.append(" : " + term.name().term() + "(");
+        for(String param : term.params().term()) {
+            if(term.position() != 0) buffer.append(", ");
+            buffer.append(param);
+        }
+        buffer.append(')');
+    }
+
+    @Override
+    public void visit(MMemberInitsInFile inits) {
+        for(MMemberInitInFile init : inits)
+            visit(init);
+    }
+
+    @Override
+    public void visit(MMemberInitInFile init) {
+        buffer.append(", ");
+        buffer.append(init.param().term() + '(' + init.val().term() + ')');
+    }
 }

@@ -18,56 +18,6 @@
 #include <math.h>
 #include <errno.h>
 
-// conversion from "boolean" array to single value
-int convertToInt(bool values[8]) {
-
-	if(DEBUG) printf("\n  converting 8-bit array to single value ...");
-
-	int i, rslt = 0;
-	for(i = 0; i < 8; i++)
-		if(values[i]) rslt = rslt + (int)pow(2, i);
-
-	if(DEBUG) printf(" done\n  hex value after conversion: 0x%X", rslt);
-
-	return rslt;
-}
-
-/**
- * converts a single integer value to a binary number represented by a boolean array.
- * true marks a 1 value, false a 0 value.
- * @param size size of the binary number and therefore boolean array
- * @param values pointer to the array where the result will be stored
- * @param val the integer number which will be converted
- * @returns returns true if the conversion was successful, false otherwise
- */
-bool convertToArr(int size, bool values[], int val) {
-	if(DEBUG) printf("\n    converting single value to %d-bit array ...", size);
-
-	// check, if given value is to large for specified array
-	if(val >= (int)pow(2,size)) {
-		if(DEBUG) printf("\n  ERROR: value was to large for given array");
-		return 1;
-	}
-
-	// set values array accordingly
-	int i;
-	for(i = size-1; i >= 0; i--) {
-		int cur = (int)pow(2,i);
-		if(val / cur > 0) {
-			values[i] = true;
-			val -= cur;
-		} else values[i] = false;
-	}
-
-	if(DEBUG) {
-		printf(" done\n  value after conversion: [");
-		for(i = 0; i < size; i++) printf(" %d", values[i]);
-		printf(" ]");
-	}
-
-	return 0;
-}
-
 #define LED_SETTING 0
 #define SWITCH_POLL 1
 #define BUTTON_POLL 2
@@ -106,37 +56,13 @@ int decodeHeader(int header) {
 	return 0;
 }
 
-/**
- * Minimal value for the LED test application.
- * This value marks the two least significant LEDs to be set.
- */
-#define MIN_VALUE 3
-/**
- * Maximal value for the LED test application.
- * This value marks the two most significant LEDs to be set.
- */
-#define MAX_VALUE 192
+bool interface::setLEDState(int state) {
+	int val [2];
 
-/** Sets the next LED out of the current LED state and a direction. The next
- * LED state is considered to be the current state shifted one LED into direction
- * if possible, otherwise shifted in the opposite direction.
- *
- * @param direction the current direction, into which the LEDs should are shifted.
- *        0 will shift to the right, 1 will shift to the left (I guess)
- * @return the direction for the next step of LED shifting.
- * @param state pointer to the current LED state. The state will be changed by
- *        this procedure
- * @return nope - just trolling... no second return value
- */
-int next(int direction, int * state) {
-	if(direction) {
-		if(*state == MAX_VALUE) return next(!direction, state);
-		*state = *state * 2;
-	} else {
-		if(*state == MIN_VALUE) return next(!direction, state);
-		*state = *state / 2;
-	}
-	return direction;
+	val[0] = constructHeader(1,0,1);
+	val[1] = state;
+
+	return send(val, 8);
 }
 
 //ethernet::ethernet(const char *ip, unsigned short int port) {
@@ -148,7 +74,9 @@ int next(int direction, int * state) {
 // new constructor using member initialisation list
 ethernet::ethernet(const char *ip, unsigned short int port):
 		Data_SocketFD(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
-		ip(ip), port(port) {}
+		ip(ip), port(port) {
+	setup();
+}
 
 ethernet::~ethernet() {
 	// TODO Auto-generated destructor stub
@@ -156,14 +84,11 @@ ethernet::~ethernet() {
 
 void ethernet::setup() {
 
-	// return, if the setup for this interface has already been finished
-	if(isSetup) return;
-
 	struct sockaddr_in stSockAddr;
 	int Res;
 
 	//	char *ip = "131.246.92.144";
-	//	char *ip = "192.168.1.10";
+	//  char *ip = "192.168.1.10";
 
 	if(DEBUG) printf("setting up data socket @%s:%d ...", ip, port);
 
@@ -210,24 +135,9 @@ bool ethernet::send(int val) {
 	return false;
 }
 
-// test application
-void ethernet::test() {
-	printf("starting hopp lwip led test ...\n");
-	setup();
-
-	int direction = 1, state = 3;
-	while(1) {
-		setLEDState(state);
-		direction = next(direction, &state);
-		usleep(175000);
-	}
-	teardown();
-
-}
-
 // all following procedures & methods are helpers for the test application
 
-bool ethernet::writeValues(int buf[], int size) {
+bool ethernet::send(int buf[], int size) {
 
 	if(DEBUG) {
 		printf("\nsending package of size %d with values: ", size);
@@ -275,29 +185,15 @@ bool ethernet::readInt(int buf[], int size) {
 }
 
 /**
- * Sets the LED state using an array of integer values.
- * @param state The new LED state represented by an integer array of size 8.
- *              Each value has to be either 1 for a glowing LED or 0 otherwise.
- */
-bool ethernet::setLEDStateByArr(bool state[8]) {
-	int send [2];
-
-	send[0] = constructHeader(1,0,1);
-	send[1] = convertToInt(state);
-
-	return writeValues(send, 8);
-}
-
-/**
  * Sets the LED state using a single integer value.
  * @param state The new LED state represented by a single integer value.
  *              The value has to be in the interval [0;255].
  */
-bool ethernet::setLEDState(int state) {
-	int send [2];
-
-	send[0] = constructHeader(1,0,1);
-	send[1] = state;
-
-	return writeValues(send, 8);
-}
+//bool ethernet::setLEDState(int state) {
+//	int send [2];
+//
+//	send[0] = constructHeader(1,0,1);
+//	send[1] = state;
+//
+//	return writeValues(send, 8);
+//}
