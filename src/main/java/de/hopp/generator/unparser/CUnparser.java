@@ -58,6 +58,7 @@ public class CUnparser extends HUnparser {
 
     @Override
     public void visit(MDefinitionsInFile defs) throws InvalidConstruct {
+        defs = filter(defs, PRIVATE());
         if(defs.size() > 0) {
             // append comment
             buffer.append("\n// definitions of " + name + "");

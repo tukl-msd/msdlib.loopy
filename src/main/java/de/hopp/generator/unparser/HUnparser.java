@@ -33,6 +33,14 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         this.name = name;
     }
     
+    protected MDefinitionsInFile filter(MDefinitionsInFile definitions, MModifier modifier) {
+        MDefinitionsInFile rslt = definitions;
+        for(MDefinitionInFile definition : definitions)
+            if(!definition.modifiers().term().contains(modifier))
+                rslt = rslt.remove(definition.term());
+        
+        return rslt;
+    }
     protected MStructsInFile filter(MStructsInFile structs, MModifier modifier) {
         MStructsInFile rslt = structs;
         for(MStructInFile struct : structs)
@@ -164,6 +172,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
         
         // unparse components
+        visit(file.defs());
         visit(file.structs());
         visit(file.enums());
         visit(file.classes());
@@ -176,7 +185,17 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
 
     @Override
-    public void visit(MDefinitionsInFile defs) throws InvalidConstruct { }
+    public void visit(MDefinitionsInFile defs) throws InvalidConstruct {
+        defs = filter(defs, PUBLIC());
+        if(defs.size() > 0) {
+            // append comment
+            buffer.append("\n// definitions of " + name + "");
+            
+            // unparse the contained structs
+            for(MDefinitionInFile def : defs) visit(def);
+            buffer.append('\n');
+        }
+    }
 
     // TODO make public/private distinction here to provide better comments?
     @Override

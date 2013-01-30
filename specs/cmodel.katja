@@ -40,7 +40,7 @@ MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't kno
 
 
 // struct and enum model
-MDefinition ( MDocumentation doc, String name, String value )
+MDefinition ( MDocumentation doc, MModifiers modifiers, String name, String value )
 MStruct     ( MDocumentation doc, MModifiers modifiers, String name, MAttributes attributes )
 MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
                                                               // --> MValue(String name, String value), MValues * MValue

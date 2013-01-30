@@ -49,7 +49,7 @@ public class ClientVisitor extends Visitor<NE> {
     }
     
     public void visit(Board board) {
-        comps = addDoc(comps, "Describes user-defined IPCores and instantiates all cores present within this driver");
+        comps = addDoc(comps, "Describes user-defined IPCores and instantiates all cores present within this driver.");
         visit(board.components());
     }
     public void visit(Components comps) {

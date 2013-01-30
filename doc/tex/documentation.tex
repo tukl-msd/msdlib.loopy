@@ -102,7 +102,7 @@ The HOPP Driver Generator itself is intended to provide embedded system develope
 with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
 To our knowledge, such an interface for communication with VHDL components has not been done so far, though extensive research exists concerning efficient communication between PCs and FPGAs over different interfaces \cite{lofgren05, alachiotis10, alachiotis12}.
 
-It has been prototyped with a C++ frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet, but can be easily extended to support other frontend languages, FPGA boards or transport media.
+It has been prototyped with a \texttt{C++} frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet, but can be easily extended to support other frontend languages, FPGA boards or transport media.
 
 \section{Origins and Goals}
 \label{sec:goals}
@@ -156,11 +156,11 @@ Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distri
 \paragraph{Doxygen}
 Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generation of a Java API-like html description of the driver API. While this generation is not required for the driver, it is highly recommended for easier integration of the generated driver.
 
-\paragraph{C/C++ Compiler}
-Since the host side driver is written in C++, it is also required to have a C/C++ compiler present.
+\paragraph{\texttt{C/C++} Compiler}
+Since the host side driver is written in \texttt{C++}, it is also required to have a \texttt{C/C++} compiler present.
 
 \paragraph{Xilinx Toolsuite}
-In order to generate an .elf file that can is used to program the fpga, the Xilinx toolsuite is required. This includes ISE for generating IPs out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform \textcolor{red}{(it MIGHT also be possible to generate .mhs files or whatever the newer format is out of our DSL or replace our DSL with this language, which reduces the number of files that have to be written by the user...)}.
+In order to generate an \texttt{.elf} file that can is used to program the FPGA, the Xilinx toolsuite is required. This includes ISE for generating IPCores out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform \textcolor{red}{(it MIGHT also be possible to generate .mhs files or whatever the newer format is out of our DSL or replace our DSL with this language, which reduces the number of files that have to be written by the user...)}.
 
 \section{Process}
 \label{sec:process}
@@ -226,7 +226,9 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \label{tab:cliParams}
 \end{table}
 
-Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like \texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.
+Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like the following line:\\
+
+\texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.\\
 
 The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
 
@@ -357,16 +359,25 @@ The client side consists of several cpp sources and headers files. These files c
 \draw[extend, shorten <= -0.4em] (anchor_out_b) to node[auto] {} (out);
 
 \end{tikzpicture}
-\caption{Architecture of the host part \textcolor{red}{(to come)}}
+\caption{Architecture of the host part}
 \label{fig:archHost}
 \end{figure}
 
-The (intended) architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
+The architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
 
 \subsection{Component}
-A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. date is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.
+A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. data is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.
 
-Components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. They are parsed and translated into corresponding software components with ports as defined in VHDL.
+The host driver contains an abstract generic component, describing components in general. User-defined components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. For each user-defined core, a new subclass is created containing the specified ports. All user-defined cores and instances of these cores can be found in components.h
+
+\paragraph{GPIO compoments}
+These components are specialised, predefined I/O components on the board. Currently, three of these components are supported:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item LEDs
+\item Switches
+\item Buttons
+\end{itemize}
+It is possible to either write to or read from these components, depending on the type of the component (LEDs can only be written to, switches and buttons can only be read).
 
 \subsection{Port}
  A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or dual ports. They can have an arbitrary bitwidth. Since the bitwidth of the microblaze as well as the arm processor is limited to 32-bit, the port class has to split greater bitwidths in several 32-bit packages, but hide this process from the user. The encoding format, i.e. order of bits, also is hidden from the user.
@@ -409,11 +420,11 @@ This section gives a short overview over the used libraries and explains what fo
 Flex is a scanner generator, CUP a parser generator. Both together are currently used to parse \texttt{.mhs} files into abstract syntax trees. \textcolor{red}{In future versions, they will be used to parse the DSL of the driver generator.}
 
 \subsection{Katja}
-The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the C/C++ language described in detail in \Cref{sec:cmodel}.
+The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the \texttt{C/C++} language described in detail in \Cref{sec:cmodel}.
 
 \section{Generation Process}
 \label{sec:genprocess}
-The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs models of all required header- and source files. These models are translated into files by the C/C++ unparser.
+The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs models of all required header- and source files. These models are translated into files by the \texttt{C/C++} unparser.
 
 \begin{figure}
 \centering
@@ -451,18 +462,18 @@ The overall process of the driver generator is described by \Cref{fig:genprocess
 
 \section{CModel}
 \label{sec:cmodel}
-The c model provides data types representing a C/C++ program. Note, that the model is neither complete nor always valid, i.e. not all c programs can be described using this model and it is possible to specify a model not translating into valid c. Still, the model simplifies the process of code generation. The model is used for generating C as well as C++ code.
+%TODO completely outdated, but don't want to update this part before all changes are finalised...
+The \texttt{C} model provides data types representing a \texttt{C/C++} program. Note, that the model is neither complete nor always valid, i.e. not all \texttt{C} programs can be described using this model and it is possible to specify a model not translating into valid \texttt{C}. Still, the model simplifies the process of code generation. The model is used for generating \texttt{C} as well as \texttt{C++} code.
 
 \begin{lstlisting}[language=java, breaklines=true]
-MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
+MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
 
-MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, 
-	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
+MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE()
 \end{lstlisting}
 
-First of all, each file has a name. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes. Classes also can be documented using an \texttt{MDocumentation} element.
+First of all, each file has a name and may be documented with an \texttt{MDocumentation} element. If the documentation is not empty, a \texttt{@file} tag is attached to indicate this as a file documentation for doxygen. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes. Classes also can be documented.
 The allowed modifiers are private, public, constant, static, and inline. Note, that not all of these modifiers are class modifiers, and several combinations of modifiers are invalid (e.g. private and public). The model relies on the developer to choose modifiers according to the modified program part.
 
 \begin{lstlisting}[language=java, breaklines=true]
@@ -492,7 +503,7 @@ MParamType  = VALUE() | REFERENCE() | CONSTREF()
 MCode ( Strings lines, MIncludes needed )
 \end{lstlisting}
 
-Methods have a return type and a list of parameters. The method body is also more complex than a simple code fragment and can consist of several lines, which are not checked any further in this model. The return type can be any c type as well as void. For constructors in c++, the return type \texttt{MNone} is used. Parameters also have a type and name. Furthermore, the mode of parameter passing has to be specified.
+Methods have a return type and a list of parameters. The method body is also more complex than a simple code fragment and can consist of several lines, which are not checked any further in this model. The return type can be any \texttt{C} type as well as void. For constructors in \texttt{C++}, the return type \texttt{MNone} is used. Parameters also have a type and name. Furthermore, the mode of parameter passing has to be specified.
 
 \begin{lstlisting}[language=java, breaklines=true]
 MAnyType = MType             ( String name )
@@ -501,7 +512,7 @@ MAnyType = MType             ( String name )
          | MConstPointerType ( MAnyType type )
 \end{lstlisting}
 
-The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing c type, e.g. "int" or "struct student". This type can then be extended using pointer or array types. So \texttt{MArrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in C. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
+The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing \texttt{C} type, e.g. \texttt{int}, \texttt{struct student} or \texttt{enum day}. This type can then be extended using pointer or array types. So \texttt{MArrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in \texttt{C}. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
 
 \begin{lstlisting}[language=java, breaklines=true]
 MDocumentation ( Strings doc, MTags tags )
@@ -511,23 +522,25 @@ MTag = PARAM      ( String name, Strings details )
      | THROWS     ( String type, Strings details )
      | DEPRECATED ( Strings details ) 
      | SEE        ( String see )
+     | AUTHOR     ( String name )
+     | SINCE      ( String date )
 \end{lstlisting}
 
 For generation of the API, Javadoc style documentation has to be added to the model. A \texttt{MDocumentation} element contains documentation for the following block as well as possibly several tags. Tags can be parameter or return value descriptions of a method/procedure, descriptions for exception behaviour, deprecation descriptions or references to other elements of the code. The \texttt{JAVADOC\_AUTOBRIEF} option is set in the generated doxygen config files, resulting in the first sentence (concluded by a dot and following space or newline) will be used as short description for the documented program part. Since neither the driver generator nor doxygen perform sanity checks, we rely on the user to only introduce meaningful tags for a documentation element. Note further, that the order of tags influences the order of elements in the generated API description.
 
 \section{Unparser}
-Different unparsers are used, to translate the C model in actual code. For each instance of the model, a header file and a corresponding source file, either C or C++, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain C, files intended for the client side can also be C++ files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
+Different unparsers are used, to translate the \texttt{C} model in actual code. For each instance of the model, a header file and a corresponding source file, either \texttt{C} or \texttt{C++}, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain \texttt{C}, files intended for the client side can also be \texttt{C++} files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
 
 \paragraph{Header Unparser}
-The header unparser is used for both, unparsing C as well as C++ code. Consequently, it doesn't filter any constructs, but accepts everything specifiable with the model.
+The header unparser is used for both, unparsing \texttt{C} as well as \texttt{C++} code. Consequently, it doesn't filter any constructs, but accepts everything specifiable with the model.
 
 This unparser generates only signatures for all methods and only the declarations of attributes and enums. However, the header file will contain all includes referenced within the model.
 
-\paragraph{Plain C Unparser}
-Since plain C doesn't have any concept of classes, using a model with classes in this unparser will result in exceptions. Otherwise, all components and combinations are accepted. The source file will only import the corresponding header file, no other headers or sourcefiles.
+\paragraph{Plain \texttt{C} Unparser}
+Since plain \texttt{C} doesn't have any concept of classes, using a model with classes in this unparser will result in exceptions. Otherwise, all components and combinations are accepted. The source file will only import the corresponding header file, no other headers or sourcefiles.
 
-\paragraph{C++ Unparser}
-For the C++ unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
+\paragraph{\texttt{C++} Unparser}
+For the \texttt{C++} unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
 
 
 

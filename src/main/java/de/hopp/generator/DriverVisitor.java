@@ -94,7 +94,7 @@ public class DriverVisitor extends Visitor<NE>{
     public void visit(ETHERNET_LITE term) { 
         
         // append port definition
-        file = append(file, MDefinition(MDocumentation(Strings()), "PORT", String.valueOf(config.getPort())));
+        file = append(file, MDefinition(MDocumentation(Strings()), MModifiers(PRIVATE()), "PORT", String.valueOf(config.getPort())));
         
         // append attribute declarations for Ethernet connection
         file = append(file, MAttribute(MDocumentation(Strings()), MModifiers(),
@@ -578,7 +578,7 @@ public class DriverVisitor extends Visitor<NE>{
     }
 
     private MFile addGPIOChannel() {
-        return append(file, MDefinition(MDocumentation(Strings()), "GPIO_CHANNEL1", "1"));
+        return append(file, MDefinition(MDocumentation(Strings()), MModifiers(PRIVATE()), "GPIO_CHANNEL1", "1"));
     }
     
     private MFile addBasicInterruptSetup() {

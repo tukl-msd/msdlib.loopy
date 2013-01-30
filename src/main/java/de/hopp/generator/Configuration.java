@@ -19,7 +19,6 @@ public class Configuration {
     public final static String defaultServerDir = "server";
     public final static String defaultClientDir = "client";
 
-//  private File destDir = new File();
     private File serverDir = new File(defaultServerDir);
     private File clientDir = new File(defaultClientDir);
     
@@ -30,24 +29,25 @@ public class Configuration {
                                  defaultMask = {255,255,255,  0};
     public static final int      defaultPort = 8844;
 
-    public static final int LOG_QUIET   = 0;
-    public static final int LOG_INFO    = 1;
-    public static final int LOG_VERBOSE = 2;
-    public static final int LOG_DEBUG   = 3;
-
-    private int loglevel = 1;
-    
     private String[] mac  = defaultMAC;
     private int []   ip   = defaultIP,
                      gw   = defaultGW,
                      mask = defaultMask;
     private int      port = defaultPort;
     
-    // debug flags
-    private boolean debug   = false;
-//    private boolean verbose = false;
-    
+    // logging related properties
+    public static final int LOG_QUIET   = 0;
+    public static final int LOG_INFO    = 100;
+    public static final int LOG_VERBOSE = 200;
+    public static final int LOG_DEBUG   = 300;
+
+    private int loglevel = 1;
+
     private IOHandler IO;
+    
+    // debug flag (for generated driver)
+    private boolean debug   = false;
+    
     
 //    /** setup an empty driver generator configuration */
     public Configuration() { 
@@ -63,14 +63,6 @@ public class Configuration {
     public void setServerDir(File dir) {
         this.serverDir = dir;
     }
-    
-//    /** set the directory, into which the driver should be generated */
-//    public void setDestDir(File dir) {
-//        this.destDir = dir;
-////        serverDir = new File(destDir, "server");
-//        serverDir = destDir;
-//        clientDir = new File(destDir, "client");
-//    }
     
     /** enables the debug flag, which will result in additional console prints of the driver */
     public void enableDebug() {
@@ -111,10 +103,6 @@ public class Configuration {
         return c >= 0 || c <= 9 || c >= 'a' || c <= 'f' || c >= 'A' || c <= 'F'; 
     }
     
-//    private boolean isHexStringRegEx(String s) {
-//        return s.matches("[0123456789abcdefABCDEF]+");
-//    }
-    
     /** set the ip address, which should be generated in the driver.
      *  The ip address is checked for validity.
      * @param ip ip address, represented as string array. The array
@@ -146,6 +134,10 @@ public class Configuration {
         this.port = port;
     }
    
+    /**
+     * Set the log level of this generator run.
+     * @param printLevel
+     */
     public void setPrintLevel(int printLevel) {
              if (printLevel < LOG_QUIET) loglevel = LOG_QUIET;
         else if (printLevel > LOG_DEBUG) loglevel = LOG_DEBUG;
@@ -175,17 +167,12 @@ public class Configuration {
         return targ;
     }
 
-    
-//    /** get the directory, into which the driver should be generated */
-//    public File getDest()    { return destDir; }
     /** get the directory, into which the server files should be generated */
     public File serverDir()  { return serverDir; }
     /** get the directory, into which the client files should be generated */
     public File clientDir()  { return clientDir; }
     /** get the debug flag indicating additional console print outs of the generated driver */
     public boolean debug()   { return debug; }
-    /** get the verbose flag indicating additional console print outs of the driver generator */
-//    public boolean verbose() { return verbose; }
     /** get the MAC address for the board */
     public String[] getMAC() { return mac; }
     /** get the IP address for the board */
@@ -202,9 +189,9 @@ public class Configuration {
     public boolean VERBOSE() { return loglevel >= LOG_VERBOSE; }
     /** check if the generator is set to produce debug console output */
     public boolean DEBUG()   { return loglevel >= LOG_DEBUG; }
-    
+    /** get the io handler associated with this run of the generator */
     public IOHandler IOHANDLER() { return IO; }
-    
+    /** print this config on console */
     public void printConfig() {
         IO.println("- client folder    : " + clientDir().getAbsolutePath());
         IO.println("- server folder    : " + serverDir().getAbsolutePath());

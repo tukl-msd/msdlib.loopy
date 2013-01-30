@@ -1,6 +1,8 @@
 /**
- * Describes the generic vhdl component / ip core
+ * Describes the generic vhdl component / ip core.
  * @file
+ * @see components.h for user-defined componentsm and a list of specific core instances within this board driver.
+ * @see gpio.h for gpio components.
  * @author Thomas Fischer
  * @since 09.01.2013
  */

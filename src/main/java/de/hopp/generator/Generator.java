@@ -67,14 +67,6 @@ public class Generator {
         // abort if any errors occurred
         if(errors.hasErrors()) return;
         
-        // generate the constants file with the debug flag
-        printMFile(MFileInFile(MFile(MDocumentation(Strings()), "constants", MDefinitions(
-                    MDefinition(MDocumentation(Strings(
-                            "If set, enables additional console output for debugging purposes"
-                    )), "DEBUG", "1"
-                )), MStructs(), MEnums(), MAttributes(), MProcedures())),
-                true, UnparserType.C);
-        
         // unparse generated models to corresponding files
         IO.println("  generating board side driver files ...");
         printMFile(boardDriver, false, UnparserType.HEADER);
@@ -90,6 +82,14 @@ public class Generator {
         
         IO.println("      generating source file ...");
         printMFile(clientDriver, true, UnparserType.CPP);
+        
+        // generate the constants file with the debug flag
+        printMFile(MFileInFile(MFile(MDocumentation(Strings()), "constants", MDefinitions(
+                    MDefinition(MDocumentation(Strings(
+                            "If set, enables additional console output for debugging purposes"
+                    )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"
+                )), MStructs(), MEnums(), MAttributes(), MProcedures())),
+                true, UnparserType.HEADER);
         
         if(errors.hasErrors()) return;
         
