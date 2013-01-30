@@ -1,4 +1,6 @@
 /**
+ * Describes the generic vhdl component / ip core
+ * @file
  * @author Thomas Fischer
  * @since 09.01.2013
  */
@@ -12,6 +14,9 @@
 /**
  * Generic superclass for board components.
  * A board component is either a user-defined IPCore or one of the supported GPIO devices.
+ * @see components.h for a list of specific core instances within this board driver.
+ * @author Thomas Fischer
+ * @since 09.01.2013
  */
 class component {
 protected:
@@ -21,13 +26,14 @@ protected:
 	interface *intrfc;
 public:
 	/**
-	 * Constructor of the generic board component.
-	 * This doesn't do anything and in fact should be virtual, but C++ requires a definition anyways...
+	 * Generic constructor for a board component.
+	 * The constructor sets the communication medium of the component and registers the
+	 * component with the medium.
 	 * @param intrfc The communication medium, this components board is attached to.
 	 */
 	component(interface *intrfc);
 	/**
-	 * Destructor of the generic board component.
+	 * Generic destructor for a board component.
 	 * Unregisters the component from the communication medium.
 	 * Since the generic component has no ports, no further cleanup is required.
 	 */

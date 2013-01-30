@@ -7,6 +7,7 @@ import de.hopp.generator.model.*;
 import de.hopp.generator.model.Strings;
 
 import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.model.Model.Strings;
 
 public class DriverVisitor extends Visitor<NE>{
 
@@ -30,8 +31,8 @@ public class DriverVisitor extends Visitor<NE>{
         this.debug = config.debug();
         
         // setup basic methods
-        file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-        
+        file  = MFile(MDocumentation(Strings()), "name", MDefinitions(), MStructs(), MEnums(),
+                MAttributes(), MProcedures(), MClasses());
         init  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
                 MParameters(), MCode(Strings("", "init_platform();"), MInclude("platform.h", QUOTES())));
         intr  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "intrSetup", 

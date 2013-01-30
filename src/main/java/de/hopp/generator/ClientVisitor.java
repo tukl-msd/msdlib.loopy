@@ -5,15 +5,8 @@ import static de.hopp.generator.model.Model.*;
 import katja.common.NE;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
-import de.hopp.generator.model.MAttribute;
-import de.hopp.generator.model.MClass;
-import de.hopp.generator.model.MCode;
-import de.hopp.generator.model.MConstr;
-import de.hopp.generator.model.MDestr;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MMemberInit;
-import de.hopp.generator.model.MMethod;
-import de.hopp.generator.model.MProcedure;
+import de.hopp.generator.board.Strings;
+import de.hopp.generator.model.*;
 
 public class ClientVisitor extends Visitor<NE> {
 
@@ -32,17 +25,19 @@ public class ClientVisitor extends Visitor<NE> {
 //    private MMethod clean;
     private MMethod main;
     
+    private MDocumentation emptyDoc = MDocumentation(Strings());
+    
     public ClientVisitor(Configuration config) {
         this.config = config;
         
         // setup basic methods
-        file  = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-        comps = MFile("components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-        init  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "init", 
+        file  = MFile(emptyDoc, "name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+        comps = MFile(emptyDoc, "components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+        init  = MProcedure(emptyDoc, MModifiers(), MType("int"), "init", 
                 MParameters(), MCode(Strings("")));
 //        clean = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
 //                MParameters(), MCode(Strings(""), MInclude("platform.h", QUOTES())));
-        main  = MProcedure(MDocumentation(Strings()), MModifiers(), MType("int"), "main", 
+        main  = MProcedure(emptyDoc, MModifiers(), MType("int"), "main", 
                 MParameters(), MCode(Strings("", "// initialize board components", "init();")));
     }
     
@@ -54,6 +49,7 @@ public class ClientVisitor extends Visitor<NE> {
     }
     
     public void visit(Board board) {
+        comps = addDoc(comps, "Describes user-defined IPCores and instantiates all cores present within this driver");
         visit(board.components());
     }
     public void visit(Components comps) {
@@ -65,7 +61,7 @@ public class ClientVisitor extends Visitor<NE> {
 //                MCodeFragment("new uart()", MInclude("interface.h", QUOTES()))));
     }
     public void visit(ETHERNET_LITE term) {
-        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+        comps = add(comps, MAttribute(emptyDoc, MModifiers(PRIVATE()),
                 MPointerType(MType("interface")), "intrfc",
                 MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MInclude("interface.h", QUOTES()))));
     }
@@ -109,14 +105,14 @@ public class ClientVisitor extends Visitor<NE> {
     }
     public void visit(VHDLCore core) {
         comp = MClass(MDocumentation(Strings(
-                    "Class representation of #" + core.file() + " cores."
-                ), SEE("components.cpp for a list of specific core instances in this board driver.")
+                    "An abstract representation of a(n) #" + core.file() + " core."
+                ), SEE("components.h for a list of specific core instances within this board driver.")
                 ), MModifiers(), core.file(), MTypes(MType("component")),
                 MStructs(), MEnums(), MAttributes(), MMethods());
 
         constructor = MConstr(MDocumentation(Strings(
                     "Constructor for #" + core.file() + " cores.",
-                    "Creates a new " + core.file() + " object using the provided communication medium."
+                    "Creates a new " + core.file() + " instance on a board attached to the provided communication medium."
                 ), MTags(PARAM("intrfc", "The communication medium, the cores board is attached with.")
                 )), MModifiers(PUBLIC()), MParameters(
                     MParameter(VALUE(), MPointerType(MType("interface")), "intrfc")
@@ -147,13 +143,13 @@ public class ClientVisitor extends Visitor<NE> {
 //        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("dual")),
 //                dual.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
 //    }
-    public void visit(IN   port) { addPort(port.name(),   "in"); }
-    public void visit(OUT  port) { addPort(port.name(),  "out"); }
-    public void visit(DUAL port) { addPort(port.name(), "dual"); }
+    public void visit(IN   port) { addPort(port.name(),   "in", "An in-going"); }
+    public void visit(OUT  port) { addPort(port.name(),  "out", "An out-going"); }
+    public void visit(DUAL port) { addPort(port.name(), "dual", "A bi-directional"); }
     
-    private void addPort(String name, String type) {
+    private void addPort(String name, String type, String docPart) {
         comp = add(comp, MAttribute(MDocumentation(Strings(
-                    type + " port.",
+                    docPart + " AXI-Stream port.",
                     "Communicate with the #" + comp.name() + " core through this port."
                 )), MModifiers(PUBLIC()), MPointerType(MType(type)),
                 name, MCodeFragment("", MInclude("component.h", QUOTES()))));
@@ -191,5 +187,8 @@ public class ClientVisitor extends Visitor<NE> {
     private static MDestr addLines(MDestr m, MCode c) {
         return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
                 .replaceNeeded(m.body().needed().addAll(c.needed())));
+    }
+    private static MFile addDoc(MFile file, String line) {
+        return file.replaceDoc(file.doc().replaceDoc(file.doc().doc().add(line)));
     }
 }

@@ -24,7 +24,8 @@ public class Test {
         
         MMethod m = MProcedure(MDocumentation(Strings()), MModifiers(), MType("a"), "b", MParameters(), MCode(Strings("abc")));
         MClass c = MClass(MDocumentation(Strings()), MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
-        MFile file = MFile("name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses(c));
+        MFile file = MFile(MDocumentation(Strings()), "name", MDefinitions(), MStructs(), MEnums(),
+                    MAttributes(), MProcedures(), MClasses(c));
         
         File outFile = new File("out");
         StringBuffer output = new StringBuffer(16384);

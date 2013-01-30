@@ -25,14 +25,3 @@ bool out::readData(int val[]) {
 	return true;
 }
 
-void in::setup() {
-
-}
-
-void out::setup() {
-
-}
-
-void dual::setup() {
-
-}

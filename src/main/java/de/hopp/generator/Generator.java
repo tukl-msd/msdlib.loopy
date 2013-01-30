@@ -68,7 +68,7 @@ public class Generator {
         if(errors.hasErrors()) return;
         
         // generate the constants file with the debug flag
-        printMFile(MFileInFile(MFile("constants", MDefinitions(
+        printMFile(MFileInFile(MFile(MDocumentation(Strings()), "constants", MDefinitions(
                     MDefinition(MDocumentation(Strings(
                             "If set, enables additional console output for debugging purposes"
                     )), "DEBUG", "1"
@@ -280,12 +280,12 @@ public class Generator {
     /**
      * Creates a new file by adding all components of a file to another file.
      * @param file1 file to which components should be added
-     * @param file2 file which components should be added
-     * @return the "merged" file with the name of the first file containing
-     *         all components from both files
+     * @param file2 file which MDefinitioncomponents should be added
+     * @return the "merged" file with the name and documentation of the first file
+     *         and all components from both files
      */
     private static MFile mergeFiles(MFile file1, MFile file2) {
-        MFile file = MFile(file1.name(),
+        MFile file = MFile(file1.doc(), file1.name(),
                 file1.defs().addAll(file2.defs()),
                 file1.structs().addAll(file2.structs()), 
                 file1.enums().addAll(file2.enums()),

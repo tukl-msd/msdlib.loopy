@@ -32,8 +32,7 @@ external Integer
 
 
 // file and class model
-
-MFile ( String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures methods, MClasses classes )
+MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures methods, MClasses classes )
 MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't know if more are required
@@ -41,7 +40,6 @@ MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't kno
 
 
 // struct and enum model
-
 MDefinition ( MDocumentation doc, String name, String value )
 MStruct     ( MDocumentation doc, MModifiers modifiers, String name, MAttributes attributes )
 MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
@@ -49,17 +47,15 @@ MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings val
 
 
 // attribute model
-
 MAttribute ( MDocumentation doc, MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
 MCodeFragment ( String part, MIncludes needed )
 
 
 // method model
-
 MProcedure ( MDocumentation doc, MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, /* MTypes exceptions, */ MCode body )
 MReturnType = MAnyType // note, that this allows array types to be used for return values
             | MVoid()  // however, introducing a new type would be overkill here
-//            | MConstr  // we rely on the programmer to refrain from creating such types
+                       // we rely on the programmer to refrain from creating such types
 
 MParameter ( MParamType refType, MAnyType type, String name )
 MParamType = VALUE() | REFERENCE() | CONSTREF()
@@ -77,12 +73,11 @@ MConstrCall ( String name, Strings params )
 MMethod = MProcedure | MConstr | MDestr
 
 // type system model
-
-MAnyType = MType ( String name, Strings doc )
+MAnyType = MType             ( String name, Strings doc )
 //       | StructType ( String name, Strings importNames ) // can also be done with "usual" type by adding "struct "
 //       | EnumType ( String name, Strings importNames )   // can also be done with "usual" type by adding "enum "
-         | MArrayType ( MAnyType type, Integer length )
-         | MPointerType ( MAnyType type )
+         | MArrayType        ( MAnyType type, Integer length )
+         | MPointerType      ( MAnyType type )
          | MConstPointerType ( MAnyType type )
 
 MInclude ( String name, MIncludeType type )
@@ -92,13 +87,14 @@ MIncludeType = QUOTES() | BRACKETS()// | FWDDEF() // not sure if this suffices, 
 // documentation
 MDocumentation ( Strings doc, MTags tags )
 
-MTag = DEPRECATED( Strings details )
-     | SEE ( String see )
-     | PARAM ( String name, Strings details )
-     | RETURN ( Strings details )
+MTag = DEPRECATED ( Strings details )
+     | SEE        ( String see )
+     | PARAM      ( String name, Strings details )
+     | RETURN     ( Strings details )
+     | SINCE      ( String date )
+     | AUTHOR     ( String name )
 
 // list types
-
 Strings             * String
 MFiles              * MFile
 MClasses            * MClass

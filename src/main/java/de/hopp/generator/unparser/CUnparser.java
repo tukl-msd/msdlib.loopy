@@ -47,9 +47,6 @@ public class CUnparser extends HUnparser {
         // import the header file
         buffer.append("#include \"" + name + ".h\"\n");
         
-        // include file to documentation
-        buffer.append("/** @file */\n");
-        
         // unparse components
         visit(file.defs());
         visit(file.structs());

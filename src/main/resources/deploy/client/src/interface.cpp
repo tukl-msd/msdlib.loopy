@@ -56,6 +56,24 @@ int decodeHeader(int header) {
 	return 0;
 }
 
+interface::interface() {
+	refCount = 0;
+}
+
+void interface::incRef() {
+	refCount ++;
+}
+
+void interface::decRef() {
+	refCount --;
+	if(refCount == 0) {
+		// if the ref counter has reached zero, disconnect
+		teardown();
+		// and remove this object
+		delete this;
+	}
+}
+
 bool interface::setLEDState(int state) {
 	int val [2];
 
@@ -65,14 +83,8 @@ bool interface::setLEDState(int state) {
 	return send(val, 8);
 }
 
-//ethernet::ethernet(const char *ip, unsigned short int port) {
-//	Data_SocketFD = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-//
-//	this->ip = ip;
-//	this->port = port;
-//}
 // new constructor using member initialisation list
-ethernet::ethernet(const char *ip, unsigned short int port):
+ethernet::ethernet(const char *ip, unsigned short int port) :
 		Data_SocketFD(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
 		ip(ip), port(port) {
 	setup();

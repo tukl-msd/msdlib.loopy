@@ -7,11 +7,10 @@
 
 
 component::component(interface *intrfc) : intrfc(intrfc) {
-//	intrfc->setup();
+	intrfc->incRef();
 }
 
 component::~component() {
-	// TODO do not delete, but unregister, decrementing ref counter!
-	delete intrfc;
+	intrfc->decRef();
 }
 

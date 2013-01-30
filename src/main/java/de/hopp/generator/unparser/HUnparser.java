@@ -108,6 +108,10 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     @Override
     public void visit(MFileInFile file) throws InvalidConstruct {
 
+        // include file to documentation
+//        buffer.append("/** @file */\n");
+        visit(file.doc());
+        
         // create the list of all needed import names needed for types used in this file
         MIncludes importLines = MIncludes();
         
@@ -363,7 +367,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             // "private" globals should not appear int the header at all
             if(attribute.modifiers().term().contains(PRIVATE())) return;
             
-//            visit(attribute.doc());
+            visit(attribute.doc());
             
             // "public" globals should always be declared "extern"
             buffer.append("\nextern ");
@@ -375,10 +379,8 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             typeDecl = attribute.name().term();
             visit(attribute.type());
         } else {
-            buffer.append("\n");
-            
             visit(attribute.doc());
-            
+            buffer.append("\n");
             // for attributes of classes, static has a different semantic and should not be set automatically
             if(attribute.modifiers().term().contains(CONSTANT())) buffer.append("const ");
             if(attribute.modifiers().term().contains(STATIC()))   buffer.append("static ");
@@ -571,11 +573,14 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         // append documentation text
         for(String s : doc.doc().term()) buffer.append(" * " + s + "\n");
         
-        // append tags, if any
+        // if this is a file documentation, add the file tag
+        if(doc.parent() instanceof MFileInFile) buffer.append(" * @file\n");
+        
+        // append other tags, if any
         visit(doc.tags());
         
         // end documentation block
-        buffer.append(" */\n");
+        buffer.append(" */");
     }
     public void visit(MTagsInFile tags) throws InvalidConstruct { 
         for(MTagInFile tag : tags) visit(tag); 
@@ -602,23 +607,21 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         if(term.details().isEmpty()) return;
         
         buffer.append(" * @return " + term.details().first().term() + "\n");
-        for(String s : term.details().term().back()) {
+        for(String s : term.details().term().back())
             buffer.append(" *         " + s + "\n");
-        }
+    }
+    public void visit(AUTHORInFile term) {
+        buffer.append(" * @author " + term.name().term() + "\n");
+    }
+    public void visit(SINCEInFile term) {
+        buffer.append(" * @since " + term.date().term() + "\n");
     }
 
     @Override
     public void visit(MMethodsInFile methods) throws InvalidConstruct {
         if(methods.size() > 0) {
-            
             // append comment
-//            if(methods.parent() instanceof MFileInFile) {
-//                buffer.append("\n// procedures of " + this.name);
-//            } else if(methods.parent() instanceof MStructInFile) {
-//                buffer.append("\n// procedures of struct " + ((MStructInFile)methods.parent()).name().term());
-//            } else if(methods.parent() instanceof MClassInFile) {
-                buffer.append("\n// methods of class " + (methods.parent()).name().term());
-//            }
+            buffer.append("\n// methods of class " + (methods.parent()).name().term());
             
             // unparse contained methods
             for(MMethodInFile method : methods) visit(method);
