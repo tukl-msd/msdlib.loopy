@@ -143,6 +143,7 @@ public:
 
 	// communication
 	bool send(int val);
+	bool send(int val[], int size);
 private:
 	// connection management
 	void setup();

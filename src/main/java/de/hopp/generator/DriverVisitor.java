@@ -7,7 +7,6 @@ import de.hopp.generator.model.*;
 import de.hopp.generator.model.Strings;
 
 import static de.hopp.generator.model.Model.*;
-import static de.hopp.generator.model.Model.Strings;
 
 public class DriverVisitor extends Visitor<NE>{
 

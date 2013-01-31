@@ -209,3 +209,27 @@ bool ethernet::readInt(int buf[], int size) {
 //
 //	return writeValues(send, 8);
 //}
+
+uart::uart() {
+	setup();
+}
+
+uart::~uart() {
+	teardown();
+}
+
+bool uart::send(int val) {
+	return false;
+}
+
+bool uart::send(int val[], int size) {
+	return false;
+}
+
+void uart::setup() {
+	printf(":)");
+}
+
+void uart::teardown() {
+	printf(":)");
+}

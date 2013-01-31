@@ -12,7 +12,7 @@ public class ClientVisitor extends Visitor<NE> {
 
     private Configuration config;
     
-    private MFile file;
+//    private MFile file;
     private MFile comps;
 
     // local methods for construction of more specific components
@@ -21,9 +21,9 @@ public class ClientVisitor extends Visitor<NE> {
     private MDestr  destructor;
     
     // local variables for global default methods
-    private MMethod init;
+//    private MMethod init;
 //    private MMethod clean;
-    private MMethod main;
+//    private MMethod main;
     
     private MDocumentation emptyDoc = MDocumentation(Strings());
     
@@ -31,19 +31,19 @@ public class ClientVisitor extends Visitor<NE> {
         this.config = config;
         
         // setup basic methods
-        file  = MFile(emptyDoc, "name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+//        file  = MFile(emptyDoc, "name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         comps = MFile(emptyDoc, "components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-        init  = MProcedure(emptyDoc, MModifiers(), MType("int"), "init", 
-                MParameters(), MCode(Strings("")));
+//        init  = MProcedure(emptyDoc, MModifiers(), MType("int"), "init", 
+//                MParameters(), MCode(Strings("")));
 //        clean = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
 //                MParameters(), MCode(Strings(""), MInclude("platform.h", QUOTES())));
-        main  = MProcedure(emptyDoc, MModifiers(), MType("int"), "main", 
-                MParameters(), MCode(Strings("", "// initialize board components", "init();")));
+//        main  = MProcedure(emptyDoc, MModifiers(), MType("int"), "main", 
+//                MParameters(), MCode(Strings("", "// initialize board components", "init();")));
     }
     
-    public MFile getFile() {
-        return file;
-    }
+//    public MFile getFile() {
+//        return file;
+//    }
     public MFile getCompsFile() {
         return comps;
     }
@@ -131,18 +131,6 @@ public class ClientVisitor extends Visitor<NE> {
     public void visit(Ports ports) {
         for(Port p : ports) { visit(p); }
     }
-//    public void visit(IN in) {
-//        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("in")),
-//                in.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
-//    }
-//    public void visit(OUT out) {
-//        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("out")),
-//                out.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
-//    }
-//    public void visit(DUAL dual) {
-//        comp = add(comp, MAttribute(MDocumentation(Strings()), MModifiers(PUBLIC()), MPointerType(MType("dual")),
-//                dual.name(), MCodeFragment("", MInclude("component.h", QUOTES()))));
-//    }
     public void visit(IN   port) { addPort(port.name(),   "in", "An in-going"); }
     public void visit(OUT  port) { addPort(port.name(),  "out", "An out-going"); }
     public void visit(DUAL port) { addPort(port.name(), "dual", "A bi-directional"); }

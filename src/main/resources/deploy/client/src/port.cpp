@@ -17,11 +17,11 @@
 //
 //}
 
-bool in::writeData(int val) {
+bool in::write(int val) {
 	return true;
 }
 
-bool out::readData(int val[]) {
+bool out::read(int val[]) {
 	return true;
 }
 

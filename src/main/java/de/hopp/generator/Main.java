@@ -58,7 +58,7 @@ public class Main {
         IO.println("                       the client files are generated to ./" +
                 Configuration.defaultClientDir + ".");
         IO.println();
-        IO.println(" ---------- miscellaneous ----------");
+        IO.println(" ---------- console logging ----------");
         IO.println(" -q --quiet            suppresses console output from driver generator.");
         IO.println(" -v --verbose          sets the log level to verbose resulting in additional");
         IO.println("                       console output from the driver generator.");
@@ -66,22 +66,28 @@ public class Main {
         IO.println(" -d --debug            enables debug mode for the generated driver,");
         IO.println("                       which will cause THE DRIVER to produce additional");
         IO.println("                       console output.");
+        IO.println();
+        IO.println(" ---------- miscellaneous ----------");
         IO.println("    --config <file>    supplies the generator with a config file containing");
         IO.println("                       all information configurable with command line parameters.");
         IO.println("                       This will immediately start the generator ignoring all");
         IO.println("                       other command line parameters");
+        IO.println("    --gui              starts the graphical user interface of the generator.");
+        IO.println("                       With this interface, config files can easily be created");
+        IO.println("                       and directly executed. Other command line parameters");
+        IO.println("                       will be ignored.");
         IO.println(" -h --help             show this help.");
         IO.println();
         IO.println(" ---------- ethernet related ----------");
-        IO.println(" --mac <mac>           modify mac address of the board.");
+        IO.println(" --mac <mac>           modifies mac address of the board.");
         IO.println("                       The default value is " + unparseMAC(Configuration.defaultMAC));
-        IO.println(" --ip <ip>             modify ip address of the board.");
+        IO.println(" --ip <ip>             modifies ip address of the board.");
         IO.println("                       The default value is " + unparseIP(Configuration.defaultIP));
-        IO.println(" --mask <mask>         modify the network mask of the board.");
+        IO.println(" --mask <mask>         modifies the network mask of the board.");
         IO.println("                       The default value is " + unparseIP(Configuration.defaultMask));
-        IO.println(" --gw <gw>             modify standard gateway of the board.");
+        IO.println(" --gw <gw>             modifies standard gateway of the board.");
         IO.println("                       The default value is " + unparseIP(Configuration.defaultGW));
-        IO.println(" --port <port>         modify the standard port of the board.");
+        IO.println(" --port <port>         modifies the standard port of the board.");
         IO.println("                       The default port is " + Configuration.defaultPort);
         IO.println();
     }
@@ -178,39 +184,44 @@ public class Main {
         // go through all parameters
         for(int i = 0; i < args.length; i++) {
             
-          // DESTDIR flags
-          if(args[i].equals("-c") || args[i].equals("--client")) {
+            // DESTDIR flags
+            if(args[i].equals("-c") || args[i].equals("--client")) {
             
-            if(i + 1 >= args.length) {
-                IO.error("no argument left for "+args[i]);
+                if(i + 1 >= args.length) {
+                    IO.error("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                config.setClientDir(new File(args[++i]));
+            } else if(args[i].equals("-s") || args[i].equals("--server")) {
+            
+                if(i + 1 >= args.length) {
+                    IO.error("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                config.setServerDir(new File(args[++i]));
+                
+            // LOGGING flags
+            } else if(args[i].equals("-d") || args[i].equals("--debug")) {
+                config.enableDebug();
+            } else if(args[i].equals("-v") || args[i].equals("--verbose")) {
+                config.enableVerbose();
+            } else if(args[i].equals("-q") || args[i].equals("--quiet")) {
+                config.enableQuiet();
+                
+            } else if(args[i].equals("--config")) {
+                // TODO run generator with the provided config
+                if(i + 1 >= args.length) {
+                    IO.error("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+            } else if(args[i].equals("--gui")) {
+                // TODO run generator gui
+            // USAGE HELP flag
+            } else if(args[i].equals("-h") || args[i].equals("--help")) {
+                showUsage();
                 throw new ExecutionFailed();
-            }
-            config.setClientDir(new File(args[++i]));
-          } else if(args[i].equals("-s") || args[i].equals("--server")) {
-            
-            if(i + 1 >= args.length) {
-                IO.error("no argument left for "+args[i]);
-                throw new ExecutionFailed();
-            }
-            config.setServerDir(new File(args[++i]));
-//          } else if(args[i].equals("-d") || args[i].equals("--dest")) {
-//            
-//            if(i + 1 >= args.length) {
-//                IO.error("no argument left for "+args[i]);
-//                throw new ExecutionFailed();
-//            }
-//            config.setDestDir(new File(args[++i]));
-//            
-//          // SCHEMANAME flags
-//          } else if(args[i].equals("-n") || args[i].equals("--name")) {
-//                  
-//              if(i + 1 >= args.length) {
-//                  IO.error("no argument left for "+args[i]);
-//                  throw new ExecutionFailed();
-//              }
-//            config.setName(args[++i]);
-            
-            // ETHERNET CONFIG flags
+                
+             // ETHERNET CONFIG flags
             } else if(args[i].equals("--mac")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
@@ -221,8 +232,8 @@ public class Main {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
-                }
-                config.setIP(args[++i].split("[.]"));
+              }
+              config.setIP(args[++i].split("[.]"));
             } else if(args[i].equals("--mask")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
@@ -248,19 +259,9 @@ public class Main {
                     throw new IllegalArgumentException("invalid value for port. Has to be an integer >= 0");
                 }
                 
-            // LOGGING flags
-            } else if(args[i].equals("-d") || args[i].equals("--debug")) {
-                config.enableDebug();
-            } else if(args[i].equals("-v") || args[i].equals("--verbose")) {
-                config.enableVerbose();
-            } else if(args[i].equals("-q") || args[i].equals("--quiet")) {
-                config.enableQuiet();
-                
-            // USAGE HELP flag
-            } else if(args[i].equals("-h") || args[i].equals("--help")) {
-                showUsage();
-                throw new ExecutionFailed();
             } else remaining.add(args[i]);
+            
+            
         }
         
         return remaining.toArray(new String[0]);

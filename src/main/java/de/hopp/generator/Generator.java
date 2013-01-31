@@ -39,7 +39,6 @@ public class Generator {
 
         // setup required folders
         IO.println("  setting up required folders ...");
-//        if(! config.getDest().exists()) config.getDest().mkdirs();
         if(! config.serverDir().exists()) config.serverDir().mkdirs();
         if(! config.clientDir().exists()) config.clientDir().mkdirs();
         
@@ -67,21 +66,18 @@ public class Generator {
         // abort if any errors occurred
         if(errors.hasErrors()) return;
         
-        // unparse generated models to corresponding files
-        IO.println("  generating board side driver files ...");
-        printMFile(boardDriver, false, UnparserType.HEADER);
-        printMFile(boardDriver, false, UnparserType.C);
+        // unparse generated server models to corresponding files
+        IO.println("  generating server side driver files ...");
+        printMFile(boardDriver, config.serverDir(), UnparserType.HEADER);
+        printMFile(boardDriver, config.serverDir(), UnparserType.C);
         
         // abort if any errors occurred
         if(errors.hasErrors()) return;
         
+        // unparse generated client models to corresponding files
         IO.println("  generating client side driver files ...");
-        
-        IO.println("      generating header file ...");
-        printMFile(clientDriver, true, UnparserType.HEADER);
-        
-        IO.println("      generating source file ...");
-        printMFile(clientDriver, true, UnparserType.CPP);
+        printMFile(clientDriver, config.clientDir(), UnparserType.HEADER);
+        printMFile(clientDriver, config.clientDir(), UnparserType.CPP);
         
         // generate the constants file with the debug flag
         printMFile(MFileInFile(MFile(MDocumentation(Strings()), "constants", MDefinitions(
@@ -89,15 +85,15 @@ public class Generator {
                             "If set, enables additional console output for debugging purposes"
                     )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"
                 )), MStructs(), MEnums(), MAttributes(), MProcedures())),
-                true, UnparserType.HEADER);
+                config.clientDir(), UnparserType.HEADER);
         
         if(errors.hasErrors()) return;
         
         // run doxygen generation
         IO.println("  generate api specification ...");
-        IO.println("    generate host-side api specification ... ");
+        IO.println("    generate client-side api specification ... ");
         doxygen(config.clientDir());
-//        IO.println("    generate board-side api specification ... ");
+//        IO.println("    generate server-side api specification ... ");
 //        doxygen(config.serverDir(), config.verbose()));            
 
     }
@@ -108,6 +104,7 @@ public class Generator {
         try {
             String line;
             // TODO probably need .exe extension for windows?
+            // TODO would be cleaner to do this with scripts, i guess (but this would require parameter passing...)
             // run doxygen in the provided directory
             Process p = new ProcessBuilder("doxygen", "doxygen.cfg").directory(dir).redirectErrorStream(true).start();
             input     = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -141,48 +138,6 @@ public class Generator {
         }
     }
 
-//    private MFile generateClientDriver() {
-//        MFile clientDriver = DUMMY_FILE.replaceName("Client");
-//        
-//        for(Component comp : board.components()) {
-//            clientDriver = mergeFiles(clientDriver, comp.Switch(new Component.Switch<MFile, NE>() {
-//                public MFile CaseUART(UART term)                   { return DUMMY_FILE; }
-//                public MFile CaseETHERNET_LITE(ETHERNET_LITE term) { return DUMMY_FILE; }
-//                public MFile CaseETHERNET(ETHERNET term)           { return DUMMY_FILE; }
-//                public MFile CasePCIE(PCIE term)                   { return DUMMY_FILE; }
-//                public MFile CaseLEDS(LEDS term)                   {
-//                    MFile ledsFile = DUMMY_FILE;
-//                    
-//                    // generate method to set LED register
-//                    MMethod setLEDs = MMethod(
-//                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
-//                                MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
-//                            ), MCode(
-//                                Strings("// set LED register accordingly")
-//                            ));
-//                    
-//                    // generate method to read LED register
-//                    MMethod getLEDs = MMethod(
-//                            MDocumentation(Strings()), MModifiers(), MVoid(), "setLEDs", MParameters(
-//                                MParameter(VALUE(), MArrayType(MType("boolean"), 8), "state")
-//                            ), MCode(
-//                                Strings("// read LED register and put it into array")
-//                            ));
-//                    
-//                    // put methods into returned file
-//                    ledsFile.replaceMethods(MMethods(setLEDs, getLEDs));
-//                    
-//                    return ledsFile;
-//                }
-//                public MFile CaseSWITCHES(SWITCHES term)           { return DUMMY_FILE; }
-//                public MFile CaseBUTTONS(BUTTONS term)             { return DUMMY_FILE; }
-//                public MFile CaseVHDL(VHDL term)                   { return DUMMY_FILE; }
-//            }));
-//        }
-//        
-//        return clientDriver;
-//    }
-
     private MFile generateClientDriver() {
         ClientVisitor visit = new ClientVisitor(config);
         visit.visit(board);
@@ -208,7 +163,7 @@ public class Generator {
         return visit.getFile().replaceName("Driver");
     }
 
-    private void printMFile(MFileInFile mfile, boolean client, UnparserType type) {
+    private void printMFile(MFileInFile mfile, File target, UnparserType type) {
         
         // setup buffer
         StringBuffer buf = new StringBuffer(16384);
@@ -220,24 +175,18 @@ public class Generator {
         try {
             visitor.visit(mfile);
         } catch (InvalidConstruct e) {
-           errors.addError(new UsageError(e.getMessage()));
+            errors.addError(new UsageError(e.getMessage()));
         }
                
-        // set output file
-        File target = client ? config.clientDir() : config.serverDir();
-             target = new File(target, "src");
-             target = new File(target, new File(".").getName());
+        // append src folder to targed directory
+        target = new File(target, "src");
         
-//        if(client) target = new File(config.clientDir(), target.getName());
-//        if(config.getDest() != null)
-//            target = new File(config.getDest(), target.getName());
-
-        // append file extension according to used unparser
+        // append model name and file extension according to used unparser
         switch(type) {
         case HEADER : target = new File(target, mfile.name().term() +   ".h"); break;
         case C      : target = new File(target, mfile.name().term() +   ".c"); break;
         case CPP    : target = new File(target, mfile.name().term() + ".cpp"); break;
-        default     : errors.addError(new UsageError("invalid unparser")); return;
+        default     : throw new IllegalStateException("invalid unparser");
         }
         
         // print buffer contents to file

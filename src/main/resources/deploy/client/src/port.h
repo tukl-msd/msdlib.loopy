@@ -32,7 +32,7 @@ public:
 	 * @param val The integer value to be written.
 	 * @return true if the write was successful, false otherwise.
 	 */
-	bool writeData(int val);
+	bool write(int val);
 };
 
 /**
@@ -51,7 +51,7 @@ public:
 	 * @return true, if the read was successful, false otherwise.
 	 */
 	// TODO why array? use pointer...a
-	bool readData(int val[]);
+	bool read(int val[]);
 };
 
 /**
