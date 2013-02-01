@@ -33,10 +33,12 @@ external Integer
 
 // file and class model
 MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures methods, MClasses classes )
-MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, 
+MClass ( MDocumentation doc, MModifiers modifiers, String name, MExtends extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
-MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE() // don't know if more are required
+MModifier = MVisibility | CONSTANT() | STATIC() | INLINE() // don't know if more are required
 // modifiers obviously allow invalid combinations. We rely on the programmer to refrain from using these
+MVisibility = PUBLIC() | PROTECTED() | PRIVATE()
+MExtend( MVisibility visibility, MType type )
 
 
 // struct and enum model
@@ -106,6 +108,7 @@ MAttributes         * MAttribute
 MProcedures         * MProcedure
 MMethods            * MMethod
 MParameters         * MParameter
+MExtends            * MExtend
 MTypes              * MType
 MIncludes           * MInclude
 MTags               * MTag

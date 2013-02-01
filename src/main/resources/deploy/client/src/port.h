@@ -22,7 +22,7 @@ public:
  * Instances of this class represent in-going ports of IPCores.
  * Communication with a core should be handled through these ports.
  */
-class in : public port {
+class in : protected port {
 public:
 	in() {}
 	~in() {}
@@ -40,7 +40,7 @@ public:
  * Instances of this class represent out-going ports of IPCores.
  * Communication with a core should be handled through these ports.
  */
-class out : public port {
+class out : protected port {
 public:
 	out() {}
 	~out() {}

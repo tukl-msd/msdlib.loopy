@@ -107,7 +107,7 @@ public class ClientVisitor extends Visitor<NE> {
         comp = MClass(MDocumentation(Strings(
                     "An abstract representation of a(n) #" + core.file() + " core."
                 ), SEE("components.h for a list of specific core instances within this board driver.")
-                ), MModifiers(), core.file(), MTypes(MType("component")),
+                ), MModifiers(), core.file(), MExtends(MExtend(PRIVATE(), MType("component"))),
                 MStructs(), MEnums(), MAttributes(), MMethods());
 
         constructor = MConstr(MDocumentation(Strings(

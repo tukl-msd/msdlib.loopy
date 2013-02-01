@@ -66,12 +66,8 @@ void interface::incRef() {
 
 void interface::decRef() {
 	refCount --;
-	if(refCount == 0) {
-		// if the ref counter has reached zero, disconnect
-		teardown();
-		// and remove this object
-		delete this;
-	}
+	// remove the object, if the refcount reaches 0
+	if(refCount == 0) delete this;
 }
 
 bool interface::setLEDState(int state) {
@@ -91,7 +87,7 @@ ethernet::ethernet(const char *ip, unsigned short int port) :
 }
 
 ethernet::~ethernet() {
-	// TODO Auto-generated destructor stub
+	teardown();
 }
 
 void ethernet::setup() {
@@ -196,20 +192,6 @@ bool ethernet::readInt(int buf[], int size) {
 	return true;
 }
 
-/**
- * Sets the LED state using a single integer value.
- * @param state The new LED state represented by a single integer value.
- *              The value has to be in the interval [0;255].
- */
-//bool ethernet::setLEDState(int state) {
-//	int send [2];
-//
-//	send[0] = constructHeader(1,0,1);
-//	send[1] = state;
-//
-//	return writeValues(send, 8);
-//}
-
 uart::uart() {
 	setup();
 }
@@ -227,9 +209,9 @@ bool uart::send(int val[], int size) {
 }
 
 void uart::setup() {
-	printf(":)");
+	printf("\nsetup uart");
 }
 
 void uart::teardown() {
-	printf(":)");
+	printf("\nteardown uart");
 }

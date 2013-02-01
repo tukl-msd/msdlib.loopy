@@ -78,17 +78,17 @@ public class CppUnparser extends CUnparser {
         visit(init.con());
         visit(init.vals());
     }
-    
-    public void visit(MConstrInFile constr) throws InvalidConstruct {
-        visit(constr.doc());
-        super.visit(constr);
-    }
-    
-    public void visit(MDestrInFile destr) throws InvalidConstruct {
-        visit(destr.doc());
-        super.visit(destr);
-    }
-    
+//    
+//    public void visit(MConstrInFile constr) throws InvalidConstruct {
+//        visit(constr.doc());
+//        super.visit(constr);
+//    }
+//    
+//    public void visit(MDestrInFile destr) throws InvalidConstruct {
+//        visit(destr.doc());
+//        super.visit(destr);
+//    }
+//    
 //    @Override
     // Do not unparse attributes in sourcefile
 //    public void visit(MAttributesInFile attributes) { }

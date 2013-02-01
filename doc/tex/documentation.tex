@@ -100,22 +100,20 @@ This document is intended to give an overview over the HOPP Driver Generator for
 %define scope of the generator
 The HOPP Driver Generator itself is intended to provide embedded system developers %that's kinda vague
 with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
-To our knowledge, such an interface for communication with VHDL components has not been done so far, though extensive research exists concerning efficient communication between PCs and FPGAs over different interfaces \cite{lofgren05, alachiotis10, alachiotis12}.
+To our knowledge, such an interface for communication with VHDL components has not been done so far, though extensive research exists concerning efficient communication between PCs and FPGAs over different communication channels, mainly Ethernet \cite{lofgren05, alachiotis10, alachiotis12}.
 
-It has been prototyped with a \texttt{C++} frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet, but can be easily extended to support other frontend languages, FPGA boards or transport media.
+Our interface has been prototyped with a \texttt{C++} frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet. The design enables easy extension to support other frontend languages, FPGA boards or transport media.
 
 \section{Origins and Goals}
 \label{sec:goals}
-The HOPP Driver Generator was originally and currently is developed by the Software Technology Group of the University of Kaiserslautern in cooperation with the Microelectronic Design Research Group of the University of Kaiserslautern.
+The HOPP Driver Generator originally was and currently is developed by the Software Technology Group of the University of Kaiserslautern in cooperation with the Microelectronic Design Research Group of the University of Kaiserslautern.
 
 The design goals of this project are:
 
 \begin{itemize}
 %those are not really "design" goals, but hey... text... for now
 \item \textcolor{red}{Probably better filled out by the EIT department ;)}
-\item Both, the generator and the driver, should be easy-to-use and setup
-\item It should be easy to write programs using the generated driver api
-
+\item An easy-to-use driver and driver generator
 \item Well-documented api
 \item Modularity and extensibility
 \item Meaningful error description
@@ -368,33 +366,35 @@ The architecture of the host software is depicted in \Cref{fig:archHost}. The co
 \subsection{Component}
 A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. data is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.
 
-The host driver contains an abstract generic component, describing components in general. User-defined components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. For each user-defined core, a new subclass is created containing the specified ports. All user-defined cores and instances of these cores can be found in components.h
+The host driver contains an abstract generic component, describing components in general. User-defined components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. For each user-defined core, a new subclass is created, which contains the specified ports. For each instance of a core on the board, an object of the cores subclass together with all its ports is instantiated in the driver respectively. Communication with the boards components happens through these objects.
+
+All user-defined cores and instances of these cores can be found in components.h
 
 \paragraph{GPIO compoments}
-These components are specialised, predefined I/O components on the board. Currently, three of these components are supported:
+These components are specialised, predefined I/O components. Currently, three of these components are supported:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
 \item LEDs
 \item Switches
 \item Buttons
 \end{itemize}
-It is possible to either write to or read from these components, depending on the type of the component (LEDs can only be written to, switches and buttons can only be read).
+Communication to these components is not handled via ports. Instead, it is possible to directly read or write the state of the component. LEDs can only be written to, switches and buttons can only be read from.
 
 \subsection{Port}
- A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or dual ports. They can have an arbitrary bitwidth. Since the bitwidth of the microblaze as well as the arm processor is limited to 32-bit, the port class has to split greater bitwidths in several 32-bit packages, but hide this process from the user. The encoding format, i.e. order of bits, also is hidden from the user.
+ A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or bi-directional ports. They can have an arbitrary bitwidth, yet the bitwidth supported by the microblaze as well as the arm processor is limited to 32-bit. Also, the total number of ports is restricted in the microblaze / arm. We allow an arbitrary bitwidth and port number to retain generality of the driver for other platforms, but support arbitrary bidwidth translation and port number restriction to hide complexity from the user. The same applies for encoding format, i.e. the order of bits.
 
 \subsection{Communication Interface}
-The communication interface is hidden from the user. Each component has exactly one such interface and a communication interface has to be attached to a component. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical network interface and provides a homogeneous api for components and ports. Network interface specific initialization is generated as well and is not required by the user (other than annotating configuration details in the board description).
+The communication interface is hidden from the user. Each component has exactly one such interface. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical network interface and provides a homogeneous api for components and ports. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
 
-Note, that a board is also only allowed to use a single interface. Consequently, components using the same interface are physically located on the same board.
+Note, that a board is also only allowed to use a single interface. Consequently, components using the same interface are physically located on the same board and components using different interfaces are on different boards.
 
 Currently, three communication interfaces are envisioned:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{Ethernet}, which is already implemented
+\item \textbf{Ethernet Lite}, which is already implemented
 \item \textbf{USB/UART}, which is considered as second interface and
 \item \textbf{PCI Express}, which will not be implemented in the initial driver generator.
 \end{itemize}
 
-\paragraph{Ethernet}
+\paragraph{Ethernet Lite}
 Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
 
 It is possible to implement more efficient Ethernet communication using dedicated VHDL components instead of running the lwip stack on the general purpose CPU. Such a component could easily be integrated in form of a new Communication Interface. An example for a dedicated VHDL communication component together with a client API is described in \cite{alachiotis10, alachiotis12}.
@@ -402,7 +402,7 @@ It is possible to implement more efficient Ethernet communication using dedicate
 \textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
 
 \paragraph{PCI Express}
-\textcolor{red}{According to \cite{alachiotis10}, there should be a Xilinx wrapper for PCIE communication.}
+\textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
 
 \section{Board Side}
 For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.

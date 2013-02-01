@@ -18,7 +18,7 @@
  * with the board.
  * @see components.h for a list of specific gpio instances within this board driver.
  */
-class leds : public component {
+class leds : private component {
 public:
 	/**
 	 * Constructor for the LED component.
@@ -53,7 +53,7 @@ private:
  * includes reading the current button state into an array.
  * @see components.h for a list of specific gpio instances within this board driver.
  */
-class buttons : public component {
+class buttons : private component {
 public:
 	/**
 	 * Constructor for the button component.
@@ -78,7 +78,7 @@ public:
  * includes reading the current switch state into an array.
  * @see components.h for a list of specific gpio instances within this board driver.
  */
-class switches : public component {
+class switches : private component {
 public:
 	/**
 	 * Constructor for the switch component.

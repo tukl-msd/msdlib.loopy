@@ -23,6 +23,8 @@ public class DriverVisitor extends Visitor<NE>{
     private MProcedure main;
     private MProcedure clean;
     
+    // TODO split this into component communication and medium setup as well...
+    // might be more difficult, since interrupt setup is interleaved for gpio components ):
     public DriverVisitor(Configuration config) {
         this.config = config;
         

@@ -31,10 +31,10 @@ public class Main {
     
     public static void main(String[] args) {
         Main main = new Main();
-        
-        try{
+
+        try {
             main.run(args);
-        } catch(ExecutionFailed e){
+        } catch(ExecutionFailed e) {
             System.exit(1);
         } 
     }

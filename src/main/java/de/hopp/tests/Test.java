@@ -23,7 +23,7 @@ public class Test {
         System.out.println("some primitive test");
         
         MMethod m = MProcedure(MDocumentation(Strings()), MModifiers(), MType("a"), "b", MParameters(), MCode(Strings("abc")));
-        MClass c = MClass(MDocumentation(Strings()), MModifiers(), "a", MTypes(), MStructs(), MEnums(), MAttributes(), MMethods(m));
+        MClass c = MClass(MDocumentation(Strings()), MModifiers(), "a", MExtends(), MStructs(), MEnums(), MAttributes(), MMethods(m));
         MFile file = MFile(MDocumentation(Strings()), "name", MDefinitions(), MStructs(), MEnums(),
                     MAttributes(), MProcedures(), MClasses(c));
         

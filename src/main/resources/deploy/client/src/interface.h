@@ -21,7 +21,7 @@ class interface {
 public:
 // -------------------- destructor -----------------------------
 	interface();
-	virtual ~interface() {}
+	virtual ~interface() { }
 // -------------------- registering -----------------------------
 	/**
  	 * Registers a new core that uses this communication medium.
