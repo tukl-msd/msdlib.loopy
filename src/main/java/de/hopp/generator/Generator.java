@@ -50,17 +50,30 @@ public class Generator {
         // if there are errors abort here
         if(errors.hasErrors()) return;
         
-        // copy fixed parts (i.e. client side api and doxygen configs)
+        // copy generic code parts
         IO.println("  deploying generic client and server code ...");
         
         try {
             copy("deploy/client", config.clientDir(), IO);
-            copy("deploy/server", config.serverDir(), IO);
+            
+            // root server directory
+//            copy("deploy/server/constants.h", config.serverDir(), IO);
+//            copy("deploy/server/doxygen.cfg", config.serverDir(), IO);
+//            copy("deploy/server/main.c", config.serverDir(), IO);
+//            copy("deploy/server/platform_config.h", config.serverDir(), IO);
+//            copy("deploy/server/platform_mb.h", config.serverDir(), IO);
+//            copy("deploy/server/platform_ppc.h", config.serverDir(), IO);
+//            copy("deploy/server/platform_zynq.h", config.serverDir(), IO);
+//            copy("deploy/server/platform.c", config.serverDir(), IO);
+//            copy("deploy/server/platform.h", config.serverDir(), IO);
+//            
+//            // generic subfolder parts
+//            copy("deploy/components/interrupts.h", config.serverDir(), IO);
+//            copy("deploy/components/interrupts.c", config.serverDir(), IO);
+                        
             IO.verbose("");
         } catch (IOException e) {
             errors.addError(new UsageError(e.getMessage()));
-//            IO.println("    ERROR: " + e.getMessage());
-//            throw new ExecutionFailed();
         }
         
         // abort if any errors occurred
