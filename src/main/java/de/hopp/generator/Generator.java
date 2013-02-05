@@ -51,19 +51,22 @@ public class Generator {
         try {
             copy("deploy/client", config.clientDir(), IO);
             
-            // root server directory
+            // server root directory
             copy("deploy/server/doxygen.cfg",       new File(config.serverDir(), "doxygen.cfg"), IO);
-            copy("deploy/server/main.c",            new File(config.serverDir(), "main.c"), IO);
-            copy("deploy/server/platform_config.h", new File(config.serverDir(), "platform_config.h"), IO);
-            copy("deploy/server/platform_mb.c",     new File(config.serverDir(), "platform_mb.c"), IO);
-//            copy("deploy/server/platform_ppc.c",    new File(config.serverDir(), "platform_ppc.c"), IO);
-//            copy("deploy/server/platform_zynq.c",   new File(config.serverDir(), "platform_zynq.c"), IO);
-            copy("deploy/server/platform.c",        new File(config.serverDir(), "platform.c"), IO);
-            copy("deploy/server/platform.h",        new File(config.serverDir(), "platform.h"), IO);
+            
+            // server src directory
+            File serverSrc = new File(config.serverDir(), "src");
+            copy("deploy/server/main.c",            new File(serverSrc, "main.c"), IO);
+            copy("deploy/server/platform_config.h", new File(serverSrc, "platform_config.h"), IO);
+            copy("deploy/server/platform_mb.c",     new File(serverSrc, "platform_mb.c"), IO);
+//            copy("deploy/server/platform_ppc.c",    new File(serverSrc, "platform_ppc.c"), IO);
+//            copy("deploy/server/platform_zynq.c",   new File(serverSrc, "platform_zynq.c"), IO);
+            copy("deploy/server/platform.c",        new File(serverSrc, "platform.c"), IO);
+            copy("deploy/server/platform.h",        new File(serverSrc, "platform.h"), IO);
             
             // generic subfolder parts
-            copy("deploy/server/medium/protocol", new File(new File(config.serverDir(), "medium"), "protocol"), IO);
-            File componentDir = new File(config.serverDir(), "components");
+            copy("deploy/server/medium/protocol", new File(new File(serverSrc, "medium"), "protocol"), IO);
+            File componentDir = new File(serverSrc, "components");
             copy("deploy/server/components/interrupts.h", new File(componentDir, "interrupts.h"), IO);
             copy("deploy/server/components/interrupts.c", new File(componentDir, "interrupts.c"), IO);
                         
@@ -87,12 +90,14 @@ public class Generator {
         generateClientDriver();
         
         // generate the constants file with the debug flag
-        printMFile(MFileInFile(MFile(MDocumentation(Strings()), "constants", MDefinitions(
+        printMFile(MFileInFile(MFile(MDocumentation(Strings(
+                    "Defines several constants used by the client."
+                )), "constants", MDefinitions(
                     MDefinition(MDocumentation(Strings(
                             "If set, enables additional console output for debugging purposes"
                     )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"
                 )), MStructs(), MEnums(), MAttributes(), MProcedures())),
-                config.clientDir(), UnparserType.HEADER);
+                new File(config.clientDir(), "src"), UnparserType.HEADER);
         
         // abort if any errors occurred
         if(errors.hasErrors()) return;
@@ -101,8 +106,8 @@ public class Generator {
         IO.println("  generate api specification ...");
         IO.println("    generate client-side api specification ... ");
         doxygen(config.clientDir());
-//        IO.println("    generate server-side api specification ... ");
-//        doxygen(config.serverDir(), config.verbose()));            
+        IO.println("    generate server-side api specification ... ");
+        doxygen(config.serverDir());            
 
     }
     
@@ -119,7 +124,7 @@ public class Generator {
 
             // wait for the process to terminate and store the result
             int rslt = p.waitFor();
-
+            
             // if something went wrong, print a warning
             if(rslt != 0) {
                 errors.addWarning(new Warning("failed to generate api specification at " +
@@ -128,13 +133,8 @@ public class Generator {
             }
             
             // if verbose, echo the output of doxygen
-//            if(input.ready())
-//                IO.verbose("    doxygen encountered the following warnings/errors:");
             while ((line = input.readLine()) != null)
                 IO.verbose("      " + line);
-            
-            // throw an exception if something went wrong (in case the surrounding call treats failures somehow)
-//            if(rslt != 0) throw new ExecutionFailed();
             
         } catch (IOException | InterruptedException e) {
             errors.addWarning(new Warning("failed to generate api specification at " + 
@@ -150,8 +150,9 @@ public class Generator {
         ClientVisitor visit = new ClientVisitor(config);
         visit.visit(board);
         
-        printMFile(MFileInFile(visit.getCompsFile()), config.clientDir(), UnparserType.HEADER);
-        printMFile(MFileInFile(visit.getCompsFile()), config.clientDir(), UnparserType.CPP);
+        File clientSrc = new File(config.clientDir(), "src");
+        printMFile(MFileInFile(visit.getCompsFile()), clientSrc, UnparserType.HEADER);
+        printMFile(MFileInFile(visit.getCompsFile()), clientSrc, UnparserType.CPP);
     }
 
     /* 
@@ -170,9 +171,10 @@ public class Generator {
         DriverVisitor visit = new DriverVisitor(config);
         try {
             visit.visit(board);
-
-            File comp = new File(config.serverDir(), "components");
-            printMFile(MFileInFile(visit.getConstantsFile()),  config.serverDir(), UnparserType.HEADER);
+            
+            File serverSrc = new File(config.serverDir(), "src");
+            File comp = new File(serverSrc, "components");
+            printMFile(MFileInFile(visit.getConstantsFile()),  serverSrc, UnparserType.HEADER);
             printMFile(MFileInFile(visit.getComponentsFile()), comp, UnparserType.HEADER);
             printMFile(MFileInFile(visit.getComponentsFile()), comp, UnparserType.C);
         } catch (IOException e) {
@@ -195,9 +197,6 @@ public class Generator {
             errors.addError(new UsageError(e.getMessage()));
         }
                
-        // append src folder to targed directory
-//        target = new File(target, "src");
-        
         // append model name and file extension according to used unparser
         switch(type) {
         case HEADER : target = new File(target, mfile.name().term() +   ".h"); break;

@@ -158,7 +158,11 @@ Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generat
 Since the host side driver is written in \texttt{C++}, it is also required to have a \texttt{C/C++} compiler present.
 
 \paragraph{Xilinx Toolsuite}
-In order to generate an \texttt{.elf} file that can is used to program the FPGA, the Xilinx toolsuite is required. This includes ISE for generating IPCores out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform \textcolor{red}{(it MIGHT also be possible to generate .mhs files or whatever the newer format is out of our DSL or replace our DSL with this language, which reduces the number of files that have to be written by the user...)}.
+In order to generate an \texttt{.elf} file that can is used to program the FPGA, the Xilinx toolsuite is required. This includes ISE for generating IPCores out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform.
+
+ \textcolor{red}{It MIGHT also be possible to generate .mhs files or whatever the newer format is out of our DSL or replace our DSL with this language, which reduces the number of files that have to be written by the user...}
+
+\textcolor{red}{It is furthermore desirable to skip user-interfaction with the EDK completely. This would require generation of the board support package and external call of Xilinx' compiler.}
 
 \section{Process}
 \label{sec:process}
@@ -289,11 +293,11 @@ For a more detailed documentation of the code and provided methods, Javadoc styl
 \draw[arr,<->] (cloud) to node [auto] {} (bdriver);
 \draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
 \end{tikzpicture}
-\caption{A second version of data sending order with transport medium and correct layering}
+\caption{A high-level view of the data flow from a client application to vhdl components on the board through the generated driver}
 \label{fig:dataFlow}
 \end{figure}
 
-\Cref{fig:dataFlow} depicts the overall design of the driver. Data is sent from an embedding client application to the client side driver. This driver communicates over some transport medium with the board side driver, which in turn distributes the received data to corresponding VHDL components on the FPGA. Results are sent back through the same chain.
+The overall architecture of the driver is depicted by \Cref{fig:dataFlow}. Data is sent from an embedding client application to the client side driver. This driver communicates over some transport medium with the board side driver, which in turn distributes the received data to corresponding VHDL components on the FPGA. Results are sent back through the same chain.
 
 \section{Host Side}
 The client side consists of several cpp sources and headers files. These files can be imported in any client side project and be used to wrap communication with components on the board.
@@ -405,9 +409,18 @@ It is possible to implement more efficient Ethernet communication using dedicate
 \textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
 
 \section{Board Side}
-For the board, only two relevant files are generated, a header and a plain c source file. Both files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
+The board-side driver consists of several files that can roughly be split into three groups: files handling communication with the host-side driver, files handling communication with board components and setup files.
 
+All these files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
 
+\paragraph{Medium}
+The medium folder contains a source and header file for the medium the board is attached to. In this file, medium-specific setup is performed and listening to incoming messages is handled. An incoming message is passed to the protocol interpreter, which distributes the content of the message in accordance to its header.
+
+\paragraph{Components}
+The components folder contains code for component-specific setup and communication between the boards general purpose cpu and designed IP cores. Code for controlling gpio components will also be generated in this folder.
+
+\paragraph{Initialisation}
+Files for initialisation are generated directly in the \texttt{src} folder of the project. Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the listening loop.
 
 \chapter{Generator}
 This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator.\textcolor{red}{A reference to the third Katja report might be useful.}
@@ -473,7 +486,7 @@ MClass ( MDocumentation doc, MModifiers modifiers, String name, MTypes extend, M
 MModifier = PRIVATE() | PUBLIC() | CONSTANT() | STATIC() | INLINE()
 \end{lstlisting}
 
-First of all, each file has a name and may be documented with an \texttt{MDocumentation} element. If the documentation is not empty, a \texttt{@file} tag is attached to indicate this as a file documentation for doxygen. A file consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes. Classes also can be documented.
+First of all, files can be documented using an \texttt{MDocumentation} element. If the documentation is not empty, a \texttt{@file} tag is attached to indicate this as a file documentation for doxygen.  A file has a name and consists of several definitions, structures, enums, attributes and methods. Files also can contain several classes. These classes again have a name and can contain all these components including other classes. In addition, classes can contain modifiers and inherit components from other classes. Classes also can be documented.
 The allowed modifiers are private, public, constant, static, and inline. Note, that not all of these modifiers are class modifiers, and several combinations of modifiers are invalid (e.g. private and public). The model relies on the developer to choose modifiers according to the modified program part.
 
 \begin{lstlisting}[language=java, breaklines=true]

@@ -619,6 +619,12 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         // if it is an empty documentation block, return
         if(doc.doc().isEmpty() && doc.tags().isEmpty()) return;
         
+        // if the documentation consists of a single line, only write a single line
+        if(doc.doc().size() == 1 && doc.tags().isEmpty() && !(doc.parent() instanceof MFileInFile)) {
+            buffer.append("/** " + doc.doc().first().term() + " */\n");
+            return;
+        }
+        
         // start documentation block
         buffer.append("/**\n");
         
@@ -717,8 +723,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MMemberInitsInFile inits) {
-        for(MMemberInitInFile init : inits)
-            visit(init);
+        for(MMemberInitInFile init : inits) visit(init);
     }
 
     @Override

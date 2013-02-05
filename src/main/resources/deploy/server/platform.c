@@ -29,10 +29,10 @@
 
 #include "lwip/tcp.h"
 
+void tcp_fasttmr(void);
+void tcp_slowtmr(void);
 
-void
-timer_callback()
-{
+void timer_callback() {
 	/* we need to call tcp_fasttmr & tcp_slowtmr at intervals specified by lwIP.
 	 * It is not important that the timing is absoluetly accurate.
 	 */
@@ -44,18 +44,11 @@ timer_callback()
 		tcp_slowtmr();
 }
 
-//static XIntc intc;
-//INTC intc;
-
-void platform_setup_interrupts()
-{
+void platform_setup_interrupts() {
 	XIntc *intcp;
 	intcp = getIntc();
 
-	xil_printf("\n%d\n", &intcp);
-
 	XIntc_Initialize(intcp, XPAR_INTC_0_DEVICE_ID);
-	xil_printf("\n%d\n", &intcp);
 
 	XIntc_Start(intcp, XIN_REAL_MODE);
 
@@ -107,9 +100,7 @@ void platform_setup_interrupts()
 
 }
 
-void
-enable_caches()
-{
+void enable_caches() {
 #ifdef __PPC__
 	Xil_ICacheEnableRegion(CACHEABLE_REGION_MASK);
 	Xil_DCacheEnableRegion(CACHEABLE_REGION_MASK);
@@ -123,15 +114,12 @@ enable_caches()
 #endif
 }
 
-void
-disable_caches()
-{
+void disable_caches() {
 	Xil_DCacheDisable();
 	Xil_ICacheDisable();
 }
 
-void init_platform()
-{
+void init_platform() {
 	enable_caches();
 
 #ifdef STDOUT_IS_16550
@@ -142,8 +130,7 @@ void init_platform()
 	platform_setup_interrupts();
 }
 
-void cleanup_platform()
-{
+void cleanup_platform() {
 	disable_caches();
 }
 #endif

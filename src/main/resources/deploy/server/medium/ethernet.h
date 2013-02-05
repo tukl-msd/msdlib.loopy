@@ -1,8 +1,9 @@
-/*
- * Ethernet.h
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+/**
+ * Handles communication over Ethernet.
+ * This includes medium-specific initialisation as well as the listening loop.
+ * @file
+ * @author Thomas Fischer
+ * @since 01.02.2013
  */
 
 #ifndef ETHERNET_H_
@@ -14,15 +15,10 @@
 #include "lwip/tcp.h"
 #include "lwip/err.h"
 
-// initialise this communication medium
+/** initialise this communication medium */
 void init_medium();
 
-// start listening for in-going packages
+/** start listening for in-going packages */
 int start_application();
 
-// callback method (to be executed whenever a package arrives)
-//err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err);
-
-// or maybe THIS is the callback method?
-//err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 #endif /* ETHERNET_H_ */

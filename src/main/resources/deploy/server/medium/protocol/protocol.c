@@ -1,8 +1,6 @@
 /*
- * protocol.c
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+ * @author Thomas Fischer
+ * @since 01.02.2013
  */
 
 // TODO

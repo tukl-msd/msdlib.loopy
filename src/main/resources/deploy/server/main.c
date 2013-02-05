@@ -1,18 +1,23 @@
 /*
- * main.c
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+ * @file
+ * @author Thomas Fischer
+ * @since 01.02.2013
  */
 
 //#include "medium/medium.h"
-#include "platform.h"
-#include "components/components.h"
+//#include "platform.h"
+//#include "components/components.h"
 
+// forward definitions
+void init_platform();
 void init_medium();
+void init_components();
 void start_application();
+void cleanup_platform();
 
+// main method
 int main() {
+	// initialise the platform. This also sets up the interrupt controller
 	init_platform();
 
 	// initialise Ethernet

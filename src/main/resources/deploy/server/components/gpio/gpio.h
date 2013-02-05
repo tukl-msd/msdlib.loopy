@@ -1,8 +1,8 @@
-/*
- * gpio.h
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+/**
+ * Generic procedures and definitions used by gpio components.
+ * @file
+ * @author Thomas Fischer
+ * @since 01.02.2013
  */
 
 #ifndef GPIO_H_

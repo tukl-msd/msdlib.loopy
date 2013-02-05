@@ -8,6 +8,11 @@
 #ifndef PORT_H_
 #define PORT_H_
 
+/** An Exception that marks a failed write operation on a port. */
+class writeException {};
+/** An Exception that marks a failed read operation on a port.  */
+class readException {};
+
 /**
  * An abstract representation of an AXI-Stream port.
  * This marks a general port without a direction and should not be instantiated.
@@ -28,6 +33,13 @@ public:
 	~in() {}
 
 	/**
+	 * Writes an array of integer values to this port.
+	 * @param val The integer array to be written.
+	 * @param size The size of the integer array.
+	 * @return true if the write was successful, false otherwise.
+	 */
+	bool write(int val[], int size);
+	/**
 	 * Writes an integer value to this port.
 	 * @param val The integer value to be written.
 	 * @return true if the write was successful, false otherwise.
@@ -46,12 +58,24 @@ public:
 	~out() {}
 
 	/**
-	 * Reads an integer value from this port.
-	 * @param val An array, into which the value is stored.
+	 * Reads several integer values from this port.
+	 * @param val An array, into which the values are stored.
+	 * @param size The number of values that should be read and the size of the array.
 	 * @return true, if the read was successful, false otherwise.
 	 */
-	// TODO why array? use pointer...a
-	bool read(int val[]);
+	bool read(int val[], int size);
+	/**
+	 * Reads a single integer value from this port.
+	 * @param val Pointer where the read value should be stored
+	 * @return true, if the read was successful, false otherwise.
+	 */
+	bool read(int *val);
+	/**
+	 * Reads a single integer value from this port.
+	 * @return The read value.
+	 * @throws readException if the read failed.
+	 */
+	int  read();
 };
 
 /**

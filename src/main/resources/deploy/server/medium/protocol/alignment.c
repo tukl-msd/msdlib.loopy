@@ -1,8 +1,6 @@
 /*
- * alignment.c
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+ * @author Philipp Schlaefer
+ * @since 01.02.2013
  */
 
 void set_unaligned ( int *target, int *data ) {

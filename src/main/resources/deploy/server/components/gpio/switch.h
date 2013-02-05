@@ -1,8 +1,8 @@
-/*
- * switch.h
- *
- *  Created on: 04.02.2013
- *      Author: thomas
+/**
+ * Contains procedures handling the pushbutton gpio component
+ * @file
+ * @author Thomas Fischer
+ * @since 04.02.2013
  */
 
 #ifndef SWITCH_H_
@@ -10,10 +10,16 @@
 
 #include "xbasic_types.h"
 
+/**
+ * Initialises the switch component.
+ * @returns XST_SUCCESS, if successful.
+            Otherwise an error code corresponding to the occurred error.
+ */
 int init_switch();
+/**
+ * Reads the state of the pushbutton component.
+ * @returns The current state of the component.
+ */
 u32 read_switch();
-
-// fwd definition from led
-int set_LED(u32 state);
 
 #endif /* SWITCH_H_ */

@@ -1,8 +1,8 @@
-/*
- * alignment.h
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+/**
+ * Alignment procedures required for (Ethernet?) communication.
+ * @file
+ * @author Philipp Schlaefer
+ * @since 01.02.2013
  */
 
 #ifndef ALIGNMENT_H_

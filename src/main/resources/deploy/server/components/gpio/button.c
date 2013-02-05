@@ -1,8 +1,6 @@
 /*
- * button.c
- *
- *  Created on: 04.02.2013
- *      Author: thomas
+ * @author Thomas Fischer
+ * @since 04.02.2013
  */
 
 #include "button.h"
@@ -11,8 +9,13 @@
 
 static XGpio buttons;
 
+// forward declaraion of the callback procedure
 void callbackButtons();
 
+/**
+ * The Xil_ExceptionHandler to be used as callback for the button component.
+ * This handler calls the user-defined callback method and clears the interrupt.
+ */
 void GpioHandlerButtons ( void *CallbackRef ) {
     XGpio *GpioPtr = (XGpio *)CallbackRef;
 

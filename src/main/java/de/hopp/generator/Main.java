@@ -52,11 +52,11 @@ public class Main {
         IO.println(" -s <dir> ");
         IO.println(" --server <dir>        generate server files fo <dir>. If this is not set,");
         IO.println("                       the server files are generated to ./" +
-                Configuration.defaultServerDir + ".");
+                Configuration.defaultServerDir + "\".");
         IO.println(" -c <dir> ");
         IO.println(" --client <dir>        generate client files fo <dir>. If this is not set, ");
         IO.println("                       the client files are generated to ./" +
-                Configuration.defaultClientDir + ".");
+                Configuration.defaultClientDir + "\".");
         IO.println();
         IO.println(" ---------- console logging ----------");
         IO.println(" -q --quiet            suppresses console output from driver generator.");
@@ -100,6 +100,8 @@ public class Main {
         // parse all cli parameters
         String schema = parseParameters(args);
 
+        System.out.println(config.serverDir().getPath());
+        
         // check if any errors occurred already
         showStatus(true);
         

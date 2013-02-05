@@ -1,12 +1,11 @@
 /*
- * interrupts.c
- *
- *  Created on: 04.02.2013
- *      Author: thomas
+ * @author Thomas Fischer
+ * @since 04.02.2013
  */
 #include "interrupts.h"
 
-static INTC intc; /* The Instance of the Interrupt Controller Driver */
+/** The interrupt controller of this driver */
+static INTC intc;
 
 INTC* getIntc() {
 	return &intc;

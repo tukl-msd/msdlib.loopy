@@ -1,8 +1,9 @@
-/*
- * interrupts.h
- *
- *  Created on: 01.02.2013
- *      Author: thomas
+/**
+ * Contains the interrupt controller instance of the board.
+ * This instance is shared between all calls requiring an interrupt controller.
+ * @file
+ * @author Thomas Fischer
+ * @since 01.02.2013
  */
 
 #ifndef INTERRUPTS_H_
@@ -28,6 +29,7 @@
  #define INTC_HANDLER	XScuGic_InterruptHandler
 #endif /* XPAR_INTC_0_DEVICE_ID */
 
+/** Get the instance of the interrupt controller */
 INTC* getIntc();
 
 #endif /* INTERRUPTS_H_ */

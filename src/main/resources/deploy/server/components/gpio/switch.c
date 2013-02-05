@@ -1,8 +1,6 @@
 /*
- * switch.c
- *
- *  Created on: 04.02.2013
- *      Author: thomas
+ * @author Thomas Fischer
+ * @since 04.02.2013
  */
 
 #include "switch.h"
@@ -11,12 +9,15 @@
 
 static XGpio switches;
 
+// forward declaration from led
+int set_LED(u32 state);
+// forward declaration of the callback procedure
 void callbackSwitches();
 
-u32 read_switch ( ) {
-    return XGpio_DiscreteRead(&switches, GPIO_CHANNEL1);
-}
-
+/**
+ * The Xil_ExceptionHandler to be used as callback for the switch component.
+ * This handler calls the user-defined callback method and clears the interrupt.
+ */
 void GpioHandlerSwitches ( void *CallbackRef ) {
     XGpio *GpioPtr = (XGpio *)CallbackRef;
 
@@ -25,6 +26,10 @@ void GpioHandlerSwitches ( void *CallbackRef ) {
 
     // Clear the Interrupt
     XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);
+}
+
+u32 read_switch ( ) {
+    return XGpio_DiscreteRead(&switches, GPIO_CHANNEL1);
 }
 
 int init_switch() {
