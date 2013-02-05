@@ -1,6 +1,7 @@
 package de.hopp.generator;
 
 import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.utils.Model.*;
 
 import katja.common.NE;
 import de.hopp.generator.board.*;
@@ -63,7 +64,7 @@ public class ClientVisitor extends Visitor<NE> {
     public void visit(ETHERNET_LITE term) {
         comps = add(comps, MAttribute(emptyDoc, MModifiers(PRIVATE()),
                 MPointerType(MType("interface")), "intrfc",
-                MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MInclude("interface.h", QUOTES()))));
+                MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
     }
     public void visit(ETHERNET term) {
         // TODO Auto-generated method stub
@@ -76,21 +77,21 @@ public class ClientVisitor extends Visitor<NE> {
                     "The board's LED component.",
                     "This object is used to manipulate the state of the LEDs of the board."
                 )), MModifiers(), MPointerType(MType("leds")),
-                "gpio_leds", MCodeFragment("new leds(intrfc)", MInclude("gpio.h", QUOTES()))));
+                "gpio_leds", MCodeFragment("new leds(intrfc)", MQuoteInclude("gpio.h"))));
     }
     public void visit(SWITCHES term) {
         comps = add(comps, MAttribute(MDocumentation(Strings(
                     "The board's switch component.",
                     "This object is used to read the state of the switches of the board."
                 )), MModifiers(), MPointerType(MType("switches")),
-                "gpio_switches", MCodeFragment("new switches(intrfc)", MInclude("gpio.h", QUOTES()))));
+                "gpio_switches", MCodeFragment("new switches(intrfc)", MQuoteInclude("gpio.h"))));
     }
     public void visit(BUTTONS term) {
         comps = add(comps, MAttribute(MDocumentation(Strings(
                     "The board's button component.",
                     "This object is used to read the state of the buttons of the board."
                 )), MModifiers(), MPointerType(MType("buttons")),
-                "gpio_buttons", MCodeFragment("new buttons(intrfc)", MInclude("gpio.h", QUOTES()))));
+                "gpio_buttons", MCodeFragment("new buttons(intrfc)", MQuoteInclude("gpio.h"))));
     }
     public void visit(VHDL vhdl) {
         // generate a class for the vhdl core
@@ -140,7 +141,7 @@ public class ClientVisitor extends Visitor<NE> {
                     docPart + " AXI-Stream port.",
                     "Communicate with the #" + comp.name() + " core through this port."
                 )), MModifiers(PUBLIC()), MPointerType(MType(type)),
-                name, MCodeFragment("", MInclude("component.h", QUOTES()))));
+                name, MCodeFragment("", MQuoteInclude("component.h"))));
         constructor = addInit(constructor, MMemberInit(name, "new " + type + "()"));
         destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
@@ -149,34 +150,4 @@ public class ClientVisitor extends Visitor<NE> {
     public void visit(Strings term) { }
     public void visit(String term)  { }
     
-    private static MFile add(MFile file, MClass c) {
-        return file.replaceClasses(file.classes().add(c));
-    }
-    private static MFile add(MFile file, MAttribute a) {
-        return file.replaceAttributes(file.attributes().add(a));
-    }
-    private static MClass add(MClass c, MAttribute a) {
-        return c.replaceAttributes(c.attributes().add(a));
-    }
-    private static MClass add(MClass c, MMethod m) {
-        return c.replaceMethods(c.methods().add(m));
-    }
-    private static MConstr addInit( MConstr c, MMemberInit i ) {
-        return c.replaceInit(c.init().replaceVals(c.init().vals().add(i)));
-    }
-    private static MProcedure addLines(MProcedure m, MCode c) {
-        return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
-                .replaceNeeded(m.body().needed().addAll(c.needed())));
-    }
-    private static MConstr addLines(MConstr m, MCode c) {
-        return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
-                .replaceNeeded(m.body().needed().addAll(c.needed())));
-    }
-    private static MDestr addLines(MDestr m, MCode c) {
-        return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))
-                .replaceNeeded(m.body().needed().addAll(c.needed())));
-    }
-    private static MFile addDoc(MFile file, String line) {
-        return file.replaceDoc(file.doc().replaceDoc(file.doc().doc().add(line)));
-    }
 }

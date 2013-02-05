@@ -19,6 +19,7 @@
 package de.hopp.generator.unparser;
 
 import static de.hopp.generator.model.Model.*;
+import katja.common.NE;
 
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
@@ -47,12 +48,28 @@ public class CUnparser extends HUnparser {
         // import the header file
         buffer.append("#include \"" + name + ".h\"\n");
         
+        // gather all imports
+        MIncludes importLines = gatherImports(file);
+        
+        if(!importLines.isEmpty()) {
+            MInclude[] includes = sort(importLines.toArray());
+            
+            for(final MInclude include : includes)
+                buffer.append(include.Switch(new MInclude.Switch<String, NE>() {
+                    public String CaseMBracketInclude(MBracketInclude term) { return ""; }
+                    public String CaseMQuoteInclude(MQuoteInclude term)     { return ""; }
+                    public String CaseMForwardDecl(MForwardDecl term)       {
+                        return '\n' + term.name();
+                    }
+                }));
+        }
+        
         // unparse components
         visit(file.defs());
         visit(file.structs());
         visit(file.enums());
         visit(file.attributes());
-        visit(file.methods());
+        visit(file.procedures());
         visit(file.classes());
     }
 
@@ -165,10 +182,13 @@ public class CUnparser extends HUnparser {
         
         // append keywords if appropriate
         if(proc.modifiers().term().contains(CONSTANT())) buffer.append("const ");
-        if(proc.parent().parent() instanceof MFileInFile
-                && proc.modifiers().term().contains(PRIVATE()))
-            // "private" functions should always be declared static
-            buffer.append("static ");
+//        if(proc.parent().parent() instanceof MFileInFile
+//                && proc.modifiers().term().contains(PRIVATE()))
+//            // "private" functions should always be declared static
+//            buffer.append("static ");
+        // NO, they SHOULDN'T.
+        //Private now only means that there is no header entry,
+        //not that it can't be called from anywhere else (forward defs ftw...)
         else if(proc.modifiers().term().contains(STATIC())) buffer.append("static ");
         
         // unparse the return type

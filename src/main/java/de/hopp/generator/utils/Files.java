@@ -94,8 +94,11 @@ public class Files {
         // if verbose print message
 //        IO.verbose("  copying: " + in.getPath());
         
+        // create the parent folder, if it doesn't exist
+        if(! out.getParentFile().exists()) out.getParentFile().mkdirs();
+        
         if(in.isDirectory()) {
-            // if the input file is a directory create the corresponding target directory...
+            // if the file is a directory, create it ...
             if(! out.exists()) out.mkdirs();
             
             // ... and copy all its contents

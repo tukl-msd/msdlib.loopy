@@ -12,8 +12,4 @@
 
 void init_components();
 
-//void set_LED(u32 state);
-//u32 get_switch();
-//u32 get_button();
-
 #endif /* COMPONENTS_H_ */

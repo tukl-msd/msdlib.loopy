@@ -42,11 +42,6 @@ public class Generator {
         if(! config.serverDir().exists()) config.serverDir().mkdirs();
         if(! config.clientDir().exists()) config.clientDir().mkdirs();
         
-        // generate the board and client driver models
-        IO.println("  generating driver models ...");
-        MFileInFile boardDriver  = MFileInFile(generateBoardDriver());
-        MFileInFile clientDriver = MFileInFile(generateClientDriver());
-        
         // if there are errors abort here
         if(errors.hasErrors()) return;
         
@@ -57,19 +52,20 @@ public class Generator {
             copy("deploy/client", config.clientDir(), IO);
             
             // root server directory
-//            copy("deploy/server/constants.h", config.serverDir(), IO);
-//            copy("deploy/server/doxygen.cfg", config.serverDir(), IO);
-//            copy("deploy/server/main.c", config.serverDir(), IO);
-//            copy("deploy/server/platform_config.h", config.serverDir(), IO);
-//            copy("deploy/server/platform_mb.h", config.serverDir(), IO);
-//            copy("deploy/server/platform_ppc.h", config.serverDir(), IO);
-//            copy("deploy/server/platform_zynq.h", config.serverDir(), IO);
-//            copy("deploy/server/platform.c", config.serverDir(), IO);
-//            copy("deploy/server/platform.h", config.serverDir(), IO);
-//            
-//            // generic subfolder parts
-//            copy("deploy/components/interrupts.h", config.serverDir(), IO);
-//            copy("deploy/components/interrupts.c", config.serverDir(), IO);
+            copy("deploy/server/doxygen.cfg",       new File(config.serverDir(), "doxygen.cfg"), IO);
+            copy("deploy/server/main.c",            new File(config.serverDir(), "main.c"), IO);
+            copy("deploy/server/platform_config.h", new File(config.serverDir(), "platform_config.h"), IO);
+            copy("deploy/server/platform_mb.c",     new File(config.serverDir(), "platform_mb.c"), IO);
+//            copy("deploy/server/platform_ppc.c",    new File(config.serverDir(), "platform_ppc.c"), IO);
+//            copy("deploy/server/platform_zynq.c",   new File(config.serverDir(), "platform_zynq.c"), IO);
+            copy("deploy/server/platform.c",        new File(config.serverDir(), "platform.c"), IO);
+            copy("deploy/server/platform.h",        new File(config.serverDir(), "platform.h"), IO);
+            
+            // generic subfolder parts
+            copy("deploy/server/medium/protocol", new File(new File(config.serverDir(), "medium"), "protocol"), IO);
+            File componentDir = new File(config.serverDir(), "components");
+            copy("deploy/server/components/interrupts.h", new File(componentDir, "interrupts.h"), IO);
+            copy("deploy/server/components/interrupts.c", new File(componentDir, "interrupts.c"), IO);
                         
             IO.verbose("");
         } catch (IOException e) {
@@ -81,16 +77,14 @@ public class Generator {
         
         // unparse generated server models to corresponding files
         IO.println("  generating server side driver files ...");
-        printMFile(boardDriver, config.serverDir(), UnparserType.HEADER);
-        printMFile(boardDriver, config.serverDir(), UnparserType.C);
+        generateBoardDriver();
         
         // abort if any errors occurred
         if(errors.hasErrors()) return;
         
         // unparse generated client models to corresponding files
         IO.println("  generating client side driver files ...");
-        printMFile(clientDriver, config.clientDir(), UnparserType.HEADER);
-        printMFile(clientDriver, config.clientDir(), UnparserType.CPP);
+        generateClientDriver();
         
         // generate the constants file with the debug flag
         printMFile(MFileInFile(MFile(MDocumentation(Strings()), "constants", MDefinitions(
@@ -100,6 +94,7 @@ public class Generator {
                 )), MStructs(), MEnums(), MAttributes(), MProcedures())),
                 config.clientDir(), UnparserType.HEADER);
         
+        // abort if any errors occurred
         if(errors.hasErrors()) return;
         
         // run doxygen generation
@@ -151,29 +146,38 @@ public class Generator {
         }
     }
 
-    private MFile generateClientDriver() {
+    private void generateClientDriver() {
         ClientVisitor visit = new ClientVisitor(config);
         visit.visit(board);
-        return visit.getCompsFile();
-    }
-    
-    private MFile generateBoardDriver() {
         
-        /* 
-         * Generally there are two options for generating the board:
-         * a) add stuff for each component individually
-         * b) cycle through methods and add parts for all components there
-         * 
-         * the first will probably result in a cleaner generator, the second in a cleaner generated file
-         * 
-         * a) also requires forward definitions, i.e. two visitors...
-         * 
-         * we'll go with a slight mix of the two, focusing on a),
-         * but using b) for generation of the init method and necessary definitions 
-         */
+        printMFile(MFileInFile(visit.getCompsFile()), config.clientDir(), UnparserType.HEADER);
+        printMFile(MFileInFile(visit.getCompsFile()), config.clientDir(), UnparserType.CPP);
+    }
+
+    /* 
+     * Generally there are two options for generating the board:
+     * a) add stuff for each component individually
+     * b) cycle through methods and add parts for all components there
+     * 
+     * the first will probably result in a cleaner generator, the second in a cleaner generated file
+     * 
+     * a) also requires forward definitions, i.e. two visitors...
+     * 
+     * we'll go with a slight mix of the two, focusing on a),
+     * but using b) for generation of the init method and necessary definitions 
+     */
+    private void generateBoardDriver() {
         DriverVisitor visit = new DriverVisitor(config);
-        visit.visit(board);
-        return visit.getFile().replaceName("Driver");
+        try {
+            visit.visit(board);
+
+            File comp = new File(config.serverDir(), "components");
+            printMFile(MFileInFile(visit.getConstantsFile()),  config.serverDir(), UnparserType.HEADER);
+            printMFile(MFileInFile(visit.getComponentsFile()), comp, UnparserType.HEADER);
+            printMFile(MFileInFile(visit.getComponentsFile()), comp, UnparserType.C);
+        } catch (IOException e) {
+            errors.addError(new UsageError(e.getMessage()));
+        }
     }
 
     private void printMFile(MFileInFile mfile, File target, UnparserType type) {
@@ -192,7 +196,7 @@ public class Generator {
         }
                
         // append src folder to targed directory
-        target = new File(target, "src");
+//        target = new File(target, "src");
         
         // append model name and file extension according to used unparser
         switch(type) {
@@ -252,7 +256,7 @@ public class Generator {
                 file1.structs().addAll(file2.structs()), 
                 file1.enums().addAll(file2.enums()),
                 file1.attributes().addAll(file2.attributes()),
-                file1.methods().addAll(file2.methods()),
+                file1.procedures().addAll(file2.procedures()),
                 file1.classes().addAll(file2.classes()));
         return file;
     }

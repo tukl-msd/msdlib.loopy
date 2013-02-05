@@ -20,9 +20,6 @@
 
 #include "../constants.h"
 
-// definitions of Driver
-#define PORT 8844
-
 // attributes of Driver
 unsigned char (mac_ethernet_address) [6] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
 struct ip_addr ip, mask, gw;
@@ -125,14 +122,14 @@ int start_application() {
 
 void init_medium() {
 	/* the mac address of the board. this should be unique per board */
-	unsigned char mac_ethernet_address[] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
+	unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
 
 	netif = &server_netif;
 
 	/* initialize IP addresses to be used */
-	IP4_ADDR(&ip,   192, 168,   1, 10);
-	IP4_ADDR(&mask, 255, 255, 255,  0);
-	IP4_ADDR(&gw,   192, 168,   1,  1);
+	IP4_ADDR(&ip,   IP_1,   IP_2,   IP_3,   IP_4);
+	IP4_ADDR(&mask, MASK_1, MASK_2, MASK_3, MASK_4);
+	IP4_ADDR(&gw,   GW_1,   GW_2,   GW_3,   GW_4);
 
 	if(DEBUG) print_ip_settings(&ip, &mask, &gw);
 

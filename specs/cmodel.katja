@@ -32,7 +32,7 @@ external Integer
 
 
 // file and class model
-MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures methods, MClasses classes )
+MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures procedures, MClasses classes )
 MClass ( MDocumentation doc, MModifiers modifiers, String name, MExtends extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = MVisibility | CONSTANT() | STATIC() | INLINE() // don't know if more are required
@@ -82,9 +82,11 @@ MAnyType = MType             ( String name, Strings doc )
          | MPointerType      ( MAnyType type )
          | MConstPointerType ( MAnyType type )
 
-MInclude ( String name, MIncludeType type )
+MInclude = MQuoteInclude   ( String name )
+         | MBracketInclude ( String name )
+         | MForwardDecl    ( String name )
 
-MIncludeType = QUOTES() | BRACKETS()// | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
+// MIncludeType = QUOTES() | BRACKETS() | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
 
 // documentation
 MDocumentation ( Strings doc, MTags tags )

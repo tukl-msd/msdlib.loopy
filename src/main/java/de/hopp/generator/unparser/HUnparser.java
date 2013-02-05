@@ -2,11 +2,16 @@ package de.hopp.generator.unparser;
 
 import static de.hopp.generator.model.Model.*;
 
+import java.io.IOException;
 import java.util.Comparator;
+import java.util.Iterator;
 
+import katja.common.KatjaElement;
+import katja.common.KatjaSort;
 import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
+import de.hopp.generator.model.MInclude.Switch;
 
 /**
  * Unparser for header files. Can be used for C headers as well
@@ -113,13 +118,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         return mclass.name().term();
     }
     
-    @Override
-    public void visit(MFileInFile file) throws InvalidConstruct {
-
-        // include file to documentation
-//        buffer.append("/** @file */\n");
-        visit(file.doc());
-        
+    protected static MIncludes gatherImports(MFileInFile file) {
         // create the list of all needed import names needed for types used in this file
         MIncludes importLines = MIncludes();
         
@@ -136,39 +135,57 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
                 if(!importLines.contains(include)) importLines = importLines.add(include);
             }
         }
+        return importLines;
+    }
+    
+    protected static MInclude[] sort(MInclude[] includes) {
+        java.util.Arrays.sort(includes, new Comparator<MInclude>() {
+            // basically, duplicate includes should not appear, so equality should not occur here
+            public int compare(MInclude o1, MInclude o2) {
+                // compare the names, if they are unequal return the result
+                int i = o1.name().compareTo(o2.name());
+                if(i != 0) return i;
+                // in case of equal names, compare the include type
+                if(o1.getClass().equals(o2.getClass())) return 0;
+                // otherwise print first <>, then "", then fwd decl
+                if(o1 instanceof MBracketInclude) return -1;
+                else if(o1 instanceof MForwardDecl) return 1;
+                else if(o2 instanceof MBracketInclude) return 1;
+                else return -1;
+            }
+        });
+        return includes;
+    }
+    
+    @Override
+    public void visit(MFileInFile file) throws InvalidConstruct {
+
+        // include file to documentation
+        visit(file.doc());
+        
+       // gather all imports
+        MIncludes importLines = gatherImports(file);
         
         if(!importLines.isEmpty()) {
             
             // TODO is this possible / necessary in C? or only ++?
             buffer.append("#ifndef " + name.toUpperCase() + "_H_\n"
                         + "#define " + name.toUpperCase() + "_H_\n");
-            
-            MInclude[] includes = importLines.toArray();
-            java.util.Arrays.sort(includes, new Comparator<MInclude>() {
-                // basically, duplicate includes should not appear, so equality should not occur here
-                public int compare(MInclude o1, MInclude o2) {
-                    // compare the names, if they are unequal return the result
-                    int i = o1.name().compareTo(o2.name());
-                    if(i != 0) return i;
-                    // in case of equal names, compare the include type
-                    if(o1.type().equals(o2.type()))  return 0;
-                    // if they are not equal, print <> includes first
-                    if(o1.type().equals(BRACKETS())) return -1;
-                    return 1;
-                }
-            });
+
+            MInclude[] includes = sort(importLines.toArray());
             
             for(final MInclude include : includes)
-                buffer.append(include.type().Switch(new MIncludeType.Switch<String, NE>() {
-                    public String CaseBRACKETS(BRACKETS term) {
-                        return "\n#include <"  + include.name() + ">";
+                buffer.append(include.Switch(new MInclude.Switch<String, NE>() {
+                    public String CaseMBracketInclude(MBracketInclude term) {
+                        return "\n#include <"  + term.name() + '>';
                     }
-                    public String CaseQUOTES(QUOTES arg0) {
-                        return "\n#include \"" + include.name() + "\"";
+                    public String CaseMForwardDecl(MForwardDecl term) {
+                        return "";
+                    }
+                    public String CaseMQuoteInclude(MQuoteInclude term) {
+                        return "\n#include \"" + term.name() + '\"';
                     }
                 }));
-            
-            buffer.append('\n');
         }
         
         // unparse components
@@ -177,7 +194,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         visit(file.enums());
         visit(file.classes());
         visit(file.attributes());
-        visit(file.methods());
+        visit(file.procedures());
         
         if(!importLines.isEmpty()) {
             buffer.append("\n#endif /* " + name.toUpperCase() + "_H_ */");
@@ -579,24 +596,24 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
     
     // should never go here
-    public void visit(MModifiersInFile term) { }
-    public void visit(PRIVATEInFile term)    { buffer.append("private");   }
-    public void visit(PROTECTEDInFile term)  { buffer.append("protected"); }
-    public void visit(PUBLICInFile term)     { buffer.append("public");    }
-    public void visit(STATICInFile term)     { }
-    public void visit(INLINEInFile term)     { }
-    public void visit(CONSTANTInFile term)   { }
-    public void visit(VALUEInFile term)      { }
-    public void visit(REFERENCEInFile term)  { }
-    public void visit(CONSTREFInFile term)   { }
-    public void visit(StringsInFile term)    { }
-    public void visit(StringInFile term)     { }
-    public void visit(IntegerInFile term)    { }
-    public void visit(MIncludesInFile term)  { }
-    public void visit(MIncludeInFile term)   { }
-    public void visit(QUOTESInFile term)     { }
-    public void visit(BRACKETSInFile term)   { }
-
+    public void visit(MModifiersInFile term)      { }
+    public void visit(PRIVATEInFile term)         { buffer.append("private");   }
+    public void visit(PROTECTEDInFile term)       { buffer.append("protected"); }
+    public void visit(PUBLICInFile term)          { buffer.append("public");    }
+    public void visit(STATICInFile term)          { }
+    public void visit(INLINEInFile term)          { }
+    public void visit(CONSTANTInFile term)        { }
+    public void visit(VALUEInFile term)           { }
+    public void visit(REFERENCEInFile term)       { }
+    public void visit(CONSTREFInFile term)        { }
+    public void visit(StringsInFile term)         { }
+    public void visit(StringInFile term)          { }
+    public void visit(IntegerInFile term)         { }
+    public void visit(MIncludesInFile term)       { }
+    public void visit(MQuoteIncludeInFile term)   { }
+    public void visit(MBracketIncludeInFile term) { }
+    public void visit(MForwardDeclInFile term)    { }
+    
     // documentation
     public void visit(MDocumentationInFile doc) throws InvalidConstruct {
         // if it is an empty documentation block, return

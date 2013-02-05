@@ -13,6 +13,23 @@ import de.hopp.generator.board.UART;
 import de.hopp.generator.board.VHDL;
 
 public class BoardUtils {
+    
+    public static boolean hasLEDs(Board board) {
+        for(Component comp : board.components())
+            if(comp instanceof LEDS) return true;
+        return false;
+    }
+    public static boolean hasSwitches(Board board) {
+        for(Component comp : board.components())
+            if(comp instanceof SWITCHES) return true;
+        return false;
+    }
+    public static boolean hasButtons(Board board) {
+        for(Component comp : board.components())
+            if(comp instanceof BUTTONS) return true;
+        return false;
+    }
+    
     public static boolean hasGpioComponent(Board board) {
         for(Component comp : board.components()) {
             if(comp.Switch(new Component.Switch<Boolean, NE>() {
@@ -29,21 +46,21 @@ public class BoardUtils {
         return false;
     }
     
-    public static boolean hasGpiComponent(Board board) {
-        for(Component comp : board.components()) {
-            if(comp.Switch(new Component.Switch<Boolean, NE>() {
-                public Boolean CaseUART(UART term)                   { return false; }
-                public Boolean CaseETHERNET_LITE(ETHERNET_LITE term) { return false; }
-                public Boolean CaseETHERNET(ETHERNET term)           { return false; }
-                public Boolean CasePCIE(PCIE term)                   { return false; }
-                public Boolean CaseLEDS(LEDS term)                   { return false; }
-                public Boolean CaseSWITCHES(SWITCHES term)           { return true;  }
-                public Boolean CaseBUTTONS(BUTTONS term)             { return true;  }
-                public Boolean CaseVHDL(VHDL term)                   { return false; }
-            })) return true;
-        }
-        return false;
-    }
+//    public static boolean hasGpiComponent(Board board) {
+//        for(Component comp : board.components()) {
+//            if(comp.Switch(new Component.Switch<Boolean, NE>() {
+//                public Boolean CaseUART(UART term)                   { return false; }
+//                public Boolean CaseETHERNET_LITE(ETHERNET_LITE term) { return false; }
+//                public Boolean CaseETHERNET(ETHERNET term)           { return false; }
+//                public Boolean CasePCIE(PCIE term)                   { return false; }
+//                public Boolean CaseLEDS(LEDS term)                   { return false; }
+//                public Boolean CaseSWITCHES(SWITCHES term)           { return true;  }
+//                public Boolean CaseBUTTONS(BUTTONS term)             { return true;  }
+//                public Boolean CaseVHDL(VHDL term)                   { return false; }
+//            })) return true;
+//        }
+//        return false;
+//    }
     
     public static String printBoard(Board board) {
         String rslt = "board has the following components";
