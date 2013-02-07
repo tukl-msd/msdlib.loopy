@@ -6,11 +6,12 @@
 #include "led.h"
 #include "xparameters.h"
 #include "gpio.h"
+#include "../../constants.h"
 
 static XGpio leds;
 
 int init_LED() {
-	xil_printf("leds\n");
+	if(DEBUG) xil_printf("initialise leds ...\n");
 	int status = XGpio_Initialize(&leds, XPAR_LEDS_8BITS_DEVICE_ID);
 	if(status != XST_SUCCESS) { } // TODO do something
 	XGpio_SetDataDirection(&leds, GPIO_CHANNEL1, 0x0);

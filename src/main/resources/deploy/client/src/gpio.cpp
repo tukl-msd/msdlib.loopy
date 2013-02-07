@@ -21,18 +21,18 @@
  */
 #define MAX_VALUE 192
 
-/** Sets the next LED out of the current LED state and a direction. The next
+/**
+ * Sets the next LED out of the current LED state and a direction. The next
  * LED state is considered to be the current state shifted one LED into direction
  * if possible, otherwise shifted in the opposite direction.
  *
- * @param direction the current direction, into which the LEDs should are shifted.
+ * @param direction The current direction, into which the LEDs should are shifted.
  *        0 will shift to the right, 1 will shift to the left (I guess)
- * @return the direction for the next step of LED shifting.
- * @param state pointer to the current LED state. The state will be changed by
+ * @param state Pointer to the current LED state. The state will be changed by
  *        this procedure
- * @return nope - just trolling... no second return value
+ * @return the direction for the next step of LED shifting.
  */
-int next(int direction, int * state) {
+bool next(bool direction, unsigned char * state) {
 	if(direction) {
 		if(*state == MAX_VALUE) return next(!direction, state);
 		*state = *state * 2;
@@ -58,7 +58,7 @@ int convertToInt(bool values[8]) {
 }
 
 /**
- * converts a single integer value to a binary number represented by a boolean array.
+ * Converts a single integer value to a binary number represented by a boolean array.
  * true marks a 1 value, false a 0 value.
  * @param size size of the binary number and therefore boolean array
  * @param values pointer to the array where the result will be stored
@@ -110,9 +110,10 @@ bool buttons::readState(bool state[5]) {
 }
 
 void leds::test() {
-	printf("starting hopp lwip led test ...\n");
+	printf("\nstarting hopp lwip led test ...\n");
 
-	int direction = 1, state = 3;
+	bool direction = false;
+	unsigned char state = MIN_VALUE;
 	while(1) {
 		this->writeState(state);
 		direction = next(direction, &state);

@@ -6,6 +6,7 @@
 #include "button.h"
 #include "gpio.h"
 #include "xparameters.h"
+#include "../../constants.h"
 
 static XGpio buttons;
 
@@ -31,7 +32,7 @@ u32 read_button ( ) {
 }
 
 int init_button() {
-	xil_printf("buttons\n");
+	if(DEBUG) xil_printf("initialise buttons ...\n");
 	int status = XGpio_Initialize(&buttons, XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID);
 	XGpio_SetDataDirection(&buttons,  GPIO_CHANNEL1, 0xFFFFFFFF);
 	status = GpioIntrSetup(&buttons, XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID,

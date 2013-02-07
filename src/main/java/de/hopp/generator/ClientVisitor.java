@@ -57,9 +57,9 @@ public class ClientVisitor extends Visitor<NE> {
         for(Component c : comps) visit(c);
     }
     public void visit(UART term) {
-//        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
-//                MPointerType(MType("interface")), "intrfc",
-//                MCodeFragment("new uart()", MInclude("interface.h", QUOTES()))));
+        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+                MPointerType(MType("interface")), "intrfc",
+                MCodeFragment("new uart()", MQuoteInclude("interface.h"))));
     }
     public void visit(ETHERNET_LITE term) {
         comps = add(comps, MAttribute(emptyDoc, MModifiers(PRIVATE()),

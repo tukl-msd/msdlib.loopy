@@ -17,9 +17,10 @@
 /**
  * Delegates calls to the respective protocol interpreter for the protocol version the message was sent with.
  * The protocol version is always stored in the same field of the header.
- * @param p The message to be interpreted.
+ * @param version The version of the incoming message header.
  * @return 0 if successful, 1 otherwise.
  */
-int decode( struct pbuf *p );
+int decode_header( unsigned char version );
+//int decode ( struct pbuf *p);
 
 #endif /* PROTOCOL_H_ */

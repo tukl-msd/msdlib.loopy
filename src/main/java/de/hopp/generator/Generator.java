@@ -74,7 +74,7 @@ public class Generator {
         } catch (IOException e) {
             errors.addError(new UsageError(e.getMessage()));
         }
-        
+
         // abort if any errors occurred
         if(errors.hasErrors()) return;
         

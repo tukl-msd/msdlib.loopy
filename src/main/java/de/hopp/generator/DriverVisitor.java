@@ -15,7 +15,6 @@ import static de.hopp.generator.model.Model.MProcedure;
 import static de.hopp.generator.model.Model.MProcedures;
 import static de.hopp.generator.model.Model.MQuoteInclude;
 import static de.hopp.generator.model.Model.MStructs;
-import static de.hopp.generator.model.Model.MType;
 import static de.hopp.generator.model.Model.MVoid;
 import static de.hopp.generator.model.Model.PRIVATE;
 import static de.hopp.generator.model.Model.PUBLIC;
@@ -117,7 +116,10 @@ public class DriverVisitor extends Visitor<IOException>{
         for(Component c : comps) visit(c);            
     }
 
+    public void visit(PCIE term)     { }
+    public void visit(ETHERNET term) { }
     public void visit(ETHERNET_LITE term) throws IOException {
+        // deploy Ethernet medium files
         File target = new File(serverSrc, "medium");
         copy("deploy/server/medium/ethernet.h", new File(target, "ethernet.h"), IO);
         copy("deploy/server/medium/ethernet.c", new File(target, "ethernet.c"), IO);
@@ -128,30 +130,37 @@ public class DriverVisitor extends Visitor<IOException>{
         addIP("GW",   config.getGW(), "standard gateway");
         addMAC(config.getMAC());
         addConst("PORT", "8844", "The port for this boards TCP- connection.");
-        
     }
 
-    public void visit(ETHERNET term) { }
-    public void visit(UART term)     { }
-    public void visit(PCIE term)     { }
-
+    public void visit(UART term) throws IOException {
+        // deploy UART/USB medium files
+        File target = new File(serverSrc, "medium");
+        copy("deploy/server/medium/uart.h", new File(target, "uart.h"), IO);
+        copy("deploy/server/medium/uart.c", new File(target, "uart.c"), IO);
+    }
+    
     public void visit(LEDS term) throws IOException {
+        // deploy LED files
         File target = new File(new File(serverSrc, "components"), "gpio");
         copy("deploy/server/components/gpio/led.h", new File(target, "led.h"), IO);
         copy("deploy/server/components/gpio/led.c", new File(target, "led.c"), IO);
         
+        // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
                 MForwardDecl("int init_LED();")));
     }
 
     public void visit(SWITCHES term) throws IOException {
+        // deploy switch files
         File target = new File(new File(serverSrc, "components"), "gpio");
         copy("deploy/server/components/gpio/switch.h", new File(target, "switch.h"), IO);
         copy("deploy/server/components/gpio/switch.c", new File(target, "switch.c"), IO);
         
+        // add switch init to component init
         init = addLines(init, MCode(Strings("init_switch();"),
                 MForwardDecl("int init_switch();")));
 
+        // add callback procedure to component file
         // TODO user-defined code and additional documentation
         components = add(components, MProcedure(MDocumentation(Strings(
                     "Callback procedure for the switch gpio component.",
@@ -165,13 +174,16 @@ public class DriverVisitor extends Visitor<IOException>{
     }
 
     public void visit(BUTTONS term) throws IOException {
+        // deploy button files
         File target = new File(new File(serverSrc, "components"), "gpio");
         copy("deploy/server/components/gpio/button.h", new File(target, "button.h"), IO);
         copy("deploy/server/components/gpio/button.c", new File(target, "button.c"), IO);
     
+        // add button init to component init
         init = addLines(init, MCode(Strings("init_button();"),
                 MForwardDecl("int init_button();")));
         
+        // add callback procedure to component file
         // TODO user-defined code and additional documentation
         components = add(components, MProcedure(MDocumentation(Strings(
                     "Callback procedure for the pushbutton gpio component.",

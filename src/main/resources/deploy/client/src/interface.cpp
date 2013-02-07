@@ -76,7 +76,7 @@ bool interface::setLEDState(int state) {
 	val[0] = constructHeader(1,0,1);
 	val[1] = state;
 
-	return send(val, 8);
+	return send(val, 2);
 }
 
 // new constructor using member initialisation list

@@ -6,6 +6,7 @@
 #include "switch.h"
 #include "gpio.h"
 #include "xparameters.h"
+#include "../../constants.h"
 
 static XGpio switches;
 
@@ -33,7 +34,7 @@ u32 read_switch ( ) {
 }
 
 int init_switch() {
-	xil_printf("switches\n");
+	if(DEBUG) xil_printf("initialise switches ...\n");
 	int status = XGpio_Initialize(&switches, XPAR_DIP_SWITCHES_8BITS_DEVICE_ID);
 	XGpio_SetDataDirection(&switches,  GPIO_CHANNEL1, 0xFFFFFFFF);
 	status = GpioIntrSetup(&switches, XPAR_DIP_SWITCHES_8BITS_DEVICE_ID,

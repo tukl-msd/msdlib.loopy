@@ -10,13 +10,16 @@
 
 // do we actually need these includes or would fwd definitions be sufficient?? i have no idea ):
 #include "lwip/init.h"
+#include "lwip/tcp.h"
+#include "lwip/err.h"
+
 #include "protocol/protocol.h"
+#include "protocol/alignment.h"
 
-// these inclusions probably are't a good idea...
-#include "mb_interface.h"
 #include "../platform.h"
-
 #include "../constants.h"
+
+#include <math.h>
 
 // attributes of Driver
 unsigned char (mac_ethernet_address) [6] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
@@ -40,9 +43,54 @@ void print_ip ( char *msg, struct ip_addr *ip ) {
  * @param gw The standard gateway.
  */
 void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
-	print_ip("Board IP: ", ip);
-	print_ip("Netmask : ", mask);
-	print_ip("Gateway : ", gw);
+	print_ip("  Board IP: ", ip);
+	print_ip("  Netmask : ", mask);
+	print_ip("  Gateway : ", gw);
+	xil_printf("  Port    : %d\n", PORT);
+}
+
+void set_unaligned ( int *target, int *data ) {
+    int offset, i;
+    char *byte, *res;
+
+    offset = ((int)target) % 4;
+    if (offset != 0) {
+        byte = (void*)data;
+        res = (void*)target;
+        for (i=0; i<4; i++) *(res++) = ((*(byte++)) & 0xFF);
+    } else *target = *data;
+}
+
+int get_unaligned ( int *data ) {
+    unsigned int offset, res, tmp;
+    int i;
+    char *byte;
+
+    offset = ((int)data) % 4;
+    if (offset != 0) {
+        byte = (void*)data;
+        res = 0;
+        for (i=0; i<4; i++) {
+            // make sure only rightmost 8bit are processed
+            tmp = (*(byte++)) & 0xFF;
+            // shift the value to the correct position
+            tmp <<= (i*8);
+            // sum up the 32bit value
+            res += tmp;
+        }
+        return res;
+    }
+    return *data;
+}
+
+static struct pbuf *msg;
+static int wordIndex;
+
+int recv_int() {
+	// some check over the length of the message
+	int word = get_unaligned(msg->payload + wordIndex*4);
+	wordIndex++;
+	return word;
 }
 
 /**
@@ -63,9 +111,12 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) 
 
 	// let the protocol interpreter handle the package
 	if (tcp_sndbuf(tpcb) > p->len) {
-		decode(p);
-	} else
+		msg = p; wordIndex = 0;
+		while(wordIndex * 4 < msg->len)
+			decode_header(floor(get_unaligned(msg->payload + wordIndex * 4) / pow(2, 24)));
+	} else {
 		xil_printf("no space in tcp_sndbuf\n\r");
+	}
 
 	// free the received pbuf
 	pbuf_free(p);
@@ -93,6 +144,8 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 }
 
 int start_application() {
+
+	if(DEBUG) xil_printf("Starting server application ...");
 	struct tcp_pcb *pcb;
 	err_t err;
 
@@ -123,7 +176,7 @@ int start_application() {
 	// specify callback to use for incoming connections
 	tcp_accept(pcb, accept_callback);
 
-	xil_printf("TCP echo server started @ port %d\n\r", PORT);
+	if(DEBUG) xil_printf(" done\n");
 
 	// receive and process packets
 	while (1) {
@@ -134,6 +187,8 @@ int start_application() {
 }
 
 void init_medium() {
+	if(DEBUG) xil_printf("\nSetting up Ethernet interface ...\n");
+
 	// the mac address of the board. this should be unique per board
 	unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
 

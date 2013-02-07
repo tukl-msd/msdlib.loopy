@@ -119,6 +119,13 @@ void disable_caches() {
 	Xil_ICacheDisable();
 }
 
+void init_uart() {
+#ifdef STDOUT_IS_16550
+    XUartNs550_SetBaud(STDOUT_BASEADDR, XPAR_XUARTNS550_CLOCK_HZ, UART_BAUD);
+    XUartNs550_SetLineControlReg(STDOUT_BASEADDR, XUN_LCR_8_DATA_BITS);
+#endif
+}
+
 void init_platform() {
 	enable_caches();
 

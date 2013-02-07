@@ -16,22 +16,44 @@
 
 #include "alignment.h"
 #include "protocol.h"
-#include "protocol_v0_1.h"
-#include "protocol_v0_2.h"
+#include "protocol_v1.h"
+#include "protocol_v2.h"
 #include <math.h>
+#include "../../constants.h"
 
-int decode( struct pbuf *p ) {
-
-	int header = get_unaligned((void*)(((int)p->payload)));
-	int version = floor(header / pow(2, 24));
-	switch (version) {
-	case 1: decode_v0_1(p); break;
-	case 2: decode_v0_2(p); break;
+/**
+ * Interprets the header of messages and delegates its contents accordingly.
+ * This procedure only delegates the call to a dedicated interpreter depending on the received version number.
+ */
+int decode_header( unsigned char version ) {
+	if(DEBUG) xil_printf("\nInteger received. Trying to interpret as message header (protocol version %d)", version);
+	switch(version) {
+	case 1: decode_header_v1(); break;
+	case 2: decode_header_v2(); break;
 	default:
-		// TODO return some exception over the medium?
-		xil_printf("unknown protocol version %d", version);
-		break;
+		if(DEBUG) {
+			xil_printf("\nWARNING: Protocol version %d is unknown to this driver version. The byte will be ignored.", version);
+			xil_printf("\nWARNING: Ignoring byte can lead to later bytes being interpreted as message headers!");
+		}
 	}
-
-	return 1;
+	if(DEBUG) xil_printf("\n");
+	return 0;
 }
+
+//int decode( struct pbuf *p) {
+//	if(DEBUG) xil_printf("\nEncountered byte. Trying to read as message header\n  reading protocol version ...");
+//	int header = get_unaligned(p->payload);
+//	int version = floor(header / pow(2, 24));
+//	int val = get_unaligned(p->payload + 4);
+//	switch(version) {
+//	case 1: decode_header_v1(header, val); break;
+//	case 2: decode_header_v2(); break;
+//	default:
+//		if(DEBUG) {
+//			xil_printf("\nWARNING: Protocol version %d is unknown to this driver version. The byte will be ignored.", version);
+//			xil_printf("\nWARNING: Ignoring byte can lead to later bytes being interpreted as message headers!");
+//		}
+//	}
+//	if(DEBUG) xil_printf("\n");
+//	return 0;
+//}
