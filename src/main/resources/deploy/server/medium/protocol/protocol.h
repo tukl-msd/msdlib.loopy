@@ -20,7 +20,8 @@
  * @param version The version of the incoming message header.
  * @return 0 if successful, 1 otherwise.
  */
-int decode_header( unsigned char version );
+int decode_header( int first );
+//int decode_header( unsigned char version );
 //int decode ( struct pbuf *p);
 
 #endif /* PROTOCOL_H_ */

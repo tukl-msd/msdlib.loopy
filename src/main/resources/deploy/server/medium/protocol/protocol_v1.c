@@ -81,21 +81,21 @@ void xil_printf(const char *ctrl1, ...);
  * Decode a header version 1.
  * Reads parts of the message from the medium using recv_int().
  */
-int decode_header_v1() {
+int decode_header_v1(int first) {
 	if(DEBUG) xil_printf("\n  reading message type ...");
 
-	int header = recv_int();
+//	int first = recv_int();
 
 	// remove the version information to retain the rest
-	header = fmod(header, pow(2, 24));
+	first = fmod(first, pow(2, 24));
 
-	// set type and size as specified in header type 1
-	int type = floor(header / pow(2, 16));
+	// set type and size as specified in first type 1
+	int type = floor(first / pow(2, 16));
 
 	if(DEBUG) xil_printf(" %d\n  reading message size ...", type);
 
 	// the next two bytes mark the size of this frame
-	int size = fmod(header, pow(2, 16));
+	int size = fmod(first, pow(2, 16));
 
 	if(DEBUG) xil_printf(" %d", size);
 

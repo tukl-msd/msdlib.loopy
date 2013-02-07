@@ -15,6 +15,6 @@
  * Interprets a protocol header of a message with protocol version 1.
  * @return 0 if successful, 1 if errors occurred.
  */
-int decode_header_v1();
+int decode_header_v1(int first);
 //int decode_v0_1( struct pbuf *p );
 #endif /* PROTOCOL_V1_H_ */

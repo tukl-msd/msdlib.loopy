@@ -14,7 +14,6 @@
 //                  - disadvantages: need to include version strings in ALL files and procedures...
 // namespaces??
 
-#include "alignment.h"
 #include "protocol.h"
 #include "protocol_v1.h"
 #include "protocol_v2.h"
@@ -25,11 +24,12 @@
  * Interprets the header of messages and delegates its contents accordingly.
  * This procedure only delegates the call to a dedicated interpreter depending on the received version number.
  */
-int decode_header( unsigned char version ) {
+int decode_header( int first ) {
+	unsigned char version = floor(first / pow(2,24));
 	if(DEBUG) xil_printf("\nInteger received. Trying to interpret as message header (protocol version %d)", version);
 	switch(version) {
-	case 1: decode_header_v1(); break;
-	case 2: decode_header_v2(); break;
+	case 1: decode_header_v1(first); break;
+	case 2: decode_header_v2(first); break;
 	default:
 		if(DEBUG) {
 			xil_printf("\nWARNING: Protocol version %d is unknown to this driver version. The byte will be ignored.", version);

@@ -10,6 +10,6 @@
 
 #include "lwip/pbuf.h"
 
-int decode_header_v2();
+int decode_header_v2(int first);
 
 #endif /* PROTOCOL_V2_H_ */

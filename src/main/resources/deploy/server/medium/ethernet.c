@@ -14,8 +14,6 @@
 #include "lwip/err.h"
 
 #include "protocol/protocol.h"
-#include "protocol/alignment.h"
-
 #include "../platform.h"
 #include "../constants.h"
 
@@ -113,7 +111,8 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) 
 	if (tcp_sndbuf(tpcb) > p->len) {
 		msg = p; wordIndex = 0;
 		while(wordIndex * 4 < msg->len)
-			decode_header(floor(get_unaligned(msg->payload + wordIndex * 4) / pow(2, 24)));
+//			decode_header(floor(get_unaligned(msg->payload + wordIndex * 4) / pow(2, 24)));
+			decode_header(recv_int());
 	} else {
 		xil_printf("no space in tcp_sndbuf\n\r");
 	}

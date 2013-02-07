@@ -6,7 +6,7 @@
  */
 #include "protocol_v2.h"
 
-int decode_header_v2() {
+int decode_header_v2(int first) {
 	xil_printf(" 2\nERROR: protocol version 2 is not implemented.\n");
 	return 1;
 }

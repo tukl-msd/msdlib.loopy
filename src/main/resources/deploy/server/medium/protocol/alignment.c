@@ -36,9 +36,3 @@
 //    }
 //    return *data;
 //}
-
-unsigned int compose(unsigned char c1, unsigned char c2, unsigned char c3, unsigned char c4) {
-	unsigned int rslt;
-	rslt = (c1 << 24) + (c2 << 16) + (c3 << 8) + c4;
-	return rslt;
-}
