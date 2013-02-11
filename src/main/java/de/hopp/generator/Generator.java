@@ -65,7 +65,9 @@ public class Generator {
             copy("deploy/server/platform.h",        new File(serverSrc, "platform.h"), IO);
             
             // generic subfolder parts
-            copy("deploy/server/medium/protocol", new File(new File(serverSrc, "medium"), "protocol"), IO);
+            File mediumDir = new File(serverSrc, "medium");
+            copy("deploy/server/medium/medium.h", new File(mediumDir, "medium.h"), IO);
+            copy("deploy/server/medium/protocol", new File(mediumDir, "protocol"), IO);
             File componentDir = new File(serverSrc, "components");
             copy("deploy/server/components/interrupts.h", new File(componentDir, "interrupts.h"), IO);
             copy("deploy/server/components/interrupts.c", new File(componentDir, "interrupts.c"), IO);
@@ -242,21 +244,21 @@ public class Generator {
         fileWriter.close();
     }
 
-    /**
-     * Creates a new file by adding all components of a file to another file.
-     * @param file1 file to which components should be added
-     * @param file2 file which MDefinitioncomponents should be added
-     * @return the "merged" file with the name and documentation of the first file
-     *         and all components from both files
-     */
-    private static MFile mergeFiles(MFile file1, MFile file2) {
-        MFile file = MFile(file1.doc(), file1.name(),
-                file1.defs().addAll(file2.defs()),
-                file1.structs().addAll(file2.structs()), 
-                file1.enums().addAll(file2.enums()),
-                file1.attributes().addAll(file2.attributes()),
-                file1.procedures().addAll(file2.procedures()),
-                file1.classes().addAll(file2.classes()));
-        return file;
-    }
+//    /**
+//     * Creates a new file by adding all components of a file to another file.
+//     * @param file1 file to which components should be added
+//     * @param file2 file which MDefinitioncomponents should be added
+//     * @return the "merged" file with the name and documentation of the first file
+//     *         and all components from both files
+//     */
+//    private static MFile mergeFiles(MFile file1, MFile file2) {
+//        MFile file = MFile(file1.doc(), file1.name(),
+//                file1.defs().addAll(file2.defs()),
+//                file1.structs().addAll(file2.structs()), 
+//                file1.enums().addAll(file2.enums()),
+//                file1.attributes().addAll(file2.attributes()),
+//                file1.procedures().addAll(file2.procedures()),
+//                file1.classes().addAll(file2.classes()));
+//        return file;
+//    }
 }

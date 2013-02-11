@@ -20,7 +20,8 @@ Component = UART()
           | BUTTONS() 
           | VHDL
 
-VHDL (VHDLCore core, Strings names)
+
+VHDL (VHDLCore core, Instances instances)
 
 VHDLCore (String file, Ports ports)
 
@@ -35,5 +36,5 @@ Port = IN   (String name)
 
 Components * Component
 Ports      * Port
-Strings    * String
+Instances  * String
 // VHDLCores  * VHDLCore

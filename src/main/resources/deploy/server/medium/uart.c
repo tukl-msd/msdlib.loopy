@@ -1,9 +1,8 @@
 /*
- * uart.c
  * @author Thomas Fischer
  * @since 05.02.2013
  */
-#include "uart.h"
+#include "medium.h"
 
 #include "xparameters.h"
 #include "xuartlite.h"

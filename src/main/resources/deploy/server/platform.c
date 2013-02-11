@@ -34,7 +34,7 @@ void tcp_slowtmr(void);
 
 void timer_callback() {
 	/* we need to call tcp_fasttmr & tcp_slowtmr at intervals specified by lwIP.
-	 * It is not important that the timing is absoluetly accurate.
+	 * It is not important that the timing is absolutely accurate.
 	 */
 	static int odd = 1;
 	tcp_fasttmr();

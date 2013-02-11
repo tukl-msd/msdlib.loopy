@@ -1,24 +1,6 @@
 package de.hopp.generator;
 
-import static de.hopp.generator.model.Model.MAttributes;
-import static de.hopp.generator.model.Model.MClasses;
-import static de.hopp.generator.model.Model.MCode;
-import static de.hopp.generator.model.Model.MDefinition;
-import static de.hopp.generator.model.Model.MDefinitions;
-import static de.hopp.generator.model.Model.MDocumentation;
-import static de.hopp.generator.model.Model.MEnums;
-import static de.hopp.generator.model.Model.MFile;
-import static de.hopp.generator.model.Model.MForwardDecl;
-import static de.hopp.generator.model.Model.MModifiers;
-import static de.hopp.generator.model.Model.MParameters;
-import static de.hopp.generator.model.Model.MProcedure;
-import static de.hopp.generator.model.Model.MProcedures;
-import static de.hopp.generator.model.Model.MQuoteInclude;
-import static de.hopp.generator.model.Model.MStructs;
-import static de.hopp.generator.model.Model.MVoid;
-import static de.hopp.generator.model.Model.PRIVATE;
-import static de.hopp.generator.model.Model.PUBLIC;
-import static de.hopp.generator.model.Model.Strings;
+import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.hasGpioComponent;
 import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Model.add;
@@ -27,23 +9,8 @@ import static de.hopp.generator.utils.Model.addLines;
 import java.io.File;
 import java.io.IOException;
 
-import de.hopp.generator.board.BUTTONS;
-import de.hopp.generator.board.Board;
+import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
-import de.hopp.generator.board.Component;
-import de.hopp.generator.board.Components;
-import de.hopp.generator.board.DUAL;
-import de.hopp.generator.board.ETHERNET;
-import de.hopp.generator.board.ETHERNET_LITE;
-import de.hopp.generator.board.IN;
-import de.hopp.generator.board.LEDS;
-import de.hopp.generator.board.OUT;
-import de.hopp.generator.board.PCIE;
-import de.hopp.generator.board.Ports;
-import de.hopp.generator.board.SWITCHES;
-import de.hopp.generator.board.UART;
-import de.hopp.generator.board.VHDL;
-import de.hopp.generator.board.VHDLCore;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
 
@@ -59,7 +26,11 @@ public class DriverVisitor extends Visitor<IOException>{
     private MFile constants;
     
     private MProcedure init;
+    private MProcedure axi_write;
+    private MProcedure axi_read;
     
+    private int axiStreamIdMaster = 0;
+    private int axiStreamIdSlave  = 0;
     // TODO split this into component communication and medium setup as well...
     // might be more difficult, since interrupt setup is interleaved for gpio components ):
     public DriverVisitor(Configuration config) {
@@ -82,6 +53,26 @@ public class DriverVisitor extends Visitor<IOException>{
                     "This includes gpio_components and user-defined IPCores,",
                     "but not the communication medium this board is attached with."
                 )), MModifiers(), MVoid(), "init_components", MParameters(), MCode(Strings()));
+        axi_write = MProcedure(MDocumentation(Strings(
+                    "Write a value to an AXI stream."),
+                    PARAM("val", "Value to be written to the stream."),
+                    PARAM("target", "Target stream identifier.")
+                ), MModifiers(PRIVATE()), MVoid(), "axi_write", MParameters(
+                    MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
+                ), MCode(Strings(
+                        "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
+                        "switch(target) {"
+                    ), MQuoteInclude("fsl.h")));
+        axi_read  = MProcedure(MDocumentation(Strings(
+                    "Read a value from an AXI stream."),
+                    PARAM("val", "Pointer to the memory area, where the read value will be stored."),
+                    PARAM("target", "Target stream identifier.")
+                ), MModifiers(PRIVATE()), MVoid(), "axi_read", MParameters(
+                    MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
+                ), MCode(Strings(
+                        "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
+                        "switch(target) {"
+                    ), MQuoteInclude("fsl.h")));
     }
     
     public MFile getComponentsFile() {
@@ -107,9 +98,21 @@ public class DriverVisitor extends Visitor<IOException>{
         
         // visit board components
         visit(board.components());
-        
+
         // add the init procedure to the source file
         components = add(components, init);
+
+        // finish axi read and write procedures
+        axi_write = addLines(axi_write, MCode(Strings(
+                "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
+                "}")));
+        axi_read  = addLines(axi_read,  MCode(Strings(
+                "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
+                "}")));
+        
+        // add axi read and write procedures
+        components = add(components, axi_write);
+        components = add(components, axi_read);
     }
     
     public void visit(Components comps) throws IOException {
@@ -121,8 +124,8 @@ public class DriverVisitor extends Visitor<IOException>{
     public void visit(ETHERNET_LITE term) throws IOException {
         // deploy Ethernet medium files
         File target = new File(serverSrc, "medium");
-        copy("deploy/server/medium/ethernet.h", new File(target, "ethernet.h"), IO);
-        copy("deploy/server/medium/ethernet.c", new File(target, "ethernet.c"), IO);
+//        copy("deploy/server/medium/ethernet.h", new File(target, "ethernet.h"), IO);
+        copy("deploy/server/medium/ethernet.c", new File(target, "medium.c"), IO);
 
         // add Ethernet specific constants
         addIP("IP",   config.getIP(), "ip address");
@@ -135,8 +138,8 @@ public class DriverVisitor extends Visitor<IOException>{
     public void visit(UART term) throws IOException {
         // deploy UART/USB medium files
         File target = new File(serverSrc, "medium");
-        copy("deploy/server/medium/uart.h", new File(target, "uart.h"), IO);
-        copy("deploy/server/medium/uart.c", new File(target, "uart.c"), IO);
+//        copy("deploy/server/medium/uart.h", new File(target, "uart.h"), IO);
+        copy("deploy/server/medium/uart.c", new File(target, "medium.c"), IO);
     }
     
     public void visit(LEDS term) throws IOException {
@@ -196,32 +199,57 @@ public class DriverVisitor extends Visitor<IOException>{
     
     // These currently shouldn't do anything.
     // Might get relevant after introducing AXI Stream communication into server
+    public void visit(VHDL term) {
+
+        for(String instance : term.instances()) {
+            for(Port port : term.core().ports()) {
+                if(port instanceof IN) {
+                    if(axiStreamIdMaster>15) continue; //TODO: throw exception: to many master interfaces / in-going ports
+                    axi_write = addLines(axi_write, MCode(Strings(
+                            "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
+                            ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_DEFAULT); break;"
+                            )));
+                    axiStreamIdMaster++;
+                } else if(port instanceof OUT) {
+                    if(axiStreamIdSlave>15) continue; //TODO: throw exception: to many slave interfaces / out-going ports
+                    axi_read  = addLines(axi_read,  MCode(Strings(
+                            "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
+                            ": getfslx(val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_DEFAULT); break;"
+                            )));
+                    axiStreamIdSlave++;
+                } else {
+                    // TODO: throw exception: invalid port type for AXI Stream
+                }
+            }
+        }
+    }
+    
     public void visit(VHDLCore term) { }
-    public void visit(VHDL term)     { }
     public void visit(Ports term)    { }
     public void visit(IN term)       { }
     public void visit(OUT term)      { }
     public void visit(DUAL term)     { }
     
     // literals
-    public void visit(de.hopp.generator.board.Strings term) { }
-    public void visit(String term) { }
+    public void visit(Integer term)   { }
+    public void visit(Instances term) { }
+    public void visit(String term)    { }
 
-    private static String unparseIP(int val) {
-        // exclude invalid ip addresses 
-        if(val > 255 || val < 0) throw new IllegalStateException();
-
-        String rslt = new String();
-        
-        // add spaces for better formatting
-        if(val < 100) {
-            rslt += " ";
-            if(val < 10) rslt += " ";
-        }
-        // append value
-        return rslt + val;
-    }
-    
+//    private static String unparseIP(int val) {
+//        // exclude invalid ip addresses 
+//        if(val > 255 || val < 0) throw new IllegalStateException();
+//
+//        String rslt = new String();
+//        
+//        // add spaces for better formatting
+//        if(val < 100) {
+//            rslt += " ";
+//            if(val < 10) rslt += " ";
+//        }
+//        // append value
+//        return rslt + val;
+//    }
+//    
 //    private String unparseMAC(String[] mac) {
 //        return "0x" + mac[0] + ", 0x" + mac[1] + ", 0x" + mac[2] +
 //             ", 0x" + mac[3] + ", 0x" + mac[4] + ", 0x" + mac[5];

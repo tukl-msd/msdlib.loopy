@@ -3,7 +3,7 @@
  * @since 01.02.2013
  */
 
-#include "ethernet.h"
+#include "medium.h"
 
 #include "xparameters.h"
 #include "netif/xadapter.h"
@@ -20,7 +20,6 @@
 #include <math.h>
 
 // attributes of Driver
-unsigned char (mac_ethernet_address) [6] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
 struct ip_addr ip, mask, gw;
 struct netif *netif, server_netif;
 
@@ -81,9 +80,16 @@ int get_unaligned ( int *data ) {
     return *data;
 }
 
+/** stores a received message */
 static struct pbuf *msg;
+/** stores the position of the next word to read in the received message */
 static int wordIndex;
 
+/**
+ * Read the next integer value from a received message.
+ * Requires, that a message has indeed been received beforehand.
+ * @returns The read integer value.
+ */
 int recv_int() {
 	// some check over the length of the message
 	int word = get_unaligned(msg->payload + wordIndex*4);

@@ -53,9 +53,11 @@ public class Parser2 {
     private static Board defaultBoard() {
 //        return Board(ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1),8844), LEDS(), SWITCHES(), BUTTONS());
         return Board(ETHERNET_LITE(), BUTTONS(), SWITCHES(), LEDS(),
-                VHDL(VHDLCore("add", Ports(IN("in1"), IN("in2"), OUT("sum"))), Strings("adder_a", "adder_b")),
-                VHDL(VHDLCore("mult", Ports(IN("in1"), IN("in2"), OUT("prod"))), Strings("mult_a")),
-                VHDL(VHDLCore("store", Ports(DUAL("p"))), Strings("s_1"))
+                VHDL(VHDLCore("add", Ports(IN("in1"), IN("in2"), OUT("sum"))), Instances(
+                        "adder_a",
+                        "adder_b")),
+                VHDL(VHDLCore("mult", Ports(IN("in1"), IN("in2"), OUT("prod"))), Instances("mult_a")),
+                VHDL(VHDLCore("store", Ports(DUAL("p"))), Instances("s_1"))
             );
     }
     

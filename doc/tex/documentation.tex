@@ -10,6 +10,7 @@
 %\usepackage{rotating}
 \usepackage{listings}
 \usepackage{setspace}
+\usepackage{mathpartir}
 
 %\usepackage{fancyhdr}
 %\setlength{\headheight}{15.2pt}
@@ -421,6 +422,50 @@ The components folder contains code for component-specific setup and communicati
 
 \paragraph{Initialisation}
 Files for initialisation are generated directly in the \texttt{src} folder of the project. Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the listening loop.
+
+\newpage
+\section{Protocol}
+
+Note: These calculi denote state transitions of a DFA. The precondition marks several conditions and an in-going message. The postcondition may contain an out-going message. Used messages are:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{rcv} Receive values for a component from application
+\item \textbf{snd} Send values for a component to board
+\item \textbf{ack} Receive ack for values from board
+\item \textbf{poll} Receive poll from board
+\end{itemize}
+
+In addition, several functions have been used to simplify the calclui.
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{size(q)} The size of a value queue q
+\item \textbf{drop(q, i)} Drops the first i values of a queue q
+\item \textbf{first(q, i)} Obtain the first i values of a queue q. Returns a smaller array, if size(q) \textless ~i
+\end{itemize}
+
+The state is denoted by an array of value queues \textit{q} and an array of transit values \textit{s}. Both arrays are sized by the number of existing board components. The queues store values that should be received by the board, the transit values store the number of values currently in transit, i.e. that have been sent but not yet been acknowledged by the board.
+
+\begin{mathpar}
+\inferrule* [left=Receive First] {q[a] = \emptyset \\ s[a] = 0 \\ rcv(a, v)}{q[a] = v \\ s[a] = size(first(v, n)) \\ snd(a, first(v, n))} \\ % initially empty queues, if something is received send the first n values and set s[a] to the number of sent values
+\inferrule* [left=Receive More] {q[a] = v \\ rcv(a, v')}{q[a] = v \oplus v'} \\ % append further received values to queue
+
+\inferrule* [left=Ack Full] {q[a] = v \\ s[a] = size(v) \\ ack(a, size(v))}{q[a] = \emptyset \\ s[a] = 0} \\% nothing more to send --> done
+\inferrule* [left=Ack All] {q[a] = v \\ s[a] = i \\ ack(a, i)}{q[a] = drop(v,i) \\ s[a] = size(first(v,n)) \\ snd(a, first(v,n))} \\ % this is the ugly case. We have sent some values that all got acknowledged, but have more data --> server can accept more values and will NOT poll --> we need to send more values.
+\inferrule* [left=Ack Some] {q[a] = v \\ s[a] = i \\ ack(a, j) \\ j \textless i}{q[a] = drop(v,j) \\ s[a] = 0} \\ % in this case, the server buffer is full. Consequently, we don't send more values, but wait for a poll
+
+\inferrule* [left=Poll] {q[a] = v \\ s[a] = 0 \\ poll(a)}{ q[a] = v \\ s[a] size(first(v, n)) \\ snd(a, first(v, n=))} \\ %compressed poll rule - send the first n values on poll, if less exists send less
+\inferrule* [left=Poll Transit] {s[a] = i \\ i \textgreater 0 \\ poll(a)}{ // No Transition} % ignore polls, while data is in transit
+
+%\inferrule* [left=Total]
+%  {\inferrule* [Left=Foo]
+%     {\inferrule* [Right=Bar,
+%                       leftskip=2em,rightskip=2em,vdots=1.5em]
+%         {a \\ a \\\\ bb \\ cc \\ dd}
+%         {ee}
+%       \\ ff \\ gg}
+%     {hh}
+%  \\
+%  \inferrule* [lab=XX]{uu \\ vv}{ww}}
+%  {(1)}
+\end{mathpar}
 
 \chapter{Generator}
 This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator.\textcolor{red}{A reference to the third Katja report might be useful.}

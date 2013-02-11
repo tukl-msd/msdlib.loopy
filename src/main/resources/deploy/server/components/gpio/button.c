@@ -10,7 +10,7 @@
 
 static XGpio buttons;
 
-// forward declaraion of the callback procedure
+// forward declaration of the callback procedure
 void callbackButtons();
 
 /**

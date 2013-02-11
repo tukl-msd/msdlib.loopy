@@ -2,16 +2,18 @@ package de.hopp.generator;
 
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.Model.*;
-
 import katja.common.NE;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
-import de.hopp.generator.board.Strings;
-import de.hopp.generator.model.*;
+import de.hopp.generator.model.MClass;
+import de.hopp.generator.model.MConstr;
+import de.hopp.generator.model.MDestr;
+import de.hopp.generator.model.MDocumentation;
+import de.hopp.generator.model.MFile;
 
 public class ClientVisitor extends Visitor<NE> {
 
-    private Configuration config;
+//    private Configuration config;
     
 //    private MFile file;
     private MFile comps;
@@ -29,7 +31,7 @@ public class ClientVisitor extends Visitor<NE> {
     private MDocumentation emptyDoc = MDocumentation(Strings());
     
     public ClientVisitor(Configuration config) {
-        this.config = config;
+//        this.config = config;
         
         // setup basic methods
 //        file  = MFile(emptyDoc, "name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
@@ -98,11 +100,12 @@ public class ClientVisitor extends Visitor<NE> {
         visit(vhdl.core());
         
         // add an attribute for each used name
-        for(String name : vhdl.names())
+        for(String instance : vhdl.instances())
             comps = add(comps, MAttribute(MDocumentation(Strings(
                     "An instance of the #" + vhdl.core().file() + " core."
                 )), MModifiers(PUBLIC()),
-                MPointerType(MType(vhdl.core().file())), name, MCodeFragment("new " + vhdl.core().file() + " (intrfc)")));
+                MPointerType(MType(vhdl.core().file())), instance,
+                MCodeFragment("new " + vhdl.core().file() + " (intrfc)")));
     }
     public void visit(VHDLCore core) {
         comp = MClass(MDocumentation(Strings(
@@ -145,9 +148,9 @@ public class ClientVisitor extends Visitor<NE> {
         constructor = addInit(constructor, MMemberInit(name, "new " + type + "()"));
         destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
-    
-    public void visit(Integer term) { }
-    public void visit(Strings term) { }
-    public void visit(String term)  { }
+
+    public void visit(Instances term) { }
+    public void visit(Integer term)   { }
+    public void visit(String term)    { }
     
 }

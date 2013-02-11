@@ -9,9 +9,17 @@
 #include "protocol_v1.h"
 #include "../../constants.h"
 
-// forward declarations
+// medium communication
 int recv_int();
+
+// gpio
 void set_LED(u32 state);
+
+// axi stream interface
+void axi_write ( int  val, int target );
+void axi_read  ( int *val, int target );
+
+// generic print function
 void xil_printf(const char *ctrl1, ...);
 
 //int decode_v0_1( struct pbuf *p ) {

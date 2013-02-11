@@ -1,15 +1,15 @@
 /**
- * Handles communication over UART/USB.
+ * Handles communication over the medium.
  * This includes medium-specific initialisation as well as the listening loop.
  * @file
  * @author Thomas Fischer
- * @since 05.02.2013
+ * @since 01.02.2013
  */
 
-#ifndef UART_H_
-#define UART_H_
+#ifndef MEDIUM_H_
+#define MEDIUM_H_
 
-/** initialise this communication medium */
+/** initialise the communication medium */
 void init_medium();
 
 /**
@@ -19,4 +19,4 @@ void init_medium();
  */
 int start_application();
 
-#endif /* UART_H_ */
+#endif /* MEDIUM_H_ */

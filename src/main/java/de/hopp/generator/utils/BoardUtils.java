@@ -89,8 +89,8 @@ public class BoardUtils {
                 }
                 public String CaseVHDL(VHDL term) {
                     String s = "";
-                    for(String name : term.names())
-                        s += "\n    -VHDL Component: " + name + " (" + term.core().file() + ")";
+                    for(String instance: term.instances())
+                        s += "\n    -VHDL Component: " + instance + " (" + term.core().file() + ")";
                     return s;
                 }
             });

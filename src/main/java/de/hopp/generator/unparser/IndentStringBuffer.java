@@ -36,7 +36,7 @@ class IndentStringBuffer {
     // if it's the start of a new line at the moment
     private boolean newLine = true;
 
-    // initialize the tabString used for indentation
+    // initialise the tabString used for indentation
     IndentStringBuffer(StringBuffer buffer) {
         this.buffer = buffer;
     }

@@ -2,16 +2,11 @@ package de.hopp.generator.unparser;
 
 import static de.hopp.generator.model.Model.*;
 
-import java.io.IOException;
 import java.util.Comparator;
-import java.util.Iterator;
 
-import katja.common.KatjaElement;
-import katja.common.KatjaSort;
 import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
-import de.hopp.generator.model.MInclude.Switch;
 
 /**
  * Unparser for header files. Can be used for C headers as well

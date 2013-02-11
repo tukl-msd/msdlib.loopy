@@ -21,7 +21,7 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 	INTC *intc = getIntc();
 
 	/*
-	 * Initialize the interrupt controller driver so that it's ready to use.
+	 * Initialise the interrupt controller driver so that it's ready to use.
 	 * specify the device ID that was generated in xparameters.h
 	 */
 	// This should already be done by platform.c
@@ -38,7 +38,7 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 
 #ifndef TESTAPP_GEN
 	/*
-	 * Start the interrupt controller such that interrupts are recognized
+	 * Start the interrupt controller such that interrupts are recognised
 	 * and handled by the processor
 	 */
 	Result = XIntc_Start(intc, XIN_REAL_MODE);
@@ -53,7 +53,7 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 	XScuGic_Config *IntcConfig;
 
 	/*
-	 * Initialize the interrupt controller driver so that it is ready to
+	 * Initialise the interrupt controller driver so that it is ready to
 	 * use.
 	 */
 	IntcConfig = XScuGic_LookupConfig(INTC_DEVICE_ID);
@@ -87,7 +87,7 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 	XGpio_InterruptGlobalEnable(InstancePtr);
 
 	/*
-	 * Initialize the exception table and register the interrupt
+	 * Initialise the exception table and register the interrupt
 	 * controller handler with the exception table
 	 */
 	Xil_ExceptionInit();
