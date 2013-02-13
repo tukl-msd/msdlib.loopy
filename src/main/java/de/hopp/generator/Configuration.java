@@ -11,8 +11,6 @@ import java.io.File;
  * @author Thomas Fischer
  *
  */
-
-
 public class Configuration {
 
     // destination folders
@@ -191,6 +189,7 @@ public class Configuration {
     public boolean DEBUG()   { return loglevel >= LOG_DEBUG; }
     /** get the io handler associated with this run of the generator */
     public IOHandler IOHANDLER() { return IO; }
+    
     /** print this config on console */
     public void printConfig() {
         IO.println("- client folder    : " + clientDir().getAbsolutePath());
@@ -198,9 +197,9 @@ public class Configuration {
         
         IO.print  ("- log level        : ");
         switch(loglevel) {
-        case 1: IO.println("info");    break;
-        case 2: IO.println("verbose"); break;
-        case 3: IO.println("debug");   break;
+        case LOG_INFO    : IO.println("info");    break;
+        case LOG_VERBOSE : IO.println("verbose"); break;
+        case LOG_DEBUG   : IO.println("debug");   break;
         default: // should never happen
         }
         

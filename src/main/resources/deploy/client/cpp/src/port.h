@@ -8,6 +8,9 @@
 #ifndef PORT_H_
 #define PORT_H_
 
+#include <ostream>
+#include <vector>
+
 /** An Exception that marks a failed write operation on a port. */
 class writeException {};
 /** An Exception that marks a failed read operation on a port.  */
@@ -45,6 +48,17 @@ public:
 	 * @return true if the write was successful, false otherwise.
 	 */
 	bool write(int val);
+
+	// declaring this method as friend has two effects:
+	// a) this method has access two the classes private and protected fields
+	// b) this isn't really a method.
+	//    it's global (i.e. needs no qualification for being called, but
+	//                 also contains no implicit reference to callee.
+	//                 Instead, the callee is explicitly referenced in the first parameter
+	friend in& operator <<(in &i, const std::vector<int> val);
+	friend in& operator <<(in &i, const int val);
+//	in operator<< (int val);
+//	in operator<< (int val[]);
 };
 
 /**
@@ -76,6 +90,11 @@ public:
 	 * @throws readException if the read failed.
 	 */
 	int  read();
+
+	friend out& operator >>(out &o, std::vector<int> &val);
+	friend out& operator >>(out &o, int &valj);
+//	out operator>> (int val);
+//	out operator>> (std::vector<int>);
 };
 
 /**

@@ -1,100 +1,147 @@
-package de.hopp.generator;
+package de.hopp.generator.backends.client;
 
+import static de.hopp.generator.backends.BackendUtils.doxygen;
+import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.model.Model.*;
-import static de.hopp.generator.utils.Model.*;
+import static de.hopp.generator.utils.Files.copy;
+import static de.hopp.generator.utils.Model.add;
+import static de.hopp.generator.utils.Model.addDoc;
+import static de.hopp.generator.utils.Model.addInit;
+import static de.hopp.generator.utils.Model.addLines;
+
+import java.io.File;
+import java.io.IOException;
+
 import katja.common.NE;
+import de.hopp.generator.Configuration;
+import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.Backend;
+import de.hopp.generator.backends.BackendUtils.UnparserType;
+import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
 import de.hopp.generator.model.MClass;
 import de.hopp.generator.model.MConstr;
 import de.hopp.generator.model.MDestr;
-import de.hopp.generator.model.MDocumentation;
 import de.hopp.generator.model.MFile;
 
-public class ClientVisitor extends Visitor<NE> {
+/**
+ * Generation backend for a client-side C++ driver.
+ * This visitor generates a C++ API for communication with an arbitrary board-side driver.
+ * @author Thomas Fischer
+ */
+public class CPP extends Visitor<NE> implements Backend {
 
-//    private Configuration config;
+    private Configuration   config;
+    private ErrorCollection errors;
     
-//    private MFile file;
     private MFile comps;
 
-    // local methods for construction of more specific components
+    // temp variables for construction of local methods of VHDL components
     private MClass  comp;
     private MConstr constructor;
     private MDestr  destructor;
     
     // local variables for global default methods
-//    private MMethod init;
 //    private MMethod clean;
-//    private MMethod main;
     
-    private MDocumentation emptyDoc = MDocumentation(Strings());
-    
-    public ClientVisitor(Configuration config) {
-//        this.config = config;
-        
-        // setup basic methods
-//        file  = MFile(emptyDoc, "name", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-        comps = MFile(emptyDoc, "components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-//        init  = MProcedure(emptyDoc, MModifiers(), MType("int"), "init", 
-//                MParameters(), MCode(Strings("")));
-//        clean = MMethod(MDocumentation(Strings()), MModifiers(), MType("int"), "cleanup", 
-//                MParameters(), MCode(Strings(""), MInclude("platform.h", QUOTES())));
-//        main  = MProcedure(emptyDoc, MModifiers(), MType("int"), "main", 
-//                MParameters(), MCode(Strings("", "// initialize board components", "init();")));
+    public CPP() {
+        comps = MFile(MDocumentation(Strings()), "components", MDefinitions(), MStructs(),
+                MEnums(), MAttributes(), MProcedures(), MClasses());
     }
     
-//    public MFile getFile() {
-//        return file;
-//    }
-    public MFile getCompsFile() {
-        return comps;
+    public String getName() {
+        return "C++";
+    }
+    
+    public void generate(Board board, Configuration config, ErrorCollection errors) {
+        this.config = config;
+        this.errors = errors;
+        
+        // deploy generic client code
+        try {
+            copy("deploy/client/cpp", config.clientDir(), config.IOHANDLER());
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed(""));
+            return;
+        }
+       
+        // generate and deploy board-specific MFiles
+        visit(board);
+        
+        // generate api specification
+        config.IOHANDLER().println("  generate client-side api specification ... ");
+        doxygen(config.clientDir(), config.IOHANDLER(), errors);
     }
     
     public void visit(Board board) {
         comps = addDoc(comps, "Describes user-defined IPCores and instantiates all cores present within this driver.");
         visit(board.components());
+        
+        // unparse generated MFiles
+        File clientSrc = new File(config.clientDir(), "src");
+        printMFile(comps, clientSrc, UnparserType.HEADER, errors);
+        printMFile(comps, clientSrc, UnparserType.CPP, errors);
+        
+        // generate & print the constants file with the debug flag
+        printMFile(MFile(MDocumentation(Strings(
+                    "Defines several constants used by the client."
+                )), "constants", MDefinitions(
+                    MDefinition(MDocumentation(Strings(
+                            "If set, enables additional console output for debugging purposes"
+                    )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"
+                )), MStructs(), MEnums(), MAttributes(), MProcedures()),
+                new File(config.clientDir(), "src"), UnparserType.HEADER, errors);
     }
+    
     public void visit(Components comps) {
         for(Component c : comps) visit(c);
     }
+    
     public void visit(UART term) {
         comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
                 MPointerType(MType("interface")), "intrfc",
                 MCodeFragment("new uart()", MQuoteInclude("interface.h"))));
     }
+    
     public void visit(ETHERNET_LITE term) {
-        comps = add(comps, MAttribute(emptyDoc, MModifiers(PRIVATE()),
+        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
                 MPointerType(MType("interface")), "intrfc",
                 MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
     }
+    
     public void visit(ETHERNET term) {
         // TODO Auto-generated method stub
     }
+    
     public void visit(PCIE term) {
         // TODO Auto-generated method stub
     }
+    
     public void visit(LEDS term) {
         comps = add(comps, MAttribute(MDocumentation(Strings(
                     "The board's LED component.",
                     "This object is used to manipulate the state of the LEDs of the board."
-                )), MModifiers(), MPointerType(MType("leds")),
-                "gpio_leds", MCodeFragment("new leds(intrfc)", MQuoteInclude("gpio.h"))));
+                )), MModifiers(), MType("leds"),
+                "gpio_leds", MInitList(Strings("intrfc"), MQuoteInclude("gpio.h"))));
     }
+    
     public void visit(SWITCHES term) {
         comps = add(comps, MAttribute(MDocumentation(Strings(
                     "The board's switch component.",
                     "This object is used to read the state of the switches of the board."
-                )), MModifiers(), MPointerType(MType("switches")),
-                "gpio_switches", MCodeFragment("new switches(intrfc)", MQuoteInclude("gpio.h"))));
+                )), MModifiers(), MType("switches"),
+                "gpio_switches", MInitList(Strings("intrfc"), MQuoteInclude("gpio.h"))));
     }
+    
     public void visit(BUTTONS term) {
         comps = add(comps, MAttribute(MDocumentation(Strings(
                     "The board's button component.",
                     "This object is used to read the state of the buttons of the board."
-                )), MModifiers(), MPointerType(MType("buttons")),
-                "gpio_buttons", MCodeFragment("new buttons(intrfc)", MQuoteInclude("gpio.h"))));
+                )), MModifiers(), MType("buttons"),
+                "gpio_buttons", MInitList(Strings("intrfc"), MQuoteInclude("gpio.h"))));
     }
+    
     public void visit(VHDL vhdl) {
         // generate a class for the vhdl core
         visit(vhdl.core());
@@ -104,9 +151,10 @@ public class ClientVisitor extends Visitor<NE> {
             comps = add(comps, MAttribute(MDocumentation(Strings(
                     "An instance of the #" + vhdl.core().file() + " core."
                 )), MModifiers(PUBLIC()),
-                MPointerType(MType(vhdl.core().file())), instance,
-                MCodeFragment("new " + vhdl.core().file() + " (intrfc)")));
+                MType(vhdl.core().file()), instance,
+                MInitList(Strings("intrfc"))));
     }
+    
     public void visit(VHDLCore core) {
         comp = MClass(MDocumentation(Strings(
                     "An abstract representation of a(n) #" + core.file() + " core."
@@ -132,9 +180,11 @@ public class ClientVisitor extends Visitor<NE> {
         comp  = add(comp,  destructor);
         comps = add(comps, comp);
     }
+    
     public void visit(Ports ports) {
         for(Port p : ports) { visit(p); }
     }
+    
     public void visit(IN   port) { addPort(port.name(),   "in", "An in-going"); }
     public void visit(OUT  port) { addPort(port.name(),  "out", "An out-going"); }
     public void visit(DUAL port) { addPort(port.name(), "dual", "A bi-directional"); }
@@ -143,14 +193,13 @@ public class ClientVisitor extends Visitor<NE> {
         comp = add(comp, MAttribute(MDocumentation(Strings(
                     docPart + " AXI-Stream port.",
                     "Communicate with the #" + comp.name() + " core through this port."
-                )), MModifiers(PUBLIC()), MPointerType(MType(type)),
+                )), MModifiers(PUBLIC()), MType(type),
                 name, MCodeFragment("", MQuoteInclude("component.h"))));
-        constructor = addInit(constructor, MMemberInit(name, "new " + type + "()"));
-        destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
+//        constructor = addInit(constructor, MMemberInit(name, "new " + type + "()"));
+//        destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
 
     public void visit(Instances term) { }
     public void visit(Integer term)   { }
     public void visit(String term)    { }
-    
 }

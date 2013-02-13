@@ -213,8 +213,10 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \begin{tabular}{ ll | p{9cm} } 
 \hline
 %\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
-\verb!-s! & \verb!--server! & Specifies the destination of the server directory. All files for the server (i.e. files used to generate the board side driver) will be generated into the specified directory. If none is specified, a directory "server" will be generated inside the current working directory.\\
-\verb!-c! & \verb!--client! & Specifies the destination of the client directory. All client for the server will be generated into the specified directory. If none is specified, a directory "client" will be generated inside the current working directory.\\ \hline
+\verb!-s! & \verb!--server! & Specifies the server backend. This specifies, for which target platform the driver should be generated. The default setting is a Virtex 6 ML 605 FPGA (currently, no other options are present).\\
+& \verb!--serverDir! & Specifies the destination of the server directory. All files for the server (i.e. files used to generate the board side driver) will be generated into the specified directory. If none is specified, a directory "server" will be generated inside the current working directory.\\ \hline
+\verb!-c! & \verb!--client! & Specifies the client backend. This specifies, in which language the client software should be generated. The default setting is a C++ frontend (currently, no other options are present).\\
+& \verb!--clientDir! & Specifies the destination of the client directory. All client for the server will be generated into the specified directory. If none is specified, a directory "client" will be generated inside the current working directory.\\ \hline
 \verb!-v! & \verb!--verbose! & The driver generator will print out additional console output. This makes it easier to track errors in the driver generator or the used source file.\\
 \verb!-d! & \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\
 \verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
@@ -227,6 +229,18 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \end{tabular}
 \caption{Summary of currently possible CLI parameters}
 \label{tab:cliParams}
+\end{table}
+
+\begin{table}
+\centering
+\begin{tabular}{ ll | p{9cm} } 
+\hline
+%\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
+\verb!-p! & \verb!--project! & Specifies the project backend. This specifies, in which tool the hardware design should take place. Currently, only XPS in version 14.1 can be selected.\\\\ \hline
+
+\end{tabular}
+\caption{Summary of currently possible options for the Virtex6 server backend}
+\label{tab:cppParams}
 \end{table}
 
 Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like the following line:\\

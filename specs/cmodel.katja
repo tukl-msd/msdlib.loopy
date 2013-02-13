@@ -49,9 +49,10 @@ MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings val
 
 
 // attribute model
-MAttribute ( MDocumentation doc, MModifiers modifiers, MAnyType type, String name, MCodeFragment initial )
+MAttribute ( MDocumentation doc, MModifiers modifiers, MAnyType type, String name, MInitial initial )
+MInitial = MCodeFragment | MInitList
 MCodeFragment ( String part, MIncludes needed )
-
+MInitList ( Strings params, MIncludes needed )
 
 // method model
 MProcedure ( MDocumentation doc, MModifiers modifiers, MReturnType returnType, String name, MParameters parameter, /* MTypes exceptions, */ MCode body )

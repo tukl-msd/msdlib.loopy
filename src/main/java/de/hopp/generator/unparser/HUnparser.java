@@ -528,6 +528,11 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
 
     @Override
+    public void visit(MInitListInFile list) throws InvalidConstruct {
+       // Do nothing in the header. We have to override this in the plain C unparser anyways...
+    }
+    
+    @Override
     public void visit(MParametersInFile parameters) throws InvalidConstruct {
         buffer.append(" (");
         for(MParameterInFile parameter : parameters) {

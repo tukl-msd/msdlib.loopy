@@ -1,4 +1,4 @@
-package de.hopp.generator.parser;
+package de.hopp.generator.frontend;
 
 import static de.hopp.generator.board.BoardSpec.*;
 
@@ -10,6 +10,9 @@ import java_cup.runtime.Symbol;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.board.Board;
+import de.hopp.generator.frontend.Lexer;
+import de.hopp.generator.frontend.parser;
+import de.hopp.generator.parser.MHSFile;
 
 public class Parser2 {
 
@@ -52,7 +55,7 @@ public class Parser2 {
     
     private static Board defaultBoard() {
 //        return Board(ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1),8844), LEDS(), SWITCHES(), BUTTONS());
-        return Board(ETHERNET_LITE(), BUTTONS(), SWITCHES(), LEDS(),
+        return Board(UART(), BUTTONS(), SWITCHES(), LEDS(),
                 VHDL(VHDLCore("add", Ports(IN("in1"), IN("in2"), OUT("sum"))), Instances(
                         "adder_a",
                         "adder_b")),

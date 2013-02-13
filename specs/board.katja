@@ -9,17 +9,15 @@ backend java {
 external String
 external int
 
-Board (Components components /*, VHDLCores cores*/ )
+// TODO restrict to single Medium here
+Board (Components components)
 
-Component = UART()
-          | ETHERNET_LITE() // Put ip, port, etc. in board or leave it in config?
-          | ETHERNET()      // Cannot get these from .mhs, so they have to be stored in config anyway...
-          | PCIE()          // Probably needs some identifier as well...
-          | LEDS()
-          | SWITCHES()
-          | BUTTONS() 
-          | VHDL
-
+// Put ip, port, etc. in board or leave it in config?
+// Cannot get these from .mhs, so they have to be stored in config anyway...
+// Probably needs some identifier as well...
+Medium    = UART() | ETHERNET_LITE() | ETHERNET() | PCIE()
+GPIO      = LEDS() | SWITCHES() | BUTTONS()
+Component = Medium | GPIO | VHDL
 
 VHDL (VHDLCore core, Instances instances)
 

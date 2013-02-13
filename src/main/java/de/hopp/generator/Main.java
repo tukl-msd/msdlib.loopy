@@ -1,15 +1,21 @@
 package de.hopp.generator;
 
+import static de.hopp.generator.utils.BoardUtils.printBoard;
+import static de.hopp.generator.utils.Ethernet.unparseIP;
+import static de.hopp.generator.utils.Ethernet.unparseMAC;
+
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
-import static de.hopp.generator.utils.Ethernet.*;
-import static de.hopp.generator.utils.BoardUtils.printBoard;
-
+import de.hopp.generator.backends.Backend;
 import de.hopp.generator.board.Board;
 import de.hopp.generator.exceptions.ExecutionFailed;
-import de.hopp.generator.parser.Parser2;
+import de.hopp.generator.exceptions.UsageError;
+import de.hopp.generator.frontend.ClientBackend;
+import de.hopp.generator.frontend.Parser2;
+import de.hopp.generator.frontend.ProjectBackend;
+import de.hopp.generator.frontend.ServerBackend;
 
 public class Main {
     
@@ -18,6 +24,9 @@ public class Main {
     private Configuration config;
     private final IOHandler IO;
     private final ErrorCollection errors;
+    
+    private Backend clientBackend;
+    private Backend serverBackend;
     
     public Configuration config()   { return config; }
     public IOHandler io()           { return IO; }
@@ -42,7 +51,7 @@ public class Main {
     private void showUsage() {
         config.setPrintLevel(Configuration.LOG_INFO);
          // show usage line
-        IO.println("Usage: java de.xcend.binding.Main [options] <filename>");
+        IO.println("Usage: java de.hopp.generator.Main [options] <filename>");
         IO.println();
     
         // show flags
@@ -100,10 +109,15 @@ public class Main {
         // parse all cli parameters
         String schema = parseParameters(args);
 
-        System.out.println(config.serverDir().getPath());
-        
         // check if any errors occurred already
-        showStatus(true);
+        showStatus();
+        
+        // check, if backens are specified
+        if(clientBackend == null) errors.addError(new UsageError("No client backend selected"));
+        if(serverBackend == null) errors.addError(new UsageError("No server backend selected"));
+
+        // check if any errors occurred already
+        showStatus();
         
         File schemaFile = new File(schema);
         
@@ -128,14 +142,37 @@ public class Main {
         Board board = new Parser2(config).parse(schemaFile);
         IO.debug(printBoard(board));
         
-        // instantiate and run generator with this configuration
+        // if there are errors abort here
+        showStatus();
+        
+        // unparse generated server models to corresponding files
         IO.println();
-        IO.println("starting c/c++ generator");
-        Generator generator = new Generator(this, board);
-        generator.generate();
+        IO.println("generating server side driver files ...");
+        
+        serverBackend.generate(board, config, errors);
+        
+        // abort if any errors occurred
+        showStatus();
+        
+        // unparse generated client models to corresponding files
+        IO.println();
+        IO.println("generating client side driver files ...");
+        clientBackend.generate(board, config, errors);
+        
+        // abort if any errors occurred
+        showStatus();
+        
+        // run doxygen generation
+        // TODO this also shouldn't be done for all board types, I guess...?
+        // Maybe there are boards using Java and therefore javadoc generation should be applied
+        // (although doxygen would work to in these cases;)
         
         // finished
-        showStatus(false);
+        showStatus();
+        IO.println();
+        
+        // show that the build was successful
+        IO.println("BUILD SUCCESSFUL");
     }
 
     private String parseParameters(String[] args) throws ExecutionFailed {
@@ -186,22 +223,59 @@ public class Main {
         // go through all parameters
         for(int i = 0; i < args.length; i++) {
             
-            // DESTDIR flags
-            if(args[i].equals("-c") || args[i].equals("--client")) {
+            // DESTDIR flags TODO push these into backends
+            if(args[i].equals("-C") || args[i].equals("--clientDir")) {
             
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
                 config.setClientDir(new File(args[++i]));
-            } else if(args[i].equals("-s") || args[i].equals("--server")) {
+            } else if(args[i].equals("-S") || args[i].equals("--serverDir")) {
             
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
                 config.setServerDir(new File(args[++i]));
-                
+            } else
+            // BACKEND flags
+            if(args[i].equals("-c") || args[i].equals("--client")) {
+              
+                if(i + 1 >= args.length) {
+                    IO.error("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                try {
+                    clientBackend = ClientBackend.fromName(args[++i]).getInstance();
+                } catch(IllegalArgumentException e) {
+                    IO.error(e.getMessage());
+                    throw new ExecutionFailed();
+                }
+            } else if(args[i].equals("-s") || args[i].equals("--server")) {
+              
+                if(i + 1 >= args.length) {
+                    IO.error("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                try {
+                    serverBackend = ServerBackend.fromName(args[++i]).getInstance();
+                } catch(IllegalArgumentException e) {
+                    IO.error(e.getMessage());
+                    throw new ExecutionFailed();
+                }
+            } else if(args[i].equals("-p") || args[i].equals("--project")) {
+                // project backend - currently only xps14.1
+                if(i + 1 >= args.length) {
+                    IO.error("no argument left for "+args[i]);
+                    throw new ExecutionFailed();
+                }
+                try {
+                    ProjectBackend.fromName(args[++i]);
+                } catch(IllegalArgumentException e) {
+                    IO.error(e.getMessage());
+                    throw new ExecutionFailed();
+                }
             // LOGGING flags
             } else if(args[i].equals("-d") || args[i].equals("--debug")) {
                 config.enableDebug();
@@ -234,8 +308,8 @@ public class Main {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
-              }
-              config.setIP(args[++i].split("[.]"));
+                }
+                config.setIP(args[++i].split("[.]"));
             } else if(args[i].equals("--mask")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
@@ -262,8 +336,6 @@ public class Main {
                 }
                 
             } else remaining.add(args[i]);
-            
-            
         }
         
         return remaining.toArray(new String[0]);
@@ -274,7 +346,7 @@ public class Main {
      * @param checkpoint whether to show the status for a checkpoint only or to summarize all we can
      * @throws ExecutionFailed if the error collection contains error, this method will abort execution
      */
-    private void showStatus(boolean checkpoint) throws ExecutionFailed {
+    private void showStatus() throws ExecutionFailed {
        
         // TODO remove this... put it somewhere else
         if(errors.hasErrors() || errors.hasWarnings())
@@ -289,8 +361,8 @@ public class Main {
 
             // give an account of their numbers
             IO.println();
-            IO.println(errors.numWarnings()+" warnings");
-            IO.println(errors.numErrors()+" errors");
+            IO.println(errors.numWarnings() + " warnings");
+            IO.println(errors.numErrors()   + " errors");
 
             // show that the build has failed
             IO.println();
@@ -303,16 +375,5 @@ public class Main {
         
         // so there are no errors, look if there are some warning and print them
         if(errors.hasWarnings()) errors.showWarnings(IO);
-
-        // if this was only a checkpoint, continue right now
-        if(checkpoint) return;
-
-        IO.println();
-        
-        // show that the build was successful
-        IO.println("BUILD SUCCESSFUL");
-
-        // show time and continue
-        IO.println();
     }
 }

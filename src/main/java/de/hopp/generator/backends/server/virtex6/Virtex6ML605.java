@@ -1,5 +1,7 @@
-package de.hopp.generator;
+package de.hopp.generator.backends.server.virtex6;
 
+import static de.hopp.generator.backends.BackendUtils.doxygen;
+import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.hasGpioComponent;
 import static de.hopp.generator.utils.Files.copy;
@@ -9,14 +11,32 @@ import static de.hopp.generator.utils.Model.addLines;
 import java.io.File;
 import java.io.IOException;
 
+import katja.common.NE;
+import de.hopp.generator.Configuration;
+import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.IOHandler;
+import de.hopp.generator.backends.Backend;
+import de.hopp.generator.backends.BackendUtils.UnparserType;
+import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.board.*;
 import de.hopp.generator.board.Board.Visitor;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
 
-public class DriverVisitor extends Visitor<IOException>{
+/**
+ * Generation backend for a server-side driver for the Virtex 6 ML 605 platform.
+ * This visitor generates a server-side driver for this platform, which can communicate
+ * with any client-side driver.
+ * @author Thomas Fischer
+ */
+public class Virtex6ML605 extends Visitor<NE> implements Backend {
 
+    private static String sourceDir = "deploy" + '/' + "server" + '/' + "virtex6ML605";
+    
+    private ProjectBackend project;
+    
     private Configuration config;
+    private ErrorCollection errors;
     private IOHandler IO;
     private File serverSrc;
     
@@ -31,48 +51,90 @@ public class DriverVisitor extends Visitor<IOException>{
     
     private int axiStreamIdMaster = 0;
     private int axiStreamIdSlave  = 0;
-    // TODO split this into component communication and medium setup as well...
-    // might be more difficult, since interrupt setup is interleaved for gpio components ):
-    public DriverVisitor(Configuration config) {
+    
+    public String getName() {
+        return "Virtex6ML605";
+    }
+    
+    public void generate(Board board, Configuration config, ErrorCollection errors) {
         this.config = config;
+        this.errors = errors;
         this.IO = config.IOHANDLER();
-        serverSrc = new File(config.serverDir(), "src");
-        // extract debug flag
         this.debug = config.debug();
+        
+        serverSrc = new File(config.serverDir(), "src");
+        
+        // deploy board-independent files and directories
+        try { 
+            copy(sourceDir + '/' + "generic", config.serverDir(), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy generic sources due to:\n" + e.getMessage()));
+            return;
+        }
+        
+        // add gpio utils file, if gpio components are present
+        try {
+            if(hasGpioComponent(board)) {
+                File target = new File(new File(serverSrc, "components"), "gpio");
+                copy(sourceDir + '/' + "gpio" + '/' + "gpio.h", new File(target, "gpio.h"), IO);
+                copy(sourceDir + '/' + "gpio" + '/' + "gpio.c", new File(target, "gpio.c"), IO);
+            }
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy generic GPIO sources due to:\n" + e.getMessage()));
+            return;
+        }
+        
+        // generate and deploy board-specific MFiles
+        visit(board);
+        
+        IO.println("  generate server-side api specification ... ");
+        doxygen(config.serverDir(), IO, errors);
+        
+        // TODO for now, no project generation!
+//        if(project == null) {
+//            errors.addError(new GenerationFailed("No project generation backend specified"));
+//            return;
+//        }
+//        
+//        // run the project generator
+//        project.generate(board, config, errors);
+    }
+    
+    public Virtex6ML605() {
         
         // setup basic methods
         components = MFile(MDocumentation(Strings(
-                    "Contains component-specific initialisation and processing procedures."
-                )), "components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+                "Contains component-specific initialisation and processing procedures."
+            )), "components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         constants  = MFile(MDocumentation(Strings(
-                    "Defines several constants used by the server.",
-                    "This includes medium-specific configuration."
-                )), "constants", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+                "Defines several constants used by the server.",
+                "This includes medium-specific configuration."
+            )), "constants", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         init  = MProcedure(MDocumentation(Strings(
-                    "Initialises all components on this board.",
-                    "This includes gpio_components and user-defined IPCores,",
-                    "but not the communication medium this board is attached with."
-                )), MModifiers(), MVoid(), "init_components", MParameters(), MCode(Strings()));
+                "Initialises all components on this board.",
+                "This includes gpio_components and user-defined IPCores,",
+                "but not the communication medium this board is attached with."
+            )), MModifiers(), MVoid(), "init_components", MParameters(), MCode(Strings()));
         axi_write = MProcedure(MDocumentation(Strings(
-                    "Write a value to an AXI stream."),
-                    PARAM("val", "Value to be written to the stream."),
-                    PARAM("target", "Target stream identifier.")
-                ), MModifiers(PRIVATE()), MVoid(), "axi_write", MParameters(
-                    MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
-                ), MCode(Strings(
-                        "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                        "switch(target) {"
-                    ), MQuoteInclude("fsl.h")));
+                "Write a value to an AXI stream."),
+                PARAM("val", "Value to be written to the stream."),
+                PARAM("target", "Target stream identifier.")
+            ), MModifiers(PRIVATE()), MVoid(), "axi_write", MParameters(
+                MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
+            ), MCode(Strings(
+                "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
+                "switch(target) {"
+            ), MQuoteInclude("fsl.h")));
         axi_read  = MProcedure(MDocumentation(Strings(
-                    "Read a value from an AXI stream."),
-                    PARAM("val", "Pointer to the memory area, where the read value will be stored."),
-                    PARAM("target", "Target stream identifier.")
-                ), MModifiers(PRIVATE()), MVoid(), "axi_read", MParameters(
-                    MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
-                ), MCode(Strings(
-                        "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                        "switch(target) {"
-                    ), MQuoteInclude("fsl.h")));
+                "Read a value from an AXI stream."),
+                PARAM("val", "Pointer to the memory area, where the read value will be stored."),
+                PARAM("target", "Target stream identifier.")
+            ), MModifiers(PRIVATE()), MVoid(), "axi_read", MParameters(
+                MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
+            ), MCode(Strings(
+                "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
+                "switch(target) {"
+            ), MQuoteInclude("fsl.h")));
     }
     
     public MFile getComponentsFile() {
@@ -82,19 +144,12 @@ public class DriverVisitor extends Visitor<IOException>{
         return constants;
     }
     
-    public void visit(Board board) throws IOException {
+    public void visit(Board board) {
         
         // add the debug constant
         constants = add(constants, MDefinition(MDocumentation(Strings(
                     "Indicates, if additional messages should be logged on the console."
                 )), MModifiers(PUBLIC()), "DEBUG", debug ? "1" : "0"));
-        
-        // add gpio source file, if gpio components are present
-        if(hasGpioComponent(board)) {
-            File target = new File(new File(serverSrc, "components"), "gpio");
-            copy("deploy/server/components/gpio/gpio.h", new File(target, "gpio.h"), IO);
-            copy("deploy/server/components/gpio/gpio.c", new File(target, "gpio.c"), IO);
-        }
         
         // visit board components
         visit(board.components());
@@ -113,20 +168,30 @@ public class DriverVisitor extends Visitor<IOException>{
         // add axi read and write procedures
         components = add(components, axi_write);
         components = add(components, axi_read);
+        
+        // unparse the generated MFiles
+//        File serverSrc = new File(config.serverDir(), "src");
+        File compSrc   = new File(serverSrc,   "components");
+        printMFile(constants,  serverSrc, UnparserType.HEADER, errors);
+        printMFile(components,   compSrc, UnparserType.HEADER, errors);
+        printMFile(components,   compSrc, UnparserType.C,      errors);
     }
     
-    public void visit(Components comps) throws IOException {
+    public void visit(Components comps) {
         for(Component c : comps) visit(c);            
     }
 
     public void visit(PCIE term)     { }
     public void visit(ETHERNET term) { }
-    public void visit(ETHERNET_LITE term) throws IOException {
+    public void visit(ETHERNET_LITE term) {
         // deploy Ethernet medium files
-        File target = new File(serverSrc, "medium");
-//        copy("deploy/server/medium/ethernet.h", new File(target, "ethernet.h"), IO);
-        copy("deploy/server/medium/ethernet.c", new File(target, "medium.c"), IO);
-
+        try {
+            File target = new File(serverSrc, "medium");
+            copy(sourceDir + '/' + "ethernet.c", new File(target, "medium.c"), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy ethernet sources due to:\n" + e.getMessage()));
+        }
+            
         // add Ethernet specific constants
         addIP("IP",   config.getIP(), "ip address");
         addIP("MASK", config.getMask(), "subnet mask");
@@ -135,30 +200,41 @@ public class DriverVisitor extends Visitor<IOException>{
         addConst("PORT", "8844", "The port for this boards TCP- connection.");
     }
 
-    public void visit(UART term) throws IOException {
+    public void visit(UART term) {
         // deploy UART/USB medium files
-        File target = new File(serverSrc, "medium");
-//        copy("deploy/server/medium/uart.h", new File(target, "uart.h"), IO);
-        copy("deploy/server/medium/uart.c", new File(target, "medium.c"), IO);
+        try {
+            File target = new File(serverSrc, "medium");
+            copy(sourceDir + '/' + "uart.c", new File(target, "medium.c"), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy uart sources due to:\n" + e.getMessage()));
+        }
     }
     
-    public void visit(LEDS term) throws IOException {
+    public void visit(LEDS term) {
         // deploy LED files
-        File target = new File(new File(serverSrc, "components"), "gpio");
-        copy("deploy/server/components/gpio/led.h", new File(target, "led.h"), IO);
-        copy("deploy/server/components/gpio/led.c", new File(target, "led.c"), IO);
-        
+        try {
+            File target = new File(new File(serverSrc, "components"), "gpio");
+            copy(sourceDir + '/' + "gpio" + '/' + "led.h", new File(target, "led.h"), IO);
+            copy(sourceDir + '/' + "gpio" + '/' + "led.c", new File(target, "led.c"), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy LED GPIO sources due to:\n" + e.getMessage()));
+        }
+            
         // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
                 MForwardDecl("int init_LED();")));
     }
 
-    public void visit(SWITCHES term) throws IOException {
+    public void visit(SWITCHES term) {
         // deploy switch files
-        File target = new File(new File(serverSrc, "components"), "gpio");
-        copy("deploy/server/components/gpio/switch.h", new File(target, "switch.h"), IO);
-        copy("deploy/server/components/gpio/switch.c", new File(target, "switch.c"), IO);
-        
+        try {
+            File target = new File(new File(serverSrc, "components"), "gpio");
+            copy(sourceDir + '/' + "gpio" + '/' + "switch.h", new File(target, "switch.h"), IO);
+            copy(sourceDir + '/' + "gpio" + '/' + "switch.c", new File(target, "switch.c"), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy switch GPIO sources due to:\n" + e.getMessage()));
+        }
+            
         // add switch init to component init
         init = addLines(init, MCode(Strings("init_switch();"),
                 MForwardDecl("int init_switch();")));
@@ -176,12 +252,16 @@ public class DriverVisitor extends Visitor<IOException>{
                    MForwardDecl("void set_LED(u32 state);"))));
     }
 
-    public void visit(BUTTONS term) throws IOException {
+    public void visit(BUTTONS term) {
         // deploy button files
-        File target = new File(new File(serverSrc, "components"), "gpio");
-        copy("deploy/server/components/gpio/button.h", new File(target, "button.h"), IO);
-        copy("deploy/server/components/gpio/button.c", new File(target, "button.c"), IO);
-    
+        try {
+            File target = new File(new File(serverSrc, "components"), "gpio");
+            copy(sourceDir + '/' + "gpio" + '/' + "button.h", new File(target, "button.h"), IO);
+            copy(sourceDir + '/' + "gpio" + '/' + "button.c", new File(target, "button.c"), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy button GPIO sources due to:\n" + e.getMessage()));
+        }
+            
         // add button init to component init
         init = addLines(init, MCode(Strings("init_button();"),
                 MForwardDecl("int init_button();")));
@@ -197,11 +277,9 @@ public class DriverVisitor extends Visitor<IOException>{
                 ), MQuoteInclude("xbasic_types.h"), MForwardDecl("u32 read_button();"))));
     }
     
-    // These currently shouldn't do anything.
-    // Might get relevant after introducing AXI Stream communication into server
     public void visit(VHDL term) {
-
-        for(String instance : term.instances()) {
+        // generate read and write procedures for all ports of the vhdl component
+        for(@SuppressWarnings("unused") String instance : term.instances()) {
             for(Port port : term.core().ports()) {
                 if(port instanceof IN) {
                     if(axiStreamIdMaster>15) continue; //TODO: throw exception: to many master interfaces / in-going ports
@@ -235,31 +313,6 @@ public class DriverVisitor extends Visitor<IOException>{
     public void visit(Instances term) { }
     public void visit(String term)    { }
 
-//    private static String unparseIP(int val) {
-//        // exclude invalid ip addresses 
-//        if(val > 255 || val < 0) throw new IllegalStateException();
-//
-//        String rslt = new String();
-//        
-//        // add spaces for better formatting
-//        if(val < 100) {
-//            rslt += " ";
-//            if(val < 10) rslt += " ";
-//        }
-//        // append value
-//        return rslt + val;
-//    }
-//    
-//    private String unparseMAC(String[] mac) {
-//        return "0x" + mac[0] + ", 0x" + mac[1] + ", 0x" + mac[2] +
-//             ", 0x" + mac[3] + ", 0x" + mac[4] + ", 0x" + mac[5];
-//    }
-//    
-//    private String unparseIP(int[] ip) {
-//        return unparseIP(ip[0]) + ", " + unparseIP(ip[1]) + ", " +
-//               unparseIP(ip[2]) + ", " + unparseIP(ip[3]);
-//    }
-
     private void addIP(String id, int[] ip, String doc) {
         addConst(id + "_1", "" + ip[0], "The first  8 bits of the " + doc + " of this board.");
         addConst(id + "_2", "" + ip[1], "The second 8 bits of the " + doc + " of this board.");
@@ -279,5 +332,4 @@ public class DriverVisitor extends Visitor<IOException>{
     private void addConst(String id, String val, String doc) {
         constants = add(constants, MDefinition(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val));
     }
-
 }

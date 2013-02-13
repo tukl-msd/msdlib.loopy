@@ -1,4 +1,4 @@
-package de.hopp.generator.parser;
+package de.hopp.generator.frontend;
 
 import java_cup.runtime.*;
 import de.hopp.generator.board.*;

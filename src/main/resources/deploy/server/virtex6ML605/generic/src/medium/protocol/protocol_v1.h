@@ -1,5 +1,5 @@
 /**
- * Protocol interpreter version 0.1.
+ * Dedicated protocol interpreter for protocol version 1.
  * This protocol version supports the three basic gpio components as well as several AXI stream ports.
  * @file
  * @author Thomas Fischer

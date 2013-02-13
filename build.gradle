@@ -8,7 +8,7 @@ String libDir       = "$projectDir/lib"
 String genLibDir    = "$projectDir/lib-gen"
 String specDir      = "$projectDir/specs"
 String genDir       = "$projectDir/src-gen"
-String parserGenDir = "$genDir/de/hopp/generator/parser"
+String parserGenDir = "$genDir/de/hopp/generator/frontend"
 
 String flexSpec     = "$specDir/mhs.flex";
 String cupSpec      = "$specDir/mhs.cup"

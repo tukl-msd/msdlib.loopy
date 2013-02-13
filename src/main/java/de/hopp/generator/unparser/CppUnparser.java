@@ -78,6 +78,18 @@ public class CppUnparser extends CUnparser {
         visit(init.con());
         visit(init.vals());
     }
+    
+    @Override
+    public void visit(MInitListInFile list) {
+        buffer.append('(');
+        
+        for(StringInFile s : list.params()) {
+            if(s.position() != 0) buffer.append(", ");
+            buffer.append(s.term());
+        }
+        
+        buffer.append(')');
+    }
 //    
 //    public void visit(MConstrInFile constr) throws InvalidConstruct {
 //        visit(constr.doc());

@@ -1,8 +1,24 @@
-package de.hopp.generator.parser;
+package de.hopp.generator.frontend;
 
 import katja.common.NE;
 
 import de.hopp.generator.board.*;
+import de.hopp.generator.parser.AndExp;
+import de.hopp.generator.parser.Assignment;
+import de.hopp.generator.parser.Assignments;
+import de.hopp.generator.parser.Attribute;
+import de.hopp.generator.parser.Attributes;
+import de.hopp.generator.parser.BUS_INTERFACE;
+import de.hopp.generator.parser.Block;
+import de.hopp.generator.parser.Blocks;
+import de.hopp.generator.parser.DotList;
+import de.hopp.generator.parser.Ident;
+import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.parser.MemAddr;
+import de.hopp.generator.parser.Number;
+import de.hopp.generator.parser.PARAMETER;
+import de.hopp.generator.parser.PORT;
+import de.hopp.generator.parser.Range;
 
 import static de.hopp.generator.board.BoardSpec.*;
 

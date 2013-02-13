@@ -216,10 +216,15 @@ public class CUnparser extends HUnparser {
         visit(mclass.nested());
     }
 
+//    @Override
+//    public void visit(MCodeFragmentInFile codefragment) throws InvalidConstruct {
+//        if(! codefragment.part().term().equals(""))
+//            buffer.append(" = " + codefragment.part().term());
+//    }
+    
     @Override
-    public void visit(MCodeFragmentInFile codefragment) throws InvalidConstruct {
-        if(! codefragment.part().term().equals(""))
-            buffer.append(" = " + codefragment.part().term());
+    public void visit(MInitListInFile list) throws InvalidConstruct {
+        throw new InvalidConstruct("encountered class initialisation list in C unparser");
     }
 
     @Override
