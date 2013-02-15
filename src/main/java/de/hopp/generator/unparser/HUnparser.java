@@ -706,29 +706,37 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         visit(destr.body());
     }
 
-    @Override
-    public void visit(MInitInFile term) throws InvalidConstruct {
-        // Do not unparse the init block in the header file
-    }
-
-    @Override
-    public void visit(MConstrCallInFile term) {
-        buffer.append(" : " + term.name().term() + "(");
-        for(String param : term.params().term()) {
-            if(term.position() != 0) buffer.append(", ");
-            buffer.append(param);
-        }
-        buffer.append(')');
-    }
+//    @Override
+//    public void visit(MInitInFile term) throws InvalidConstruct {
+//        // Do not unparse the init block in the header file
+//    }
+//
+//    @Override
+//    public void visit(MConstrCallInFile term) {
+//        buffer.append(" : " + term.name().term() + "(");
+//        for(String param : term.params().term()) {
+//            if(term.position() != 0) buffer.append(", ");
+//            buffer.append(param);
+//        }
+//        buffer.append(')');
+//    }
 
     @Override
     public void visit(MMemberInitsInFile inits) {
-        for(MMemberInitInFile init : inits) visit(init);
+//        if(!inits.isEmpty()) {
+//            buffer.append(" : ");
+//            for(MMemberInitInFile init : inits) visit(init);
+//        }
     }
 
     @Override
     public void visit(MMemberInitInFile init) {
-        buffer.append(", ");
-        buffer.append(init.param().term() + '(' + init.val().term() + ')');
+        if(init.position() != 0) buffer.append(", ");
+        buffer.append(init.name().term() + '(');
+        for(StringInFile s : init.params()) {
+            if(s.position() != 0) buffer.append(", ");
+            buffer.append(s.term());
+        }
+        buffer.append(')');
     }
 }

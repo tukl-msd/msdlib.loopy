@@ -73,10 +73,18 @@ public class CppUnparser extends CUnparser {
     @Override
     public void visit(MVoidInFile mvoid) { buffer.append("void"); }
     
+//    @Override
+//    public void visit(MInitInFile init) {
+//        visit(init.con());
+//        visit(init.vals());
+//    }
+    
     @Override
-    public void visit(MInitInFile init) {
-        visit(init.con());
-        visit(init.vals());
+    public void visit(MMemberInitsInFile inits) {
+        if(!inits.isEmpty()) {
+            buffer.append(" : ");
+            for(MMemberInitInFile init : inits) visit(init);
+        }
     }
     
     @Override

@@ -65,13 +65,10 @@ MParamType = VALUE() | REFERENCE() | CONSTREF()
 MCode ( Strings lines, MIncludes needed )
 
 // constructors and destructors
-MConstr ( MDocumentation doc, MModifiers modifiers, MParameters parameter, MInit init, MCode body )
+MConstr ( MDocumentation doc, MModifiers modifiers, MParameters parameter, MMemberInits init, MCode body )
 MDestr  ( MDocumentation doc, MModifiers modifiers, MParameters parameter, MCode body )
 
-MInit   ( MConstrCall con, MMemberInits vals ) // call one super constructor followed by a 
-                                               // list of member initialisations
-MMemberInit  ( String param, String val )
-MConstrCall ( String name, Strings params )
+MMemberInit  ( String name, Strings params )
 
 MMethod = MProcedure | MConstr | MDestr
 

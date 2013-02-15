@@ -89,8 +89,12 @@ public class CPP extends Visitor<NE> implements Backend {
                 )), "constants", MDefinitions(
                     MDefinition(MDocumentation(Strings(
                             "If set, enables additional console output for debugging purposes"
-                    )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"
-                )), MStructs(), MEnums(), MAttributes(), MProcedures()),
+                    )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"),
+                    MDefinition(MDocumentation(Strings(
+                            "Defines the size of the server queues.",
+                            "This is equivalent with the maximal number of values, that should be send in one message"
+                    )), MModifiers(PUBLIC()), "QUEUE_SIZE", "20")
+                ), MStructs(), MEnums(), MAttributes(), MProcedures()),
                 new File(config.clientDir(), "src"), UnparserType.HEADER, errors);
     }
     
@@ -168,7 +172,7 @@ public class CPP extends Visitor<NE> implements Backend {
                 ), MTags(PARAM("intrfc", "The communication medium, the cores board is attached with.")
                 )), MModifiers(PUBLIC()), MParameters(
                     MParameter(VALUE(), MPointerType(MType("interface")), "intrfc")
-                ), MInit(MConstrCall("component", "intrfc")), MCode(Strings()));
+                ), MMemberInits(MMemberInit("component", "intrfc")), MCode(Strings()));
         destructor  = MDestr(MDocumentation(Strings(
                     "Destructor for #" + core.file() + " cores.",
                     "Deletes registered ports and unregisters the core from the communication medium."
@@ -195,7 +199,7 @@ public class CPP extends Visitor<NE> implements Backend {
                     "Communicate with the #" + comp.name() + " core through this port."
                 )), MModifiers(PUBLIC()), MType(type),
                 name, MCodeFragment("", MQuoteInclude("component.h"))));
-//        constructor = addInit(constructor, MMemberInit(name, "new " + type + "()"));
+        constructor = addInit(constructor, MMemberInit(name, "intrfc"));
 //        destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
 

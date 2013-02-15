@@ -32,7 +32,7 @@ public class Model {
         return c.replaceMethods(c.methods().add(m));
     }
     public static MConstr addInit( MConstr c, MMemberInit i ) {
-        return c.replaceInit(c.init().replaceVals(c.init().vals().add(i)));
+        return c.replaceInit(c.init().add(i));
     }
     public static MProcedure addLines(MProcedure m, MCode c) {
         return m.replaceBody(m.body().replaceLines(m.body().lines().addAll(c.lines()))

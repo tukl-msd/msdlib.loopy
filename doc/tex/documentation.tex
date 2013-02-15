@@ -19,6 +19,7 @@
       dvipsnames,svgnames]{xcolor}
 \definecolor{light-green}{rgb}{0.9,1,0.85}
 
+
 \usepackage{tikz}
 \usetikzlibrary{shapes,matrix,arrows,shadows,positioning,fit,calc,decorations.pathreplacing,decorations.pathmorphing,decorations.shapes,decorations.text,automata}
 \tikzset{math mode/.style = {execute at begin node=$, execute at end node=$}}
@@ -32,6 +33,7 @@
 \tikzstyle{class}=[draw, text width=6em, minimum height=2.5em, text centered]
 \tikzstyle{tool}= [draw, text width=8em, minimum height=2.5em, text centered, draw=RoyalBlue, fill=blue!15 ]
 \tikzstyle{file} = [draw, text width=8em, minimum height=2.5em, text centered, draw=ForestGreen, fill=light-green, rounded corners]
+\tikzstyle{state}=[circle, draw, align=center, minimum height=4em, anchor=north, inner sep=0]
 \tikzstyle{group}=[inner sep=10pt,draw=gray, very thick, dotted, rounded corners=4pt]
 \tikzstyle{netCloud}=[draw, text width=4em, minimum width =10em, minimum height=2em, text centered, cloud, cloud puffs = 15]
 
@@ -41,6 +43,8 @@
 \tikzstyle{extend}=[arr, >=open triangle 90]
 %others
 \tikzstyle{ann} = [above, text width=5em, text centered]
+
+\usepackage[underline=false,rounded corners=true]{pgf-umlsd}
 
 \lstset{literate=%
 {Ö}{{\"O}}1
@@ -76,6 +80,51 @@
 \brokenpenalty=1000
 \widowpenalty=1000
 \clubpenalty=1000
+
+%% extension for pgf-umlsd v0.5 2009/09/30, which TeXLive comes along
+
+%% \leftsidelabel{thread}{side}{label}
+%% side: left right above below
+\newcommand{\sidelabel}[3]{
+    \stepcounter{seqlevel}
+    \path
+    (#1)+(0,-\theseqlevel*\unitfactor-0.7*\unitfactor) node (messbeg) {};
+    \draw (messbeg) node[#2] {#3};
+}
+
+%% mostly used between altblocks
+%% \separateline[line style]{from}{to}
+\newcommand{\separateline}[3][dotted, color=black, very thick]{
+    \stepcounter{seqlevel}
+    \path
+    (#2)+(.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (from) {}
+    (#3)+(-.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (to) {};
+    \draw[#1] (from) -- (to);
+}
+
+%% \begin{altblock}{from}{condition}{to}
+%% %%calls here
+%% \end{altblock}
+\newenvironment{altblock}[3]{
+    \stepcounter{seqlevel}
+    \path
+    (#1)+(.1,-\theseqlevel*\unitfactor-\unitfactor) node (from) {}
+    (#3)+(-.1,-\theseqlevel*\unitfactor-\unitfactor) node (to) {};
+    \draw (from) node[above right] {[#2]};
+}{}
+
+%%
+\newcommand{\postlevel}{\addtocounter{seqlevel}{+1}}
+
+%% \newthread[thread distance]{color fill style}{left}{right}
+%\renewcommand{\newthread}[4][1]{
+%    \newinst[#1]{#3}{#4}
+%    \stepcounter{threadnum}
+%    \node[below of=inst\theinstnum,node distance=1em] (thread\thethreadnum) {};
+%    \tikzstyle{threadcolor\thethreadnum}=[fill=#2]
+%    \tikzstyle{instcolor#3}=[fill=#2]
+%}
+
 
 \begin{document}
 
@@ -161,7 +210,7 @@ Since the host side driver is written in \texttt{C++}, it is also required to ha
 \paragraph{Xilinx Toolsuite}
 In order to generate an \texttt{.elf} file that can is used to program the FPGA, the Xilinx toolsuite is required. This includes ISE for generating IPCores out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform.
 
- \textcolor{red}{It MIGHT also be possible to generate .mhs files or whatever the newer format is out of our DSL or replace our DSL with this language, which reduces the number of files that have to be written by the user...}
+ \textcolor{red}{We try to avoid to require the user to actually design anything in the Xilinx suite, but only use it for synthesising the board hard- and software. Both, \texttt{.mhs} file and all source files for the EDK, are created by the driver generator.}
 
 \textcolor{red}{It is furthermore desirable to skip user-interfaction with the EDK completely. This would require generation of the board support package and external call of Xilinx' compiler.}
 
@@ -178,7 +227,7 @@ If the tools described in \Cref{sec:setup} are correctly installed, the followin
 %\node[class, below right = 0em and 4em] (dsl) at (anchor) {define VHDL files and DSL file};
 %
 %\node[class, below left = 6em and 4em] (gen) at (dsl) {run generator};
-%\node[class, below right = 6em and 4em] (app) at (dsl) {write client application};
+%\node[class, below right = 6e and 4em] (app) at (dsl) {write client application};
 %
 %\node[class, below left = 6em and 4em] (edk) at (gen) {build .elf with Xilinx EDK};
 %\node[class, below right = 6em and 4em] (compile) at (gen) {compile composed application};
@@ -260,29 +309,6 @@ Now the regular design process from Xilinx can be continued. The next step would
 This section should provide a conceptual overview of the driver parts. For pure users of the driver generator, only parts of the client side are really relevant. Developers might also be interested in the server part.
 
 For a more detailed documentation of the code and provided methods, Javadoc style comments are provided, which can be transformed into an html or tex representation similar to the Java API specification using doxygen (see \Cref{sec:start} for details on how to enable documentation generation).
-
-%\begin{figure}
-%\centering
-%\begin{tikzpicture}
-%\node[class] (client) at (0,0) {client application};
-%\node[class,fill=red!15, left=6em] (cdriver) at (client) {client-side driver};
-%\node[class,fill=red!15, left=6em] (bdriver) at (cdriver) {board-side driver};
-%
-%\node[class,fill=white, left=6em] (vhdl3) at (bdriver) {};
-%\node[class,fill=white, above right = -2.72em and -6.9em of vhdl3] (vhdl2) {};
-%\node[class,fill=white,  above right = -3em and -6.9em of vhdl2] (vhdl1) {VHDL components};
-%
-%\node[group, fit=(client) (cdriver), label={30:host side}] (hostSide) {};
-%\node[group, fit=(bdriver) (vhdl3) (vhdl2) (vhdl1), label={145:board side}] (boardSide) {};
-%
-%\draw[arr,<->] (client) to node [auto] {} (cdriver);
-%\draw[arr,<->] (cdriver) to node [auto] {} (bdriver);
-%\draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
-%
-%\end{tikzpicture}
-%\caption{The order in which data is sent from a client application to a VHDL component}
-%\label{fig:dataFlow}
-%\end{figure}
 
 \begin{figure}[h]
 \centering
@@ -440,9 +466,11 @@ Files for initialisation are generated directly in the \texttt{src} folder of th
 \newpage
 \section{Protocol}
 
+\subsection{State transitions}
+
 Note: These calculi denote state transitions of a DFA. The precondition marks several conditions and an in-going message. The postcondition may contain an out-going message. Used messages are:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{rcv} Receive values for a component from application
+\item \textbf{wrt} An application writing values to the driver
 \item \textbf{snd} Send values for a component to board
 \item \textbf{ack} Receive ack for values from board
 \item \textbf{poll} Receive poll from board
@@ -458,16 +486,47 @@ In addition, several functions have been used to simplify the calclui.
 The state is denoted by an array of value queues \textit{q} and an array of transit values \textit{s}. Both arrays are sized by the number of existing board components. The queues store values that should be received by the board, the transit values store the number of values currently in transit, i.e. that have been sent but not yet been acknowledged by the board.
 
 \begin{mathpar}
-\inferrule* [left=Receive First] {q[a] = \emptyset \\ s[a] = 0 \\ rcv(a, v)}{q[a] = v \\ s[a] = size(first(v, n)) \\ snd(a, first(v, n))} \\ % initially empty queues, if something is received send the first n values and set s[a] to the number of sent values
-\inferrule* [left=Receive More] {q[a] = v \\ rcv(a, v')}{q[a] = v \oplus v'} \\ % append further received values to queue
+\inferrule* [left=Write First] {q[a] = \emptyset \\ s[a] = 0 \\ wrt(a, v)}{q[a] = v \\ s[a] = size(first(v, n)) \\ snd(a, first(v, n))}
+\end{mathpar}
+Initially, the queue is empty and nothing has been sent. If a message is written in this state, store it in the queue, transmit the first n values and store the number of sent values.
 
-\inferrule* [left=Ack Full] {q[a] = v \\ s[a] = size(v) \\ ack(a, size(v))}{q[a] = \emptyset \\ s[a] = 0} \\% nothing more to send --> done
-\inferrule* [left=Ack All] {q[a] = v \\ s[a] = i \\ ack(a, i)}{q[a] = drop(v,i) \\ s[a] = size(first(v,n)) \\ snd(a, first(v,n))} \\ % this is the ugly case. We have sent some values that all got acknowledged, but have more data --> server can accept more values and will NOT poll --> we need to send more values.
-\inferrule* [left=Ack Some] {q[a] = v \\ s[a] = i \\ ack(a, j) \\ j \textless i}{q[a] = drop(v,j) \\ s[a] = 0} \\ % in this case, the server buffer is full. Consequently, we don't send more values, but wait for a poll
+%\begin{mathpar}
+%\inferrule* [left=Write First] {q[a] = v \\ b[a] = true \\ s[a] = 0 }{q[a] = v \\ b[a] = false \\ s[a] = size(fist(v,n)) \\ snd(a, first(v,n))}
+%\end{mathpar}
+%If we have values to send and nothing has been sent so far (i.e. not waiting for a poll), send the first n values and set the send counter accordingly (we could also do this using an invalid send counter, e.g. -1, instead of a new variable).
 
-\inferrule* [left=Poll] {q[a] = v \\ s[a] = 0 \\ poll(a)}{ q[a] = v \\ s[a] size(first(v, n)) \\ snd(a, first(v, n=))} \\ %compressed poll rule - send the first n values on poll, if less exists send less
-\inferrule* [left=Poll Transit] {s[a] = i \\ i \textgreater 0 \\ poll(a)}{ // No Transition} % ignore polls, while data is in transit
+\begin{mathpar}
+\inferrule* [left=Write More] {q[a] = v \\ wrt(a, v')}{q[a] = v \oplus v'}
+\end{mathpar}
+If more values are received (i.e. while values are in transit), append the new values to the queue.
 
+%replacing the Write First rule would require explicit treatment of this case, since the first flag has to be reset!
+%\begin{mathpar}
+%\inferrule* [left=Ack Full] {q[a] = v \\ s[a] = size(v) \\ ack(a, size(v))}{q[a] = \emptyset \\ s[a] = 0 \\ b[a] = true}
+%\end{mathpar}
+%If an acknowledgement is received, that acknowledges all sent data and no more data is in the queue, clear the queue and send %counter.
+
+\begin{mathpar}
+\inferrule* [left=Ack All] {q[a] = v \\ s[a] = i \\ ack(a, i)}{q[a] = drop(v,i) \\ s[a] = size(first(v,n)) \\ snd(a, first(v,n))}
+\end{mathpar}
+If all sent values are acknowledged, but the queue contains more values, remove the acknowledged values, send the next n values and set the send counter accordingly. If the queue is empty (i.e. no more data to send), \texttt{first} evaluates to the empty list. Do not send anything in this case.
+
+\begin{mathpar}
+\inferrule* [left=Ack Some] {q[a] = v \\ s[a] = i \\ ack(a, j) \\ j \textless i}{q[a] = drop(v,j) \\ s[a] = 0}
+\end{mathpar}
+If not all sent values have been acknowledged, clear the acknowledged ones, reset the send counter and wait for polls.
+
+\begin{mathpar}
+\inferrule* [left=Poll] {q[a] = v \\ s[a] = 0 \\ poll(a)}{q[a] = v \\ s[a] size(first(v, n)) \\ snd(a, first(v, n))}
+\end{mathpar}
+If a poll is received, send the first n values for the polled component and set the send counter. If the queue doesn't contain any values, \texttt{first} evaluates to the empty list. Do not send anything in this case.
+
+\begin{mathpar}
+\inferrule* [left=Poll Transit] {s[a] = i \\ i \textgreater 0 \\ poll(a)}{s[a] = i} % ignore polls, while data is in transit
+\end{mathpar}
+Ignore polls for components, which have unacknowledged data in transit. This catches the (unlikely) case of the last sent package (i.e. client queue is empty after sending this package) filling the server queue completely. The server will acknowledge all but will poll after the first value has been consumed.
+
+%\begin{mathpar}
 %\inferrule* [left=Total]
 %  {\inferrule* [Left=Foo]
 %     {\inferrule* [Right=Bar,
@@ -479,7 +538,449 @@ The state is denoted by an array of value queues \textit{q} and an array of tran
 %  \\
 %  \inferrule* [lab=XX]{uu \\ vv}{ww}}
 %  {(1)}
-\end{mathpar}
+%\end{mathpar}
+
+\newpage
+\subsection{Control Flow Graph}
+
+\subsubsection{Host-side Driver}
+In addition, to the control flow graph provided in \Cref{fig:cfg:client}, the host-side driver state is defined with two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the host queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. Finally, the value \texttt{n} represents the size of the board-side queue (which is defined by the user in the board specification file and therefore statically known by the generated driver).
+
+Several variables occur in the control flow graph:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{v} Values of some sort (e.g. an array of integers)
+\item \textbf{i} An unsigned (i.e. positive) integer number, smaller than \texttt{n}
+\end{itemize}
+
+In addition, several functions on parts of the state are introduced, to simplify the automaton.
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{size()} The number of values currently held by q
+\item \textbf{empty()} \texttt{true}, if \texttt{size() == 0}, \texttt{false} otherwise
+\item \textbf{drop(i)} Drops the first i values of q
+\item \textbf{first(i)} Obtain the first i values of q. Returns a smaller array, if size() \textless ~i
+\end{itemize}
+
+Used messages are:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{wrt(v)} An application writing values to the driver. Appends \texttt{v} to \texttt{q}.
+\item \textbf{snd(v)} Send values for a component to board. Sets \texttt{s} to \texttt{size(v)}.
+\item \textbf{ack(i)} Receive ack for values from board. Receiving an \texttt{ack} resets \texttt{s} and also drops the values from \texttt{q}, i.e. \texttt{drop(i)}.
+\item \textbf{poll} Receive poll from board.
+\item \textbf{notify} Notifies the application of successful sending of all queued up messages.
+\end{itemize}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\node[state] (init) at (0,0) {Init};
+\node[above left = 4em and 4em] (anchor) at (init){};
+\node[state, below=10em] (wait) at (init) {Wait};
+\node[state, below=10em] (idle) at (wait) {Idle};
+\node[state, right=10em] (ack) at (wait) {Ack};
+
+\draw[extend, black] (anchor) to node[auto] {} (init);
+\draw[arr, black] (init) to node[midway, left=0.5em] {$\inferrule{wrt(v)}{snd(v)}$} (wait);
+\draw[arr, black, bend left = 20] (wait) to node[midway, above] {$\inferrule{ack(i)~[i==s]}{ }$} (ack);
+\draw[arr, black, bend left = 20] (ack) to node[near start, below=0.5em] {$\inferrule{!empty()}{snd(first(n))}$} (wait);
+\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{empty()}{notifiy}$} (init);
+\draw[arr, black, bend left = 20] (wait) to node[near end, right=0.5em] {$\inferrule{ack(i)~[i<s]}{ }$} (idle);
+\draw[arr, black, bend left = 20] (idle) to node[midway, left=0.5em] {$\inferrule{poll}{snd(first(n))}$} (wait);
+
+\end{tikzpicture}
+\label{fig:cfg:client}
+\caption{Control flow graph of the host-side driver}
+\end{figure}
+
+Note, that this graph only addresses a single component. In a scenario with multiple components, an individual state exists for each component. A surrounding scheduler allows only a single automaton to make a transition.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\node[state] (init) at (0,0) {Init};
+\node[above left = 4em and 4em] (anchor) at (init){};
+\node[state, below=10em] (wait) at (init) {Wait};
+\node[state, below=10em] (idle) at (wait) {Idle};
+\node[state, right=10em] (ack) at (wait) {Ack};
+
+\draw[extend, black] (anchor) to node[auto] {} (init);
+\draw[arr, black] (init) to node[midway, left=0.5em] {$\inferrule{rcv}{snd}$} (wait);
+\draw[arr, black, bend left = 20] (wait) to node[midway, above] {$\inferrule{full~ack}{ }$} (ack);
+\draw[arr, black, bend left = 20] (ack) to node[near start, below=0.5em] {$\inferrule{!isEmpty(queue)}{snd}$} (wait);
+\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{isEmpty(queue)}{ }$} (init);
+\draw[arr, black, bend left = 20] (wait) to node[near end, right=0.5em] {$\inferrule{partial~ack}{ }$} (idle);
+\draw[arr, black, bend left = 20] (idle) to node[midway, left=0.5em] {$\inferrule{poll}{snd}$} (wait);
+
+\end{tikzpicture}
+\label{fig:cfg:clientSimp}
+\caption{Simplified control flow graph of the host-side driver}
+\end{figure}
+
+
+\newpage
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\node[state] (listen) at (0,0) {Listen};
+\node[above left = 4em and 4em] (anchor) at (listen){};
+\node[state, below=10em] (read) at (listen) {Consume};
+
+\draw[extend, black] (anchor) to node[auto] {} (listen);
+\draw[arr, black, out=330,in=30,looseness=8] (listen) to node[midway, right=0.5em] {$\inferrule{snd(v)}{ack(store(i))}$} (listen);
+\draw[arr, black, bend left=20] (listen) to node[midway, right=0.5em] {$\inferrule{schedule()}{ }$} (read);
+\draw[arr, black, bend left=20] (read) to node[midway, left=0.5em] {$\inferrule{schedule()}{ }$} (listen);
+\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.5em] {$\inferrule{[!empty()]}{consume()}$} (read);
+
+\end{tikzpicture}
+\label{fig:cfg:clientSimp}
+\caption{Control flow graph of the board-side driver}
+\end{figure}
+
+
+\newpage
+\subsection{Sequence charts}
+Some sequence charts to visualise the envisioned process. For example, \Cref{fig:seq:nbwrite} shows in detail, how a non-blocking write is handled. First of all, the values are stored client-side. The application receives a pointer to a \texttt{write} object, which represents the current state of the scheduled write, i.e. how many values have been received by the component on the server.
+
+%write first & more
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newthread{app}{application}
+  \newinst{cl}{client}
+  \newinst{cq}{clientQueue}  
+
+\begin{sdblock}{Write}{}
+  \begin{call}{app}{nbwrite(a,v)}{cl}{write* w}
+    \begin{call}{cl}{nbwrite(a,v)}{cq}{write* w}
+    \end{call}
+  \end{call}
+\end{sdblock}
+\end{sequencediagram}
+
+\caption{An application writing values through the client-side driver api}
+\label{fig:seq:clientWrite}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newinst{cq}{clientQueue}  
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+
+\begin{sdblock}{Send}{}
+  \begin{callself}{io}{schedule(a)}{}
+    \begin{call}{io}{check(a)}{cq}{(v)}
+    \end{call}
+    \begin{call}{io}{send(a,v)}{m}{}
+    \end{call}
+  \end{callself}
+\end{sdblock}
+\end{sequencediagram}
+
+\caption{A client sending data}
+\label{fig:seq:clientSend}
+\end{figure}
+
+
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newinst{cq}{clientQueue}  
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+
+\begin{sdblock}{Receive nb ACK}{}
+ \begin{callself}{io}{schedule(read)}{}
+    \postlevel
+    \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+    \end{call}
+    \begin{call}{io}{remove(a,s(v))}{cq}{}
+    \end{call}
+    \begin{callself}{io}{update(w)}{}
+    \end{callself}
+  \end{callself}
+\end{sdblock}
+\end{sequencediagram}
+\caption{The client-side driver receiving an acknowledgement from the server}
+\label{fig:seq:clientAck}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newinst{cq}{clientQueue}
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+\begin{sdblock}{Receive Poll}{}
+  \begin{callself}{io}{schedule(read)}{}
+    \postlevel
+    \begin{call}{io}{recv()}{m}{(poll, a)}
+    \end{call}
+    \begin{call}{io}{getValues(a)}{cq}{(v)}
+    \end{call}
+    \begin{call}{io}{send(a,v)}{m}{}
+    \end{call}
+  \end{callself}
+\end{sdblock}
+\end{sequencediagram}
+\caption{The client-side driver receiving a data request from the server}
+\label{fig:seq:clientPoll}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newinst{m}{medium}
+  \newthread{ser}{server}
+  \newinst{sq}{serverQueue}
+ \begin{sdblock}{Server Read}{}
+  \begin{callself}{ser}{schedule(read)}{}
+    \begin{call}{ser}{recv()}{m}{(a,v)}
+    \end{call}
+    \begin{call}{ser}{store(a,v)}{sq}{}
+    \end{call}
+    \begin{call}{ser}{ack(a,v)}{m}{}
+    \end{call}
+  \end{callself}
+\end{sdblock}
+\end{sequencediagram}
+\caption{The server-side driver receiving a data package from the client}
+\label{fig:seq:serverRead}
+\end{figure}
+
+%Composition example
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newthread{app}{application}
+  \newinst{cl}{client}
+  \newinst{cq}{clientQueue}
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+  \newthread{ser}{server}
+  \newinst{sq}{serverQueue}
+\begin{sdblock}{Non-Blocking Write}{}
+\node at (app) {};
+\node at (cl) {};
+\node at (cq) {};
+\end{sdblock}
+\begin{sdblock}{Send}{}
+\node at (cq) {};
+\node at (io) {};
+\node at (m) {};
+\end{sdblock}
+\begin{sdblock}{Server Read}{}
+\node at (m) {};
+\node at (ser) {};
+\node at (sq) {};
+\end{sdblock}
+\begin{sdblock}{Receive nb ACK}{}
+\node at (cq) {};
+\node at (io) {};
+\node at (m) {};
+\end{sdblock}
+\end{sequencediagram}
+\caption{Composed example of a non-blocking write using the building blocks defined before.}
+\label{fig:seq:comp1}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Following are the complete use-cases... (which take about a page each)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newthread{app}{application}
+  \newinst{cl}{client}
+  \newinst{cq}{clientQueue}
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+  \newthread{ser}{server}
+  \newinst{sq}{serverQueue}
+  
+\begin{sdblock}{Non-Blocking Write}{}
+  \begin{call}{app}{nbwrite(a,v)}{cl}{write* w}
+    \begin{call}{cl}{nbwrite(a,v)}{cq}{write* w}
+      %\begin{call}{io}{store(a,v)}{cq}{}
+      %\end{call}
+    \end{call}
+  \end{call}
+
+  \prelevel\prelevel
+  \begin{callself}{io}{schedule(a)}{}
+    \begin{call}{io}{check(a)}{cq}{(v)}
+    \end{call}
+    \begin{call}{io}{send(a,v)}{m}{}
+    \end{call}
+  \end{callself}
+
+  \prelevel\prelevel
+  \begin{callself}{ser}{schedule(read)}{}
+    \begin{call}{ser}{recv()}{m}{(a,v)}
+    \end{call}
+    \begin{call}{ser}{store(a,v)}{sq}{s(v)}
+    \end{call}
+    \begin{call}{ser}{ack(a,s(v))}{m}{} % this is only the server-side ack, not the component ack!! for component ack, it has to be out of the mb queue!
+    \end{call}
+  \end{callself}
+
+  \prelevel
+  \begin{callself}{io}{schedule(read)}{}
+    \postlevel
+    \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+    \end{call}
+    \begin{callself}{io}{update(w)}{}
+    \end{callself}
+    \begin{call}{io}{remove(a,s(v))}{cq}{}
+    \end{call}
+  \end{callself}
+\end{sdblock}
+
+\end{sequencediagram}
+\caption{A sequence diagram for a non-blocking write. Note, that non-blocking only means, the client does not wait for the target \textbf{component} to receive the message, but still waits for the client queue to receive the values.}
+\label{fig:seq:nbwrite}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newthread{app}{application}
+  \newinst{cl}{client}
+  \newinst{cq}{clientQueue}
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+  \newthread{ser}{server}
+  \newinst{sq}{serverQueue}
+  
+\begin{sdblock}{Blocking Write}{}
+  \begin{call}{app}{write(a,v)}{cl}{}
+    \begin{call}{cl}{write(a,v)}{cq}{}
+      %\begin{call}{io}{store(a,v)}{cq}{}
+      %\end{call}
+% problem with this call over the first version: this doesn't directly inform the comHandler of NEW data for a component
+% instead, when the handler schedules a component, he doesn't know if he should send data or wait for a poll.
+% we COULD solve this with an additional boolean flag on client side.
+% I'm not convinced, that the first version can be implemented, since it would basically circumvent the scheduler.
+% alternative: remove the component from the list of components to schedule, if we wait for a poll or ack. This is handled in the recv phase of the scheduler
+    \end{call}
+    \begin{callself}{cl}{wait()}{}
+    \postlevel\postlevel\postlevel\postlevel\postlevel\postlevel
+    \postlevel\postlevel\postlevel\postlevel\postlevel\postlevel
+    \postlevel\postlevel\postlevel\postlevel
+    \end{callself}
+
+    \prelevel\prelevel\prelevel\prelevel\prelevel\prelevel\prelevel\prelevel
+    \prelevel\prelevel\prelevel\prelevel\prelevel\prelevel\prelevel\prelevel
+    \prelevel\prelevel\prelevel
+
+    \begin{callself}{io}{schedule(a)}{}
+      \begin{call}{io}{check(a)}{cq}{(v)}
+      \end{call}
+      \begin{call}{io}{send(a,v)}{m}{}
+      \end{call}
+    \end{callself}
+
+    \prelevel\prelevel
+    \begin{callself}{ser}{schedule(read)}{}
+      \begin{call}{ser}{recv()}{m}{(a,v)}
+      \end{call}
+      \begin{call}{ser}{store(a,v)}{sq}{s(v)}
+      \end{call}
+      \begin{call}{ser}{ack(a,s(v))}{m}{} % this is only the server-side ack, not the component ack!! for component ack, it has to be out of the mb queue!
+      \end{call}
+    \end{callself}
+
+    \prelevel
+    \begin{callself}{io}{schedule(read)}{}
+      \postlevel
+      \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+      \end{call}
+      \begin{call}{io}{remove(a,s(v))}{cq}{}
+      \end{call}
+    \mess{io}{notify()}{cl}
+    \end{callself}
+  \prelevel
+  \end{call}
+
+\end{sdblock}
+
+\end{sequencediagram}
+\caption{A sequence diagram for a blocking write. Note, that only the application is blocked, not the communication handler, which may process non-blocking writes sent before the blocking write \textbf{after} the non-blocking write.}
+\label{fig:seq:nbwrite}
+\end{figure}
+
+
+\begin{figure}[h]
+\centering
+\begin{sequencediagram}
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
+  \newinst{cq}{clientQueue}
+  \newthread{io}{comHandler}
+  \newinst{m}{medium}
+  \newthread{ser}{server}
+  \newinst{sq}{serverQueue}
+
+\begin{sdblock}{Polling}{}
+
+  \begin{callself}{ser}{schedule(a)}{}
+    \postlevel
+    \begin{call}{ser}{hasSpace(a)}{sq}{true}
+    \end{call}
+    \begin{call}{ser}{poll(a)}{m}{}
+    \end{call}
+  \end{callself}
+
+  \prelevel
+  \begin{callself}{io}{schedule(read)}{}
+    \postlevel
+    \begin{call}{io}{recv()}{m}{(poll, a)}
+    \end{call}
+    \begin{call}{io}{getValues(a)}{cq}{(v)}
+    \end{call}
+    \begin{call}{io}{send(a,v)}{m}{}
+    \end{call}
+  \end{callself}
+
+  \prelevel\prelevel
+  \begin{callself}{ser}{schedule(read)}{}
+    \begin{call}{ser}{recv()}{m}{(a,v)}
+    \end{call}
+    \begin{call}{ser}{store(a,v)}{sq}{}
+    \end{call}
+    \begin{call}{ser}{ack(a,v)}{m}{}
+    \end{call}
+  \end{callself}
+
+    \prelevel
+    \begin{callself}{io}{schedule(read)}{}
+      \postlevel
+      \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+      \end{call}
+      \begin{call}{io}{remove(a,s(v))}{cq}{}
+      \end{call}
+    \end{callself}
+
+\end{sdblock}
+
+\end{sequencediagram}
+\caption{A polling scenario. The server scheduler reaches component a and registers free space in the queue (that was formerly full). He then polls values for component a. The poll triggers sending of data at the client, which is later received in a read phase of the server.}
+\label{fig:seq:nbwrite}
+\end{figure}
 
 \chapter{Generator}
 This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator.\textcolor{red}{A reference to the third Katja report might be useful.}
