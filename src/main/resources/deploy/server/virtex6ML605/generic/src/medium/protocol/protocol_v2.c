@@ -7,6 +7,21 @@
 #include "protocol_v2.h"
 
 int decode_header_v2(int first) {
-	xil_printf(" 2\nERROR: protocol version 2 is not implemented.\n");
-	return 1;
+	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
+	return -1;
+}
+
+struct Message* encode_ack_v2(unsigned char pid, unsigned int count) {
+	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
+	return -1;
+}
+
+struct Message* encode_poll_v2(unsigned char pid) {
+	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
+	return -1;
+}
+
+struct Message* encode_data_v2(unsigned char pid, unsigned int size) {
+	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
+	return -1;
 }

@@ -40,25 +40,32 @@ int decode_header( int first ) {
 	return 0;
 }
 
-int endode_header_axi(unsigned char id, unsigned int size) {
-	unsigned char version = 1, axi_data = 8;
-	return (version << 24) + (axi_data << 20) + (id << 16) + size;
+struct Message* encode_ack(unsigned char pid, unsigned int count) {
+	switch(PROTO_VERSION) {
+	case 1: return encode_ack_v1(pid, count);
+	case 2: return encode_ack_v2(pid, count);
+	default:
+		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+		return encode_ack_v1(pid, count);
+	}
 }
 
-//int decode( struct pbuf *p) {
-//	if(DEBUG) xil_printf("\nEncountered byte. Trying to read as message header\n  reading protocol version ...");
-//	int header = get_unaligned(p->payload);
-//	int version = floor(header / pow(2, 24));
-//	int val = get_unaligned(p->payload + 4);
-//	switch(version) {
-//	case 1: decode_header_v1(header, val); break;
-//	case 2: decode_header_v2(); break;
-//	default:
-//		if(DEBUG) {
-//			xil_printf("\nWARNING: Protocol version %d is unknown to this driver version. The byte will be ignored.", version);
-//			xil_printf("\nWARNING: Ignoring byte can lead to later bytes being interpreted as message headers!");
-//		}
-//	}
-//	if(DEBUG) xil_printf("\n");
-//	return 0;
-//}
+struct Message* encode_poll(unsigned char pid) {
+	switch(PROTO_VERSION) {
+	case 1: return encode_poll_v1(pid);
+	case 2: return encode_poll_v2(pid);
+	default:
+		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+		return encode_poll_v1(pid);
+	}
+}
+
+struct Message* encode_data(unsigned char pid, unsigned int size) {
+	switch(PROTO_VERSION) {
+	case 1: return encode_data_v1(pid, size);
+	case 2: return encode_data_v2(pid, size);
+	default:
+		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+		return encode_data_v1(pid, size);
+	}
+}

@@ -93,31 +93,39 @@ void medium_read() {
 	xemacif_input(netif);
 }
 
-//void medium_axi_write(IntQueue *q, unsigned char id) {
-//	medium_axi_write(q, id, q->size);
-//}
-
-void medium_axi_write(Queue *q, unsigned char id, unsigned int size) {
-	medium_send(endode_header_axi(id, size));
-	int i;
-	for (i = 0; i < size; i++) medium_send(*(int*)take(q));
-}
-
-void medium_send(int val) {
+void medium_send(struct Message *m) {
 //	if (tcp_sndbuf(tpcb) > p->len) {
 //			err = tcp_write(tpcb, p->payload, p->len, 1);
 //		} else
 //			print("no space in tcp_sndbuf\n\r");
 	// I have no idea what I'm doing!
-	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, 4, PBUF_POOL);
-	int i = i;
-	set_unaligned((void*)(((int)(p->payload))+(4*i)), &val);
 
+	// allocate transport buffer for the message
+	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, 4 * (m->headerSize + m->payloadSize), PBUF_POOL);
+
+	int i;
+	// write header data in buffer
+	for(i = 0; i < m->headerSize; i++)
+		set_unaligned((void*)(((int)(p->payload))+(4*i)), &m->header[i]);
+
+	// write payload in buffer
+	for(i = 0; i < m->payloadSize; i++)
+			set_unaligned((void*)(((int)(p->payload))+(4*(i+m->headerSize))), &m->payload[i]);
+
+	// set i to total size of application layer message
+//	i = m->headerSize + m->payloadSize;
+
+	// create new tcp package
 	struct tcp_pcb *data_pcb = tcp_new();
 	err_t err;
 
-	if (tcp_sndbuf(data_pcb) > 4 * i) {
-		err = tcp_write(data_pcb, p->payload, i*4, TCP_WRITE_FLAG_COPY);
+
+	if (tcp_sndbuf(data_pcb) > p->len) {
+		// write the package (doesn't send automatically!)
+		err = tcp_write(data_pcb, p->payload, p->len, TCP_WRITE_FLAG_COPY);
+
+		// send the package?
+//		tcp_output(data_pcb);
 
 		#ifdef DEBUG
 			if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
@@ -126,6 +134,7 @@ void medium_send(int val) {
 		xil_printf("No space in tcp_sndbuf\n\r");
 	}
 
+	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
 	pbuf_free(p);
 }
 

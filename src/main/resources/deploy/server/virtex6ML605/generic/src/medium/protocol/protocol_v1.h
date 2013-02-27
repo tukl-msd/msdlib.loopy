@@ -9,12 +9,18 @@
 #ifndef PROTOCOL_V1_H_
 #define PROTOCOL_V1_H_
 
-#include "lwip/pbuf.h"
+#include "../message.h"
 
 /**
  * Interprets a protocol header of a message with protocol version 1.
  * @return 0 if successful, 1 if errors occurred.
  */
 int decode_header_v1(int first);
-//int decode_v0_1( struct pbuf *p );
+
+struct Message* encode_ack_v1(unsigned char pid, unsigned int count);
+
+struct Message* encode_poll_v1(unsigned char pid);
+
+struct Message* encode_data_v1(unsigned char id, unsigned int size);
+
 #endif /* PROTOCOL_V1_H_ */

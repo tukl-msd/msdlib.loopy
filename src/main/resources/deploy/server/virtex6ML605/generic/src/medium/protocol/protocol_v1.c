@@ -4,6 +4,8 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
+#include "xbasic_types.h"
 #include "protocol_v1.h"
 #include "../../constants.h"
 
@@ -86,6 +88,8 @@ int decode_header_v1(int first) {
 				payload[i] = recv_int();
 				if(DEBUG) xil_printf("\n    %d", payload[i]);
 			}
+
+			// TODO DO SOMETHING WITH THE DAMN MESSAGE
 		}
 		break;
 	case 10: // This is a non-blocking poll.
@@ -118,5 +122,30 @@ int decode_header_v1(int first) {
 	if(DEBUG) xil_printf("\nfinished message interpretation");
 
 	return 0;
+}
+#define version 1
+#define ack 15
+#define poll 10
+#define data 8
+
+struct Message* encode_ack_v1(unsigned char pid, unsigned int count) {
+	struct Message *m = message_new();
+	int header = (version << 24) + (ack << 20) + (pid << 16) + count;
+	message_header(m, &header, 1);
+	return m;
+}
+
+struct Message* encode_poll_v1(unsigned char pid) {
+	struct Message *m = message_new();
+	int header = (version << 24) + (poll << 20) + (pid << 16);
+	message_header(m, &header, 1);
+	return m;
+}
+
+struct Message* encode_data_v1(unsigned char id, unsigned int size) {
+	struct Message *m = message_new();
+	int header = (version << 24) + (data << 20) + (id << 16) + size;
+	message_header(m, &header, 1);
+	return m;
 }
 

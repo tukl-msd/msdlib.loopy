@@ -47,7 +47,7 @@ Queue* createQueue();
  * @param queue The queue, to which the element should be appended.
  * @param val The element to append.
  */
-void put(struct Queue *queue, void* val);
+void put(struct Queue *queue, int val);
 
 /**
  * Checks if a queue contains eny elements or is empty.
@@ -62,7 +62,7 @@ int hasElems(Queue *queue);
  * @param queue The queue, from which the element should be taken.
  * @return Value of the first element.
  */
-void* take(struct Queue *queue);
+int take(struct Queue *queue);
 
 /**
  * Clears all values from the queue.
@@ -76,7 +76,7 @@ void clear(struct Queue *queue);
  * @param queue The queue which should be read.
  * @return The first value of the queue.
  */
-void* peek(struct Queue *queue);
+int peek(struct Queue *queue);
 
 
 

@@ -9,6 +9,8 @@
 #ifndef MEDIUM_H_
 #define MEDIUM_H_
 
+#include "message.h"
+
 /** initialise the communication medium */
 void init_medium();
 
@@ -24,7 +26,7 @@ int start_application();
  * Sends a single integer value over the medium.
  * @param val The value to be sent.
  */
-void medium_send(int val);
+void medium_send(struct Message *m);
 
 void medium_read();
 

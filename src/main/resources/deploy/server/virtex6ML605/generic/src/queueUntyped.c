@@ -12,7 +12,7 @@
  * @param val pointer to the new element.
  * @return Pointer to the new element.
  */
-static struct QueueNode* createElem(void* val) {
+static struct QueueNode* createElem(int val) {
 	// allocate a new QueueNode
 	struct QueueNode *elem = malloc(sizeof(struct QueueNode));
 
@@ -52,7 +52,7 @@ struct Queue* createQueue() {
 	return q;
 }
 
-void put(struct Queue *queue, void* val) {
+void put(struct Queue *queue, int val) {
 	// allocate a new QueueNode
 	struct QueueNode *elem = createElem(val);
 
@@ -66,7 +66,7 @@ void put(struct Queue *queue, void* val) {
 	queue->size++;
 }
 
-void* take(struct Queue *queue) {
+int take(struct Queue *queue) {
 	// fail, if the queue is empty
 	if(queue->size == 0) return NULL;
 
@@ -97,6 +97,6 @@ void clear(struct Queue *queue) {
 	queue->size  = 0;
 }
 
-void* peek(struct Queue *queue) {
+int peek(struct Queue *queue) {
 	return queue->first->value;
 }

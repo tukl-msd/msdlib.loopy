@@ -154,10 +154,14 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         
         // add the debug constant
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
+        
         // add queue size constants
         addConst("HW_QUEUE_SIZE", "256", "Size of the queues implemented in hardware.");
         addConst("SW_QUEUE_SIZE", "1024", "Size of the queues on the microblaze.");
         addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "");
+        
+        // add protocol version constant
+        addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
         
         // visit board components
         visit(board.components());

@@ -10,7 +10,7 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
-#include "lwip/pbuf.h"
+#include "../message.h"
 
 /**
  * Delegates calls to the respective protocol decoder for the protocol version the message was sent with.
@@ -20,12 +20,16 @@
  */
 int decode_header( int first );
 
+struct Message* encode_ack(unsigned char pid, unsigned int count);
+
+struct Message* encode_poll(unsigned char pid);
+
 /**
  * Delegates calls to the respective protocol encoder for the protocol version the message should be encoded with.
- * @param id Id of the component, the message was sent from.
+ * @param pid Id of the port, the message was sent from.
  * @param size Size of the message to be sent
  * @return The encoded header.
  */
-int endode_header_axi(unsigned char id, unsigned int size);
+struct Message* encode_data(unsigned char pid, unsigned int size);
 
 #endif /* PROTOCOL_H_ */
