@@ -4,12 +4,7 @@
  * @since 01.02.2013
  */
 
-//#include "medium/medium.h"
-//#include "platform.h"
-//#include "components/components.h"
 #include "fsl.h"
-//#include "xuartlite.h"
-//#include "xparameters.h"
 
 // forward declarations
 void init_platform();
@@ -17,6 +12,11 @@ void init_medium();
 void init_components();
 void start_application();
 void cleanup_platform();
+
+void reset_components();
+void reset_queues();
+void schedule();
+
 //void XUartLite_SendByte(u32 BaseAddress, u8 Data);
 //
 //void UartSendInt(int number) {
@@ -42,7 +42,6 @@ void test_axi_communication () {
 	putfslx(seed1,   0, FSL_DEFAULT);
 	putfslx(seed2,   0, FSL_DEFAULT);
 	putfslx(seed3,   0, FSL_DEFAULT);
-
 	putfslx(seed1,   0, FSL_DEFAULT);
 	putfslx(seed1,   0, FSL_DEFAULT);
 	putfslx(seed1,   0, FSL_DEFAULT);
@@ -53,6 +52,11 @@ void test_axi_communication () {
 		//		xil_printf("\n  number %d: %d", i, RngNumber);
 //		UartSendInt(RngNumber)
 	}
+}
+
+void reset() {
+	reset_components();
+	reset_queues();
 }
 
 // main method
@@ -71,6 +75,8 @@ int main() {
 	start_application();
 
 //	test_axi_communication();
+
+	schedule();
 
 	/* never reached */
 	cleanup_platform();

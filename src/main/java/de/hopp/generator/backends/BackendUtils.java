@@ -91,8 +91,8 @@ public class BackendUtils {
             // TODO probably need .exe extension for windows?
             // TODO would be cleaner to do this with scripts, i guess (but this would require parameter passing...)
             // run doxygen in the provided directory
-            Process p = new ProcessBuilder("doxygen", "doxygen.cfg").directory(dir).redirectErrorStream(true).start();
-            input     = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            Process p = new ProcessBuilder("doxygen", "doxygen.cfg").directory(dir).start();
+            input     = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 
             // wait for the process to terminate and store the result
             int rslt = p.waitFor();

@@ -427,12 +427,24 @@ Communication to these components is not handled via ports. Instead, it is possi
 \subsection{Port}
  A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or bi-directional ports. They can have an arbitrary bitwidth, yet the bitwidth supported by the microblaze as well as the arm processor is limited to 32-bit. Also, the total number of ports is restricted in the microblaze / arm. We allow an arbitrary bitwidth and port number to retain generality of the driver for other platforms, but support arbitrary bidwidth translation and port number restriction to hide complexity from the user. The same applies for encoding format, i.e. the order of bits.
 
-\subsection{Communication Interface}
-The communication interface is hidden from the user. Each component has exactly one such interface. The communication interface wraps all communication between host software and board software. The interface abstracts from the physical network interface and provides a homogeneous api for components and ports. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
+\subsection{Queues}
+Writing data to these ports does not directly result in a message being sent to the board. Instead, written values are stored in a client-side queue for each port. This is done for the following reasons.
 
-Note, that a board is also only allowed to use a single interface. Consequently, components using the same interface are physically located on the same board and components using different interfaces are on different boards.
+First of all, the client-side buffer is a method of \textcolor{red}{\textit{flow control}}. The board has only restricted resources and should not be flooded with more data than it can process. Consequently, data is stored on the client, if the board buffers have been filled and no more data can be received. 
 
-Currently, three communication interfaces are envisioned:
+Additionally, the client buffer offers \textcolor{red}{\textit{congestion control}}, since several small values can be packaged together in one message. This results in a smaller amount of messages being sent over the medium.
+
+Similar queues exist for out-going ports. A read on such a port object does not read directly from the board, but from the local queue.
+
+\subsection{I/O Threads}
+The queues described above are filled asynchronously with two separate threads, a writing and a reading thread. High-level functionality of theses threads is rather self-explaining. The writing thread loops over all input queues and writes existing values on the medium. The reading thread does the opposite, i.e. listens to the medium and acts according to received messages (see \Cref{sec:protocol} for details about messages the server can send).
+
+Both threads have to be started before using the API using \texttt{startup()} and should be shut down afterwards using \texttt{shutdown()}.
+
+\subsection{Communication medium}
+The communication medium is hidden from the user. Each driver is bound to a single communication medium, which wraps lower-level communication (essentially transport layer and below) between host and board driver. The communication medium abstracts from the actually used technology and provides a homogeneous api for the I/O threads. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
+
+Currently, three communication mediums are envisioned:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
 \item \textbf{Ethernet Lite}, which is already implemented
 \item \textbf{USB/UART}, which is considered as second interface and
@@ -449,6 +461,7 @@ It is possible to implement more efficient Ethernet communication using dedicate
 \paragraph{PCI Express}
 \textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
 
+\newpage
 \section{Board Side}
 The board-side driver consists of several files that can roughly be split into three groups: files handling communication with the host-side driver, files handling communication with board components and setup files.
 
@@ -461,10 +474,18 @@ The medium folder contains a source and header file for the medium the board is 
 The components folder contains code for component-specific setup and communication between the boards general purpose cpu and designed IP cores. Code for controlling gpio components will also be generated in this folder.
 
 \paragraph{Initialisation}
-Files for initialisation are generated directly in the \texttt{src} folder of the project. Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the listening loop.
+Files for initialisation are generated directly in the \texttt{src} folder of the project. Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the scheduling loop. This loop performs three kinds of operations.
+
+First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
+
+The loop also shifts messages from in-going microblaze queues to in-going hardware queues and vice versa from out-going hardware queues to out-going microblaze queues. 
+
+Finally, the loop writes values from out-going microblaze queues on the medium.
 
 \newpage
 \section{Protocol}
+\label{sec:protocol}
+This section covers the transmission protocol between client and server application. Note that the protocol is base on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages.
 
 \subsection{State transitions}
 
@@ -583,10 +604,10 @@ Used messages are:
 \draw[extend, black] (anchor) to node[auto] {} (init);
 \draw[arr, black] (init) to node[midway, left=0.5em] {$\inferrule{wrt(v)}{snd(v)}$} (wait);
 \draw[arr, black, bend left = 20] (wait) to node[midway, above] {$\inferrule{ack(i)~[i==s]}{ }$} (ack);
-\draw[arr, black, bend left = 20] (ack) to node[near start, below=0.5em] {$\inferrule{!empty()}{snd(first(n))}$} (wait);
-\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{empty()}{notifiy}$} (init);
+\draw[arr, black, bend left = 20] (ack) to node[near start, below=0.5em] {$\inferrule{[!q.empty()]}{snd(take(n))}$} (wait);
+\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{[q.empty()]}{\textcolor{red}{notifiy()}}$} (init);
 \draw[arr, black, bend left = 20] (wait) to node[near end, right=0.5em] {$\inferrule{ack(i)~[i<s]}{ }$} (idle);
-\draw[arr, black, bend left = 20] (idle) to node[midway, left=0.5em] {$\inferrule{poll}{snd(first(n))}$} (wait);
+\draw[arr, black, bend left = 20] (idle) to node[midway, left=0.5em] {$\inferrule{poll}{snd(take(n))}$} (wait);
 
 \end{tikzpicture}
 \label{fig:cfg:client}

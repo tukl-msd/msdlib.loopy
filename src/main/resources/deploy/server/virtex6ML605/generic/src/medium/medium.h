@@ -19,4 +19,13 @@ void init_medium();
  */
 int start_application();
 
+// TODO probably not the best idea... also provide some array send operation...
+/**
+ * Sends a single integer value over the medium.
+ * @param val The value to be sent.
+ */
+void medium_send(int val);
+
+void medium_read();
+
 #endif /* MEDIUM_H_ */

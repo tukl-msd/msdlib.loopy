@@ -5,11 +5,18 @@
  *      Author: thomas
  */
 
-#include "constants.h"
+// header file
 #include "gpio.h"
+
+// standard library
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
+
+// other datatypes
+#include "../constants.h"
+#include "../io/io.h"
+
 /**
  * Minimal value for the LED test application.
  * This value marks the two least significant LEDs to be set.
@@ -32,13 +39,13 @@
  *        this procedure
  * @return the direction for the next step of LED shifting.
  */
-bool next(bool direction, unsigned char * state) {
+bool next(bool direction, int &state) {
 	if(direction) {
-		if(*state == MAX_VALUE) return next(!direction, state);
-		*state = *state * 2;
+		if(state >= MAX_VALUE) return next(!direction, state);
+		state = state * 2;
 	} else {
-		if(*state == MIN_VALUE) return next(!direction, state);
-		*state = *state / 2;
+		if(state <= MIN_VALUE) return next(!direction, state);
+		state = state / 2;
 	}
 	return direction;
 }
@@ -93,12 +100,19 @@ bool convertToArr(int size, bool values[], int val) {
 	return 0;
 }
 
-bool leds::writeState(bool state[8]) {
-	return this->writeState(convertToInt(state));
+void leds::writeState(bool state[8]) {
+	this->writeState(convertToInt(state));
 }
 
-bool leds::writeState(int state) {
-	return this->intrfc->setLEDState(state);
+void leds::writeState(int state) {
+	// acquire writer lock
+	std::unique_lock<std::mutex> lock(writer_mutex);
+
+	// write the new state atomically (yay)
+	*(this->state) = state;
+	// notify (doesn't matter, if it was written before... then we just notified twice. woohoo
+	can_write.notify_one();
+
 }
 
 bool switches::readState(bool state[8]) {
@@ -110,13 +124,15 @@ bool buttons::readState(bool state[5]) {
 }
 
 void leds::test() {
-	printf("\nstarting hopp lwip led test ...\n");
-
+//	if(DEBUG) printf("\nstarting hopp lwip led test ...\n");
 	bool direction = false;
-	unsigned char state = MIN_VALUE;
-	while(1) {
+	int state = MIN_VALUE;
+
+	int i = 0;
+	while(i < 13) {
 		this->writeState(state);
-		direction = next(direction, &state);
+		direction = next(direction, state);
+		i++;
 		usleep(175000);
 	}
 }

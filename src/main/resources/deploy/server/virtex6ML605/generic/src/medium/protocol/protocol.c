@@ -40,6 +40,11 @@ int decode_header( int first ) {
 	return 0;
 }
 
+int endode_header_axi(unsigned char id, unsigned int size) {
+	unsigned char version = 1, axi_data = 8;
+	return (version << 24) + (axi_data << 20) + (id << 16) + size;
+}
+
 //int decode( struct pbuf *p) {
 //	if(DEBUG) xil_printf("\nEncountered byte. Trying to read as message header\n  reading protocol version ...");
 //	int header = get_unaligned(p->payload);

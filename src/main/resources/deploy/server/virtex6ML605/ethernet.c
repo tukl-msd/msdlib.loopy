@@ -16,7 +16,7 @@
 #include "protocol/protocol.h"
 #include "../platform.h"
 #include "../constants.h"
-
+#include "../queueUntyped.h"
 #include <math.h>
 
 // attributes of Driver
@@ -28,7 +28,7 @@ struct netif *netif, server_netif;
  * @msg The message to be printed before the address.
  * @ip The ip address to be printed.
  */
-void print_ip ( char *msg, struct ip_addr *ip ) {
+static void print_ip ( char *msg, struct ip_addr *ip ) {
     xil_printf(msg);
     xil_printf("%d.%d.%d.%d\n", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
@@ -39,14 +39,14 @@ void print_ip ( char *msg, struct ip_addr *ip ) {
  * @param mask The subnet mask.
  * @param gw The standard gateway.
  */
-void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
+static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
 	print_ip("  Board IP: ", ip);
 	print_ip("  Netmask : ", mask);
 	print_ip("  Gateway : ", gw);
 	xil_printf("  Port    : %d\n", PORT);
 }
 
-void set_unaligned ( int *target, int *data ) {
+static void set_unaligned ( int *target, int *data ) {
     int offset, i;
     char *byte, *res;
 
@@ -58,7 +58,7 @@ void set_unaligned ( int *target, int *data ) {
     } else *target = *data;
 }
 
-int get_unaligned ( int *data ) {
+static int get_unaligned ( int *data ) {
     unsigned int offset, res, tmp;
     int i;
     char *byte;
@@ -84,6 +84,50 @@ int get_unaligned ( int *data ) {
 static struct pbuf *msg;
 /** stores the position of the next word to read in the received message */
 static int wordIndex;
+
+/**
+ * Reads a package from the medium.
+ * No... I have no idea how this works...
+ */
+void medium_read() {
+	xemacif_input(netif);
+}
+
+//void medium_axi_write(IntQueue *q, unsigned char id) {
+//	medium_axi_write(q, id, q->size);
+//}
+
+void medium_axi_write(Queue *q, unsigned char id, unsigned int size) {
+	medium_send(endode_header_axi(id, size));
+	int i;
+	for (i = 0; i < size; i++) medium_send(*(int*)take(q));
+}
+
+void medium_send(int val) {
+//	if (tcp_sndbuf(tpcb) > p->len) {
+//			err = tcp_write(tpcb, p->payload, p->len, 1);
+//		} else
+//			print("no space in tcp_sndbuf\n\r");
+	// I have no idea what I'm doing!
+	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, 4, PBUF_POOL);
+	int i = i;
+	set_unaligned((void*)(((int)(p->payload))+(4*i)), &val);
+
+	struct tcp_pcb *data_pcb = tcp_new();
+	err_t err;
+
+	if (tcp_sndbuf(data_pcb) > 4 * i) {
+		err = tcp_write(data_pcb, p->payload, i*4, TCP_WRITE_FLAG_COPY);
+
+		#ifdef DEBUG
+			if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+		#endif
+	} else {
+		xil_printf("No space in tcp_sndbuf\n\r");
+	}
+
+	pbuf_free(p);
+}
 
 /**
  * Read the next integer value from a received message.
@@ -184,9 +228,9 @@ int start_application() {
 	if(DEBUG) xil_printf(" done\n");
 
 	// receive and process packets
-	while (1) {
-		xemacif_input(netif);
-	}
+//	while (1) {
+//		xemacif_input(netif);
+//	}
 
 	return 0;
 }

@@ -8,7 +8,15 @@
 #ifndef GPIO_H_
 #define GPIO_H_
 
+// pointers
+#include <memory>
+
+// locking
+#include <atomic>
+
+// other datatyps
 #include "component.h"
+#include "../io/io.h"
 
 /**
  * An abstract representation of the LED component of the board.
@@ -19,20 +27,21 @@
  * @see components.h for a list of specific gpio instances within this board driver.
  */
 class leds : private component {
+private: std::shared_ptr<std::atomic<int>> state;
 public:
 	/**
 	 * Constructor for the LED component.
-	 * @param intrfc The communication medium, this components board
-	 *               is attached to.
 	 */
-	leds(interface *intrfc) : component(intrfc) {}
+	leds(int gpi_id) : state(new std::atomic<int>(-1)) {
+		gpi[gpi_id] = state;
+	}
 	/**
 	 * Sets the LED state using an array of integer values.
 	 * @param state The new LED state represented by a boolean array of size 8.
 	 *              Each true value lights up an LED.
 	 * @returns true if the write was successful, false otherwise
 	 */
-	bool writeState(bool state[8]);
+	void writeState(bool state[8]);
 	/**
 	 * Starts the test application.
 	 */
@@ -44,7 +53,7 @@ private:
 	 *              The value has to be in the interval [0;255].
 	 * @returns true if the write was successful, false otherwise
 	 */
-	bool writeState(int state);
+	void writeState(int state);
 };
 
 /**
@@ -57,10 +66,9 @@ class buttons : private component {
 public:
 	/**
 	 * Constructor for the button component.
-	 * @param intrfc The communication medium, this components board
-	 *               is attached to.
+	 * @param gpo_id Id used for protocol and state store for this component.
 	 */
-	buttons(interface *intrfc) : component(intrfc) {}
+	buttons(int gpo_id) { }
 	/**
 	 * Reads the current button state into a boolean array.
 	 * Note that the boolean array has to be at least of size 5.
@@ -82,10 +90,9 @@ class switches : private component {
 public:
 	/**
 	 * Constructor for the switch component.
-	 * @param intrfc The communication medium, this components board
-	 *               is attached to.
+	 * @param gpo_id Id used for protocol and state store for this component.
 	 */
-	switches(interface *intrfc) : component(intrfc) {}
+	switches(int gpo_id) { }
 	/**
 	 * Reads the current switch state into a boolean array.
 	 * Note that the boolean array has to be at least of size 8.

@@ -4,7 +4,7 @@
  */
 
 #include "interface.h"
-#include "constants.h"
+#include "../constants.h"
 
 #include <stdio.h>
 
@@ -22,40 +22,6 @@
 #define SWITCH_POLL 1
 #define BUTTON_POLL 2
 
-int constructHeader(int version, int type, int size) {
-	return (version * pow(2, 24)) + (type * pow(2, 16)) + size;
-}
-
-// TODO yes, in theory a single int is not sufficient. We need the complete buffer here
-int decodeHeader(int header) {
-	int version, type, size;
-
-	// read the version information from the header
-	version = floor(header / pow(2, 24));
-
-	// remove the version information to retain the rest
-	header = fmod(header, pow(2, 24));
-
-	// now do some case distinction based on the received number. Currently, there only is version 1 ;)
-	// Backward compatibility probably isn't too much of an issue for this, but it's always better to be prepared...
-	switch(version) {
-	case 1:
-		type = floor(header / pow(2, 16));
-		size = fmod(header, pow(2, 16));
-		printf("decoded the following header\n");
-		printf("  version     : %d\n", version);
-		printf("  type        : %d\n", type);
-		printf("  payload size: %d\n", size);
-
-		break;
-	default:
-		printf("ERROR: unknown protocol version %d", version);
-		return 1;
-	}
-
-	return 0;
-}
-
 interface::interface() {
 	refCount = 0;
 }
@@ -68,15 +34,6 @@ void interface::decRef() {
 	refCount --;
 	// remove the object, if the refcount reaches 0
 	if(refCount == 0) delete this;
-}
-
-bool interface::setLEDState(int state) {
-	int val [2];
-
-	val[0] = constructHeader(1,0,1);
-	val[1] = state;
-
-	return send(val, 2);
 }
 
 // new constructor using member initialisation list
@@ -160,13 +117,26 @@ bool ethernet::send(int buf[], int size) {
 	// write data
 	if(write(Data_SocketFD, buf, size*4) < 0) {
 		// catch write errors
-		if(DEBUG) printf(" ERROR writing to socket");
+		if(DEBUG) {
+			printf(" ERROR writing to socket");
+			perror(NULL);
+		}
 		return false;
 	}
 
 	if(DEBUG) printf(" done");
 
 	return true;
+}
+
+// lazy version... probably to many conversions between vectors and arrays currently ;)
+bool ethernet::send(std::vector<int> val) {
+	int buf[val.size()];
+
+	for(unsigned int i = 0; i < val.size(); i++) {
+		buf[i] = val.at(i);
+	}
+	return send(buf, val.size());
 }
 
 bool ethernet::readInt(int buf[], int size) {
@@ -192,26 +162,48 @@ bool ethernet::readInt(int buf[], int size) {
 	return true;
 }
 
-uart::uart() {
-	setup();
+bool ethernet::readInt(int *val) {
+	return read(Data_SocketFD, val, 4) < 0;
 }
 
-uart::~uart() {
-	teardown();
-}
+bool ethernet::waitForData(int timeout) {
 
-bool uart::send(int val) {
+	struct timeval tv;
+	fd_set readfds;
+
+	tv.tv_sec = timeout;
+	tv.tv_usec = 0;
+
+	FD_ZERO(&readfds);
+	FD_SET(Data_SocketFD, &readfds);
+
+	select(Data_SocketFD+1, &readfds, NULL, NULL, &tv);
+
+	if (FD_ISSET(Data_SocketFD, &readfds)) return true;
+
 	return false;
 }
 
-bool uart::send(int val[], int size) {
-	return false;
-}
-
-void uart::setup() {
-	printf("\nsetup uart");
-}
-
-void uart::teardown() {
-	printf("\nteardown uart");
-}
+//uart::uart() {
+//	setup();
+//}
+//
+//uart::~uart() {
+//	teardown();
+//}
+//
+//bool uart::send(int val) {
+//	return false;
+//}
+//
+//bool uart::send(int val[], int size) {
+//	return false;
+//}
+//
+//void uart::setup() {
+//	printf("\nsetup uart");
+//}
+//
+//void uart::teardown() {
+//	printf("\nteardown uart");
+//}

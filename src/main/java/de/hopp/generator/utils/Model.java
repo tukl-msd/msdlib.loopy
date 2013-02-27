@@ -1,15 +1,6 @@
 package de.hopp.generator.utils;
 
-import de.hopp.generator.model.MAttribute;
-import de.hopp.generator.model.MClass;
-import de.hopp.generator.model.MCode;
-import de.hopp.generator.model.MConstr;
-import de.hopp.generator.model.MDefinition;
-import de.hopp.generator.model.MDestr;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MMemberInit;
-import de.hopp.generator.model.MMethod;
-import de.hopp.generator.model.MProcedure;
+import de.hopp.generator.model.*;
 
 public class Model {
     
@@ -31,6 +22,9 @@ public class Model {
     public static MClass add(MClass c, MMethod m) {
         return c.replaceMethods(c.methods().add(m));
     }
+    public static MConstr addParam( MConstr c, MParameter p) {
+        return c.replaceParameter(c.parameter().add(p));
+    }
     public static MConstr addInit( MConstr c, MMemberInit i ) {
         return c.replaceInit(c.init().add(i));
     }
@@ -48,6 +42,14 @@ public class Model {
     }
     public static MFile addDoc(MFile file, String line) {
         return file.replaceDoc(file.doc().replaceDoc(file.doc().doc().add(line)));
+    }
+    
+    public static MInitList add(MInitList init, String param) {
+        return init.replaceParams(init.params().add(param));
+    }
+    public static MInitList add(MInitList init, MInitList list) {
+        return init.replaceParams(init.params().addAll(list.params()))
+                   .replaceNeeded(init.needed().addAll(list.needed()));
     }
     
 }

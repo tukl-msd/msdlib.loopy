@@ -46,6 +46,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     private MFile constants;
     
     private MProcedure init;
+    private MProcedure reset;
     private MProcedure axi_write;
     private MProcedure axi_read;
     
@@ -112,14 +113,19 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
             )), "constants", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         init  = MProcedure(MDocumentation(Strings(
                 "Initialises all components on this board.",
-                "This includes gpio_components and user-defined IPCores,",
+                "This includes gpio components and user-defined IPCores,",
                 "but not the communication medium this board is attached with."
             )), MModifiers(), MVoid(), "init_components", MParameters(), MCode(Strings()));
+        reset = MProcedure(MDocumentation(Strings(
+                "Resets all components in this board.",
+                "This includes gpio components and user-defined IPCores,",
+                "but not the communication medium, this board is attached with."
+            )), MModifiers(), MVoid(), "reset_components", MParameters(), MCode(Strings()));
         axi_write = MProcedure(MDocumentation(Strings(
                 "Write a value to an AXI stream."),
                 PARAM("val", "Value to be written to the stream."),
                 PARAM("target", "Target stream identifier.")
-            ), MModifiers(PRIVATE()), MVoid(), "axi_write", MParameters(
+            ), MModifiers(PRIVATE()), MType("int"), "axi_write", MParameters(
                 MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
@@ -129,7 +135,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 "Read a value from an AXI stream."),
                 PARAM("val", "Pointer to the memory area, where the read value will be stored."),
                 PARAM("target", "Target stream identifier.")
-            ), MModifiers(PRIVATE()), MVoid(), "axi_read", MParameters(
+            ), MModifiers(PRIVATE()), MType("int"), "axi_read", MParameters(
                 MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
@@ -147,23 +153,33 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     public void visit(Board board) {
         
         // add the debug constant
-        constants = add(constants, MDefinition(MDocumentation(Strings(
-                    "Indicates, if additional messages should be logged on the console."
-                )), MModifiers(PUBLIC()), "DEBUG", debug ? "1" : "0"));
+        addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
+        // add queue size constants
+        addConst("HW_QUEUE_SIZE", "256", "Size of the queues implemented in hardware.");
+        addConst("SW_QUEUE_SIZE", "1024", "Size of the queues on the microblaze.");
+        addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "");
         
         // visit board components
         visit(board.components());
 
-        // add the init procedure to the source file
+        addConst("IN_STREAM_COUNT", String.valueOf(axiStreamIdMaster), "Number of in-going stream interfaces.");
+        addConst("OUT_STREAM_COUNT", String.valueOf(axiStreamIdSlave), "Number of out-going stream interfaces.");
+        
+        // add init and reset procedures to the source file
         components = add(components, init);
-
+        components = add(components, reset);
+        
         // finish axi read and write procedures
         axi_write = addLines(axi_write, MCode(Strings(
                 "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
-                "}")));
+                "}", "// should be call by value --> reuse the memory address...",
+                "fsl_isinvalid(target);",
+                "return target;")));
         axi_read  = addLines(axi_read,  MCode(Strings(
                 "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
-                "}")));
+                "}", "// should be call by value --> reuse the memory address...",
+                "fsl_isinvalid(target);",
+                "return target;")));
         
         // add axi read and write procedures
         components = add(components, axi_write);
@@ -285,14 +301,14 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                     if(axiStreamIdMaster>15) continue; //TODO: throw exception: to many master interfaces / in-going ports
                     axi_write = addLines(axi_write, MCode(Strings(
                             "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
-                            ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_DEFAULT); break;"
+                            ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
                             )));
                     axiStreamIdMaster++;
                 } else if(port instanceof OUT) {
                     if(axiStreamIdSlave>15) continue; //TODO: throw exception: to many slave interfaces / out-going ports
                     axi_read  = addLines(axi_read,  MCode(Strings(
                             "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
-                            ": getfslx(val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_DEFAULT); break;"
+                            ": getfslx(val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
                             )));
                     axiStreamIdSlave++;
                 } else {

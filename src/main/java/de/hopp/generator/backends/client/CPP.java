@@ -7,7 +7,7 @@ import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addDoc;
 import static de.hopp.generator.utils.Model.addInit;
-import static de.hopp.generator.utils.Model.addLines;
+import static de.hopp.generator.utils.Model.addParam;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,9 +24,10 @@ import de.hopp.generator.model.MClass;
 import de.hopp.generator.model.MConstr;
 import de.hopp.generator.model.MDestr;
 import de.hopp.generator.model.MFile;
+import de.hopp.generator.model.MInitList;
 
 /**
- * Generation backend for a client-side C++ driver.
+ * Generation backend for a host-side C++ driver.
  * This visitor generates a C++ API for communication with an arbitrary board-side driver.
  * @author Thomas Fischer
  */
@@ -41,6 +42,11 @@ public class CPP extends Visitor<NE> implements Backend {
     private MClass  comp;
     private MConstr constructor;
     private MDestr  destructor;
+    
+    // MOAR integers...
+    private int      pi = 0,      po = 0;
+    private int     gpi = 0,     gpo = 0;
+    private int core_pi = 0, core_po = 0;
     
     // local variables for global default methods
 //    private MMethod clean;
@@ -80,8 +86,9 @@ public class CPP extends Visitor<NE> implements Backend {
         
         // unparse generated MFiles
         File clientSrc = new File(config.clientDir(), "src");
-        printMFile(comps, clientSrc, UnparserType.HEADER, errors);
-        printMFile(comps, clientSrc, UnparserType.CPP, errors);
+        File clientApi = new File(clientSrc, "api");
+        printMFile(comps, clientApi, UnparserType.HEADER, errors);
+        printMFile(comps, clientApi, UnparserType.CPP, errors);
         
         // generate & print the constants file with the debug flag
         printMFile(MFile(MDocumentation(Strings(
@@ -93,9 +100,21 @@ public class CPP extends Visitor<NE> implements Backend {
                     MDefinition(MDocumentation(Strings(
                             "Defines the size of the server queues.",
                             "This is equivalent with the maximal number of values, that should be send in one message"
-                    )), MModifiers(PUBLIC()), "QUEUE_SIZE", "20")
+                    )), MModifiers(PUBLIC()), "QUEUE_SIZE", "20"),
+                    MDefinition(MDocumentation(Strings(
+                            "The number of in-going component ports"
+                    )), MModifiers(PUBLIC()),  "IN_PORT_COUNT", String.valueOf(pi)),
+                    MDefinition(MDocumentation(Strings(
+                            "The number of out-going component ports"
+                    )), MModifiers(PUBLIC()), "OUT_PORT_COUNT", String.valueOf(po)),
+                    MDefinition(MDocumentation(Strings(
+                            "The number of gpi components"
+                    )), MModifiers(PUBLIC()), "GPI_COUNT", String.valueOf(gpi)),
+                    MDefinition(MDocumentation(Strings(
+                            "The number of gpo components"
+                    )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo))
                 ), MStructs(), MEnums(), MAttributes(), MProcedures()),
-                new File(config.clientDir(), "src"), UnparserType.HEADER, errors);
+                clientSrc, UnparserType.HEADER, errors);
     }
     
     public void visit(Components comps) {
@@ -103,15 +122,15 @@ public class CPP extends Visitor<NE> implements Backend {
     }
     
     public void visit(UART term) {
-        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
-                MPointerType(MType("interface")), "intrfc",
-                MCodeFragment("new uart()", MQuoteInclude("interface.h"))));
+//        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+//                MPointerType(MType("interface")), "intrfc",
+//                MCodeFragment("new uart()", MQuoteInclude("interface.h"))));
     }
     
     public void visit(ETHERNET_LITE term) {
-        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
-                MPointerType(MType("interface")), "intrfc",
-                MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
+//        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+//                MPointerType(MType("interface")), "intrfc",
+//                MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
     }
     
     public void visit(ETHERNET term) {
@@ -127,7 +146,8 @@ public class CPP extends Visitor<NE> implements Backend {
                     "The board's LED component.",
                     "This object is used to manipulate the state of the LEDs of the board."
                 )), MModifiers(), MType("leds"),
-                "gpio_leds", MInitList(Strings("intrfc"), MQuoteInclude("gpio.h"))));
+                "gpio_leds", MInitList(Strings(String.valueOf(gpi)), MQuoteInclude("gpio.h"))));
+        gpi++;
     }
     
     public void visit(SWITCHES term) {
@@ -135,7 +155,8 @@ public class CPP extends Visitor<NE> implements Backend {
                     "The board's switch component.",
                     "This object is used to read the state of the switches of the board."
                 )), MModifiers(), MType("switches"),
-                "gpio_switches", MInitList(Strings("intrfc"), MQuoteInclude("gpio.h"))));
+                "gpio_switches", MInitList(Strings(String.valueOf(gpo)), MQuoteInclude("gpio.h"))));
+        gpo++;
     }
     
     public void visit(BUTTONS term) {
@@ -143,20 +164,48 @@ public class CPP extends Visitor<NE> implements Backend {
                     "The board's button component.",
                     "This object is used to read the state of the buttons of the board."
                 )), MModifiers(), MType("buttons"),
-                "gpio_buttons", MInitList(Strings("intrfc"), MQuoteInclude("gpio.h"))));
+                "gpio_buttons", MInitList(Strings(String.valueOf(gpo)), MQuoteInclude("gpio.h"))));
+        gpo++;
     }
     
     public void visit(VHDL vhdl) {
         // generate a class for the vhdl core
         visit(vhdl.core());
         
-        // add an attribute for each used name
-        for(String instance : vhdl.instances())
+        
+        // iterate over instances
+        for(String instance : vhdl.instances()) {
+            MInitList init = MInitList(Strings());
+            
+            // add ports
+            for(Port p : vhdl.core().ports()) {
+                init = add(init, p.Switch(new Port.Switch<MInitList, NE>() {
+                    MInitList init = MInitList(Strings());
+                    public MInitList CaseIN(IN p)     { addInPort();  return init; }
+                    public MInitList CaseOUT(OUT p)   { addOutPort(); return init; }
+                    public MInitList CaseDUAL(DUAL p) { 
+                        addInPort(); addOutPort();
+                        return init;
+                    }
+                    private void addInPort() {
+                        init = add(init, String.valueOf(pi));
+                        pi++;
+                    }
+                    private void addOutPort() {
+                        init = add(init, String.valueOf(po));
+                        po++;
+                    }
+                }));
+            }
+            
+            // add attribute to component file
             comps = add(comps, MAttribute(MDocumentation(Strings(
                     "An instance of the #" + vhdl.core().file() + " core."
-                )), MModifiers(PUBLIC()),
-                MType(vhdl.core().file()), instance,
-                MInitList(Strings("intrfc"))));
+                )), MModifiers(PUBLIC()), MType(vhdl.core().file()), instance, init));
+
+            // and increment the port counts
+//            pi += core_pi; po += core_po;
+        }
     }
     
     public void visit(VHDLCore core) {
@@ -169,14 +218,14 @@ public class CPP extends Visitor<NE> implements Backend {
         constructor = MConstr(MDocumentation(Strings(
                     "Constructor for #" + core.file() + " cores.",
                     "Creates a new " + core.file() + " instance on a board attached to the provided communication medium."
-                ), MTags(PARAM("intrfc", "The communication medium, the cores board is attached with.")
-                )), MModifiers(PUBLIC()), MParameters(
-                    MParameter(VALUE(), MPointerType(MType("interface")), "intrfc")
-                ), MMemberInits(MMemberInit("component", "intrfc")), MCode(Strings()));
+                )), MModifiers(PUBLIC()), MParameters(), MMemberInits(), MCode(Strings()));
         destructor  = MDestr(MDocumentation(Strings(
                     "Destructor for #" + core.file() + " cores.",
                     "Deletes registered ports and unregisters the core from the communication medium."
                 )), MModifiers(PUBLIC()), MParameters(), MCode(Strings()));
+
+//        core_pi = 0;
+//        core_po = 0;
         
         visit(core.ports());
         
@@ -189,17 +238,41 @@ public class CPP extends Visitor<NE> implements Backend {
         for(Port p : ports) { visit(p); }
     }
     
-    public void visit(IN   port) { addPort(port.name(),   "in", "An in-going"); }
-    public void visit(OUT  port) { addPort(port.name(),  "out", "An out-going"); }
-    public void visit(DUAL port) { addPort(port.name(), "dual", "A bi-directional"); }
+//    public void visit(IN   port) { addPort(port.name(),   "in", "An in-going");      core_pi++; }
+//    public void visit(OUT  port) { addPort(port.name(),  "out", "An out-going");     core_po++; }
+//    public void visit(DUAL port) { addPort(port.name(), "dual", "A bi-directional"); core_pi++; core_po++; }
+    public void visit(IN   port) {
+        addPort(port.name(),   "in", "An in-going AXI-Stream port.", true);
+    }
+    public void visit(OUT  port) {
+        addPort(port.name(),  "out", "An out-going AXI-Stream port.", true); 
+    }
+    public void visit(DUAL port) {
+        addPort(port.name(), "dual", "A bi-directional AXI-Stream port.", false);
+    }
     
-    private void addPort(String name, String type, String docPart) {
+    private void addPort(String name, String type, String docPart, boolean single) {
         comp = add(comp, MAttribute(MDocumentation(Strings(
-                    docPart + " AXI-Stream port.",
-                    "Communicate with the #" + comp.name() + " core through this port."
+                    docPart, "Communicate with the #" + comp.name() + " core through this port."
                 )), MModifiers(PUBLIC()), MType(type),
                 name, MCodeFragment("", MQuoteInclude("component.h"))));
-        constructor = addInit(constructor, MMemberInit(name, "intrfc"));
+        
+        if(single) {
+            constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().add(
+                        PARAM(name, "Id of the port")
+                    )));
+            constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name));
+            constructor = addInit(constructor, MMemberInit(name, name));
+        } else {
+            constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().addAll(MTags(
+                    PARAM(name + "_in",  "Id of the in-going part of the port"),
+                    PARAM(name + "_out", "Id of the out-going part of the port")
+                ))));
+            constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_in"));
+            constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_out"));
+            constructor = addInit(constructor, MMemberInit(name, name + "_in", name + "_out"));
+        }
+        
 //        destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
 
