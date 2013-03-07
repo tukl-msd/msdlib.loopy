@@ -9,72 +9,66 @@
 #include "queueUntyped.h"
 #include "io.h"
 
+#include "medium/message.h"
+
 void medium_read();
 int axi_write(int value, int target);
 int axi_read(int *value, int target);
 
-void reset_queues() {
-	// TODO set some reset flag
-	int i;
-	for(i = 0; i <  IN_STREAM_COUNT; i++) clear( inQueue[i]);
-	for(i = 0; i < OUT_STREAM_COUNT; i++) clear(outQueue[i]);
-	// TODO does this guarantee, that no more values will be written to the MB queues??
-}
-
-/**
- * Convenience procedure for writing to a queue.
- * @param pid Port identifier
- * @param val Value to be written
- */
-inline void writeQueue(int pid, int val) {
-	put(outQueue[pid], val);
-}
-
 void schedule() {
+
 	while(1) {
-		unsigned char i;
-		unsigned int j;
+		unsigned int pid;
+		unsigned int i;
 
 		// receive a package from the interface (or all?)
 		// esp stores data packages in mb queue
 		medium_read();
 
 		// write data from mb queue to hw queue (if possible)
-		for(i = 0; i < IN_STREAM_COUNT; i++) {
-			for(j = 0; j < ITERATION_COUNT; j++) {
+		for(pid = 0; pid < IN_STREAM_COUNT; pid++) {
+			for(i = 0; i < ITERATION_COUNT; i++) {
 				// go to next port if the sw queue is empty
-				if(inQueue[i]->size == 0) break;
+				if(inQueue[pid]->size == 0) break;
 
 				// try to write, skip if the hw queue is full
-				if(axi_write(peek(outQueue[i]), i)) break;
+				if(axi_write(peek(inQueue[pid]), pid)) {
+					xil_printf("\nfailed to write");
+					break;
+				}
 
 				// remove the read value from the queue
-				take(outQueue[i]);
+				take(inQueue[pid]);
 
 				// if the queue was full beforehand, poll
-				if(inQueue[i]->size == SW_QUEUE_SIZE - 1) send_poll(i);
+				if(inQueue[pid]->size == SW_QUEUE_SIZE - 1) send_poll(pid);
 			}
 		}
 
 		// read data from hw queue (if available) and cache in mb queue
 		// flush sw queue, if it's full or the hw queue is empty
-		for(i = 0; i < OUT_STREAM_COUNT; i++) {
-			for(j = 0; j < ITERATION_COUNT; j++) {
-				// flush, if the sw queue is full
-				if(outQueue[i]->size >= SW_QUEUE_SIZE) flush_queue(i);
-
-				int val;
-				// try to read
-				if(!axi_read(&val, i)) {
-					// if successful, store the read value in the sw queue
-					writeQueue(i, val);
-				} else {
-					// otherwise, break read iteration
+		for(pid = 0; pid < OUT_STREAM_COUNT; pid++) {
+			for(i = 0; i < ITERATION_COUNT; i++) {
+				// break, if the sw queue is full
+				if(outQueueSize == SW_QUEUE_SIZE) {
+					xil_printf("queue full");
 					break;
 				}
+
+				int val = 0;
+
+				// break, if there is no value
+				if(axi_read(&val, pid)) break;
+
+				// otherwise store the value in the sw queue
+				if(DEBUG) xil_printf("\nfound a value @ %d! : %d", pid, val);
+				outQueue[outQueueSize] = val;
+				outQueueSize ++;
+
 			}
-			// flush sw queuewrite_all(&outQueue[i]);
-			flush_queue(i);
+			// flush sw queue
+			flush_queue(pid);
+			outQueueSize = 0;
 		}
 	}
 }

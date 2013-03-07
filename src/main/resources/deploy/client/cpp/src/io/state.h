@@ -1,14 +1,21 @@
 /*
- * state.h
- *
- *  Created on: 26.02.2013
- *      Author: thomas
+ * Describes the state representation of an operation.
+ * This includes the general state as well as the more
+ * specialised write and read states.
+ * States are used by ports to store unfinished tasks
+ * and are also handed to the user to allow him to check
+ * for progress.
+ * @file
+ * @author Thomas Fischer
+ * @since 26.02.2013
  */
 
 #ifndef STATE_H_
 #define STATE_H_
 
 #include <vector>
+#include <memory>
+#include "../linkedQueue.h"
 
 /**
  * Abstract representation of the state of an operation.
@@ -65,6 +72,7 @@ friend class in;
 friend class dual;
 friend class QueueElem;
 friend void acknowledge_unsafe(unsigned char cid, unsigned int count);
+friend std::vector<int> take(std::shared_ptr<LinkedQueue<WriteState>> q, unsigned int count);
 private:
 	/** Pointer to values to be written. */
 	int *values;

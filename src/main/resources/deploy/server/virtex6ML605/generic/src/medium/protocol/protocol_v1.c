@@ -8,6 +8,7 @@
 #include "xbasic_types.h"
 #include "protocol_v1.h"
 #include "../../constants.h"
+#include "../../io.h"
 
 // medium communication
 int recv_int();
@@ -89,7 +90,7 @@ int decode_header_v1(int first) {
 				if(DEBUG) xil_printf("\n    %d", payload[i]);
 			}
 
-			// TODO DO SOMETHING WITH THE DAMN MESSAGE
+			recv_message(id, payload, size);
 		}
 		break;
 	case 10: // This is a non-blocking poll.
@@ -142,9 +143,9 @@ struct Message* encode_poll_v1(unsigned char pid) {
 	return m;
 }
 
-struct Message* encode_data_v1(unsigned char id, unsigned int size) {
+struct Message* encode_data_v1(unsigned char pid, unsigned int size) {
 	struct Message *m = message_new();
-	int header = (version << 24) + (data << 20) + (id << 16) + size;
+	int header = (version << 24) + (data << 20) + (pid << 16) + size;
 	message_header(m, &header, 1);
 	return m;
 }

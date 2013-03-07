@@ -5,6 +5,7 @@
 
 // header file
 #include "io.h"
+#include <unistd.h>
 
 // data types
 #include "protocol.h"
@@ -28,6 +29,25 @@ std::shared_ptr<std::atomic<int>> gpi [GPI_COUNT];
 std::shared_ptr<std::atomic<int>> gpo [GPO_COUNT];
 
 bool is_active = true;
+
+std::vector<int> take(std::shared_ptr<LinkedQueue<WriteState>> q, unsigned int count) {
+	std::vector<int> rslt;
+
+	std::shared_ptr<WriteState> s = q->peek();
+	unsigned int p = 0, t = s->finished();
+	while(rslt.size() < count) {
+		if(t == s->remaining()) {
+			s = q->peek(++p);
+			if(s == NULL) break; // abort, if we reached the end of the queue
+			t = s->finished();
+		}
+
+		rslt.push_back(s->values[t]);
+		t++;
+	}
+
+	return rslt;
+}
 
 void scheduleWriter() {
 	if(DEBUG) printf("\nbegin write loop");
@@ -57,21 +77,21 @@ void scheduleWriter() {
 		// send all data from in-going ports
 		for(unsigned char i = 0; i < IN_PORT_COUNT; i++) {
 			// skip the port, if there are values in transit
-			if(inPorts[i]->transit != 0) continue;
+			if(*inPorts[i]->transit != 0) continue;
 			// skip the port, if it's task queue is empty
 			if(inPorts[i]->writeTaskQueue->empty()) continue;
 
 			// TODO gather values to be sent.
-//			std::vector<int> val; //= inPortQueue[i]->take(MICROBLAZE_QUEUE_SIZE);
-//
-//			// set the transit size
-//			*inTransit[i] = val.size();
-//
-//			// append a header with the specified protocol
-//			val = proto->encode_data(i, val);
-//
-//			// send the values
-//			intrfc->send(val);
+			std::vector<int> val = take(inPorts[i]->writeTaskQueue, MICROBLAZE_QUEUE_SIZE);
+
+			// set the transit size
+			*inPorts[i]->transit = val.size();
+
+			// append a header with the specified protocol
+			val = proto->encode_data(i, val);
+
+			// send the values
+			intrfc->send(val);
 		}
 
 		// sleep, until there is data to write
@@ -80,19 +100,6 @@ void scheduleWriter() {
 		//     i.e. nothing in transit and a previously empty queue)
 		//  - TODO server-side ack or poll (received by reader thread)
 		//  - shutdown
-		// Question here: does wait reset signals send beforehand? Answer: YES
-		//  (actually, it's more like a listener. It only registers signals, after it started waiting)
-		//  !!!! --> if yes, this can deadlock in it's current implementation ): <-- !!!!
-		//                   this happens, if a value is written to an already processed queue
-		//                   but the corresponding notification is then dumped
-		//           if no,  the loop might be called incidentally without values to write (not a big issue)
-		//                   this happens, if a value is written to a queue that hasn't been processed,
-		//                   resulting in a notification for an already consumed value
-		// Solution: basically, we have to acquire the writer lock for each write operation.
-		//           this would be easier using a single thread per port, since each queue already has a lock
-		//           which could be reused for this purpose.
-		//             (only "problem" is, I'm not sure if this can also be done with atomics for GPIs ;)
-		//              maybe I would have to use "proper" locks there as well)
 		printf("\n writer will wait now...");
 		can_write.wait(lock);
 	}
@@ -101,13 +108,18 @@ void scheduleWriter() {
 }
 
 void scheduleReader() {
+	printf("\nbegin read loop");
+
 	while(is_active) {
+		printf("\ntrying to read...");
 		// wait 2 seconds for input
-		if(intrfc->waitForData(2)) {
+//		if(intrfc->waitForData(2)) {
+//			printf("\ndata! i will read it!");
 			// try to read and interpret a value
 			int a;
 			if(intrfc->readInt(&a)) proto->decode(a);
-		}
+//		}
+		sleep(2);
 	}
 }
 
@@ -146,8 +158,24 @@ void read(int pid, int val) {
 
 // acknowledge without locking or notifications
 void acknowledge_unsafe(unsigned char pid, unsigned int count) {
+	// return, if the queue is empty (count == 0 or weird ack)
+	if(inPorts[pid] == NULL) {
+		printf("port is null");
+		return;
+	}
+	if(inPorts[pid]->writeTaskQueue == NULL) {
+		printf("queue is null");
+		return;
+	}
+	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
+		printf("queue is empty, count: %d", count);
+		return;
+	}
+
+	// if all values of the first task got acknowledged...
 	if(count >= (inPorts[pid]->writeTaskQueue->peek()->remaining())) {
 		// remove the state from the queue
+
 		std::shared_ptr<WriteState> s = inPorts[pid]->writeTaskQueue->take();
 
 		// update count, transit counter and state
@@ -172,6 +200,5 @@ void acknowledge(unsigned char pid, unsigned int count) {
 	acknowledge_unsafe(pid, count);
 
 	// notify writer thread, if everything was acknowledged
-	if(*inPorts[pid]->transit == count) can_write.notify_one();
-
+//	if(*inPorts[pid]->transit == count) can_write.notify_one();
 }

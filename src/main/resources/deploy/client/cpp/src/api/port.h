@@ -20,9 +20,9 @@
 
 // data types
 #include <vector>
-// FIXME move queues somewhere else?
 #include "../linkedQueue.h"
 #include "../io/state.h"
+
 /**
  * An abstract representation of an AXI-Stream port.
  * This marks a general port without a direction and should not be instantiated.

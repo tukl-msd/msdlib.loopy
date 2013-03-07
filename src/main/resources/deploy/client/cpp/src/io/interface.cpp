@@ -7,16 +7,18 @@
 #include "../constants.h"
 
 #include <stdio.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-
+#include <string.h>
 #include <math.h>
+
+#include <netdb.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 
 #define LED_SETTING 0
 #define SWITCH_POLL 1
@@ -39,7 +41,8 @@ void interface::decRef() {
 // new constructor using member initialisation list
 ethernet::ethernet(const char *ip, unsigned short int port) :
 		Data_SocketFD(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
-		ip(ip), port(port) {
+//		sockfd(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
+				ip(ip), port(port) {
 	setup();
 }
 
@@ -87,13 +90,56 @@ void ethernet::setup() {
 		exit(EXIT_FAILURE);
 	}
 
+
+//	// listening socket
+//	struct addrinfo hints, *res;
+//
+//	// first, load up address structs with getaddrinfo():
+//
+//	memset(&hints, 0, sizeof hints);
+//	hints.ai_family = AF_INET;
+//	hints.ai_socktype = SOCK_STREAM;
+//	hints.ai_flags = AI_PASSIVE; // fill in my IP for me
+//
+//	getaddrinfo("192.168.1.23", "8845", &hints, &res);
+//
+//	// make a socket:
+//	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+//
+//	char ipstr[INET6_ADDRSTRLEN];
+//	inet_ntop(res->ai_family, res->ai_addr, ipstr, sizeof ipstr);
+//	printf("  %s\n", ipstr);
+
+
+//	struct sockaddr_in my_addr;
+//
+//	sockfd = socket(PF_INET, SOCK_STREAM, 0);
+//
+//	my_addr.sin_family = AF_INET;
+//	my_addr.sin_port = htons(port2);     // short, network byte order
+//	my_addr.sin_addr.s_addr = inet_addr("192.168.1.23");
+//	memset(my_addr.sin_zero, '\0', sizeof my_addr.sin_zero);
+//
+//	// bind it to the port we passed in to getaddrinfo():
+//	bind(sockfd, (struct sockaddr *)&my_addr, sizeof my_addr);
+////	bind(sockfd, res->ai_addr, res->ai_addrlen);
+//
+//	printf("  %s\n", inet_ntoa(my_addr.sin_addr));
+//
+//	// listen to the port
+//	listen(sockfd, 20);
+
+	//everything else --> listening loop...
+
 	printf(" done\n");
 }
 
 void ethernet::teardown() {
 	// Disconnect the Socket
-	shutdown(Data_SocketFD, SHUT_RDWR);
+//	shutdown(Data_SocketFD, SHUT_RDWR);
 	close(Data_SocketFD);
+//	shutdown(sockfd, SHUT_RDWR);
+//	close(sockfd);
 }
 
 bool ethernet::send(int val) {
@@ -163,7 +209,8 @@ bool ethernet::readInt(int buf[], int size) {
 }
 
 bool ethernet::readInt(int *val) {
-	return read(Data_SocketFD, val, 4) < 0;
+	return recv(Data_SocketFD, val, 4, 0) > 0;
+//	return read(sockfd, val, 4) > 0;
 }
 
 bool ethernet::waitForData(int timeout) {
@@ -177,10 +224,18 @@ bool ethernet::waitForData(int timeout) {
 	FD_ZERO(&readfds);
 	FD_SET(Data_SocketFD, &readfds);
 
-	select(Data_SocketFD+1, &readfds, NULL, NULL, &tv);
+	select(Data_SocketFD, &readfds, NULL, NULL, &tv);
 
-	if (FD_ISSET(Data_SocketFD, &readfds)) return true;
-
+	if (FD_ISSET(Data_SocketFD, &readfds)) {
+		printf("\ndelicious data");
+		return true;
+	}
+//	struct sockaddr_storage their_addr;
+//	socklen_t addr_size;
+//
+//	addr_size = sizeof their_addr;
+//	int n = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+//	if(n > 0) printf("\ngot a new socket!!!");
 	return false;
 }
 

@@ -129,8 +129,9 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
+                "if(DEBUG) xil_printf(\"\\nwriting to in-going port %d ...\", target);",
                 "switch(target) {"
-            ), MQuoteInclude("fsl.h")));
+            ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
         axi_read  = MProcedure(MDocumentation(Strings(
                 "Read a value from an AXI stream."),
                 PARAM("val", "Pointer to the memory area, where the read value will be stored."),
@@ -139,8 +140,9 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
+                "if(DEBUG) xil_printf(\"\\nreading from out-going port %d ...\", target);",
                 "switch(target) {"
-            ), MQuoteInclude("fsl.h")));
+            ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
     }
     
     public MFile getComponentsFile() {
@@ -156,8 +158,8 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         
         // add queue size constants
-        addConst("HW_QUEUE_SIZE", "256", "Size of the queues implemented in hardware.");
-        addConst("SW_QUEUE_SIZE", "1024", "Size of the queues on the microblaze.");
+        addConst("HW_QUEUE_SIZE", "4", "Size of the queues implemented in hardware.");
+        addConst("SW_QUEUE_SIZE", "8", "Size of the queues on the microblaze.");
         addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "");
         
         // add protocol version constant
@@ -177,13 +179,18 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         axi_write = addLines(axi_write, MCode(Strings(
                 "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
                 "}", "// should be call by value --> reuse the memory address...",
-                "fsl_isinvalid(target);",
-                "return target;")));
+                "int rslt = 1;",
+                "fsl_isinvalid(rslt);",
+                "if(DEBUG) xil_printf(\" (invalid: %d)\", rslt);",
+                "return rslt;")));
         axi_read  = addLines(axi_read,  MCode(Strings(
                 "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
                 "}", "// should be call by value --> reuse the memory address...",
-                "fsl_isinvalid(target);",
-                "return target;")));
+                "if(DEBUG) xil_printf(\"\\n %d\", *val);",
+                "int rslt = 1;",
+                "fsl_isinvalid(rslt);",
+                "if(DEBUG) xil_printf(\" (invalid: %d)\", rslt);",
+                "return rslt;")));
         
         // add axi read and write procedures
         components = add(components, axi_write);
@@ -312,7 +319,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                     if(axiStreamIdSlave>15) continue; //TODO: throw exception: to many slave interfaces / out-going ports
                     axi_read  = addLines(axi_read,  MCode(Strings(
                             "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
-                            ": getfslx(val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
+                            ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
                             )));
                     axiStreamIdSlave++;
                 } else {

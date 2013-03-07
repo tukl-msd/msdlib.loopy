@@ -15,17 +15,23 @@ protocol::protocol() {}
 protocol_v1::protocol_v1() {}
 
 int protocol_v1::decode(int first) {
-//	int version = floor(first / pow(2, 24));
+	printf("\nfound something to decode: %d", first);
+	int version = floor(first / pow(2, 24));
 
 	first = fmod(first, pow(2, 24));
 	int type = floor(first / pow(2, 20));
 
 	// set id as specified in protocol version 1
 	first = fmod(first, pow(2, 20));
-	int id = floor(first / pow(2, 16));
+	unsigned char pid = floor(first / pow(2, 16));
 
 	// the last two bytes mark the size of this frame
-	int size = fmod(first, pow(2, 16));
+	unsigned int size = fmod(first, pow(2, 16));
+
+	printf("\nver : %d", version);
+	printf("\ntype: %d", type);
+	printf("\ntarg: %d", pid);
+	printf("\nsize: %d", size);
 
 	// read size more bytes?
 
@@ -59,12 +65,13 @@ int protocol_v1::decode(int first) {
 		if(size > 0) {
 			// the size is given in byte
 //			int payload[size];
-			int val, i = 0;
+			int val;
+			unsigned int i = 0;
 			while(i < size) {
 				// try to read a value
 				if(intrfc->readInt(&val)) {
 					i++;
-					read(id,val);
+					read(pid,val);
 				}
 			}
 		}
@@ -76,7 +83,7 @@ int protocol_v1::decode(int first) {
 		break;
 		// 12&13 are not assigned
 	case 14: // This marks a GPIO message. We need to switch over the target component.
-		switch(id) {
+		switch(pid) {
 		case 0: // This marks setting of the LED state. In this case, we use the size field as value.
 			// Receiving such a message at the client marks an error.
 		case 1: // switch poll - answer with current state
@@ -87,7 +94,7 @@ int protocol_v1::decode(int first) {
 		}
 		break;
 	case 15: // This is an acknowledgment.
-		acknowledge(id, size);
+		acknowledge(pid, size);
 		break;
 	default:
 		printf("\nWARNING: unknown type %d for protocol version 1. The frame will be ignored.", type);

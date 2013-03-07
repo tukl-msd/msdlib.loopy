@@ -1,0 +1,14 @@
+/**
+ * @mainpage
+ * Here be the text for the mainpage!
+ */
+
+/**
+ * The API, the user should program against.
+ * @dir api
+ */
+
+/**
+ * Parts of the host-side driver necessary for communication with the client-side driver.
+ * @dir io
+ */

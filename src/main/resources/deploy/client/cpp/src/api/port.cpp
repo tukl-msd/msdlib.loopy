@@ -25,8 +25,13 @@ std::shared_ptr<State> in::write(std::shared_ptr<WriteState> s) {
 	// acquire writer lock
 	std::unique_lock<std::mutex> lock(writer_mutex);
 
+	printf("\nwriting state");
+
 	// notify, if queue is empty and nothing is in transit
-	if(writeTaskQueue->empty() && transit == 0) can_write.notify_one();
+	if(writeTaskQueue->empty() && *transit == 0) {
+		printf("\nnotify writer");
+		can_write.notify_one();
+	}
 
 	// put the value in the queue
 	writeTaskQueue->put(s);

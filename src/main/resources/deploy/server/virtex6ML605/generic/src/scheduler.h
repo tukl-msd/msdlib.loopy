@@ -1,8 +1,7 @@
 /**
  * A primitive scheduler.
- * Writes n times on all input ports, read n times from all output ports, then tries to read from the medium.
- * n is defined by the user, per default the maximal number of values in the Microblaze queue.
- * More values cannot be stored, and consequently cannot be read or written.
+ * Reads values from the medium, shifts values between Microblaze and VHDL components,
+ * and writes results back to the medium.
  * @file
  * @author Thomas Fischer
  * @since 18.02.2013
@@ -12,11 +11,10 @@
 
 /**
  * Starts the scheduling loop.
- * Will dod the following things in this loop:
- * -write values from Microblaze input queue to hardware input queue for each input stream
- * -write values from hardware output queue to Microblaze output queue for each output stream
- * -write values from medium to Microblaze input queue
- * -write values from Microblaze output queue to medium
+ * The scheduling loop performs the following actions in each iteration:
+ *  - read and process messages from the medium
+ *  - write values from Microblaze input queue to hardware input queue for each input stream
+ *  - write values from hardware output queue to the medium (caches several values before sending)
  */
 void schedule();
 

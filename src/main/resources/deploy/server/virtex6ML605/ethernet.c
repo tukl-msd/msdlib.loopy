@@ -20,8 +20,12 @@
 #include <math.h>
 
 // attributes of Driver
-struct ip_addr ip, mask, gw;
+struct ip_addr ip, mask, gw, host;
 struct netif *netif, server_netif;
+struct tcp_pcb *pcb;
+struct tcp_pcb *data_pcb;
+
+struct tcp_pcb *con;
 
 /**
  * Prints a single ip address, prefixed with a message.
@@ -30,7 +34,7 @@ struct netif *netif, server_netif;
  */
 static void print_ip ( char *msg, struct ip_addr *ip ) {
     xil_printf(msg);
-    xil_printf("%d.%d.%d.%d\n", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
+    xil_printf("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
 
 /**
@@ -39,14 +43,18 @@ static void print_ip ( char *msg, struct ip_addr *ip ) {
  * @param mask The subnet mask.
  * @param gw The standard gateway.
  */
-static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
-	print_ip("  Board IP: ", ip);
-	print_ip("  Netmask : ", mask);
-	print_ip("  Gateway : ", gw);
-	xil_printf("  Port    : %d\n", PORT);
-}
+static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw, struct ip_addr *host) {
+	print_ip("  Board IP : ", ip);
+	xil_printf(":%d", PORT);
+	print_ip("\n  Netmask  : ", mask);
+	print_ip("\n  Gateway  : ", gw);
+	print_ip("\n  Host IP  : ", host);
+	xil_printf(":%d\n", PORT);
 
+}
+//32506054
 static void set_unaligned ( int *target, int *data ) {
+	xil_printf("\nunaligning value: %d", *data);
     int offset, i;
     char *byte, *res;
 
@@ -93,12 +101,28 @@ void medium_read() {
 	xemacif_input(netif);
 }
 
+err_t test(void *arg, struct tcp_pcb *newpcb, err_t err) {
+	printf("\nwhatever...");
+	return err;
+}
+
+
+err_t test2(void *arg, struct tcp_pcb *tpcb, u16_t len) {
+	printf("\nclosing");
+	tcp_close(tpcb);
+	return 0;
+}
+
 void medium_send(struct Message *m) {
 //	if (tcp_sndbuf(tpcb) > p->len) {
 //			err = tcp_write(tpcb, p->payload, p->len, 1);
 //		} else
 //			print("no space in tcp_sndbuf\n\r");
 	// I have no idea what I'm doing!
+
+	if(DEBUG) xil_printf("\nsending message of size %d", m->headerSize + m->payloadSize);
+	if(DEBUG) xil_printf("\nheader int:  %d", m->header[0]);
+	if(DEBUG) xil_printf("\nexplicit:  %d", *m->header);
 
 	// allocate transport buffer for the message
 	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, 4 * (m->headerSize + m->payloadSize), PBUF_POOL);
@@ -108,24 +132,32 @@ void medium_send(struct Message *m) {
 	for(i = 0; i < m->headerSize; i++)
 		set_unaligned((void*)(((int)(p->payload))+(4*i)), &m->header[i]);
 
+//	for(i = 0; i < m->headerSize; i++) *(((int*)(p->payload))+(4*i)) = m->header[i];
+
 	// write payload in buffer
-	for(i = 0; i < m->payloadSize; i++)
-			set_unaligned((void*)(((int)(p->payload))+(4*(i+m->headerSize))), &m->payload[i]);
+//	for(i = 0; i < m->payloadSize; i++)
+//		set_unaligned((void*)(((int)(p->payload))+(4*(i+m->headerSize))), &m->payload[i]);
 
 	// set i to total size of application layer message
 //	i = m->headerSize + m->payloadSize;
 
 	// create new tcp package
-	struct tcp_pcb *data_pcb = tcp_new();
 	err_t err;
 
+	// setup a connection to the host data port
+//	err = tcp_connect(data_pcb, &host, 8848, test);
+//	if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
 
-	if (tcp_sndbuf(data_pcb) > p->len) {
+	if (tcp_sndbuf(con) > p->len) {
 		// write the package (doesn't send automatically!)
-		err = tcp_write(data_pcb, p->payload, p->len, TCP_WRITE_FLAG_COPY);
+		err = tcp_write(con, p->payload, p->len, TCP_WRITE_FLAG_COPY);
+
+		#ifdef DEBUG
+			if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+		#endif
 
 		// send the package?
-//		tcp_output(data_pcb);
+		err = tcp_output(con);
 
 		#ifdef DEBUG
 			if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
@@ -133,6 +165,15 @@ void medium_send(struct Message *m) {
 	} else {
 		xil_printf("No space in tcp_sndbuf\n\r");
 	}
+
+//	tcp_sent(data_pcb, test2);
+//	xil_printf("\nclosing connection");
+
+	// close the connection
+	err = tcp_close(data_pcb);
+#ifdef DEBUG
+		if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+	#endif
 
 	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
 	pbuf_free(p);
@@ -167,14 +208,8 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) 
 	tcp_recved(tpcb, p->len);
 
 	// let the protocol interpreter handle the package
-	if (tcp_sndbuf(tpcb) > p->len) {
-		msg = p; wordIndex = 0;
-		while(wordIndex * 4 < msg->len)
-//			decode_header(floor(get_unaligned(msg->payload + wordIndex * 4) / pow(2, 24)));
-			decode_header(recv_int());
-	} else {
-		xil_printf("no space in tcp_sndbuf\n\r");
-	}
+	msg = p; wordIndex = 0;
+	while(wordIndex * 4 < msg->len)	decode_header(recv_int());
 
 	// free the received pbuf
 	pbuf_free(p);
@@ -188,6 +223,8 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) 
  */
 err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 	static int connection = 1;
+
+	con = newpcb;
 
 	// set the receive callback for this connection
 	tcp_recv(newpcb, recv_callback);
@@ -204,7 +241,6 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 int start_application() {
 
 	if(DEBUG) xil_printf("Starting server application ...");
-	struct tcp_pcb *pcb;
 	err_t err;
 
 	// create new TCP PCB structure
@@ -234,7 +270,11 @@ int start_application() {
 	// specify callback to use for incoming connections
 	tcp_accept(pcb, accept_callback);
 
+	// init the data pcb...
+	data_pcb = tcp_new();
+
 	if(DEBUG) xil_printf(" done\n");
+
 
 	// receive and process packets
 //	while (1) {
@@ -257,7 +297,9 @@ void init_medium() {
 	IP4_ADDR(&mask, MASK_1, MASK_2, MASK_3, MASK_4);
 	IP4_ADDR(&gw,   GW_1,   GW_2,   GW_3,   GW_4);
 
-	if(DEBUG) print_ip_settings(&ip, &mask, &gw);
+	IP4_ADDR(&host, 192, 168, 1, 23);
+
+	if(DEBUG) print_ip_settings(&ip, &mask, &gw, &host);
 
 	lwip_init();
 
@@ -286,4 +328,13 @@ void init_medium() {
 
 	// specify that the network if is up
 	netif_set_up(netif);
+}
+
+int test_tcp() {
+	struct Message *m = message_new();
+	int a[1] = {5};
+	message_payload(m, a, 1);
+	medium_send(m);
+
+	return 1;
 }

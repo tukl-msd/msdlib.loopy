@@ -100,7 +100,7 @@ public class CPP extends Visitor<NE> implements Backend {
                     MDefinition(MDocumentation(Strings(
                             "Defines the size of the server queues.",
                             "This is equivalent with the maximal number of values, that should be send in one message"
-                    )), MModifiers(PUBLIC()), "QUEUE_SIZE", "20"),
+                    )), MModifiers(PUBLIC()), "QUEUE_SIZE", "8"),
                     MDefinition(MDocumentation(Strings(
                             "The number of in-going component ports"
                     )), MModifiers(PUBLIC()),  "IN_PORT_COUNT", String.valueOf(pi)),

@@ -30,4 +30,6 @@ void medium_send(struct Message *m);
 
 void medium_read();
 
+int test_tcp();
+
 #endif /* MEDIUM_H_ */

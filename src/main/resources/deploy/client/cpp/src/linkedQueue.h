@@ -1,6 +1,13 @@
 /**
- * Template version for the generic linked queue used by both,
+ * Client version for the generic linked queue used by both,
  * host-side and board-side driver.
+ * This version is templated and threadsafe.
+ * That means, all values stored within the queue will have the same
+ * type. Locks prevent parallel access to the queue.
+ * In addition, pointers handed out by the queue are not RAW pointers,
+ * but shared pointers, relieving the user of the necessity to manually
+ * free the memory they are pointing to.
+ * @file
  * @author Thomas Fischer
  * @since 21.02.2013
  */
@@ -93,6 +100,16 @@ public:
 	 * @return Shared pointer to the first element of the queue.
 	 */
 	std::shared_ptr<T> peek();
+
+	/**
+	 * Read the n-th value of the queue without removing any values.
+	 * @param n The index of the value that should be peeked at.
+	 * @return Shared pointer to the n-th element of the queue if the
+	 *         queue is large enough, NULL, if no element with this index
+	 *         exists (i.e. n >= this.size())
+	 */
+	std::shared_ptr<T> peek(unsigned int n);
+
 	/**
 	 * Takes the first element from the queue and returns its value.
 	 * Waits, if the queue is empty.
@@ -141,9 +158,26 @@ template<class T>
 std::shared_ptr<T> LinkedQueue<T>::peek() {
 	/** wait, if the queue is empty */
 	/**if(nodeCount == 0) //fail */
+	if(nodeCount == 0) return NULL;
 
 	/** returns null on an empty queue! */
 	return first->value;
+}
+
+template<class T>
+std::shared_ptr<T> LinkedQueue<T>::peek(unsigned int n) {
+	/** if the queue doesn't contain enough elements, return null */
+	if(nodeCount <= n) return NULL;
+
+	unsigned int i = n;
+	Node<T> *node = first;
+
+	while (i > 0) {
+		node = node->next;
+		i--;
+	}
+
+	return node->value;
 }
 
 template<class T>
@@ -152,21 +186,22 @@ std::shared_ptr<T> LinkedQueue<T>::take() {
 	std::unique_lock<std::recursive_mutex> lock(mutex);
 
 	/** wait, if the queue is empty */
-	is_not_empty.wait(lock);
+	if(nodeCount == 0) is_not_empty.wait(lock);
 
-	/** otherwise get the first element and its value */
+	/** otherwise get first node */
 	Node<T> *tmp = first;
-	// TODO why can I access this field? This should be private for ListNode<T> ):
-	std::shared_ptr<T> val = first->value;
+
+	// duplicate the shared pointer to its value
+	std::shared_ptr<T> val = tmp->value;
 
 	/** remove the element from the queue and from the heap */
-	first = first->next;
+	first = tmp->next;
 	nodeCount--;
 
 	tmp->next = NULL;
 	delete(tmp);
 
-	/** return the value */
+	/** return the pointer to the value */
 	return val;
 }
 

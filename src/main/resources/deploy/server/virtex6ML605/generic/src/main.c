@@ -5,26 +5,36 @@
  */
 
 #include "fsl.h"
+//#include "medium/medium.h"
+#include <stdlib.h>
+//#include "medium/message.h"
+#include "xparameters.h"
+
+#include "components/components.h"
+#include "components/gpio/led.h"
 
 // forward declarations
 void init_platform();
 void init_medium();
 void init_components();
+void init_queue();
 void start_application();
 void cleanup_platform();
 
-void reset_components();
-void reset_queues();
+//void reset_components();
+//void reset_queues();
 void schedule();
+//void test_tcp();
 
-//void XUartLite_SendByte(u32 BaseAddress, u8 Data);
-//
+void XUartLite_SendByte(u32 BaseAddress, u8 Data);
+void UartSendInt(int number);
+
 //void UartSendInt(int number) {
 //	int i;
 //	char byte;
 //	for(i = 3; i>= 0; i--) {
 //		byte = (number >> i*8) &0xff;
-//		XUartLite_SendByte(UART_BASEADDR, byte);
+//		XUartLite_SendByte(XPAR_RS232_UART_1_BASEADDR, byte);
 //	}
 //}
 
@@ -33,31 +43,46 @@ void test_axi_communication () {
 	int seed1   = 0x88cb47c9;
 	int seed2   = 0x8a9cdf65;
 	int seed3   = 0xcaf40ed9;
-	int i, RngNumber, numberValues = 8;
+	int i, RngNumber = 0, numberValues = 8;
 
 	xil_printf("\nreset config");
 	// TODO This is very confusing... Why are we using FSL here, when we have AXI streams??
-	putfslx(rst_cfg, 0, FSL_DEFAULT);
+
+//	putfslx(rst_cfg, 0, FSL_NONBLOCKING);
+//	xil_printf("\nwriting 6 values ...");
+//	putfslx(seed1,   0, FSL_NONBLOCKING);
+//	putfslx(seed2,   0, FSL_NONBLOCKING);
+//	putfslx(seed3,   0, FSL_NONBLOCKING);
+//	putfslx(seed1,   0, FSL_NONBLOCKING);
+//	putfslx(seed1,   0, FSL_NONBLOCKING);
+//	putfslx(seed1,   0, FSL_NONBLOCKING);
+
+	while(axi_write(rst_cfg, 0)) {}
 	xil_printf("\nwriting 6 values ...");
-	putfslx(seed1,   0, FSL_DEFAULT);
-	putfslx(seed2,   0, FSL_DEFAULT);
-	putfslx(seed3,   0, FSL_DEFAULT);
-	putfslx(seed1,   0, FSL_DEFAULT);
-	putfslx(seed1,   0, FSL_DEFAULT);
-	putfslx(seed1,   0, FSL_DEFAULT);
+	while(axi_write(seed1,   0)) {}
+	while(axi_write(seed2,   0)) {}
+	while(axi_write(seed3,   0)) {}
+	while(axi_write(seed1,   0)) {}
+	while(axi_write(seed1,   0)) {}
+	while(axi_write(seed1,   0)) {}
 
 	xil_printf(" done\nread %d values ...", numberValues);
 	for(i = 0; i < numberValues; i++) {
-		getfslx(RngNumber, 0, FSL_DEFAULT);
-		//		xil_printf("\n  number %d: %d", i, RngNumber);
-//		UartSendInt(RngNumber)
+		while(axi_read(&RngNumber, 0)) set_LED(1);
+//		int invalid = 1;
+//		while(invalid) {
+//			getfslx(RngNumber,  0, FSL_NONBLOCKING);
+//			fsl_isinvalid(invalid);
+//		}
+		set_LED(0);
+		UartSendInt(RngNumber);
 	}
 }
 
-void reset() {
-	reset_components();
-	reset_queues();
-}
+//void reset() {
+//	reset_components();
+//	reset_queues();
+//}
 
 // main method
 int main() {
@@ -65,13 +90,15 @@ int main() {
 	init_platform();
 
 	// initialise Ethernet
-	init_medium();
+//	init_medium();
 
 	// initialise all components
 	init_components();
 
-	/* start the application (web server, rxtest, txtest, etc..) */
-	// Note, that this contains the listening loop (which is basically an infinite loop)
+	// initialise queues
+	init_queue();
+
+	// perform medium-specific startup operations (TODO merge with init?)
 	start_application();
 
 //	test_axi_communication();

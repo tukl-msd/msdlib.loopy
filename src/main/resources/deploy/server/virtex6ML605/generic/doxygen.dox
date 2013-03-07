@@ -1,4 +1,9 @@
 /**
+ * mainpage
+ * This will be the comment block for documentation text on the main page
+ */
+
+/**
  * Files handling setup of and communication with components on the board.
  * @dir components
  */
