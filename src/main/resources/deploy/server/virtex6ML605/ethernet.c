@@ -54,7 +54,7 @@ static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct i
 }
 //32506054
 static void set_unaligned ( int *target, int *data ) {
-	xil_printf("\nunaligning value: %d", *data);
+	if(DEBUG) xil_printf("\nunaligning value: %d", *data);
     int offset, i;
     char *byte, *res;
 
@@ -122,7 +122,6 @@ void medium_send(struct Message *m) {
 
 	if(DEBUG) xil_printf("\nsending message of size %d", m->headerSize + m->payloadSize);
 	if(DEBUG) xil_printf("\nheader int:  %d", m->header[0]);
-	if(DEBUG) xil_printf("\nexplicit:  %d", *m->header);
 
 	// allocate transport buffer for the message
 	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, 4 * (m->headerSize + m->payloadSize), PBUF_POOL);
@@ -135,8 +134,8 @@ void medium_send(struct Message *m) {
 //	for(i = 0; i < m->headerSize; i++) *(((int*)(p->payload))+(4*i)) = m->header[i];
 
 	// write payload in buffer
-//	for(i = 0; i < m->payloadSize; i++)
-//		set_unaligned((void*)(((int)(p->payload))+(4*(i+m->headerSize))), &m->payload[i]);
+	for(i = 0; i < m->payloadSize; i++)
+		set_unaligned((void*)(((int)(p->payload))+(4*(i+m->headerSize))), &m->payload[i]);
 
 	// set i to total size of application layer message
 //	i = m->headerSize + m->payloadSize;

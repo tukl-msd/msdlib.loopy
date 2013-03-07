@@ -64,16 +64,14 @@ int protocol_v1::decode(int first) {
 	case  9: // This is a blocking data package.
 		if(size > 0) {
 			// the size is given in byte
-//			int payload[size];
-			int val;
+			int payload[size];
 			unsigned int i = 0;
+
 			while(i < size) {
 				// try to read a value
-				if(intrfc->readInt(&val)) {
-					i++;
-					read(pid,val);
-				}
+				if(intrfc->readInt(payload + sizeof(int)*i)) i++;
 			}
+			read(pid, payload, size);
 		}
 		break;
 	case 10: // This is a non-blocking poll.

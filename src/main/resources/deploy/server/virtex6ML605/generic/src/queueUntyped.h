@@ -15,8 +15,8 @@
 typedef struct QueueNode {
 	/** Pointer to the next node in the queue */
 	struct QueueNode *next;
-	/** Pointer to the value stored at this node */
-	void *value;
+	/** The value stored at this node */
+	int value;
 } QueueNode;
 
 /**

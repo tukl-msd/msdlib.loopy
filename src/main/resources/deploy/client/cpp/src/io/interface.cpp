@@ -143,13 +143,12 @@ void ethernet::teardown() {
 }
 
 bool ethernet::send(int val) {
-	return false;
+	return send(&val, 1);
 }
 
 // all following procedures & methods are helpers for the test application
 
 bool ethernet::send(int buf[], int size) {
-
 	if(DEBUG) {
 		printf("\nsending package of size %d with values: ", size);
 		int i;
@@ -210,7 +209,6 @@ bool ethernet::readInt(int buf[], int size) {
 
 bool ethernet::readInt(int *val) {
 	return recv(Data_SocketFD, val, 4, 0) > 0;
-//	return read(sockfd, val, 4) > 0;
 }
 
 bool ethernet::waitForData(int timeout) {
@@ -226,10 +224,7 @@ bool ethernet::waitForData(int timeout) {
 
 	select(Data_SocketFD, &readfds, NULL, NULL, &tv);
 
-	if (FD_ISSET(Data_SocketFD, &readfds)) {
-		printf("\ndelicious data");
-		return true;
-	}
+	if (FD_ISSET(Data_SocketFD+1, &readfds)) return true;
 //	struct sockaddr_storage their_addr;
 //	socklen_t addr_size;
 //

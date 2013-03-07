@@ -129,7 +129,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                "if(DEBUG) xil_printf(\"\\nwriting to in-going port %d ...\", target);",
+                "if(DEBUG) xil_printf(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
                 "switch(target) {"
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
         axi_read  = MProcedure(MDocumentation(Strings(

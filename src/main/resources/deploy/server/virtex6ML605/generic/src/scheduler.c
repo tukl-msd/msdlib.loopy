@@ -40,6 +40,7 @@ void schedule() {
 				// remove the read value from the queue
 				take(inQueue[pid]);
 
+				// TODO individual sizes for each port
 				// if the queue was full beforehand, poll
 				if(inQueue[pid]->size == SW_QUEUE_SIZE - 1) send_poll(pid);
 			}

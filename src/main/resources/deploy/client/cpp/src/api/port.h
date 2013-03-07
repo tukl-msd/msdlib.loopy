@@ -171,7 +171,7 @@ public:
  */
 class out : protected port {
 friend void scheduleReader();
-friend void read(int pid, int val);
+friend void read(int pid, int val[], int size);
 friend void read_unsafe(int pid, int val);
 private:
 	std::shared_ptr<LinkedQueue<int>> readValueQueue;

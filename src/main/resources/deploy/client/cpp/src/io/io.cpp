@@ -82,7 +82,7 @@ void scheduleWriter() {
 			if(inPorts[i]->writeTaskQueue->empty()) continue;
 
 			// TODO gather values to be sent.
-			std::vector<int> val = take(inPorts[i]->writeTaskQueue, MICROBLAZE_QUEUE_SIZE);
+			std::vector<int> val = take(inPorts[i]->writeTaskQueue, QUEUE_SIZE);
 
 			// set the transit size
 			*inPorts[i]->transit = val.size();
@@ -113,18 +113,20 @@ void scheduleReader() {
 	while(is_active) {
 		printf("\ntrying to read...");
 		// wait 2 seconds for input
-//		if(intrfc->waitForData(2)) {
+		if(intrfc->waitForData(2)) {
 //			printf("\ndata! i will read it!");
 			// try to read and interpret a value
 			int a;
 			if(intrfc->readInt(&a)) proto->decode(a);
-//		}
-		sleep(2);
+		}
 	}
 }
 
 // read a value without locking or notifications
 void read_unsafe(int pid, int val) {
+	if(DEBUG) printf("\n  storing value %d ...", val);
+
+
 	if(outPorts[pid]->readTaskQueue->empty()) {
 		// if the task queue of the target port is empty, append to the value queue
 		std::shared_ptr<int> ptr(&val);
@@ -132,29 +134,51 @@ void read_unsafe(int pid, int val) {
 	} else {
 		// otherwise, add the value to the first task
 		std::shared_ptr<ReadState> s = outPorts[pid]->readTaskQueue->peek();
-		s->values[s->remaining()] = val;
+		s->values[s->done] = val;
 		s->done++;
 
 		if(s->finished()) outPorts[pid]->readTaskQueue->take();
 	}
+
+	if(DEBUG) printf(" done");
 }
 
-void read(int pid, int val) {
+void read(int pid, int val[], int size) {
+	if(DEBUG) printf("\n locking port %d ...", pid);
+
 	// acquire the port lock
 	std::unique_lock<std::mutex> lock(outPorts[pid]->out_port_mutex);
 
+	if(DEBUG) printf(" done\n storing values (count: %d) ...", size);
+
 	// store the read value without recursive locking
-	read_unsafe(pid, val);
+	for(int i = 0; i < size; i++) read_unsafe(pid, val[i]);
 
-	// TODO This implementation results in the restriction to a single application thread.
-	//      If multiple threads are running, a finished blocking call is no longer equivalent
-	//      with an empty task queue.
-	//      While this can (eventually) be circumvented using notify_all instead, it seems
-	//      very inefficient and is not guaranteed to return ...
-
-	// if the task queue is empty now, notify
 	if(outPorts[pid]->readTaskQueue->empty()) outPorts[pid]->task_empty.notify_one();
 }
+
+//void read(int pid, int val) {
+//	if(DEBUG) printf("\n locking port ...");
+//
+//	// acquire the port lock
+//	std::unique_lock<std::mutex> lock(outPorts[pid]->out_port_mutex);
+//
+//	if(DEBUG) printf(" done\n storing value %d ...", val);
+//
+//	// store the read value without recursive locking
+//	read_unsafe(pid, val);
+//
+//	if(DEBUG) printf(" done");
+//
+//	// TODO This implementation results in the restriction to a single application thread.
+//	//      If multiple threads are running, a finished blocking call is no longer equivalent
+//	//      with an empty task queue.
+//	//      While this can (eventually) be circumvented using notify_all instead, it seems
+//	//      very inefficient and is not guaranteed to return ...
+//
+//	// if the task queue is empty now, notify
+//	if(outPorts[pid]->readTaskQueue->empty()) outPorts[pid]->task_empty.notify_one();
+//}
 
 // acknowledge without locking or notifications
 void acknowledge_unsafe(unsigned char pid, unsigned int count) {

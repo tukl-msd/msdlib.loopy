@@ -31,7 +31,7 @@ static struct QueueNode* createElem(int val) {
  */
 static void clearElems(struct QueueNode *elem) {
 	if(elem->next != NULL) clearElems(elem->next);
-	free(elem->value);
+//	free(elem->value);
 	free(elem);
 }
 
@@ -72,12 +72,12 @@ int take(struct Queue *queue) {
 
 	// otherwise get the first element and its value
 	QueueNode *first = queue->first;
-	void *val = first->value;
+	int val = first->value;
 
 	// remove the element from the queue and the heap
 	queue->first = queue->first->next;
 	queue->size--;
-	free(first->value);
+//	free(first->value);
 	free(first);
 
 	// return the value

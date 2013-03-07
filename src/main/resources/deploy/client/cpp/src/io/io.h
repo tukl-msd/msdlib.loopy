@@ -47,9 +47,10 @@ void acknowledge(unsigned char pid, unsigned int count);
  * Adds the data either to the value queue of the target port or
  * to the first task of the task queue (if a task exists).
  * @param pid Target port id of the value.
- * @param val Value sent to the port.
+ * @param val Values sent to the port.
+ * @param size Number of values sent to the port
  */
-void read(int pid, int val);
+void read(int pid, int val[], int size);
 
 // TODO move this to a non-generic file...
 /** Instance pointer to the communication medium for this writer/reader. */

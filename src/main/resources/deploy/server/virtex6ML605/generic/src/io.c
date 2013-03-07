@@ -102,10 +102,10 @@ void flush_queue(unsigned char pid) {
 	// append the actual payload
 	message_payload(m, outQueue, outQueueSize);
 
-//	medium_send(m);
-	if(DEBUG) xil_printf(" (RAW: ");
-	test_send(m);
-	if(DEBUG) xil_printf(" )");
+	medium_send(m);
+//	if(DEBUG) xil_printf(" (RAW: ");
+//	test_send(m);
+//	if(DEBUG) xil_printf(" )");
 
 	message_free(m);
 	outQueueSize = 0;
