@@ -1,5 +1,4 @@
 /**
- * message.c
  * @author Thomas Fischer
  * @since 27.02.2013
  */
@@ -16,15 +15,6 @@ struct Message* message_new() {
 	return m;
 }
 
-//void message_append(struct Message *m, int values[], int size) {
-//	// TODO Not very efficient )= Better no append...
-//	m->payload = realloc(m->payload, m->payloadSize + sizeof(int) * size);
-//
-//	int i;
-//	for(i = 0; i < size; i++) m->payload[m->payloadSize + i] = values[i];
-//
-//	m->payloadSize += i;
-//}
 void message_payload(struct Message *m, int values[], int size) {
 	m->payload = values;
 	m->payloadSize = size;

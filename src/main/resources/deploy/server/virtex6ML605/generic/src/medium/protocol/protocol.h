@@ -26,7 +26,7 @@ int decode_header( int first );
 /**
  * Delegates calls to the respective protocol encoder for the protocol version the acknowledgement should be encoded with.
  * @param pid  Id of the port, which acknowledges data.
- * @þaram count Number of (integer) values, that are acknowledged.
+ * @param count Number of (integer) values, that are acknowledged.
  * @return Pointer to an empty message with the generated header.
  */
 struct Message* encode_ack(unsigned char pid, unsigned int count);

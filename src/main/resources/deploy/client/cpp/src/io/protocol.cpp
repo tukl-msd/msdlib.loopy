@@ -75,9 +75,8 @@ int protocol_v1::decode(int first) {
 		}
 		break;
 	case 10: // This is a non-blocking poll.
-		     // Receiving a poll from the client means reading <size> 32-bit values from an out-going port.
+		poll(pid); break;
 	case 11: // This is a blocking poll.
-			// Receiving a poll from the client means reading <size> 32-bit values from an out-going port.
 		break;
 		// 12&13 are not assigned
 	case 14: // This marks a GPIO message. We need to switch over the target component.

@@ -128,17 +128,17 @@ public:
 
 template<class T>
 void LinkedQueue<T>::clear() {
-	/** if the queue already is empty, do nothing */
+	/* if the queue already is empty, do nothing */
 	if(empty()) return;
 
-	/** otherwise, acquire the lock */
+	/* otherwise, acquire the lock */
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 
-	/**remove all elements */
+	/*remove all elements */
 //	first->clear();
 	delete first;
 
-	/** reset pointers and nodeCount */
+	/* reset pointers and nodeCount */
 	first = NULL;
 	last  = NULL;
 	nodeCount  = 0;
@@ -156,17 +156,17 @@ int LinkedQueue<T>::size() {
 
 template<class T>
 std::shared_ptr<T> LinkedQueue<T>::peek() {
-	/** wait, if the queue is empty */
-	/**if(nodeCount == 0) //fail */
+	/* wait, if the queue is empty */
+	/* if(nodeCount == 0) //fail */
 	if(nodeCount == 0) return NULL;
 
-	/** returns null on an empty queue! */
+	/* returns null on an empty queue! */
 	return first->value;
 }
 
 template<class T>
 std::shared_ptr<T> LinkedQueue<T>::peek(unsigned int n) {
-	/** if the queue doesn't contain enough elements, return null */
+	/* if the queue doesn't contain enough elements, return null */
 	if(nodeCount <= n) return NULL;
 
 	unsigned int i = n;
@@ -182,47 +182,47 @@ std::shared_ptr<T> LinkedQueue<T>::peek(unsigned int n) {
 
 template<class T>
 std::shared_ptr<T> LinkedQueue<T>::take() {
-	/** first of all, acquire the lock */
+	/* first of all, acquire the lock */
 	std::unique_lock<std::recursive_mutex> lock(mutex);
 
-	/** wait, if the queue is empty */
+	/* wait, if the queue is empty */
 	if(nodeCount == 0) is_not_empty.wait(lock);
 
-	/** otherwise get first node */
+	/* otherwise get first node */
 	Node<T> *tmp = first;
 
 	// duplicate the shared pointer to its value
 	std::shared_ptr<T> val = tmp->value;
 
-	/** remove the element from the queue and from the heap */
+	/* remove the element from the queue and from the heap */
 	first = tmp->next;
 	nodeCount--;
 
 	tmp->next = NULL;
 	delete(tmp);
 
-	/** return the pointer to the value */
+	/* return the pointer to the value */
 	return val;
 }
 
 template<class T>
 void LinkedQueue<T>::put(std::shared_ptr<T> val) {
-	/** first of all, acquire the lock */
+	/* first of all, acquire the lock */
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 
-	/** allocate a new node */
+	/* allocate a new node */
 	 Node<T> *elem = new Node<T>(val);
 
-	/** if the queue was empty, use this as first */
+	/* if the queue was empty, use this as first */
 	if(empty()) first = elem;
-	/** otherwise append it to the last element */
+	/* otherwise append it to the last element */
 	else last->next = elem;
 
-	/** set new last pointer and nodeCount */
+	/* set new last pointer and nodeCount */
 	last = elem;
 	nodeCount++;
 
-	/** notify threads waiting on values */
+	/* notify threads waiting on values */
 	is_not_empty.notify_all();
 }
 

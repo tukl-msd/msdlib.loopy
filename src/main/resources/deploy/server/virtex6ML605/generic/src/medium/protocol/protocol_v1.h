@@ -22,7 +22,7 @@ int decode_header_v1(int first);
 /**
  * Generates the header for an acknowledgment with protocol version 1.
  * @param pid  Id of the port, which acknowledges data.
- * @þaram count Number of (integer) values, that are acknowledged.
+ * @param count Number of (integer) values, that are acknowledged.
  * @return Pointer to an empty message with the generated header.
  */
 struct Message* encode_ack_v1(unsigned char pid, unsigned int count);

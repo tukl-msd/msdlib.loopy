@@ -50,7 +50,13 @@ void acknowledge(unsigned char pid, unsigned int count);
  * @param val Values sent to the port.
  * @param size Number of values sent to the port
  */
-void read(int pid, int val[], int size);
+void read(unsigned char pid, int val[], int size);
+
+/**
+ * Processes an incoming poll.
+ * @param pid Target port id of the pol.
+ */
+void poll(unsigned char pid);
 
 // TODO move this to a non-generic file...
 /** Instance pointer to the communication medium for this writer/reader. */

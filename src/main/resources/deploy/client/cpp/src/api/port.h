@@ -41,9 +41,10 @@ class in : protected port {
 friend void scheduleWriter();
 friend void acknowledge(unsigned char pid, unsigned int count);
 friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
+friend void poll(unsigned char pid);
 private:
 	std::shared_ptr<LinkedQueue<WriteState>> writeTaskQueue;
-	std::shared_ptr<unsigned int> transit;
+	std::shared_ptr<int> transit;
 
 	std::shared_ptr<State> write(std::shared_ptr<WriteState> s);
 
@@ -171,8 +172,8 @@ public:
  */
 class out : protected port {
 friend void scheduleReader();
-friend void read(int pid, int val[], int size);
-friend void read_unsafe(int pid, int val);
+friend void read(unsigned char pid, int val[], int size);
+friend void read_unsafe(unsigned char pid, int val);
 private:
 	std::shared_ptr<LinkedQueue<int>> readValueQueue;
 	std::shared_ptr<LinkedQueue<ReadState>> readTaskQueue;

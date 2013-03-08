@@ -160,7 +160,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         // add queue size constants
         addConst("HW_QUEUE_SIZE", "4", "Size of the queues implemented in hardware.");
         addConst("SW_QUEUE_SIZE", "8", "Size of the queues on the microblaze.");
-        addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "");
+        addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "Maximal number of shifts between mb and hw queues per schedule cycle");
         
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");

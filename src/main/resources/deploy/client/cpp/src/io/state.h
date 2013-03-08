@@ -104,7 +104,7 @@ public:
  */
 class ReadState : public State {
 friend class out;
-friend void read_unsafe(int pid, int val);
+friend void read_unsafe(unsigned char pid, int val);
 private:
 	/** Pointer to storage for read values. */
 	int *values;

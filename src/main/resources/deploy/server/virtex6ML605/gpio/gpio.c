@@ -37,10 +37,7 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 	XIntc_Enable(intc, IntrId);
 
 #ifndef TESTAPP_GEN
-	/*
-	 * Start the interrupt controller such that interrupts are recognised
-	 * and handled by the processor
-	 */
+	/* Start the interrupt controller such that interrupts are recognised and handled by the processor  */
 	Result = XIntc_Start(intc, XIN_REAL_MODE);
 	if (Result != XST_SUCCESS) return Result;
 
@@ -52,10 +49,7 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 #ifndef TESTAPP_GEN
 	XScuGic_Config *IntcConfig;
 
-	/*
-	 * Initialise the interrupt controller driver so that it is ready to
-	 * use.
-	 */
+	/* Initialise the interrupt controller driver so that it is ready to use. */
 	IntcConfig = XScuGic_LookupConfig(INTC_DEVICE_ID);
 	if (NULL == IntcConfig) return XST_FAILURE;
 
@@ -65,17 +59,12 @@ int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xi
 	XScuGic_SetPriorityTriggerType(intc, IntrId,
 					0xA0, 0x3);
 
-	/*
-	 * Connect the interrupt handler that will be called when an
-	 * interrupt occurs for the device.
-	 */
+	/* Connect the interrupt handler that will be called when an interrupt occurs for the device. */
 	Result = XScuGic_Connect(intc, IntrId, (Xil_ExceptionHandler)GpioHandler, InstancePtr);
 	if (Result != XST_SUCCESS) return Result;
 
 
-	/*
-	 * Enable the interrupt for the GPIO device.
-	 */
+	/* Enable the interrupt for the GPIO device. */
 	XScuGic_Enable(intc, IntrId);
 #endif /* XPAR_INTC_0_DEVICE_ID */
 

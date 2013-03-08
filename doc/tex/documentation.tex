@@ -437,7 +437,7 @@ Additionally, the client buffer offers \textcolor{red}{\textit{congestion contro
 Similar queues exist for out-going ports. A read on such a port object does not read directly from the board, but from the local queue.
 
 \subsection{I/O Threads}
-The queues described above are filled asynchronously with two separate threads, a writing and a reading thread. High-level functionality of theses threads is rather self-explaining. The writing thread loops over all input queues and writes existing values on the medium. The reading thread does the opposite, i.e. listens to the medium and acts according to received messages (see \Cref{sec:protocol} for details about messages the server can send).
+The queues described above are modified asynchronously with two separate threads, a writing and a reading thread. High-level functionality of theses threads is rather self-explaining. The writing thread loops over all input queues and writes existing values on the medium. The reading thread does the opposite, i.e., listens to the medium and acts according to received messages (see \Cref{sec:protocol} for details about messages the server can send).
 
 Both threads have to be started before using the API using \texttt{startup()} and should be shut down afterwards using \texttt{shutdown()}.
 

@@ -16,7 +16,7 @@
 #include "../io/io.h"
 
 
-in::in(int pid) : writeTaskQueue(new LinkedQueue<WriteState>()), transit(new unsigned int(0)) {
+in::in(int pid) : writeTaskQueue(new LinkedQueue<WriteState>()), transit(new int(0)) {
 	inPorts[pid] = this;
 }
 

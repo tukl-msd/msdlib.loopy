@@ -12,13 +12,15 @@
 
 /**
  * Initialises the LED component.
- * @returns XST_SUCCESS, if successful.
-            Otherwise an error code corresponding to the occurred error.
+ * @returns XST_SUCCESS if successful,
+            otherwise an error code corresponding to the occurred error.
  */
 int init_LED();
 /**
  * Writes the state of the LED component.
  * @param value The new state for the component.
+ * @return XST_SUCCESS, if successful
+ *         otherwise an error code corresponding to the occurred error.
  */
 int set_LED ( u32 value );
 

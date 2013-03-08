@@ -20,13 +20,19 @@
 #endif
 
 #ifdef XPAR_INTC_0_DEVICE_ID
+ /** Device ID of the interrupt handler */
  #define INTC_DEVICE_ID	XPAR_INTC_0_DEVICE_ID
- #define INTC		XIntc
- #define INTC_HANDLER	XIntc_InterruptHandler
+ /** Reference to the interrupt controller instance */
+ #define INTC XIntc
+ /** Reference to the interrupt handler instance */
+ #define INTC_HANDLER XIntc_InterruptHandler
 #else
+ /** Device ID of the interrupt handler */
  #define INTC_DEVICE_ID	XPAR_SCUGIC_SINGLE_DEVICE_ID
- #define INTC		XScuGic
- #define INTC_HANDLER	XScuGic_InterruptHandler
+ /** Reference to the interrupt controller instance */
+ #define INTC XScuGic
+ #define INTC_HANDLER XScuGic_InterruptHandler
+ /** Reference to the interrupt handler instance */
 #endif /* XPAR_INTC_0_DEVICE_ID */
 
 /** Get the instance of the interrupt controller */

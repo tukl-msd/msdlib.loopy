@@ -81,11 +81,11 @@ void scheduleWriter() {
 			// skip the port, if it's task queue is empty
 			if(inPorts[i]->writeTaskQueue->empty()) continue;
 
-			// TODO gather values to be sent.
+			// gather values to be sent.
 			std::vector<int> val = take(inPorts[i]->writeTaskQueue, QUEUE_SIZE);
 
-			// set the transit size
-			*inPorts[i]->transit = val.size();
+			// set the transit counter and write variable
+			*inPorts[i]->transit  = val.size();
 
 			// append a header with the specified protocol
 			val = proto->encode_data(i, val);
@@ -98,7 +98,7 @@ void scheduleWriter() {
 		// wake on:
 		//  - client-side write (which CAN be sent directly,
 		//     i.e. nothing in transit and a previously empty queue)
-		//  - TODO server-side ack or poll (received by reader thread)
+		//  - server-side ack or poll (received by reader thread)
 		//  - shutdown
 		printf("\n writer will wait now...");
 		can_write.wait(lock);
@@ -114,8 +114,7 @@ void scheduleReader() {
 		printf("\ntrying to read...");
 		// wait 2 seconds for input
 		if(intrfc->waitForData(2)) {
-//			printf("\ndata! i will read it!");
-			// try to read and interpret a value
+			// read and interpret a value
 			int a;
 			if(intrfc->readInt(&a)) proto->decode(a);
 		}
@@ -123,9 +122,8 @@ void scheduleReader() {
 }
 
 // read a value without locking or notifications
-void read_unsafe(int pid, int val) {
+void read_unsafe(unsigned char pid, int val) {
 	if(DEBUG) printf("\n  storing value %d ...", val);
-
 
 	if(outPorts[pid]->readTaskQueue->empty()) {
 		// if the task queue of the target port is empty, append to the value queue
@@ -143,7 +141,7 @@ void read_unsafe(int pid, int val) {
 	if(DEBUG) printf(" done");
 }
 
-void read(int pid, int val[], int size) {
+void read(unsigned char pid, int val[], int size) {
 	if(DEBUG) printf("\n locking port %d ...", pid);
 
 	// acquire the port lock
@@ -157,42 +155,21 @@ void read(int pid, int val[], int size) {
 	if(outPorts[pid]->readTaskQueue->empty()) outPorts[pid]->task_empty.notify_one();
 }
 
-//void read(int pid, int val) {
-//	if(DEBUG) printf("\n locking port ...");
-//
-//	// acquire the port lock
-//	std::unique_lock<std::mutex> lock(outPorts[pid]->out_port_mutex);
-//
-//	if(DEBUG) printf(" done\n storing value %d ...", val);
-//
-//	// store the read value without recursive locking
-//	read_unsafe(pid, val);
-//
-//	if(DEBUG) printf(" done");
-//
-//	// TODO This implementation results in the restriction to a single application thread.
-//	//      If multiple threads are running, a finished blocking call is no longer equivalent
-//	//      with an empty task queue.
-//	//      While this can (eventually) be circumvented using notify_all instead, it seems
-//	//      very inefficient and is not guaranteed to return ...
-//
-//	// if the task queue is empty now, notify
-//	if(outPorts[pid]->readTaskQueue->empty()) outPorts[pid]->task_empty.notify_one();
-//}
-
 // acknowledge without locking or notifications
 void acknowledge_unsafe(unsigned char pid, unsigned int count) {
-	// return, if the queue is empty (count == 0 or weird ack)
-	if(inPorts[pid] == NULL) {
-		printf("port is null");
-		return;
-	}
-	if(inPorts[pid]->writeTaskQueue == NULL) {
-		printf("queue is null");
-		return;
-	}
+
+//	if(inPorts[pid] == NULL) {
+//		if(DEBUG) printf("port is null");
+//		return;
+//	}
+//	if(inPorts[pid]->writeTaskQueue == NULL) {
+//		if(DEBUG) printf("queue is null");
+//		return;
+//	}
+
+	// return, if the queue is empty (count == 0 or unexpected ack)
 	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
-		printf("queue is empty, count: %d", count);
+		if(DEBUG) printf("queue is empty, count: %d", count);
 		return;
 	}
 
@@ -212,6 +189,10 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 	} else {
 		// update state (if count == 0, nothing happens;)
 		inPorts[pid]->writeTaskQueue->peek()->done += count;
+
+		// update transit counter
+		*inPorts[pid]->transit -= count;
+
 	}
 }
 
@@ -224,5 +205,16 @@ void acknowledge(unsigned char pid, unsigned int count) {
 	acknowledge_unsafe(pid, count);
 
 	// notify writer thread, if everything was acknowledged
-//	if(*inPorts[pid]->transit == count) can_write.notify_one();
+	if(inPorts[pid]->transit == 0) can_write.notify_one();
+	// otherwise, set the transit counter to -1 to mark a blocked port
+	else *inPorts[pid]->transit = -1;
+}
+
+void poll(unsigned char pid) {
+	// set transit counter to 0 to enable transmissions
+	*inPorts[pid]->transit = 0;
+
+	// notify writer thread, if there are waiting tasks
+	if(!inPorts[pid]->writeTaskQueue->empty()) can_write.notify_one();
+
 }

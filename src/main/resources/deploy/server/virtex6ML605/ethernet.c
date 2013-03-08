@@ -328,12 +328,3 @@ void init_medium() {
 	// specify that the network if is up
 	netif_set_up(netif);
 }
-
-int test_tcp() {
-	struct Message *m = message_new();
-	int a[1] = {5};
-	message_payload(m, a, 1);
-	medium_send(m);
-
-	return 1;
-}

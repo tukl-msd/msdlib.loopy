@@ -17,7 +17,6 @@ void init_queue() {
 	if(DEBUG) xil_printf("initialise queues ...\n");
 	int i;
 	for(i = 0; i <  IN_STREAM_COUNT; i++)  inQueue[i] = createQueue();
-//	outQueue = createQueue();
 }
 
 /**
@@ -32,7 +31,6 @@ void reset_queues() {
 	// TODO set some reset flag
 	int i;
 	for(i = 0; i <  IN_STREAM_COUNT; i++) clear( inQueue[i]);
-//	clear(outQueue);
 	outQueueSize = 0;
 	// TODO does this guarantee, that no more values will be written to the MB queues??
 }

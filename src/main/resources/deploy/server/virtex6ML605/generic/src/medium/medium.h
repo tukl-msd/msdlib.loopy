@@ -21,15 +21,15 @@ void init_medium();
  */
 int start_application();
 
-// TODO probably not the best idea... also provide some array send operation...
 /**
- * Sends a single integer value over the medium.
- * @param val The value to be sent.
+ * Sends a message over the medium.
+ * @param m The message to be sent.
  */
 void medium_send(struct Message *m);
 
+/**
+ * Reads a values from the medium.
+ */
 void medium_read();
-
-int test_tcp();
 
 #endif /* MEDIUM_H_ */

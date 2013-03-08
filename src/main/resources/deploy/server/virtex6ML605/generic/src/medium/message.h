@@ -13,8 +13,21 @@
  * Differentiates between header and payload of the message.
  */
 struct Message {
-	int *header, headerSize;
-	int *payload, payloadSize;
+	/**
+	 * Pointer to an array containing the header.
+	 * Memory should be managed by manipulating procedures.
+	 */
+	int *header;
+	/**
+	 * Pointer to an array containing the payload.
+	 * Memory should NOT be managed by manipulating procedures
+	 * in order to reuse the storage area of the sw queue.
+	 */
+	int *payload;
+	/** Size of the referenced header array. */
+	int headerSize;
+	/** Size of the referenced payload array. */
+	int payloadSize;
 };
 
 /**
@@ -31,14 +44,6 @@ struct Message* message_new();
  * @param size Size of the payload.
  */
 void message_payload(struct Message *m, int payload[], int size);
-
-/**
- * Appends values to the payload of a message.
- * @param m The message, to which the values should be appended.
- * @param values The values to be appended.
- * @param size Number of values to append.
- */
-//void message_append(struct Message *m, int values[], int size);
 
 /**
  * Sets the header of a message.
