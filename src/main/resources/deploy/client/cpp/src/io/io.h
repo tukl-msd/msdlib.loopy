@@ -70,7 +70,7 @@ void recv_gpio(unsigned char gid, unsigned char val);
 /** Instance pointer to the communication medium for this writer/reader. */
 extern interface *intrfc;
 
-/********************* LOCKS ********************/
+/************************** LOCKS *************************/
 /** Global writer lock. Use, whenever interacting with shared objects. */
 extern std::mutex writer_mutex;
 /** Notify this variable, when new values can be sent to the board. */
