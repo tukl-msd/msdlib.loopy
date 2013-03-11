@@ -3,11 +3,20 @@
  * @since 19.02.2013
  */
 
+// header file
 #include "protocol.h"
-#include "io.h"
+
+// standard library
 #include <cmath>
 #include <stdio.h>
 
+// constants
+#include "../constants.h"
+
+// others
+#include "io.h"
+
+// protocol instance to be used
 protocol *proto = new protocol_v1();
 
 protocol::protocol() {}
@@ -23,15 +32,15 @@ int protocol_v1::decode(int first) {
 
 	// set id as specified in protocol version 1
 	first = fmod(first, pow(2, 20));
-	unsigned char pid = floor(first / pow(2, 16));
+	unsigned char id = floor(first / pow(2, 16));
 
 	// the last two bytes mark the size of this frame
 	unsigned int size = fmod(first, pow(2, 16));
 
-	printf("\nver : %d", version);
-	printf("\ntype: %d", type);
-	printf("\ntarg: %d", pid);
-	printf("\nsize: %d", size);
+	if(DEBUG) printf("\nver : %d", version);
+	if(DEBUG) printf("\ntype: %d", type);
+	if(DEBUG) printf("\ntarg: %d", id);
+	if(DEBUG) printf("\nsize: %d", size);
 
 	// read size more bytes?
 
@@ -67,31 +76,22 @@ int protocol_v1::decode(int first) {
 			int payload[size];
 			unsigned int i = 0;
 
-			while(i < size) {
-				// try to read a value
-				if(intrfc->readInt(payload + sizeof(int)*i)) i++;
-			}
-			read(pid, payload, size);
+			// try to read a value from the medium
+			while(i < size) if(intrfc->readInt(payload + sizeof(int)*i)) i++;
+
+			// shift read values to the respective queue
+			read(id, payload, size);
 		}
 		break;
 	case 10: // This is a non-blocking poll.
-		poll(pid); break;
+		poll(id); break;
 	case 11: // This is a blocking poll.
 		break;
 		// 12&13 are not assigned
-	case 14: // This marks a GPIO message. We need to switch over the target component.
-		switch(pid) {
-		case 0: // This marks setting of the LED state. In this case, we use the size field as value.
-			// Receiving such a message at the client marks an error.
-		case 1: // switch poll - answer with current state
-			break;
-		case 2: // button poll - answer with current state
-			break;
-		default: break;
-		}
-		break;
+	case 14: // This marks a GPIO message.
+		recv_gpio(id, size); break;
 	case 15: // This is an acknowledgment.
-		acknowledge(pid, size);
+		acknowledge(id, size);
 		break;
 	default:
 		printf("\nWARNING: unknown type %d for protocol version 1. The frame will be ignored.", type);
@@ -103,8 +103,8 @@ int protocol_v1::decode(int first) {
 	return 0;
 }
 
-std::vector<int> protocol_v1::encode_data(unsigned char cid, std::vector<int> val) {
-	val.insert(val.begin(),construct_header(8, cid, val.size()));
+std::vector<int> protocol_v1::encode_data(unsigned char pid, std::vector<int> val) {
+	val.insert(val.begin(),construct_header(8, pid, val.size()));
 	return val;
 }
 

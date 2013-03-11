@@ -3,7 +3,7 @@
  * @since 04.02.2013
  */
 
-#include "switch.h"
+#include "switches.h"
 #include "gpio.h"
 #include "xparameters.h"
 #include "../../constants.h"
@@ -13,7 +13,7 @@ static XGpio switches;
 // forward declaration from led
 int set_LED(u32 state);
 // forward declaration of the callback procedure
-void callbackSwitches();
+void callback_switches();
 
 /**
  * The Xil_ExceptionHandler to be used as callback for the switch component.
@@ -23,17 +23,17 @@ void GpioHandlerSwitches ( void *CallbackRef ) {
     XGpio *GpioPtr = (XGpio *)CallbackRef;
 
     // execute user-defined callback
-    callbackSwitches();
+    callback_switches();
 
     // Clear the Interrupt
     XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);
 }
 
-u32 read_switch ( ) {
+u32 read_switches ( ) {
     return XGpio_DiscreteRead(&switches, GPIO_CHANNEL1);
 }
 
-int init_switch() {
+int init_switches() {
 	if(DEBUG) xil_printf("initialise switches ...\n");
 	int status = XGpio_Initialize(&switches, XPAR_DIP_SWITCHES_8BITS_DEVICE_ID);
 	XGpio_SetDataDirection(&switches,  GPIO_CHANNEL1, 0xFFFFFFFF);

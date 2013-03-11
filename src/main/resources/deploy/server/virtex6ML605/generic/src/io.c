@@ -67,22 +67,28 @@ void send_poll(unsigned char pid) {
 	message_free(m);
 }
 
-void XUartLite_SendByte(u32 BaseAddress, u8 Data);
-
-void UartSendInt(int number) {
-	int i;
-	char byte;
-	for(i = 3; i>= 0; i--) {
-		byte = (number >> i*8) &0xff;
-		XUartLite_SendByte(XPAR_RS232_UART_1_BASEADDR, byte);
-	}
+void send_gpio(unsigned char gid, unsigned char val) {
+	struct Message *m = encode_gpio(gid, val);
+	medium_send(m);
+	message_free(m);
 }
 
-void test_send(struct Message *m) {
-	int i;
-	for(i = 0; i < m->headerSize;  i++) UartSendInt(m->header[i]);
-	for(i = 0; i < m->payloadSize; i++) UartSendInt(m->payload[i]);
-}
+//void XUartLite_SendByte(u32 BaseAddress, u8 Data);
+//
+//void UartSendInt(int number) {
+//	int i;
+//	char byte;
+//	for(i = 3; i>= 0; i--) {
+//		byte = (number >> i*8) &0xff;
+//		XUartLite_SendByte(XPAR_RS232_UART_1_BASEADDR, byte);
+//	}
+//}
+//
+//void test_send(struct Message *m) {
+//	int i;
+//	for(i = 0; i < m->headerSize;  i++) UartSendInt(m->header[i]);
+//	for(i = 0; i < m->payloadSize; i++) UartSendInt(m->payload[i]);
+//}
 
 void flush_queue(unsigned char pid) {
 	if(DEBUG) xil_printf("\nflushing %d ...", pid);

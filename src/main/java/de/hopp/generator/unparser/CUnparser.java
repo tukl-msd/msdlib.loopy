@@ -59,7 +59,7 @@ public class CUnparser extends HUnparser {
                     public String CaseMBracketInclude(MBracketInclude term) { return ""; }
                     public String CaseMQuoteInclude(MQuoteInclude term)     { return ""; }
                     public String CaseMForwardDecl(MForwardDecl term)       {
-                        return '\n' + term.name();
+                        return '\n' + term.name() + ";";
                     }
                 }));
         }

@@ -24,7 +24,7 @@
 int decode_header( int first );
 
 /**
- * Delegates calls to the respective protocol encoder for the protocol version the acknowledgement should be encoded with.
+ * Delegates calls to the respective protocol encoder for the protocol version the acknowledgment should be encoded with.
  * @param pid  Id of the port, which acknowledges data.
  * @param count Number of (integer) values, that are acknowledged.
  * @return Pointer to an empty message with the generated header.
@@ -37,6 +37,14 @@ struct Message* encode_ack(unsigned char pid, unsigned int count);
  * @return Pointer to an empty message with the generated header.
  */
 struct Message* encode_poll(unsigned char pid);
+
+/**
+ * Delegates calls to the respective protocol encoder for the protocol version the gpio data message should be encoded with.
+ * @param gid Id of the gpio component.
+ * @param val The new state of the gpio component.
+ * @return Pointer to an empty message with the generated header.
+ */
+struct Message* encode_gpio(unsigned char gid, unsigned char val);
 
 /**
  * Delegates calls to the respective protocol encoder for the protocol version the data message should be encoded with.

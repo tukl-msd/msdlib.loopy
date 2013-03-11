@@ -53,6 +53,9 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     private int axiStreamIdMaster = 0;
     private int axiStreamIdSlave  = 0;
     
+    private int gpiCount = 0;
+    private int gpoCount = 0;
+    
     public String getName() {
         return "Virtex6ML605";
     }
@@ -249,34 +252,40 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
             
         // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
-                MForwardDecl("int init_LED();")));
+                MForwardDecl("int init_LED()")));
     }
 
     public void visit(SWITCHES term) {
         // deploy switch files
         try {
             File target = new File(new File(serverSrc, "components"), "gpio");
-            copy(sourceDir + '/' + "gpio" + '/' + "switch.h", new File(target, "switch.h"), IO);
-            copy(sourceDir + '/' + "gpio" + '/' + "switch.c", new File(target, "switch.c"), IO);
+            copy(sourceDir + '/' + "gpio" + '/' + "switches.h", new File(target, "switches.h"), IO);
+            copy(sourceDir + '/' + "gpio" + '/' + "switches.c", new File(target, "switches.c"), IO);
         } catch(IOException e) {
             errors.addError(new GenerationFailed("Failed to copy switch GPIO sources due to:\n" + e.getMessage()));
         }
             
         // add switch init to component init
-        init = addLines(init, MCode(Strings("init_switch();"),
-                MForwardDecl("int init_switch();")));
+        init = addLines(init, MCode(Strings("init_switches();"),
+                MForwardDecl("int init_switches()")));
 
+        components = add(components, MDefinition(MDocumentation(Strings(
+                "Identifier of the switch component"
+                )), MModifiers(PRIVATE()), "gpo_switches", String.valueOf(gpoCount++)));
+        
         // add callback procedure to component file
         // TODO user-defined code and additional documentation
         components = add(components, MProcedure(MDocumentation(Strings(
                     "Callback procedure for the switch gpio component.",
                     "This procedure is called, whenever the state of the switch component changes."
-                )), MModifiers(PRIVATE()), MVoid(), "callbackSwitches", MParameters(), MCode(Strings(
+                )), MModifiers(PRIVATE()), MVoid(), "callback_switches", MParameters(), MCode(Strings(
                      "// Test application: set LED state to Switch state",
-                     "set_LED(read_switch());"
+                     "set_LED(read_switches());",
+                     "send_gpio(gpo_switches, read_switches());"
                 ), MQuoteInclude("xbasic_types.h"),
-                   MForwardDecl("u32 read_switch();"),
-                   MForwardDecl("void set_LED(u32 state);"))));
+                   MForwardDecl("u32 read_switch()"),
+                   MForwardDecl("void set_LED(u32 state)"),
+                   MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)"))));
     }
 
     public void visit(BUTTONS term) {
@@ -290,18 +299,23 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         }
             
         // add button init to component init
-        init = addLines(init, MCode(Strings("init_button();"),
-                MForwardDecl("int init_button();")));
+        init = addLines(init, MCode(Strings("init_buttons();"),
+                MForwardDecl("int init_buttons()")));
+        
+        components = add(components, MDefinition(MDocumentation(Strings(
+                "Identifier of the button component"
+                )), MModifiers(PRIVATE()), "gpo_buttons", String.valueOf(gpoCount++)));
         
         // add callback procedure to component file
         // TODO user-defined code and additional documentation
         components = add(components, MProcedure(MDocumentation(Strings(
                     "Callback procedure for the pushbutton gpio component.",
                     "This procedure is called, whenever the state of the pushbutton component changes."
-                )), MModifiers(PRIVATE()), MVoid(), "callbackButtons", MParameters(), MCode(Strings(
+                )), MModifiers(PRIVATE()), MVoid(), "callback_buttons", MParameters(), MCode(Strings(
                      "// Test application: print out some text",
-                     "xil_printf(\"\\nhey - stop pushing!! %d\", read_button());"
-                ), MQuoteInclude("xbasic_types.h"), MForwardDecl("u32 read_button();"))));
+                     "xil_printf(\"\\nhey - stop pushing!! %d\", read_buttons());",
+                     "send_gpio(gpo_buttons, read_buttons());"
+                ), MQuoteInclude("xbasic_types.h"), MForwardDecl("u32 read_buttons()"))));
     }
     
     public void visit(VHDL term) {

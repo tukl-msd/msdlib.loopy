@@ -60,6 +60,16 @@ struct Message* encode_poll(unsigned char pid) {
 	}
 }
 
+struct Message* encode_gpio(unsigned char gid, unsigned char val) {
+	switch(PROTO_VERSION) {
+		case 1: return encode_gpio_v1(gid, val);
+		case 2: return encode_data_v2(gid, val);
+		default:
+			if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+			return encode_gpio_v1(gid, val);
+		}
+}
+
 struct Message* encode_data(unsigned char pid, unsigned int size) {
 	switch(PROTO_VERSION) {
 	case 1: return encode_data_v1(pid, size);

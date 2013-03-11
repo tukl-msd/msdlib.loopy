@@ -35,6 +35,15 @@ struct Message* encode_ack_v1(unsigned char pid, unsigned int count);
 struct Message* encode_poll_v1(unsigned char pid);
 
 /**
+ * Generates the header for a gpio data message with protocol version 1.
+ * This message is sent, when the value of a gpio component changes.
+ * @param gid Id of the gpio component.
+ * @param val The new state of the gpio component.
+ * @return Pointer to an empty message with the generated header.
+ */
+struct Message* encode_gpio_v1(unsigned char gid, unsigned char val);
+
+/**
  * Generates the header for a data message with protocol version 1.
  * @param pid Id of the port, from which the message is originated.
  * @param size Size of the message in 4-byte blocks (i.e. count of integer values).

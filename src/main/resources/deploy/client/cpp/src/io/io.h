@@ -23,6 +23,7 @@
 #include "interface.h"
 //#include "state.h"
 #include "../api/port.h"
+#include "../api/gpio.h"
 //#include "../linkedQueue.h"
 
 /** An Exception that marks a failed write operation on a port. */
@@ -58,6 +59,8 @@ void read(unsigned char pid, int val[], int size);
  */
 void poll(unsigned char pid);
 
+void recv_gpio(unsigned char gid, unsigned char val);
+
 // TODO move this to a non-generic file...
 /** Instance pointer to the communication medium for this writer/reader. */
 extern interface *intrfc;
@@ -77,9 +80,8 @@ extern in   *inPorts[];
 extern out *outPorts[];
 
 /** Pointers to the in-going gp queues */
-extern std::shared_ptr<std::atomic<int>>    gpi[];
-/** Pointers to the out-going port queues */
-extern std::shared_ptr<std::atomic<int>>    gpo[];
-
+extern gpi *gpis[];
+/** Pointers to the out-going gp queues */
+extern gpo *gpos[];
 
 #endif /* IO_H_ */

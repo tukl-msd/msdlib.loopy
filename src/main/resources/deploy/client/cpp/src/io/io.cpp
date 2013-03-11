@@ -24,9 +24,9 @@ std::condition_variable can_write;
 in   *inPorts[ IN_PORT_COUNT];
 out *outPorts[OUT_PORT_COUNT];
 
-// gpi queues
-std::shared_ptr<std::atomic<int>> gpi [GPI_COUNT];
-std::shared_ptr<std::atomic<int>> gpo [GPO_COUNT];
+// gpio queues
+gpi *gpis [GPI_COUNT];
+gpo *gpos [GPO_COUNT];
 
 bool is_active = true;
 
@@ -62,7 +62,7 @@ void scheduleWriter() {
 		// is virtually now processing time. The value is simply written into memory.
 		for(unsigned char i = 0; i < GPI_COUNT; i++) {
 			// atomically get the old value and set -1 as new value
-			int val = gpi[i]->exchange(-1);
+			int val = gpis[i]->state.exchange(-1);
 
 			// skip, if the gpio value was invalid
 			if (val == -1) continue;
@@ -217,4 +217,12 @@ void poll(unsigned char pid) {
 	// notify writer thread, if there are waiting tasks
 	if(!inPorts[pid]->writeTaskQueue->empty()) can_write.notify_one();
 
+}
+
+void recv_gpio(unsigned char gid, unsigned char val) {
+	// set the value of the gpio component accordingly
+	gpos[gid]->state = val;
+
+	// notify gpo condition variable
+	gpos[gid]->has_changed.notify_one();
 }

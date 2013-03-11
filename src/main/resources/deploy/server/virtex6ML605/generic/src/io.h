@@ -45,6 +45,13 @@ void recv_message(unsigned char pid, int payload[], unsigned int size);
 void send_poll(unsigned char pid);
 
 /**
+ * Sends the state of a gpio component to the host-side driver.
+ * @param gid Id of the gpio component.
+ * @param val State of the gpio component.
+ */
+void send_gpio(unsigned char gid, unsigned char val);
+
+/**
  * Flushes the software output queue and sends its contents to the host-side client.
  * This does neither influence input queues nor the hardware output queues for any port.
  * @param pid The port, of which data is currently stored in the output queue.

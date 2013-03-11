@@ -255,7 +255,7 @@ public class CPP extends Visitor<NE> implements Backend {
         comp = add(comp, MAttribute(MDocumentation(Strings(
                     docPart, "Communicate with the #" + comp.name() + " core through this port."
                 )), MModifiers(PUBLIC()), MType(type),
-                name, MCodeFragment("", MQuoteInclude("component.h"))));
+                name, MCodeFragment("", MQuoteInclude("component.h"), MQuoteInclude("port.h"))));
         
         if(single) {
             constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().add(

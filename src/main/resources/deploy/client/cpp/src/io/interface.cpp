@@ -222,9 +222,9 @@ bool ethernet::waitForData(int timeout) {
 	FD_ZERO(&readfds);
 	FD_SET(Data_SocketFD, &readfds);
 
-	select(Data_SocketFD, &readfds, NULL, NULL, &tv);
+	select(Data_SocketFD+1, &readfds, NULL, NULL, &tv);
 
-	if (FD_ISSET(Data_SocketFD+1, &readfds)) return true;
+	if (FD_ISSET(Data_SocketFD, &readfds)) return true;
 //	struct sockaddr_storage their_addr;
 //	socklen_t addr_size;
 //

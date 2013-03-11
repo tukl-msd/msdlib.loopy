@@ -17,41 +17,8 @@
 #include "../constants.h"
 #include "../io/io.h"
 
-/**
- * Minimal value for the LED test application.
- * This value marks the two least significant LEDs to be set.
- */
-#define MIN_VALUE 3
-/**
- * Maximal value for the LED test application.
- * This value marks the two most significant LEDs to be set.
- */
-#define MAX_VALUE 192
-
-/**
- * Sets the next LED out of the current LED state and a direction. The next
- * LED state is considered to be the current state shifted one LED into direction
- * if possible, otherwise shifted in the opposite direction.
- *
- * @param direction The current direction, into which the LEDs should are shifted.
- *        0 will shift to the right, 1 will shift to the left (I guess)
- * @param state Pointer to the current LED state. The state will be changed by
- *        this procedure
- * @return the direction for the next step of LED shifting.
- */
-bool next(bool direction, int &state) {
-	if(direction) {
-		if(state >= MAX_VALUE) return next(!direction, state);
-		state = state * 2;
-	} else {
-		if(state <= MIN_VALUE) return next(!direction, state);
-		state = state / 2;
-	}
-	return direction;
-}
-
 // conversion from "boolean" array to single value
-int convertToInt(bool values[8]) {
+static int convertToInt(bool values[8]) {
 
 	if(DEBUG) printf("\n  converting 8-bit array to single value ...");
 
@@ -72,7 +39,7 @@ int convertToInt(bool values[8]) {
  * @param val the integer number which will be converted
  * @returns returns true if the conversion was successful, false otherwise
  */
-bool convertToArr(int size, bool values[], int val) {
+static bool convertToArr(int size, bool values[], int val) {
 	if(DEBUG) printf("\n    converting single value to %d-bit array ...", size);
 
 	// check, if given value is to large for specified array
@@ -100,37 +67,90 @@ bool convertToArr(int size, bool values[], int val) {
 	return 0;
 }
 
-void leds::writeState(bool state[8]) {
-	this->writeState(convertToInt(state));
+void gpo::waitForChange() {
+	// acquire the gpo lock
+	std::unique_lock<std::mutex> lock (gpo_mutex);
+
+	// wait for the state to change
+	has_changed.wait(lock);
 }
 
-void leds::writeState(int state) {
+void leds::writeState(bool state[8]) {
+	writeStateInternal(convertToInt(state));
+}
+
+gpi::gpi(unsigned char gpi_id) : gpi_id(gpi_id) {
+	gpis[gpi_id] = this;
+};
+
+void gpi::writeStateInternal(int state) {
 	// acquire writer lock
 	std::unique_lock<std::mutex> lock(writer_mutex);
 
 	// write the new state atomically (yay)
-	*(this->state) = state;
+	this->state = state;
 	// notify (doesn't matter, if it was written before... then we just notified twice. woohoo
 	can_write.notify_one();
 
 }
 
+gpo::gpo(unsigned char gpo_id) : gpo_id(gpo_id) {
+	gpos[gpo_id] = this;
+};
+
+unsigned char gpo::readStateInternal() {
+	return state;
+}
+
 bool switches::readState(bool state[8]) {
-	return true;
+	return convertToArr(8, state, this->state);
 }
 
 bool buttons::readState(bool state[5]) {
-	return true;
+	return convertToArr(5, state, this->state);
+}
+
+/**
+ * Minimal value for the LED test application.
+ * This value marks the two least significant LEDs to be set.
+ */
+#define MIN_VALUE 3
+/**
+ * Maximal value for the LED test application.
+ * This value marks the two most significant LEDs to be set.
+ */
+#define MAX_VALUE 192
+
+/**
+ * Sets the next LED out of the current LED state and a direction. The next
+ * LED state is considered to be the current state shifted one LED into direction
+ * if possible, otherwise shifted in the opposite direction.
+ *
+ * @param direction The current direction, into which the LEDs should are shifted.
+ *        0 will shift to the right, 1 will shift to the left (I guess)
+ * @param state Pointer to the current LED state. The state will be changed by
+ *        this procedure
+ * @return the direction for the next step of LED shifting.
+ */
+bool leds::next(bool direction, int &state) {
+	if(direction) {
+		if(state >= MAX_VALUE) return next(!direction, state);
+		state = state * 2;
+	} else {
+		if(state <= MIN_VALUE) return next(!direction, state);
+		state = state / 2;
+	}
+	return direction;
 }
 
 void leds::test() {
-//	if(DEBUG) printf("\nstarting hopp lwip led test ...\n");
+	if(DEBUG) printf("\nstarting hopp lwip led test ...\n");
 	bool direction = false;
 	int state = MIN_VALUE;
 
 	int i = 0;
 	while(i < 13) {
-		this->writeState(state);
+		this->writeStateInternal(state);
 		direction = next(direction, state);
 		i++;
 		usleep(175000);

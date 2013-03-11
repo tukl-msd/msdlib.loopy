@@ -125,9 +125,12 @@ int decode_header_v1(int first) {
 	return 0;
 }
 #define version 1
-#define ack 15
+
+// message types
+#define data  8
 #define poll 10
-#define data 8
+#define gpio 14
+#define ack  15
 
 struct Message* encode_ack_v1(unsigned char pid, unsigned int count) {
 	struct Message *m = message_new();
@@ -139,6 +142,13 @@ struct Message* encode_ack_v1(unsigned char pid, unsigned int count) {
 struct Message* encode_poll_v1(unsigned char pid) {
 	struct Message *m = message_new();
 	int header = (version << 24) + (poll << 20) + (pid << 16);
+	message_header(m, &header, 1);
+	return m;
+}
+
+struct Message* encode_gpio_v1(unsigned char gid, unsigned char val) {
+	struct Message *m = message_new();
+	int header = (version << 24) + (gpio << 20) + (gid << 16) + val;
 	message_header(m, &header, 1);
 	return m;
 }

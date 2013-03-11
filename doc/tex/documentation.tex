@@ -318,8 +318,8 @@ For a more detailed documentation of the code and provided methods, Javadoc styl
 
 \node[netCloud] at (0,0) (cloud) {Transport Medium};
 
-\node[class,fill=red!15, right=9em] (cdriver) at (cloud) {client-side driver};
-\node[class, above=4em] (client) at (cdriver) {client application};
+\node[class,fill=red!15, right=9em] (cdriver) at (cloud) {host-side driver};
+\node[class, above=4em] (client) at (cdriver) {host application};
 
 \node[class,fill=red!15, left=9em] (bdriver) at (cloud) {board-side driver};
 \node[class,fill=white, below=4em] (vhdl3) at (bdriver) {};
@@ -334,33 +334,85 @@ For a more detailed documentation of the code and provided methods, Javadoc styl
 \draw[arr,<->] (cloud) to node [auto] {} (bdriver);
 \draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
 \end{tikzpicture}
-\caption{A high-level view of the data flow from a client application to vhdl components on the board through the generated driver}
+\caption{A high-level view of the data flow from a host application to vhdl components on the board through the generated driver}
 \label{fig:dataFlow}
 \end{figure}
 
-The overall architecture of the driver is depicted by \Cref{fig:dataFlow}. Data is sent from an embedding client application to the client side driver. This driver communicates over some transport medium with the board side driver, which in turn distributes the received data to corresponding VHDL components on the FPGA. Results are sent back through the same chain.
+The overall architecture of the driver is depicted by \Cref{fig:dataFlow}. Data is sent from an embedding host application to the host-side driver. This driver communicates over some transport medium with the board-side driver, which in turn distributes the received data to corresponding VHDL components on the FPGA. Results are sent back through the same chain.
 
 \section{Host Side}
-The client side consists of several cpp sources and headers files. These files can be imported in any client side project and be used to wrap communication with components on the board.
+The host side consists of several cpp sources and headers files. These files can be imported in any host side project and be used to wrap communication with components on the board.
+
+%\begin{figure}
+%\centering
+%\begin{tikzpicture}[scale=1, transform shape]
+%\coordinate(center);
+%\node[class] (component) at (0,0) {Component};
+%\node[class, below left=5em and 6em] (interface) at (component) {Interface};
+%\node[class, below right=5em and 6em] (port) at (component) {Port};
+%
+%\node[above=6em] (anchor_comp_if) at (interface) {};
+%\node[above=6em] (anchor_comp_port) at (port) {};
+%
+%\node[class, gray, below=9em] (uart) at (interface) {USB/UART};
+%\node[class, gray, left=4em] (ethernet) at (uart) {Ethernet};
+%\node[class, gray, right=4em] (pcie) at (uart) {PCIE};
+%
+%\node[above=2em] (anchor_ethernet) at (ethernet) {};
+%\node[above=2em] (anchor_uart) at (uart) {};
+%\node[above=2em] (anchor_pcie) at (pcie) {};
+%
+%\node[class, gray, below left=4em and 0.5em] (in) at (port) {IN};
+%\node[class, gray, below right=4em and 0.5em] (out) at (port) {OUT};
+%\node[class, gray, below=9em] (dual) at (port) {DUAL};
+%
+%\node[below=2.75em] (anchor_port) at (port) {};
+%\node[above=1.75em] (anchor_in_a) at (in) {};
+%\node[above=1.75em] (anchor_out_a) at (out) {};
+%
+%\node[above=1.75em] (anchor_dual) at (dual) {};
+%\node[below=2.5em] (anchor_in_b) at (in) {};
+%\node[below=2.5em] (anchor_out_b) at (out) {};
+%
+%\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor_comp_if);
+%\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
+%
+%\draw[arr,-, shorten <= -0.35em] (anchor_comp_if) to node[auto] {} (component);
+%\draw[arr,-, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
+%
+%\node[ann, above left = 0em and 1.5em] (arr1) at (component) {1};
+%\node[ann, above right = 0em and 1.5em] (arr2) at (component) {1};
+%
+%\node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
+%\node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
+%
+%\draw[arr,-, shorten >= -0.4em] (ethernet) to node[auto] {} (anchor_ethernet);
+%\draw[arr,-, shorten >= -0.4em] (pcie) to node[auto] {} (anchor_pcie);
+%\draw[arr,-, shorten >= -0.4em, shorten <= -0.4em] (anchor_ethernet) to node[auto] {} (anchor_pcie);
+%\draw[extend] (uart) to node[auto] {} (interface);
+%
+%\draw[arr,-,shorten >= -0.4em] (in) to node[auto] {} (anchor_in_a);
+%\draw[arr,-,shorten >= -0.4em] (out) to node[auto] {} (anchor_out_a);
+%\draw[arr,-,shorten >= -0.4em, shorten <= -0.4em] (anchor_in_a) to node[auto] {} (anchor_out_a);
+%\draw[extend, shorten <= -0.4em] (anchor_port) to node[auto] {} (port);
+%
+%\draw[arr,-,shorten >= -0.4em] (dual) to node[auto] {} (anchor_dual);
+%\draw[arr,-,shorten >= -0.4em, shorten <= -0.4em] (anchor_in_b) to node[auto] {} (anchor_out_b);
+%\draw[extend, shorten <= -0.4em] (anchor_in_b) to node[auto] {} (in);
+%\draw[extend, shorten <= -0.4em] (anchor_out_b) to node[auto] {} (out);
+%
+%\end{tikzpicture}
+%\caption{Architecture of the host part}
+%\label{fig:archHost}
+%\end{figure}
+
 
 \begin{figure}
 \centering
 \begin{tikzpicture}[scale=1, transform shape]
 \coordinate(center);
 \node[class] (component) at (0,0) {Component};
-\node[class, below left=5em and 6em] (interface) at (component) {Interface};
-\node[class, below right=5em and 6em] (port) at (component) {Port};
-
-\node[above=6em] (anchor_comp_if) at (interface) {};
-\node[above=6em] (anchor_comp_port) at (port) {};
-
-\node[class, gray, below=9em] (uart) at (interface) {USB/UART};
-\node[class, gray, left=4em] (ethernet) at (uart) {Ethernet};
-\node[class, gray, right=4em] (pcie) at (uart) {PCIE};
-
-\node[above=2em] (anchor_ethernet) at (ethernet) {};
-\node[above=2em] (anchor_uart) at (uart) {};
-\node[above=2em] (anchor_pcie) at (pcie) {};
+\node[class, right=15em] (port) at (component) {Port};
 
 \node[class, gray, below left=4em and 0.5em] (in) at (port) {IN};
 \node[class, gray, below right=4em and 0.5em] (out) at (port) {OUT};
@@ -374,22 +426,12 @@ The client side consists of several cpp sources and headers files. These files c
 \node[below=2.5em] (anchor_in_b) at (in) {};
 \node[below=2.5em] (anchor_out_b) at (out) {};
 
-\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor_comp_if);
-\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
+%\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
+%\draw[arr,-, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
+\draw[arr,-] (port) to node[auto] {} (component);
 
-\draw[arr,-, shorten <= -0.35em] (anchor_comp_if) to node[auto] {} (component);
-\draw[arr,-, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
-
-\node[ann, above left = 0em and 1.5em] (arr1) at (component) {1};
-\node[ann, above right = 0em and 1.5em] (arr2) at (component) {1};
-
-\node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
-\node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
-
-\draw[arr,-, shorten >= -0.4em] (ethernet) to node[auto] {} (anchor_ethernet);
-\draw[arr,-, shorten >= -0.4em] (pcie) to node[auto] {} (anchor_pcie);
-\draw[arr,-, shorten >= -0.4em, shorten <= -0.4em] (anchor_ethernet) to node[auto] {} (anchor_pcie);
-\draw[extend] (uart) to node[auto] {} (interface);
+\node[ann, above right = 0em and 1.5em] (ann1) at (component) {1};
+\node[ann, above left = 0em and 2em] (ann2) at (port) {1..n};
 
 \draw[arr,-,shorten >= -0.4em] (in) to node[auto] {} (anchor_in_a);
 \draw[arr,-,shorten >= -0.4em] (out) to node[auto] {} (anchor_out_a);
@@ -406,7 +448,7 @@ The client side consists of several cpp sources and headers files. These files c
 \label{fig:archHost}
 \end{figure}
 
-The architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component. Hidden from the user, a component also has exactly one \textit{interface}, which handles actual communication.
+The architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component.
 
 \subsection{Component}
 A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. data is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.

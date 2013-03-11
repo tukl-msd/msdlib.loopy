@@ -15,11 +15,11 @@
  * @returns XST_SUCCESS, if successful.
             Otherwise an error code corresponding to the occurred error.
  */
-int init_switch();
+int init_switches();
 /**
  * Reads the state of the pushbutton component.
  * @returns The current state of the component.
  */
-u32 read_switch();
+u32 read_switches();
 
 #endif /* SWITCH_H_ */

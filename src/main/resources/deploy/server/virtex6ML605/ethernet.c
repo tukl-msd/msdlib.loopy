@@ -169,10 +169,10 @@ void medium_send(struct Message *m) {
 //	xil_printf("\nclosing connection");
 
 	// close the connection
-	err = tcp_close(data_pcb);
-#ifdef DEBUG
-		if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
-	#endif
+//	err = tcp_close(data_pcb);
+//#ifdef DEBUG
+//		if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+//	#endif
 
 	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
 	pbuf_free(p);
