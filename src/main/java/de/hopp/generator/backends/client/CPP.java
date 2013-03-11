@@ -146,8 +146,7 @@ public class CPP extends Visitor<NE> implements Backend {
                     "The board's LED component.",
                     "This object is used to manipulate the state of the LEDs of the board."
                 )), MModifiers(), MType("leds"),
-                "gpio_leds", MInitList(Strings(String.valueOf(gpi)), MQuoteInclude("gpio.h"))));
-        gpi++;
+                "gpio_leds", MInitList(Strings(String.valueOf(gpo++)), MQuoteInclude("gpio.h"))));
     }
     
     public void visit(SWITCHES term) {
@@ -155,8 +154,7 @@ public class CPP extends Visitor<NE> implements Backend {
                     "The board's switch component.",
                     "This object is used to read the state of the switches of the board."
                 )), MModifiers(), MType("switches"),
-                "gpio_switches", MInitList(Strings(String.valueOf(gpo)), MQuoteInclude("gpio.h"))));
-        gpo++;
+                "gpio_switches", MInitList(Strings(String.valueOf(gpi++)), MQuoteInclude("gpio.h"))));
     }
     
     public void visit(BUTTONS term) {
@@ -164,8 +162,7 @@ public class CPP extends Visitor<NE> implements Backend {
                     "The board's button component.",
                     "This object is used to read the state of the buttons of the board."
                 )), MModifiers(), MType("buttons"),
-                "gpio_buttons", MInitList(Strings(String.valueOf(gpo)), MQuoteInclude("gpio.h"))));
-        gpo++;
+                "gpio_buttons", MInitList(Strings(String.valueOf(gpi++)), MQuoteInclude("gpio.h"))));
     }
     
     public void visit(VHDL vhdl) {

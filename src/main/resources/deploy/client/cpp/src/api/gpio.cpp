@@ -67,23 +67,27 @@ static bool convertToArr(int size, bool values[], int val) {
 	return 0;
 }
 
-void gpo::waitForChange() {
+gpi::gpi(unsigned char gpi_id) : gpi_id(gpi_id) {
+	gpis[gpi_id] = this;
+};
+
+void gpi::waitForChange() {
 	// acquire the gpo lock
-	std::unique_lock<std::mutex> lock (gpo_mutex);
+	std::unique_lock<std::mutex> lock (gpi_mutex);
 
 	// wait for the state to change
 	has_changed.wait(lock);
 }
 
-void leds::writeState(bool state[8]) {
-	writeStateInternal(convertToInt(state));
+unsigned char gpi::readStateInternal() {
+	return state;
 }
 
-gpi::gpi(unsigned char gpi_id) : gpi_id(gpi_id) {
-	gpis[gpi_id] = this;
+gpo::gpo(unsigned char gpo_id) : gpo_id(gpo_id) {
+	gpos[gpo_id] = this;
 };
 
-void gpi::writeStateInternal(int state) {
+void gpo::writeStateInternal(int state) {
 	// acquire writer lock
 	std::unique_lock<std::mutex> lock(writer_mutex);
 
@@ -94,12 +98,8 @@ void gpi::writeStateInternal(int state) {
 
 }
 
-gpo::gpo(unsigned char gpo_id) : gpo_id(gpo_id) {
-	gpos[gpo_id] = this;
-};
-
-unsigned char gpo::readStateInternal() {
-	return state;
+void leds::writeState(bool state[8]) {
+	writeStateInternal(convertToInt(state));
 }
 
 bool switches::readState(bool state[8]) {

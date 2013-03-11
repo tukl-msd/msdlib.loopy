@@ -59,6 +59,11 @@ void read(unsigned char pid, int val[], int size);
  */
 void poll(unsigned char pid);
 
+/**
+ * Process an incoming gpio value.
+ * @param gid Identifier of the changed gpio component.
+ * @param val The new value of the gpio component.
+ */
 void recv_gpio(unsigned char gid, unsigned char val);
 
 // TODO move this to a non-generic file...

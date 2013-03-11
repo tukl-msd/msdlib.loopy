@@ -1,4 +1,4 @@
-/*
+/**
  * Describes the state representation of an operation.
  * This includes the general state as well as the more
  * specialised write and read states.

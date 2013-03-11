@@ -62,7 +62,7 @@ void scheduleWriter() {
 		// is virtually now processing time. The value is simply written into memory.
 		for(unsigned char i = 0; i < GPI_COUNT; i++) {
 			// atomically get the old value and set -1 as new value
-			int val = gpis[i]->state.exchange(-1);
+			int val = gpos[i]->state.exchange(-1);
 
 			// skip, if the gpio value was invalid
 			if (val == -1) continue;
@@ -121,7 +121,11 @@ void scheduleReader() {
 	}
 }
 
-// read a value without locking or notifications
+/**
+ * store a read value at a port without locking or notifications.
+ * @param pid Id of the target port.
+ * @param val Value to be stored.
+ */
 void read_unsafe(unsigned char pid, int val) {
 	if(DEBUG) printf("\n  storing value %d ...", val);
 
@@ -221,8 +225,8 @@ void poll(unsigned char pid) {
 
 void recv_gpio(unsigned char gid, unsigned char val) {
 	// set the value of the gpio component accordingly
-	gpos[gid]->state = val;
+	gpis[gid]->state = val;
 
 	// notify gpo condition variable
-	gpos[gid]->has_changed.notify_one();
+	gpis[gid]->has_changed.notify_one();
 }
