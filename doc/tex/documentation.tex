@@ -193,7 +193,7 @@ The purpose of this chapter is to explain how to properly build and use the gene
 In the following, the tools required to build and execute the driver generator are introduced. Please note, that all tools have to be executable from the command line. This requires (for example) Windows users to adjust their \texttt{PATH} variable.
 
 \paragraph{Java}
-The generator is implemented in Java due to tool support and the environment of the Software Technology Group. Consequently, a JDK version 6 or above is required. 
+The generator is implemented in Java due to tool support and the environment of the Software Technology Group. Consequently, a JDK version 6 or above is required. %I guess a JRE would suffice - if we provide the jar file instead of the source code ;)
 
 \paragraph{Gradle}
 Gradle\footnote{available at \url{http://www.gradle.org/}} is a build tool, similar to \textit{Maven} or \textit{Ant} (like \textit{Make}, but - for the most part - easier to manage within larger projects). It supports the dependency management from Maven while retaining the flexibility of Ant. Plugins required by the build process are automatically downloaded by Gradle.
@@ -280,17 +280,17 @@ The HOPP Driver Generator can be called using the command line interface (CLI). 
 \label{tab:cliParams}
 \end{table}
 
-\begin{table}
-\centering
-\begin{tabular}{ ll | p{9cm} } 
-\hline
+%\begin{table}
+%\centering
+%\begin{tabular}{ ll | p{9cm} } 
+%\hline
 %\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
-\verb!-p! & \verb!--project! & Specifies the project backend. This specifies, in which tool the hardware design should take place. Currently, only XPS in version 14.1 can be selected.\\\\ \hline
-
-\end{tabular}
-\caption{Summary of currently possible options for the Virtex6 server backend}
-\label{tab:cppParams}
-\end{table}
+%\verb!-p! & \verb!--project! & Specifies the project backend. This specifies, in which tool the hardware design should take place. Currently, only XPS in version 14.1 can be selected.\\
+%\hline
+%\end{tabular}
+%\caption{Summary of currently possible options for the Virtex6 server backend}
+%\label{tab:cppParams}
+%\end{table}
 
 Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like the following line:\\
 
@@ -523,8 +523,10 @@ The medium folder contains a source and header file for the medium the board is 
 \paragraph{Components}
 The components folder contains code for component-specific setup and communication between the boards general purpose cpu and designed IP cores. Code for controlling gpio components will also be generated in this folder.
 
-\paragraph{Initialisation}
-Files for initialisation are generated directly in the \texttt{src} folder of the project. Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the scheduling loop. This loop performs three kinds of operations.
+\paragraph{General}
+Several files are generated directly in the \texttt{src} folder of the project. These files contain data types used by all file groups, files required for initialisation, and files linking between medium and components. 
+
+Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the scheduling loop. This loop performs three kinds of operations:
 
 First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
 
@@ -532,86 +534,89 @@ The loop also shifts messages from in-going microblaze queues to in-going hardwa
 
 Finally, the loop writes values from out-going microblaze queues on the medium.
 
+The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
+
 \newpage
 \section{Protocol}
 \label{sec:protocol}
 This section covers the transmission protocol between client and server application. Note that the protocol is base on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages.
 
-\subsection{State transitions}
-
-Note: These calculi denote state transitions of a DFA. The precondition marks several conditions and an in-going message. The postcondition may contain an out-going message. Used messages are:
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{wrt} An application writing values to the driver
-\item \textbf{snd} Send values for a component to board
-\item \textbf{ack} Receive ack for values from board
-\item \textbf{poll} Receive poll from board
-\end{itemize}
-
-In addition, several functions have been used to simplify the calclui.
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{size(q)} The size of a value queue q
-\item \textbf{drop(q, i)} Drops the first i values of a queue q
-\item \textbf{first(q, i)} Obtain the first i values of a queue q. Returns a smaller array, if size(q) \textless ~i
-\end{itemize}
-
-The state is denoted by an array of value queues \textit{q} and an array of transit values \textit{s}. Both arrays are sized by the number of existing board components. The queues store values that should be received by the board, the transit values store the number of values currently in transit, i.e. that have been sent but not yet been acknowledged by the board.
-
-\begin{mathpar}
-\inferrule* [left=Write First] {q[a] = \emptyset \\ s[a] = 0 \\ wrt(a, v)}{q[a] = v \\ s[a] = size(first(v, n)) \\ snd(a, first(v, n))}
-\end{mathpar}
-Initially, the queue is empty and nothing has been sent. If a message is written in this state, store it in the queue, transmit the first n values and store the number of sent values.
-
+%\subsection{State transitions}
+%
+%Note: These calculi denote state transitions of a DFA. The precondition marks several conditions and an in-going message. The postcondition may contain an out-going message. Used messages are:
+%\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+%\item \textbf{wrt} An application writing values to the driver
+%\item \textbf{snd} Send values for a component to board
+%\item \textbf{ack} Receive ack for values from board
+%\item \textbf{poll} Receive poll from board
+%\end{itemize}
+%
+%In addition, several functions have been used to simplify the calclui.
+%\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+%\item \textbf{size(q)} The size of a value queue q
+%\item \textbf{drop(q, i)} Drops the first i values of a queue q
+%\item \textbf{first(q, i)} Obtain the first i values of a queue q. Returns a smaller array, if size(q) \textless ~i
+%\end{itemize}
+%
+%The state is denoted by an array of value queues \textit{q} and an array of transit values \textit{s}. Both arrays are sized by the number of existing board components. The queues store values that should be received by the board, the transit values store the number of values currently in transit, i.e. that have been sent but not yet been acknowledged by the board.
+%
 %\begin{mathpar}
-%\inferrule* [left=Write First] {q[a] = v \\ b[a] = true \\ s[a] = 0 }{q[a] = v \\ b[a] = false \\ s[a] = size(fist(v,n)) \\ snd(a, first(v,n))}
+%\inferrule* [left=Write First] {q[a] = \emptyset \\ s[a] = 0 \\ wrt(a, v)}{q[a] = v \\ s[a] = size(first(v, n)) \\ snd(a, first(v, n))}
 %\end{mathpar}
-%If we have values to send and nothing has been sent so far (i.e. not waiting for a poll), send the first n values and set the send counter accordingly (we could also do this using an invalid send counter, e.g. -1, instead of a new variable).
-
-\begin{mathpar}
-\inferrule* [left=Write More] {q[a] = v \\ wrt(a, v')}{q[a] = v \oplus v'}
-\end{mathpar}
-If more values are received (i.e. while values are in transit), append the new values to the queue.
-
-%replacing the Write First rule would require explicit treatment of this case, since the first flag has to be reset!
+%Initially, the queue is empty and nothing has been sent. If a message is written in this state, store it in the queue, transmit the %first n values and store the number of sent values.
+%
+%%\begin{mathpar}
+%%\inferrule* [left=Write First] {q[a] = v \\ b[a] = true \\ s[a] = 0 }{q[a] = v \\ b[a] = false \\ s[a] = size(fist(v,n)) \\ snd(a, first(v,n))}
+%%\end{mathpar}
+%%If we have values to send and nothing has been sent so far (i.e. not waiting for a poll), send the first n values and set the send counter accordingly (we could also do this using an invalid send counter, e.g. -1, instead of a new variable).
+%
 %\begin{mathpar}
-%\inferrule* [left=Ack Full] {q[a] = v \\ s[a] = size(v) \\ ack(a, size(v))}{q[a] = \emptyset \\ s[a] = 0 \\ b[a] = true}
+%\inferrule* [left=Write More] {q[a] = v \\ wrt(a, v')}{q[a] = v \oplus v'}
 %\end{mathpar}
-%If an acknowledgement is received, that acknowledges all sent data and no more data is in the queue, clear the queue and send %counter.
-
-\begin{mathpar}
-\inferrule* [left=Ack All] {q[a] = v \\ s[a] = i \\ ack(a, i)}{q[a] = drop(v,i) \\ s[a] = size(first(v,n)) \\ snd(a, first(v,n))}
-\end{mathpar}
-If all sent values are acknowledged, but the queue contains more values, remove the acknowledged values, send the next n values and set the send counter accordingly. If the queue is empty (i.e. no more data to send), \texttt{first} evaluates to the empty list. Do not send anything in this case.
-
-\begin{mathpar}
-\inferrule* [left=Ack Some] {q[a] = v \\ s[a] = i \\ ack(a, j) \\ j \textless i}{q[a] = drop(v,j) \\ s[a] = 0}
-\end{mathpar}
-If not all sent values have been acknowledged, clear the acknowledged ones, reset the send counter and wait for polls.
-
-\begin{mathpar}
-\inferrule* [left=Poll] {q[a] = v \\ s[a] = 0 \\ poll(a)}{q[a] = v \\ s[a] size(first(v, n)) \\ snd(a, first(v, n))}
-\end{mathpar}
-If a poll is received, send the first n values for the polled component and set the send counter. If the queue doesn't contain any values, \texttt{first} evaluates to the empty list. Do not send anything in this case.
-
-\begin{mathpar}
-\inferrule* [left=Poll Transit] {s[a] = i \\ i \textgreater 0 \\ poll(a)}{s[a] = i} % ignore polls, while data is in transit
-\end{mathpar}
-Ignore polls for components, which have unacknowledged data in transit. This catches the (unlikely) case of the last sent package (i.e. client queue is empty after sending this package) filling the server queue completely. The server will acknowledge all but will poll after the first value has been consumed.
-
+%If more values are received (i.e. while values are in transit), append the new values to the queue.
+%
+%%replacing the Write First rule would require explicit treatment of this case, since the first flag has to be reset!
+%%\begin{mathpar}
+%%\inferrule* [left=Ack Full] {q[a] = v \\ s[a] = size(v) \\ ack(a, size(v))}{q[a] = \emptyset \\ s[a] = 0 \\ b[a] = true}
+%%\end{mathpar}
+%%If an acknowledgement is received, that acknowledges all sent data and no more data is in the queue, clear the queue and send counter.
+%
 %\begin{mathpar}
-%\inferrule* [left=Total]
-%  {\inferrule* [Left=Foo]
-%     {\inferrule* [Right=Bar,
-%                       leftskip=2em,rightskip=2em,vdots=1.5em]
-%         {a \\ a \\\\ bb \\ cc \\ dd}
-%         {ee}
-%       \\ ff \\ gg}
-%     {hh}
-%  \\
-%  \inferrule* [lab=XX]{uu \\ vv}{ww}}
-%  {(1)}
+%\inferrule* [left=Ack All] {q[a] = v \\ s[a] = i \\ ack(a, i)}{q[a] = drop(v,i) \\ s[a] = size(first(v,n)) \\ snd(a, first(v,n))}
 %\end{mathpar}
+%If all sent values are acknowledged, but the queue contains more values, remove the acknowledged values, send the next n values and set the send counter accordingly. If the queue is empty (i.e. no more data to send), \texttt{first} evaluates to the empty list. Do not send anything in this case.
+%
+%\begin{mathpar}
+%\inferrule* [left=Ack Some] {q[a] = v \\ s[a] = i \\ ack(a, j) \\ j \textless i}{q[a] = drop(v,j) \\ s[a] = 0}
+%\end{mathpar}
+%If not all sent values have been acknowledged, clear the acknowledged ones, reset the send counter and wait for polls.
+%
+%\begin{mathpar}
+%\inferrule* [left=Poll] {q[a] = v \\ s[a] = 0 \\ poll(a)}{q[a] = v \\ s[a] size(first(v, n)) \\ snd(a, first(v, n))}
+%\end{mathpar}
+%If a poll is received, send the first n values for the polled component and set the send counter. If the queue doesn't contain any values, \texttt{first} evaluates to the empty list. Do not send anything in this case.
+%
+%\begin{mathpar}
+%\inferrule* [left=Poll Transit] {s[a] = i \\ i \textgreater 0 \\ poll(a)}{s[a] = i} % ignore polls, while data is in transit
+%\end{mathpar}
+%Ignore polls for components, which have unacknowledged data in transit. This catches the (unlikely) case of the last sent package (i.e. client queue is empty after sending this package) filling the server queue completely. The server will acknowledge all but will poll after the first value has been consumed.
+%
+%%\begin{mathpar}
+%%\inferrule* [left=Total]
+%%  {\inferrule* [Left=Foo]
+%%     {\inferrule* [Right=Bar,
+%%                       leftskip=2em,rightskip=2em,vdots=1.5em]
+%%         {a \\ a \\\\ bb \\ cc \\ dd}
+%%         {ee}
+%%       \\ ff \\ gg}
+%%     {hh}
+%%  \\
+%%  \inferrule* [lab=XX]{uu \\ vv}{ww}}
+%%  {(1)}
+%%\end{mathpar}
+%
+%\newpage
 
-\newpage
 \subsection{Control Flow Graph}
 
 \subsubsection{Host-side Driver}
@@ -628,7 +633,7 @@ In addition, several functions on parts of the state are introduced, to simplify
 \item \textbf{size()} The number of values currently held by q
 \item \textbf{empty()} \texttt{true}, if \texttt{size() == 0}, \texttt{false} otherwise
 \item \textbf{drop(i)} Drops the first i values of q
-\item \textbf{first(i)} Obtain the first i values of q. Returns a smaller array, if size() \textless ~i
+\item \textbf{peek(i)} Obtain the first i values of q. Returns a smaller array, if size() \textless ~i
 \end{itemize}
 
 Used messages are:
@@ -653,11 +658,11 @@ Used messages are:
 
 \draw[extend, black] (anchor) to node[auto] {} (init);
 \draw[arr, black] (init) to node[midway, left=0.5em] {$\inferrule{wrt(v)}{snd(v)}$} (wait);
-\draw[arr, black, bend left = 20] (wait) to node[midway, above] {$\inferrule{ack(i)~[i==s]}{ }$} (ack);
-\draw[arr, black, bend left = 20] (ack) to node[near start, below=0.5em] {$\inferrule{[!q.empty()]}{snd(take(n))}$} (wait);
-\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{[q.empty()]}{\textcolor{red}{notifiy}}$} (init);
-\draw[arr, black, bend left = 20] (wait) to node[near end, right=0.5em] {$\inferrule{ack(i)~[i<s]}{ }$} (idle);
-\draw[arr, black, bend left = 20] (idle) to node[midway, left=0.5em] {$\inferrule{poll}{snd(take(n))}$} (wait);
+\draw[arr, black, bend left = 20] (wait) to node[midway, above] {$\inferrule{ack(i)~[i==s]}{drop(i)}$} (ack);
+\draw[arr, black, bend left = 20] (ack) to node[near start, below=0.5em] {$\inferrule{[!q.empty()]}{snd(peek(n))}$} (wait);
+\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{[q.empty()]}{notifiy}$} (init);
+\draw[arr, black, bend left = 20] (wait) to node[near end, right=0.5em] {$\inferrule{ack(i)~[i<s]}{drop(i)}$} (idle);
+\draw[arr, black, bend left = 20] (idle) to node[midway, left=0.5em] {$\inferrule{poll}{snd(peek(n))}$} (wait);
 
 \end{tikzpicture}
 \label{fig:cfg:client}
@@ -696,6 +701,13 @@ Furthermore, several loops have been left out in order to simplify the graph. Ad
 \subsubsection{Board-side Driver}
 The board-side control flow graph is simpler, since the driver only consists of a single thread. The thread switches between listening to the medium and consuming received messages, as depicted in \Cref{fig:cfg:board}.
 
+Three additional functions have been specified for this diagram:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{store(v)} Tries to store all messages from v in the board-side queue and returns the number of values that could be stored (which may be 0 if the queue was full)
+\item \textbf{consume} Forwards the first message from the queue to the target component and removes it from the queue, if this could successfully be done
+\item \textbf{schedule()} Indicates a state switch initiated by the scheduler 
+\end{itemize}
+
 While in the listening state, received messages will be stored in the corresponding client queue and acknowledged, as long as there is still space in the queue. If the queue is full, the message will be dropped and an empty acknowledgement will be sent to indicate the full queue.
 
 When in the consuming state, the driver will try to forward values to board components as long as they are available.
@@ -722,6 +734,64 @@ A scheduler determines when to switch between the two states. The default schedu
 \caption{Control flow graph of the board-side driver}
 \end{figure}
 
+\subsection{Bit-Translation}
+This section covers the translation of the above messages into messages on the communication medium. Messages can be split into header and payload. The header describes the payload to follow, the payload contains a number of 32-bit values that are sent to or form a component.
+
+The first 8 bit of the header are reserved for the \textit{protocol version}, the message was encoded with. The only version currently available is version 1.
+
+This version reserves the next 4 bit of the header for the type of the message. The protocol above specifies what types of messages are required. In the following paragraphs, these messages are described again in detail, together with their bit encoding.
+
+\paragraph{Data Message}
+A data message marks either a set of values for a specific component being sent from the host to the board or a set of values from a specific component being sent from the board to the host. As such, it requires an identifier for the target or source component as well as the size of the contained payload.
+
+\paragraph{Acknowledgement}
+The acknowledgement confirms reception of a number of values by a specific component. For this purpose, no payload is required. Instead, the number of acknowledged values is encoded within the \textit{size} field.
+
+\paragraph{Data Request (Poll)}
+A data request is used to inform the host, that additional values can now be received. This is necessary if the queue was full beforehand, i.e. a partial acknowledgement was (most likely) sent. The poll does require neither a payload nor a size, but only the identifier of the component, that can now receive values.
+
+\paragraph{GPIO Message}
+A GPIO message is a special type of data message, addressed to a GPIO component. GPIO components use their own address space, disjunct from the addresses used by "normal" components. They are not connected via AXI Stream interfaces but direct memory addresses, consequently they do not influence the port restriction on the microblaze.
+
+Furthermore, GPIO components do only store their current state and perform no calculation like vhdl components. The state is represented by an 8 bit value and is encoded directly in the size field instead of the payload. Storing only the current state also means, that no queues exist for GPIO components and no acknowledgements are required. The new state is simply written into (or read from) memory
+
+\paragraph{Reset Message}
+This message is not specified in the protocol above. A reset message sent by the host-side driver resets the state of the board-side driver, clearing all queues and setting the reset flag for all components. The board-side driver acknowledges a successful reset by answering with a reset message. 
+The target and size fields are unused by the reset message.
+
+\paragraph{Debug Message}
+This message also is not specified in the protocol. It marks a notification of some sort, sent by the board. This can be debug output of the driver running on the microblaze, a warning message about skipped messages or an unhandled error, that occurred on the board. For these messages, the payload contains a string. The target bits are used to differentiate between the debug message type. %Info, Warning, Error - something like that ;)
+
+While it is possible to provide debug output over the JTag cable, the fpga is programmed with, this quickly slows down computation with larger debug outputs. Using the Ethernet connection also for debug output vastly accelerates such computations.
+
+%\begin{table}
+%\centering
+%\begin{tabular}{ | c || c | c || c | c || c | c || c | c | } 
+%\hline
+%Nibble & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\ \hline
+%Name & Version & & Type & ID & Size & & & \\ \hline \hline
+%Value & 0000 & 0001 & 0001 & pid & size & & & \\
+%\hline
+%\end{tabular}
+%\caption{Default data message }
+%\label{tab:cliParams}
+%\end{table}
+
+%Offsets	Octet	0	1	2	3
+%Octet	Bit	 0	 1	 2	 3	 4	 5	 6	 7	 8	 9	10	11	12	13	14	15	16	17	18	19	20	21	22	23	%24	25	26	27	28	29	30	31
+%0	0	Source port	Destination port
+%4	32
+
+%\begin{table}
+%\centering
+%\begin{tabular}{ | c | c | c | c | } 
+%\hline
+%version & type & target & size \\
+%\hline
+%\end{tabular}
+%\caption{Default data message }
+%\label{tab:cliParams}
+%\end{table}
 
 \newpage
 \subsection{Sequence charts}
@@ -1078,6 +1148,9 @@ The driver generator uses the Katja tool, developed by the Software Technology G
 \section{Generation Process}
 \label{sec:genprocess}
 The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs models of all required header- and source files. These models are translated into files by the \texttt{C/C++} unparser.
+
+Several backends exist to create different types of models. Host backends generate models for source code running on a host machine, board backends generate models for source code running on a board respectively. These backends implement a \texttt{Visitor}, which visits all components of the board, and manipulate the source model accordingly.
+Currently, the only available backends are the C++ host backend and the Virtex 6 ML 605 board backend.
 
 \begin{figure}
 \centering
