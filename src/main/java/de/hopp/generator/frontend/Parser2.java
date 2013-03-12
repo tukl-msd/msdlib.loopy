@@ -65,8 +65,8 @@ public class Parser2 {
 //            );
         return Board(ETHERNET_LITE(), BUTTONS(), SWITCHES(), LEDS(),
                 VHDL(VHDLCore("rng", Ports(IN("in1"), OUT("out1"))), Instances("rng_a", "rng_b")),
-                VHDL(VHDLCore("fifo", Ports(IN("data_in"), IN("cfg"), OUT("data_out"))),
-                        Instances("fifo_a"))
+                VHDL(VHDLCore("adder", Ports(IN("in1"), IN("in2"), OUT("out1"))),
+                        Instances("adder_a"))
             );
     }
     

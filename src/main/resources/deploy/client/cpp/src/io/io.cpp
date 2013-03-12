@@ -60,7 +60,7 @@ void scheduleWriter() {
 
 		// gpi values are not acknowledged. They are not queued on the board, since there
 		// is virtually now processing time. The value is simply written into memory.
-		for(unsigned char i = 0; i < GPI_COUNT; i++) {
+		for(unsigned char i = 0; i < GPO_COUNT; i++) {
 			// atomically get the old value and set -1 as new value
 			int val = gpos[i]->state.exchange(-1);
 
