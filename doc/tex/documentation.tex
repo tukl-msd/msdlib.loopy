@@ -535,40 +535,47 @@ The loop also shifts messages from in-going microblaze queues to in-going hardwa
 
 The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
 
-\newpage
+
 \section{Protocol}
 \label{sec:protocol}
 This section covers the transmission protocol between client and server application. Note that the protocol is base on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages.
 
-\subsection{Control Flow Graph}
+\subsection{Control Flow}
 \label{sec:cfg}
 
-\subsubsection{Host-side Driver}
-The state of the host-side driver is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the host queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of the host-side driver is provided in \Cref{fig:cfg:client}. Each state represents a specific combination of these variables.
+This section describes the state of the driver and summarises messages that are sent during each transition. To simplify the control flow graphs, the following variables and functions are introduced:
 
-Several variables occur in the control flow graph:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-%\item \textbf{v} Values of some sort (e.g. an array of integers).
-\item \textbf{n} Size of the board-side queue.
-\item \textbf{i} An unsigned (i.e. positive) integer number, smaller than \texttt{n}.
+  \item \textbf{v} Values of some sort (e.g. an array of integers).
+  \item \textbf{a} Memory addresses (e.g. an array of addresses).
+  \item \textbf{n} The size of the board-side queue (statically known).
+  \item \textbf{i} An unsigned (i.e. positive) integer number, smaller than \texttt{n}.\\
+
+  \item \textbf{size(q)} The number of values currently held by queue \texttt{q}
+  \item \textbf{empty(q)} \texttt{true}, if \texttt{size(q) == 0}, \texttt{false} otherwise
+  \item \textbf{store(q,v)} Stores the values \texttt{v} into queue \texttt{q}.
+  \item \textbf{take(q)} Returns the first value of a queue \texttt{q}. Removes the value from the queue.
+  \item \textbf{drop(q,i)} Drops the first \texttt{i} values of \texttt{q}.
+  \item \textbf{peek(q,i)} Obtain the first \texttt{i} values of \texttt{q}. Returns a smaller number of values, if only less are available, i.e., \texttt{size(q)} \textless ~\texttt{i}.
+  \item \textbf{asgn(a, v)} Assigns a value \texttt{v} to an address  \texttt{a}
 \end{itemize}
 
-The following messages are sent and received by the automaton:
+Messages are exchanged between the application and the client-side driver, as well as between client-side and board-side driver. The following messages are the most important ones influencing the state of the driver:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-%\item \textbf{wrt(v)} An application writing values to the driver. Appends \texttt{v} to \texttt{q}.
-\item \textbf{snd(v)} Send values for a component to board. %Sets \texttt{s} to \texttt{size(v)}.
-\item \textbf{ack(i)} Acknowledges successful reception of \texttt{i} values.
-\item \textbf{poll} A request for additional data.
-\item \textbf{notify} Notifies the application of sending of all queued up messages.
+  \item \textbf{wrt(v)} Request from the application to write values \texttt{v} to the port.
+  \item \textbf{read(a)} Request from the application to read values to the addresses \texttt{a}.
+  \item \textbf{notify} Notifies the application that all tasks queued up at a port have been processed.
+  \item \textbf{data(v)} A data message containing values \texttt{v} for or from a port.
+  \item \textbf{ack(i)} Acknowledges successful reception of \texttt{i} values.
+  \item \textbf{poll} A request message for additional data.
 \end{itemize}
 
-In addition, several functions on parts of the state are introduced, to simplify the automaton.
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{size()} The number of values currently held by \texttt{q}
-\item \textbf{empty()} \texttt{true}, if \texttt{size() == 0}, \texttt{false} otherwise
-\item \textbf{drop(i)} Drops the first \texttt{i} values of \texttt{q}.
-\item \textbf{peek(i)} Obtain the first \texttt{i} values of \texttt{q}. Returns a smaller number of values, if only less are available, i.e., \texttt{size()} \textless ~\texttt{i}.
-\end{itemize}
+
+\subsubsection{Host-Side Driver}
+Since values can be written asynchronously, each port maintains its own state and can perform transitions independent of the other ports. The state of the host-side driver is constructed from the individual states of all ports.
+
+\paragraph{In-Going Port}
+The state of an in-going port is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of an in-going port is provided in \Cref{fig:cfg:inPort}. Each state represents a combination of these variables. Changes to these variables are not explicitly denoted in the diagram.
 
 \begin{figure}[h]
 \centering
@@ -577,36 +584,70 @@ In addition, several functions on parts of the state are introduced, to simplify
 
 \node[state] (init) at (0,0) {Init};
 \node[above left = 2em and 4em] (anchor) at (init){};
-\node[state, below=12em] (wait) at (init) {Wait};
-\node[state, left=12em] (idle) at (wait) {Idle};
-\node[state, right=12em] (ack) at (wait) {Ack};
+\node[state, below=10em] (write) at (init) {Write};
+\node[state, below=10em] (wait) at (write) {Wait};
+\node[state, right=12em] (idle) at (wait) {Idle};
 
 \draw[extend, black] (anchor) to node[auto] {} (init);
-%\draw[arr, black] (init) to node[midway, left=0.5em] {$\inferrule{wrt(v)}{snd(v)}$} (wait);
-\draw[arr, black] (init) to node[near start, left=0.2em] {$\inferrule{[!q.empty()]}{snd(peek(n))}$} (wait);
-\draw[arr, black, bend left = 20] (wait) to node[midway, above= 0.2em] {$\inferrule{ack(i)~[i==s]}{drop(i)}$} (ack);
-\draw[arr, black, bend left = 20] (ack) to node[midway, below= 0.2em] {$\inferrule{[!q.empty()]}{snd(peek(n))}$} (wait);
-\draw[arr, black, bend right = 40] (ack) to node[midway, right=1em] {$\inferrule{[q.empty()]}{notifiy}$} (init);
-\draw[arr, black, bend right = 20] (wait) to node[midway, above=0.2em] {$\inferrule{ack(i)~[i<s]}{drop(i)}$} (idle);
-\draw[arr, black, bend right = 20] (idle) to node[midway, below=0.2em] {$\inferrule{poll}{snd(peek(n))}$} (wait);
+\draw[arr, black, bend right = 20] (init) to node[midway, left=0.2em] {$\inferrule{wrt(v)}{store(q,v)}$} (write);
+\draw[arr, black, bend right = 20] (write) to node[midway, right=0.2em] {$\inferrule{[empty(q)]}{notify()}$} (init);
+
+\draw[arr, black, bend right = 20] (write) to node[midway, left=0.2em] {$\inferrule{[!empty(q)]}{data(peek(q,n))}$} (wait);
+\draw[arr, black, bend right = 20] (wait) to node[midway, right=0.2em] {$\inferrule{ack(i) ~ [i == s]}{drop(q,i)}$} (write);
+
+\draw[arr, black] (wait) to node[midway, above=0.2em] {$\inferrule{ack(i) ~ [i < s]}{drop(q,i)}$} (idle);
+\draw[arr, black, bend right = 40] (idle) to node[midway, right=1em] {$\inferrule{poll}{}$} (write);
 
 \end{tikzpicture}
-\label{fig:cfg:client}
-\caption{Control flow graph of the host-side driver}
+\label{fig:cfg:inPort}
+\caption{Control flow graph of an in-going port}
 \end{figure}
 
-Note, that this graph only addresses a single component. In a scenario with multiple components, an individual state exists for each component. A surrounding scheduler allows only a single automaton to make a transition.
+Several loops have been left out in order to simplify the graph. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored. An application write in any state will result in the values to be appended to \texttt{q}.
 
-Furthermore, several loops have been left out in order to simplify the graph. Additional \texttt{wrt} messages at any other state than \texttt{init} will result in the values to be appended to \texttt{q}. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored.
+\paragraph{Out-Going Port}
+The state of an out-going port is represented by two variables \texttt{q} and \texttt{r}. \texttt{q} is a queue of memory addresses, where values should be read to, \texttt{r} is a queue of values read from the medium but not from the application so far.
+
+Values are automatically pushed forward from the board and stored in \texttt{r}. If the application requests a \texttt{read}, values are shifted from \texttt{r} into \texttt{q}. The application is notified, once all read requests have been served.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\node[state] (init) at (0,0) {Init};
+\node[above left = 2em and 4em] (anchor) at (init){};
+\node[state, below=10em] (read) at (init) {Read};
+\node[state, right=10em] (idle) at (read) {Idle};
+
+\draw[extend, black] (anchor) to node[auto] {} (init);
+\draw[arr, black, out=330, in=30, looseness=6] (init) to node[midway, right=0.2em] {$\inferrule{data(v)}{store(r,v)}$} (init);
+
+\draw[arr, black, bend right = 20] (init) to node[midway, left=0.2em] {$\inferrule{read(a)}{store(q,a)}$} (read);
+\draw[arr, black, out=300, in=240, looseness=6] (read) to node[midway, below=0.2em] {$\inferrule{[!empty(q) ~\wedge~ !empty(r)]}{asgn(take(q), take(r))}$} (read);
+\draw[arr, black, bend right = 20] (read) to node[midway, right=0.2em] {$\inferrule{[empty(q)]}{notify()}$} (init);
+
+\draw[arr, black, bend left = 20] (read) to node[near end, above=0.2em] {$\inferrule{[empty(r) ~\wedge~ !empty(q)]}{}$} (idle);
+\draw[arr, black, out=330, in=30, looseness=6] (idle) to node[midway, right=0.2em] {$\inferrule{read(a)}{store(q,a)}$} (idle);
+\draw[arr, black, bend left = 20] (idle) to node[near start, below=0.2em] {$\inferrule{data(v)}{store(r,v)}$} (read);
+
+\end{tikzpicture}
+\label{fig:cfg:outPort}
+\caption{Control flow graph of an out-going port}
+\end{figure}
+
 
 \subsubsection{Board-side Driver}
 The board-side control flow graph is simpler, since the driver only consists of a single thread. The thread switches between listening to the medium and consuming received messages, as depicted in \Cref{fig:cfg:board}.
 
+The state of the board-side driver only requires a single variable \texttt{q}, which, again, denotes a queue of values.
+
 Three additional functions have been specified for this diagram:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{store(v)} Tries to store all messages from v in the board-side queue and returns the number of values that could be stored (which may be 0 if the queue was full)
-\item \textbf{consume} Forwards the first message from the queue to the target component and removes it from the queue, if this could successfully be done
-\item \textbf{schedule()} Indicates a state switch initiated by the scheduler 
+\item \textbf{store(v)} Tries to store all messages from v in the board-side queue and returns the number of values that could be stored (which may be 0 if the queue was full).
+\item \textbf{consume()} Forwards the first message from the queue to the target component and removes it from the queue, if this could successfully be done.
+\item \textbf{full()} \texttt{true}, if the queue if full (i.e. \texttt{size() == n}), \texttt{false} otherwise.
+\item \textbf{schedule()} Indicates a state switch initiated by the scheduler .
 \end{itemize}
 
 While in the listening state, received messages will be stored in the corresponding client queue and acknowledged, as long as there is still space in the queue. If the queue is full, the message will be dropped and an empty acknowledgement will be sent to indicate the full queue.
@@ -621,21 +662,21 @@ A scheduler determines when to switch between the two states. The default schedu
 \coordinate(center);
 
 \node[state] (listen) at (0,0) {Listen};
-\node[above left = 4em and 4em] (anchor) at (listen){};
+\node[above left = 2em and 4em] (anchor) at (listen){};
 \node[state, below=10em] (read) at (listen) {Consume};
 
 \draw[extend, black] (anchor) to node[auto] {} (listen);
-\draw[arr, black, out=330,in=30,looseness=8] (listen) to node[midway, right=0.5em] {$\inferrule{snd(v)}{ack(store(i))}$} (listen);
-\draw[arr, black, bend left=20] (listen) to node[midway, right=0.5em] {$\inferrule{schedule()}{ }$} (read);
-\draw[arr, black, bend left=20] (read) to node[midway, left=0.5em] {$\inferrule{schedule()}{ }$} (listen);
-\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.5em] {$\inferrule{[!empty()]}{consume()}$} (read);
-
+\draw[arr, black, out=330,in=30,looseness=6] (listen) to node[midway, right=0.5em] {$\inferrule{snd(v)}{ack(store(v))}$} (listen);
+\draw[arr, black, bend left=20] (listen) to node[midway, right=0.2em] {$\inferrule{schedule()}{ }$} (read);
+\draw[arr, black, bend left=20] (read) to node[midway, left=0.2em] {$\inferrule{schedule()}{ }$} (listen);
+\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.2em] {$\inferrule{[full()]}{consume() ~~ poll}$} (read);
+\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!empty(r) ~\wedge~ !full(q)]}{consume()}$} (read);
 \end{tikzpicture}
 \label{fig:cfg:board}
 \caption{Control flow graph of the board-side driver}
 \end{figure}
 
-\subsection{Bit-Translation}
+\subsection{Message Encoding}
 This section covers the translation of the above messages into messages on the communication medium. Messages can be split into header and payload. The header describes the payload to follow, the payload contains a number of 32-bit values that are sent to or form a component.
 
 The first 8 bit of the header are reserved for the \textit{protocol version}, the message was encoded with. The only version currently available is version 1.
