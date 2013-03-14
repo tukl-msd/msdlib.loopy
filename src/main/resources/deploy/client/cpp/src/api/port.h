@@ -59,8 +59,8 @@ private:
 	void block();
 
 //protected:
-//	std::mutex in_port_mutex;
-//	std::condition_variable in_empty;
+	std::mutex in_port_mutex;
+	std::condition_variable in_empty;
 //	std::condition_variable in_not_empty;
 public:
 	/**
@@ -109,9 +109,6 @@ public:
      * been sent to the board) yet.
 	 * @param val The integer value to be written.
 	 * @return A #State representing this write.
-	 * @warning Though described as a blocking write, this method currently only blocks
-	 *          until the microblaze has received the value, not until the component
-	 *          has received it. This will be fixed in a later version
 	 */
 	std::shared_ptr<State> nbwrite(int val);
 	/**

@@ -30,7 +30,6 @@ template <class T>
 class Node {
 friend class LinkedQueue<T>;
 private:
-	/** Pointer to the next node in the queue */
 	Node<T> *next;
 	/** Pointer to the value stored at this node */
 	std::shared_ptr<T> value;
@@ -124,6 +123,11 @@ public:
 	 * @param val Shared pointer to the element to append.
 	 */
 	void put(std::shared_ptr<T> val);
+
+	/**
+	 * Blocks until the queue is empty.
+	 */
+	void block();
 };
 
 template<class T>
@@ -201,6 +205,9 @@ std::shared_ptr<T> LinkedQueue<T>::take() {
 	tmp->next = NULL;
 	delete(tmp);
 
+	/* notify condition variable, if the queue is empty now */
+	if(nodeCount == 0) is_empty.notify_all();
+
 	/* return the pointer to the value */
 	return val;
 }
@@ -224,6 +231,15 @@ void LinkedQueue<T>::put(std::shared_ptr<T> val) {
 
 	/* notify threads waiting on values */
 	is_not_empty.notify_all();
+}
+
+template<class T>
+void LinkedQueue<T>::block() {
+	/* first of all, acquire the lock */
+	std::unique_lock<std::recursive_mutex> lock(mutex);
+
+	/* wait for the queue to get empty */
+	is_empty.wait(lock);
 }
 
 #endif /* LINKEDQUEUE_H_ */

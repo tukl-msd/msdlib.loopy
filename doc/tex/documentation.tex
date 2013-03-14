@@ -47,7 +47,7 @@
 
 \usepackage[underline=false,rounded corners=true]{pgf-umlsd}
 
-\lstset{literate=%
+\lstset{literate=
 {Ö}{{\"O}}1
 {Ä}{{\"A}}1
 {Ü}{{\"U}}1
@@ -143,7 +143,6 @@
 \newpage
 
 
-
 \chapter{Introduction}
 \label{sec:intro}
 This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. While the first chapters are more addressed towards users of the generator, the later ones are more addressed towards developers. 
@@ -214,6 +213,9 @@ In order to generate an \texttt{.elf} file that can is used to program the FPGA,
  \textcolor{red}{We try to avoid to require the user to actually design anything in the Xilinx suite, but only use it for synthesising the board hard- and software. Both, \texttt{.mhs} file and all source files for the EDK, are created by the driver generator.}
 
 \textcolor{red}{It is furthermore desirable to skip user-interfaction with the EDK completely. This would require generation of the board support package and external call of Xilinx' compiler.}
+
+\section{Board Description Language}
+In this section, the board description language is introduced. This language is used to specify a board, for which a driver should be generated.
 
 \section{Process}
 \label{sec:process}
@@ -341,74 +343,11 @@ For a more detailed documentation of the code and provided methods, Javadoc styl
 
 The overall architecture of the driver is depicted by \Cref{fig:dataFlow}. Data is sent from an embedding host application to the host-side driver. This driver communicates over some transport medium with the board-side driver, which in turn distributes the received data to corresponding VHDL components on the FPGA. Results are sent back through the same chain.
 
-\section{Host Side}
-The host side consists of several cpp sources and headers files. These files can be imported in any host side project and be used to wrap communication with components on the board.
+\section{API}
+\label{sec:api}
+This section describes, how the host-side API, the hardware designer programs his application against, should look like. This helps designers in writing their application and describes how host-side drivers in other languages should be implemented in general.
 
-%\begin{figure}
-%\centering
-%\begin{tikzpicture}[scale=1, transform shape]
-%\coordinate(center);
-%\node[class] (component) at (0,0) {Component};
-%\node[class, below left=5em and 6em] (interface) at (component) {Interface};
-%\node[class, below right=5em and 6em] (port) at (component) {Port};
-%
-%\node[above=6em] (anchor_comp_if) at (interface) {};
-%\node[above=6em] (anchor_comp_port) at (port) {};
-%
-%\node[class, gray, below=9em] (uart) at (interface) {USB/UART};
-%\node[class, gray, left=4em] (ethernet) at (uart) {Ethernet};
-%\node[class, gray, right=4em] (pcie) at (uart) {PCIE};
-%
-%\node[above=2em] (anchor_ethernet) at (ethernet) {};
-%\node[above=2em] (anchor_uart) at (uart) {};
-%\node[above=2em] (anchor_pcie) at (pcie) {};
-%
-%\node[class, gray, below left=4em and 0.5em] (in) at (port) {IN};
-%\node[class, gray, below right=4em and 0.5em] (out) at (port) {OUT};
-%\node[class, gray, below=9em] (dual) at (port) {DUAL};
-%
-%\node[below=2.75em] (anchor_port) at (port) {};
-%\node[above=1.75em] (anchor_in_a) at (in) {};
-%\node[above=1.75em] (anchor_out_a) at (out) {};
-%
-%\node[above=1.75em] (anchor_dual) at (dual) {};
-%\node[below=2.5em] (anchor_in_b) at (in) {};
-%\node[below=2.5em] (anchor_out_b) at (out) {};
-%
-%\draw[arr, -, shorten >= -0.4em] (interface) to node[auto] {} (anchor_comp_if);
-%\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
-%
-%\draw[arr,-, shorten <= -0.35em] (anchor_comp_if) to node[auto] {} (component);
-%\draw[arr,-, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
-%
-%\node[ann, above left = 0em and 1.5em] (arr1) at (component) {1};
-%\node[ann, above right = 0em and 1.5em] (arr2) at (component) {1};
-%
-%\node[ann, above right= 1.5em and -2em] (arr3) at (interface) {1};
-%\node[ann, above right = 1.5em and -1.5em] (arr4) at (port) {1..n};
-%
-%\draw[arr,-, shorten >= -0.4em] (ethernet) to node[auto] {} (anchor_ethernet);
-%\draw[arr,-, shorten >= -0.4em] (pcie) to node[auto] {} (anchor_pcie);
-%\draw[arr,-, shorten >= -0.4em, shorten <= -0.4em] (anchor_ethernet) to node[auto] {} (anchor_pcie);
-%\draw[extend] (uart) to node[auto] {} (interface);
-%
-%\draw[arr,-,shorten >= -0.4em] (in) to node[auto] {} (anchor_in_a);
-%\draw[arr,-,shorten >= -0.4em] (out) to node[auto] {} (anchor_out_a);
-%\draw[arr,-,shorten >= -0.4em, shorten <= -0.4em] (anchor_in_a) to node[auto] {} (anchor_out_a);
-%\draw[extend, shorten <= -0.4em] (anchor_port) to node[auto] {} (port);
-%
-%\draw[arr,-,shorten >= -0.4em] (dual) to node[auto] {} (anchor_dual);
-%\draw[arr,-,shorten >= -0.4em, shorten <= -0.4em] (anchor_in_b) to node[auto] {} (anchor_out_b);
-%\draw[extend, shorten <= -0.4em] (anchor_in_b) to node[auto] {} (in);
-%\draw[extend, shorten <= -0.4em] (anchor_out_b) to node[auto] {} (out);
-%
-%\end{tikzpicture}
-%\caption{Architecture of the host part}
-%\label{fig:archHost}
-%\end{figure}
-
-
-\begin{figure}
+\begin{figure}[h]
 \centering
 \begin{tikzpicture}[scale=1, transform shape]
 \coordinate(center);
@@ -427,8 +366,6 @@ The host side consists of several cpp sources and headers files. These files can
 \node[below=2.5em] (anchor_in_b) at (in) {};
 \node[below=2.5em] (anchor_out_b) at (out) {};
 
-%\draw[arr, -, shorten >= -0.4em] (port) to node[auto] {} (anchor_comp_port);
-%\draw[arr,-, shorten <= -0.35em] (anchor_comp_port) to node[auto] {} (component);
 \draw[arr,-] (port) to node[auto] {} (component);
 
 \node[ann, above right = 0em and 1.5em] (ann1) at (component) {1};
@@ -445,103 +382,109 @@ The host side consists of several cpp sources and headers files. These files can
 \draw[extend, shorten <= -0.4em] (anchor_out_b) to node[auto] {} (out);
 
 \end{tikzpicture}
-\caption{Visible architecture of the host part}
+\caption{Exposed classes of the host part}
 \label{fig:archHost}
 \end{figure}
 
-The architecture of the host software is depicted in \Cref{fig:archHost}. The core concept of the host software is the \textit{component}. Such a component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or received from the component.
-
-The actual communication is performed in the \textit{interface}, which is unique per driver and does not require additional interaction from the user.
+The exposed architecture of the host software is depicted in \Cref{fig:archHost}. A board is described using multiple \textit{components}. A component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or from the component.
 
 \subsection{Component}
-A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. data is sent from or to the component, esp. the control ports \textit{clock} and \textit{reset}. Usually components receive data, process it and send back some results, though possibly on another port.
+\label{sec:api:component}
+A component is a piece of designed hardware. It has multiple ports over which communication can take place, i.e. data is sent from or to the component. Usually components receive data, process it and send back some results, though on another port.
 
-The host driver contains an abstract generic component, describing components in general. User-defined components have to be described in VHDL for embedded system design with the Xilinx toolsuite. Such VHDL definitions can be referenced in the board description language provided by the HOPP Driver Generator. For each user-defined core, a new subclass is created, which contains the specified ports. For each instance of a core on the board, an object of the cores subclass together with all its ports is instantiated in the driver respectively. Communication with the boards components happens through these objects.
+The host driver contains an abstract generic component, describing components in general. For each user-defined core, a new subclass is created, which contains the ports specified in the core description. For each instance of a core on the board, an object of the cores subclass together with all its ports is instantiated in the driver respectively. Communication with the boards components happens through these port objects.
 
-All user-defined cores and instances of these cores can be found in components.h
+Details about the implementation of components can be found in \Cref{sec:impl:cpp}.
 
 \paragraph{GPIO compoments}
-These components are specialised, predefined I/O components. Currently, three of these components are supported:
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item LEDs
-\item Switches
-\item Buttons
-\end{itemize}
-Communication to these components is not handled via ports. Instead, it is possible to directly read or write the state of the component. LEDs can only be written to, switches and buttons can only be read from.
+These components are specialised, predefined I/O components, used to directly input or output a signal on the board. The GPIO representation in the driver enables the host-side application to write or read this signal. 
+A GPIO component is either used as input or output component.
+An input component, enables input of a signal. An example for such a component is the pushbutton component on the Virtex 6.
+An output component does the opposite and displays a signal on the board. The Virtex 6 has an LED component which is classified as output component. The signal to be displayed can be written to such a GPIO component.
+
+Since such components only hold a single state and perform no processing, communication is not handled via ports. Instead, it is possible to directly read or write the state of the component. 
 
 \subsection{Port}
- A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be receiving ports, sending ports or bi-directional ports. They can have an arbitrary bitwidth, yet the bitwidth supported by the microblaze as well as the arm processor is limited to 32-bit. Also, the total number of ports is restricted in the microblaze / arm. We allow an arbitrary bitwidth and port number in the description language to retain generality of the driver for other platforms. Treatement of issues arising for a specific platform is left to the backend. In case of out Virtex 6 ML 605 backend, we do not allow the user to exceed the port number restrictions posed by the microblaze processor, but perform automatic bitwidth translation in order to allow arbitrary bit sizes. The bitwidth translation is realised by splitting values into 32-bit blocks and padding unused bits with 0.
-% While padding isn't the most efficient solution, concatenating values seems to be a bad idea as well...
-% consider the user having a 16bit adder
-% --> a single blocking call with two values will never return, because it waits for the second set of values in order to send a "full" 32 bit number ):
-%While
-\subsection{Queues}
-Writing data to these ports does not directly result in a message being sent to the board. Instead, written values are stored in a client-side queue for each port. This is done for the following reasons.
+\label{sec:api:port}
+ A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be sending (\textit{in-going}), receiving (\textit{out-going}) or bi-directional (\textit{dual}). Values sent to or received from a port have an arbitrary, but fixed bitwidth. Ports are the only way to communicate with components or the board in general (beside aforementioned GPIO components). 
 
-First of all, the client-side buffer is a method of \textcolor{red}{\textit{flow control}}. The board has only restricted resources and should not be flooded with more data than it can process. Consequently, data is stored on the client, if the board buffers have been filled and no more data can be received. 
+Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. The values are expected to be written or read asynchronously. While the order between messages to a single port is maintained, the order between messages to different ports may differ from the order of performed operations.
 
-Additionally, the client buffer offers \textcolor{red}{\textit{congestion avoidance}}, since several small values can be packaged together in one message. This results in a smaller amount of messages being sent over the medium.
+Details about the implementation of ports can be found in \Cref{sec:impl:cpp}.
 
-Similar queues exist for out-going ports. A read on such a port object does not read directly from the board, but from the local queue.
+\section{Architecture}
+\label{sec:arch}
+%Queueing, threads, ... - basically, the picture from the whiteboard, as this is NOT a feature of the C++ implementation, but the essential part of the protocol architecture...
+%Interesting for driver developers and people trying to extend the existing driver, NOT for users!
+
+\subsection{Queueing}
+\label{sec:arch:queue}
+Due to restricted resources on the board and desired parallelism between the different components and ports, queueing is an important aspect of the driver and different kinds of queues are introduced.
+
+The first and most important queue is the client-side \textit{write queue}. Such a queue is introduced for each in-going port. Writing to a port does not directly result in a message sent to the board, since the board has restricted resources and may not be able to process or even store the value. The client queue provides a first mechanism of \textit{flow control}. Values are queued up at the client, when the board buffers have been filled and no more values can be received, until the board signals that it can receive more values now.
+Additionally, the client buffer offers \textit{congestion avoidance} to a small degree, since several small values can be packaged together in one message. This results in a smaller amount of messages being sent over the medium.
+
+The client also contains \textit{read queues} for each out-going port. These queues cache values received by the board for read operations performed by the application. Values are pushed from the board into theses queues automatically. These queues lead to smaller resource consumption on the board, since only a small number of out-going values have to be cached. Read cycles are faster, since no polling messages have to be sent but available values can directly be consumed. On the downside, client-side read queues lead to some possibly unnecessary traffic on the medium, since values are send without being requested at the board. \textcolor{red}{The worst case here being a component that constantly generates values, that usually are only required by request, for example a random number generator. We therefore should also allow the usual poll semantic in specification language, drivers and protocol. These do not require a read queue, but write results directly in the provided memory area.}
+
+With only client-queues, the board-side driver would only be capable of receiving and processing a single value at a time, which has to be directly written to a component, resulting in an increase of messages and therefore communication overhead. In order to enable reception of multiple values at once, a \textit{board-side queue} (or \textit{software queue}) is introduced for each in-going port on the board as well. Received values are stored in these queues first and forwarded to the target component later on, if the component can process further values. In contrast to the client-side queues, are size-restricted and can only hold a certain number of values, specified in the board description file.
+Similar queues are introduced for out-going ports, to reduce traffic caused by values being sent back to the host-side driver. These queues cache results from components which are then send in one message.
+
+Since the FPGA usually only has a single processor and is not capable of multi-threading, only a single board-side queue can be read at a time, and only a single component can receive values. In order to feed all components with faster with values, a queue is implemented in hardware and placed in between the component and the stream interface of the processor. These \textit{hardware queues} provide the component with values as soon as it requires a new value and therefore remove the idle time between the end of a computation of a component and the board-side driver thread serving the component new values. Since these queues are actually less efficient in terms of resource consumptions on the board than the software queues, they are even smaller in size. Again, similar queues on out-going ports cache results, so the component does not have to wait for the driver thread to read the value from the port before starting the next computation.
 
 \subsection{I/O Threads}
-The queues described above are modified asynchronously with two separate threads, a writing and a reading thread. High-level functionality of theses threads is rather self-explaining. The writing thread loops over all input queues and writes existing values on the medium. The reading thread does the opposite, i.e., listens to the medium and acts according to received messages (see \Cref{sec:protocol} for details about messages the server can send).
+\label{sec:arch:threads}
+As stated in \Cref{sec:api:port}, %where else
+the driver should support asynchronous writes and reads. The order of messages to the same port has to be maintained, while the order of messages to different ports can be changed. The processing of operations at ports is independent from other ports. In particular, a synchronous operation on a port should not influence an asynchronous operation on another port.\\
 
-Both threads have to be started before using the API using \texttt{startup()} and should be shut down afterwards using \texttt{shutdown()}.
+%change reasoning to something like the following
+% we want synchronous and asynchronous calls
+% calls per port should stay in-order
+% calls on different ports are not ordered and are performed "as soon as possible"
+% consequently, operations on different ports can occur in another order then performed
+% calls on ports are processed independent of each other - they could also be performed in parallel (see example, why they HAVE to be independent) 
+ 
+Consider the following example to understand why asynchronous operations should still be processed during a synchronous operation. A board specification contains an adder component with two in-going ports and an out-going port. If a values are written at both ports, they will be consumed and a result will be returned at the out-going port. Consider further, that a value is currently stored at port A. The user now writes another value to port A asynchronously, followed by writing three values to port B synchronously. The value for port A cannot be written directly, since port A is still blocked with a value. However, the first value for port B can be written, and both values are consumed. Now the second value for port B can be written, blocking the port for the third value. This third value cannot be written, until the second value is consumed, which requires another value at port A. If write operations are performed asynchronously, the asynchronous write to port A will never reach this port, since the application is still blocked from the write to port B. Allowing asynchronous writes to be processed in parallel resolves this situation. The value for port A can be written in between the writes to port B or at any point afterwards.\\
 
-\subsection{Communication medium}
-Each driver is bound to a single communication medium, which wraps lower-level communication (essentially transport layer and below) between host and board driver. The communication medium abstracts from the actually used technology and provides a homogeneous api for the I/O threads. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
+% we realize this parallelism of operations using threads.
+% - Generally, a single thread performing all operations does suffice
+% - We use a write and a read thread
+%   - this separates this semantically different operations
+%   - furthermore this is suggested due to the select method and listening timeouts
+%   - could be even stronger suggested by having different layer3 connections in Ethernet
+% - Third option would be having a single thread for each port (i.e. one for each reading, one for each writing). This would improve on the parallelism (probably) but also result in higher complexity of the client-side driver.
+% - Parallelising tasks does not improve performance, since tasks are still sequential per port. Consequently, a thread-per-port solution is the fastest we can achieve in terms of parallelism
 
-Currently, three communication mediums are envisioned:
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{Ethernet Lite}, which is already implemented
-\item \textbf{USB/UART}, which is considered as second interface and
-\item \textbf{PCI Express}, which will not be implemented in the initial driver generator.
-\end{itemize}
+This is realized by having separate threads for reading and writing. Theses threads modify the client-side queues described above in \Cref{sec:arch:queue}. The writing thread loops over all input queues and writes existing values on the medium. The reading thread does the opposite, i.e., listens to the medium and acts according to received messages (see \Cref{sec:protocol} for details about messages the server can send).
 
-\paragraph{Ethernet Lite}
-Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
+Both threads have to be started before using the API using a special method \texttt{startup()} and should be shut down afterwards using another method \texttt{shutdown()}.
 
-It is possible to implement more efficient Ethernet communication using dedicated VHDL components instead of running the lwip stack on the general purpose CPU. Such a component could easily be integrated in form of a new Communication Interface. An example for a dedicated VHDL communication component together with a client API is described in \cite{alachiotis10, alachiotis12}.
+% again I would like to separate specification and implementation.
+% For specification, only a single I/O Thread is _required_, handling reading and writing. I decided to introduce two threads in order to separate these concepts from each other. It would also be possible to introduce a single thread for each port. It would even be possible to create a single thread for each task (though this would require some intricate locking and not improve on the single-thread-per-port solution, since writes still have to appear in order).
+% Separate this here. Perhaps present the three solutions and discuss why this was chosen.
 
-\textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
+\subsection{Bitwidth Translation}
+\label{sec:arch:bitwidth}
+As described in \Cref{sec:api:port}, ports allow arbitrary bitwidth. 
+% REASON, why this is a good idea. Generality could be achieved with using unaligned values, i guess...
+%Basically we have the problem of 32-bit on the microblaze, which requires bit translation ANYWAY. We decided to do this on the client in order to reduce computation complexity on the board... However, considering generality, this is not really required.
 
-\paragraph{USB/UART}
-While communication over USB/UART is rather slow, it provides a more simple method of communication than using Ethernet. 
+The host-side driver pads values to a multiple of 32-bit and splits it to 32-bit parts if required (and vice versa - reassembles the value and removes the pad, when receiving values). Doing these steps immediately reduces the required memory for client-side queueing. %or rather I guess so... depends on how bitvectors are realized in C++... I guess it's horrible as int vector... or char vector...
 
-\paragraph{PCI Express}
-\textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
+%The question here is rather one of efficiency:
+% - Either cut/pad values into 32-bit vectors on client side and just store them board side without further computation or ...
+% - Receive smaller messages with values of arbitrary bitwidth and cut/pad them into 32-bit for the axi stream interface (with a dedicated translation pattern for each port).
+% --> client computation and larger messages vs board computation and smaller messages
 
-\newpage
-\section{Board Side}
-The board-side driver consists of several files that can roughly be split into three groups: files handling communication with the host-side driver, files handling communication with board components and setup files.
-
-All these files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
-
-\paragraph{Medium}
-The medium folder contains a source and header file for the medium the board is attached to. In this file, medium-specific setup is performed and listening to incoming messages is handled. An incoming message is passed to the protocol interpreter, which distributes the content of the message in accordance to its header.
-
-\paragraph{Components}
-The components folder contains code for component-specific setup and communication between the boards general purpose cpu and designed IP cores. Code for controlling gpio components will also be generated in this folder.
-
-\paragraph{General}
-Several files are generated directly in the \texttt{src} folder of the project. These files contain data types used by all file groups, files required for initialisation, and files linking between medium and components. 
-
-Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the scheduling loop. This loop performs three kinds of operations:
-
-First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
-
-The loop also shifts messages from in-going microblaze queues to in-going hardware queues and vice versa from out-going hardware queues to the out-going microblaze queue. Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium. 
-
-The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
-
+%While it would be more efficient to append smaller values, this could result in a blocking scenario. Consider for example a 16-bit component with an in-going and an out-going port. The user writes a loop sending a single value to the in-going port and receiving a single value from the out-going port. This value will never be received by the component, since 
 
 \section{Protocol}
 \label{sec:protocol}
-This section covers the transmission protocol between client and server application. Note that the protocol is base on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages.
+This section covers the transmission protocol between client and server application. 
+
+The protocol is based on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages.
 
 \subsection{Control Flow}
-\label{sec:cfg}
+\label{sec:protocol:cfg}
 
 This section describes the state of the driver and summarises messages that are sent during each transition. To simplify the control flow graphs, the following variables and functions are introduced:
 
@@ -677,21 +620,27 @@ A scheduler determines when to switch between the two states. The default schedu
 \end{figure}
 
 \subsection{Message Encoding}
+\label{sec:protocol:encode}
 This section covers the translation of the above messages into messages on the communication medium. Messages can be split into header and payload. The header describes the payload to follow, the payload contains a number of 32-bit values that are sent to or form a component.
 
 The first 8 bit of the header are reserved for the \textit{protocol version}, the message was encoded with. The only version currently available is version 1.
 
 \paragraph{Procotol Version 1}
 
-This version reserves the next 4 bit of the header for the type of the message. In general, a message looks like the following.\\
+This version reserves the next 4 bit of the header for the type of the message. In general, a message looks like depicted in \Cref{fig:proto:bitorder}.\\
 
+\begin{figure}
+\centering
 \begin{bytefield}{32}
   \bitheader{0,7,11,15,31} \\
   \bitbox{8}{Version} & \bitbox{4}{Type} & \bitbox{4}{ID} & \bitbox{16}{Size} \\
-  \wordbox{3}{Payload} \\
+  \wordbox{3}{Payload}
 \end{bytefield}
+\caption{Bitorder of the message on the medium}
+\label{fig:proto:bitorder}
+\end{figure}
 
-The control flow graphs in \Cref{sec:cfg} specify what types of messages are required. A short overview of the messages together with their type encoding and their fields is provided in \Cref{tab:protoMessages}. The following paragraphs provide a more detailed description of the message and their meaning.
+The control flow graphs in \Cref{sec:protocol:cfg} specify what types of messages are required. A short overview of the messages together with their type encoding and their fields is provided in \Cref{tab:proto:messages}. The following paragraphs provide a more detailed description of the message and their meaning.
 
 \begin{table}[h]
 \centering
@@ -705,11 +654,12 @@ Reset & 0000 & Unused & Unused & No\\
 Debug & 0111 & Debug Type & Payload Size & Yes
  \end{tabular}
 \caption{Overview of messages in protocol version 1}
-\label{tab:protoMessages}
+\label{tab:proto:messages}
 \end{table}
 
 \paragraph{Data Message}
-A data message marks either a set of values for a specific component being sent from the host to the board or a set of values from a specific component being sent from the board to the host. As such, it requires an identifier for the target or source component as well as the size of the contained payload.
+A data message marks either a set of values for a specific component being sent from the host to the board or a set of values from a specific component being sent from the board to the host. As such, it requires an identifier for the target or source component as well as the size of the contained payload in words (i.e. 32-bit values). 
+Values sent with a data message are expected to always be full 32-bit values.
 
 \paragraph{Acknowledgement}
 The acknowledgement confirms reception of a number of values by a specific component. For this purpose, no payload is required. Instead, the number of acknowledged values is encoded within the \textit{size} field.
@@ -744,7 +694,6 @@ Error &  1111 \\
 
 While it is possible to provide debug output over the JTag cable, the FPGA is programmed with, this quickly slows down computation with larger debug outputs. Using the Ethernet connection also for debug output vastly accelerates such computations.
 
-\newpage
 \subsection{Sequence charts}
 Some sequence charts to visualise the envisioned process. For example, \Cref{fig:seq:nbwrite} shows in detail, how a non-blocking write is handled. First of all, the values are stored client-side. The application receives a pointer to a \texttt{write} object, which represents the current state of the scheduled write, i.e., how many values have been received by the component on the server.
 
@@ -1022,7 +971,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 
 \end{sequencediagram}
 \caption{A sequence diagram for a blocking write. Note, that only the application is blocked, not the communication handler, which may process non-blocking writes sent before the blocking write \textbf{after} the non-blocking write.}
-\label{fig:seq:nbwrite}
+\label{fig:seq:bwrite}
 \end{figure}
 
 
@@ -1080,8 +1029,87 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 
 \end{sequencediagram}
 \caption{A polling scenario. The server scheduler reaches component a and registers free space in the queue (that was formerly full). He then polls values for component a. The poll triggers sending of data at the client, which is later received in a read phase of the server.}
-\label{fig:seq:nbwrite}
+\label{fig:seq:poll}
 \end{figure}
+
+
+
+\section{Current Driver Implementations}
+
+%Currently, three of these components are supported:
+%\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+%\item LEDs
+%\item Switches
+%\item Buttons
+%\end{itemize}
+
+\subsection{C++ Host-Side Driver}
+\label{sec:impl:cpp}
+%Implementation details about the C++ Driver
+
+The host side consists of several cpp sources and headers files. These files can be imported in any host side project and be used to wrap communication with components on the board.
+
+The actual communication is performed in the \textit{communication medium}, which is unique per driver and does not require additional interaction from the user.
+
+\subsubsection{Communication medium}
+Each driver is bound to a single communication medium, which wraps lower-level communication (essentially transport layer and below) between host and board driver. The communication medium abstracts from the actually used technology and provides a homogeneous api for the I/O threads. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
+
+Currently, three communication mediums are envisioned:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{Ethernet Lite}, which is already implemented
+\item \textbf{USB/UART}, which is considered as second interface and
+\item \textbf{PCI Express}, which will not be implemented in the initial driver generator.
+\end{itemize}
+
+\paragraph{Ethernet Lite}
+Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
+
+It is possible to implement more efficient Ethernet communication using dedicated VHDL components instead of running the lwip stack on the general purpose CPU. Such a component could easily be integrated in form of a new Communication Interface. An example for a dedicated VHDL communication component together with a client API is described in \cite{alachiotis10, alachiotis12}.
+
+\textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
+
+\paragraph{USB/UART}
+While communication over USB/UART is rather slow, it provides a more simple method of communication than using Ethernet. 
+
+\paragraph{PCI Express}
+\textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
+
+\subsection{Virtex 6 ML 605 Board-Side Driver}
+%Implementation details about the Virtex 6 Driver
+
+The board-side driver consists of several files that can roughly be split into three groups: files handling communication with the host-side driver, files handling communication with board components and setup files.
+
+All these files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
+
+\subsubsection{Restrictions}
+This section covers restrictions of the Virtex 6 board and (if available) implemented workarounds.
+
+\paragraph{Port Count}
+The microblaze on the Virtex 6 only allows 16 AXI master interfaces and 16 AXI slave interfaces. As a result, only 16 in- and out-going ports can be specified when generating a Virtex 6 board driver. Circumventing this restriction is possible by implementation of a multiplexer which delegates values to one of several components, but this is left to the user.
+
+\paragraph{Bitwidth Translation}
+As explained in \Cref{sec:arch} and \Cref{sec:protocol}, transmitted values are padded to a multiple of 32-bit for transmission and have to be re-translated at the board-side driver.
+Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the ARM) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values, in order to save some board resources.
+
+\subsubsection{Implementation Details}
+
+\paragraph{Medium}
+The medium folder contains a source and header file for the medium the board is attached to. In this file, medium-specific setup is performed and listening to incoming messages is handled. An incoming message is passed to the protocol interpreter, which distributes the content of the message in accordance to its header.
+
+\paragraph{Components}
+The components folder contains code for component-specific setup and communication between the boards general purpose cpu and designed IP cores. Code for controlling gpio components will also be generated in this folder.
+
+\paragraph{General}
+Several files are generated directly in the \texttt{src} folder of the project. These files contain data types used by all file groups, files required for initialisation, and files linking between medium and components. 
+
+Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the scheduling loop. This loop performs three kinds of operations:
+
+First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
+
+The loop also shifts messages from in-going microblaze queues to in-going hardware queues and vice versa from out-going hardware queues to the out-going microblaze queue. Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium. 
+
+The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
+
 
 \chapter{Generator}
 This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator.\textcolor{red}{A reference to the third Katja report might be useful.}

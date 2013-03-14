@@ -40,7 +40,7 @@ std::shared_ptr<State> in::write(std::shared_ptr<WriteState> s) {
 }
 
 void in::block() {
-	// TODO Wait until task queue is empty
+	writeTaskQueue->block();
 }
 
 // BLOCKING WRITES
