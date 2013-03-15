@@ -436,52 +436,25 @@ Since the FPGA usually only has a single processor and is not capable of multi-t
 As stated in \Cref{sec:api:port}, %where else
 the driver should support asynchronous writes and reads. The order of messages to the same port has to be maintained, while the order of messages to different ports can be changed. The processing of operations at ports is independent from other ports. In particular, a synchronous operation on a port should not influence an asynchronous operation on another port.\\
 
-%change reasoning to something like the following
-% we want synchronous and asynchronous calls
-% calls per port should stay in-order
-% calls on different ports are not ordered and are performed "as soon as possible"
-% consequently, operations on different ports can occur in another order then performed
-% calls on ports are processed independent of each other - they could also be performed in parallel (see example, why they HAVE to be independent) 
- 
 Consider the following example to understand why asynchronous operations should still be processed during a synchronous operation. A board specification contains an adder component with two in-going ports and an out-going port. If a values are written at both ports, they will be consumed and a result will be returned at the out-going port. Consider further, that a value is currently stored at port A. The user now writes another value to port A asynchronously, followed by writing three values to port B synchronously. The value for port A cannot be written directly, since port A is still blocked with a value. However, the first value for port B can be written, and both values are consumed. Now the second value for port B can be written, blocking the port for the third value. This third value cannot be written, until the second value is consumed, which requires another value at port A. If write operations are performed asynchronously, the asynchronous write to port A will never reach this port, since the application is still blocked from the write to port B. Allowing asynchronous writes to be processed in parallel resolves this situation. The value for port A can be written in between the writes to port B or at any point afterwards.\\
 
-% we realize this parallelism of operations using threads.
-% - Generally, a single thread performing all operations does suffice
-% - We use a write and a read thread
-%   - this separates this semantically different operations
-%   - furthermore this is suggested due to the select method and listening timeouts
-%   - could be even stronger suggested by having different layer3 connections in Ethernet
-% - Third option would be having a single thread for each port (i.e. one for each reading, one for each writing). This would improve on the parallelism (probably) but also result in higher complexity of the client-side driver.
-% - Parallelising tasks does not improve performance, since tasks are still sequential per port. Consequently, a thread-per-port solution is the fastest we can achieve in terms of parallelism
+Asynchronous operations can be realised by dedicated I/O threads, handling communication between host-side and board-side driver. These threads modify the client-side queues described above in \Cref{sec:arch:queue}. In general, a single thread, that covers the complete communication is be sufficient. For better separation between writing and reading operations, two threads can be introduced for, one for each of these operations. This solution if preferable, since reading from the medium usually involves longer periods of listening for messages, which would unnecessarily delay write operations. A third solution, implementing the independence of operations on different ports, is introduction of a single thread for each port. This, however, results in a possibly large number of threads. Depending on the host platform, a smaller number is preferable.
 
-This is realized by having separate threads for reading and writing. Theses threads modify the client-side queues described above in \Cref{sec:arch:queue}. The writing thread loops over all input queues and writes existing values on the medium. The reading thread does the opposite, i.e., listens to the medium and acts according to received messages (see \Cref{sec:protocol} for details about messages the server can send).
-
-Both threads have to be started before using the API using a special method \texttt{startup()} and should be shut down afterwards using another method \texttt{shutdown()}.
-
-% again I would like to separate specification and implementation.
-% For specification, only a single I/O Thread is _required_, handling reading and writing. I decided to introduce two threads in order to separate these concepts from each other. It would also be possible to introduce a single thread for each port. It would even be possible to create a single thread for each task (though this would require some intricate locking and not improve on the single-thread-per-port solution, since writes still have to appear in order).
-% Separate this here. Perhaps present the three solutions and discuss why this was chosen.
+The threads have to be started with a special method \texttt{startup()} before using the API and should be shut down afterwards with another method \texttt{shutdown()}.
 
 \subsection{Bitwidth Translation}
 \label{sec:arch:bitwidth}
-As described in \Cref{sec:api:port}, ports allow arbitrary bitwidth. 
-% REASON, why this is a good idea. Generality could be achieved with using unaligned values, i guess...
-%Basically we have the problem of 32-bit on the microblaze, which requires bit translation ANYWAY. We decided to do this on the client in order to reduce computation complexity on the board... However, considering generality, this is not really required.
+As described in \Cref{sec:api:port}, ports allow arbitrary bitwidth. As the size of the AXI stream interface directly connected to the FPGAs processor is usually fixed, translation to this fixed size has to occur somewhere in between. Performing this translation on-board consumes limited board resources. Doing the translation on the client however increases communication overhead. Depending on the application, both solutions can make sense.
 
-The host-side driver pads values to a multiple of 32-bit and splits it to 32-bit parts if required (and vice versa - reassembles the value and removes the pad, when receiving values). Doing these steps immediately reduces the required memory for client-side queueing. %or rather I guess so... depends on how bitvectors are realized in C++... I guess it's horrible as int vector... or char vector...
+A board-side translation requires send messages to be augmented with the bit-size of each value. Values can than be padded and/or split, according to the required and the actual bitwidth. This translation is individual for each port.
 
-%The question here is rather one of efficiency:
-% - Either cut/pad values into 32-bit vectors on client side and just store them board side without further computation or ...
-% - Receive smaller messages with values of arbitrary bitwidth and cut/pad them into 32-bit for the axi stream interface (with a dedicated translation pattern for each port).
-% --> client computation and larger messages vs board computation and smaller messages
-
-%While it would be more efficient to append smaller values, this could result in a blocking scenario. Consider for example a 16-bit component with an in-going and an out-going port. The user writes a loop sending a single value to the in-going port and receiving a single value from the out-going port. This value will never be received by the component, since 
+A client-side translation does not require the bit-size to be transmitted. Padding and translation in this case is done immediately before transmission. This reduces the required memory for client-side queueing compared to direct padding before the client-side queue. Re-translation to the actual bitwidth has to be done directly after the AXI stream interface of the processor.
 
 \section{Protocol}
 \label{sec:protocol}
 This section covers the transmission protocol between client and server application. 
 
-The protocol is based on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages.
+The protocol is based on the assumptions made above about client and server, specifically the used buffers and client I/O threads allowing parallelism with sending and receiving messages. Furthermore, the underlying medium and protocol are expected to be reliable and order-preserving.
 
 \subsection{Control Flow}
 \label{sec:protocol:cfg}
@@ -494,13 +467,14 @@ This section describes the state of the driver and summarises messages that are 
   \item \textbf{n} The size of the board-side queue (statically known).
   \item \textbf{i} An unsigned (i.e. positive) integer number, smaller than \texttt{n}.\\
 
-  \item \textbf{size(q)} The number of values currently held by queue \texttt{q}
-  \item \textbf{empty(q)} \texttt{true}, if \texttt{size(q) == 0}, \texttt{false} otherwise
+  \item \textbf{size(q)} The number of values currently held by queue \texttt{q}.
+  \item \textbf{empty(q)} \texttt{true}, if \texttt{size(q) == 0}, \texttt{false} otherwise.
+  \item \textbf{full(q)} \texttt{true}, if the queue is full, \texttt{false} otherwise.
   \item \textbf{store(q,v)} Stores the values \texttt{v} into queue \texttt{q}.
   \item \textbf{take(q)} Returns the first value of a queue \texttt{q}. Removes the value from the queue.
   \item \textbf{drop(q,i)} Drops the first \texttt{i} values of \texttt{q}.
   \item \textbf{peek(q,i)} Obtain the first \texttt{i} values of \texttt{q}. Returns a smaller number of values, if only less are available, i.e., \texttt{size(q)} \textless ~\texttt{i}.
-  \item \textbf{asgn(a, v)} Assigns a value \texttt{v} to an address  \texttt{a}
+  \item \textbf{asgn(a, v)} Assigns a value \texttt{v} to an address  \texttt{a}.
 \end{itemize}
 
 Messages are exchanged between the application and the client-side driver, as well as between client-side and board-side driver. The following messages are the most important ones influencing the state of the driver:
@@ -517,8 +491,7 @@ Messages are exchanged between the application and the client-side driver, as we
 \subsubsection{Host-Side Driver}
 Since values can be written asynchronously, each port maintains its own state and can perform transitions independent of the other ports. The state of the host-side driver is constructed from the individual states of all ports.
 
-\paragraph{In-Going Port}
-The state of an in-going port is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of an in-going port is provided in \Cref{fig:cfg:inPort}. Each state represents a combination of these variables. Changes to these variables are not explicitly denoted in the diagram.
+The state of an in-going port is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of an in-going port is provided in \Cref{fig:cfg:hostIn}. Each state represents a combination of these variables. Changes to these variables are not explicitly denoted in the diagram.
 
 \begin{figure}[h]
 \centering
@@ -542,13 +515,12 @@ The state of an in-going port is physically represented by two variables \texttt
 \draw[arr, black, bend right = 40] (idle) to node[midway, right=1em] {$\inferrule{poll}{}$} (write);
 
 \end{tikzpicture}
-\label{fig:cfg:inPort}
-\caption{Control flow graph of an in-going port}
+\label{fig:cfg:hostIn}
+\caption{Host-side control flow graph of an in-going port}
 \end{figure}
 
 Several loops have been left out in order to simplify the graph. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored. An application write in any state will result in the values to be appended to \texttt{q}.
 
-\paragraph{Out-Going Port}
 The state of an out-going port is represented by two variables \texttt{q} and \texttt{r}. \texttt{q} is a queue of memory addresses, where values should be read to, \texttt{r} is a queue of values read from the medium but not from the application so far.
 
 Values are automatically pushed forward from the board and stored in \texttt{r}. If the application requests a \texttt{read}, values are shifted from \texttt{r} into \texttt{q}. The application is notified, once all read requests have been served.
@@ -575,29 +547,17 @@ Values are automatically pushed forward from the board and stored in \texttt{r}.
 \draw[arr, black, bend left = 20] (idle) to node[near start, below=0.2em] {$\inferrule{data(v)}{store(r,v)}$} (read);
 
 \end{tikzpicture}
-\label{fig:cfg:outPort}
-\caption{Control flow graph of an out-going port}
+\label{fig:cfg:hostOut}
+\caption{Host-side control flow graph of an out-going port}
 \end{figure}
 
 
 \subsubsection{Board-side Driver}
-The board-side control flow graph is simpler, since the driver only consists of a single thread. The thread switches between listening to the medium and consuming received messages, as depicted in \Cref{fig:cfg:board}.
+The state of the board-side driver is also represented as concatenation of the states of all ports. The state of a port on the board is represented by the corresponding software queue \texttt{q} and the corresponding hardware queue \texttt{r}.
 
-The state of the board-side driver only requires a single variable \texttt{q}, which, again, denotes a queue of values.
+Since only a single thread can run on the FPGA, a scheduler determines which port can make a step. The default scheduler switches to a different port, once the current port cannot perform any more steps. It is possible for the user to define a more elaborate scheduler, if so desired.
 
-Three additional functions have been specified for this diagram:
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \textbf{store(v)} Tries to store all messages from v in the board-side queue and returns the number of values that could be stored (which may be 0 if the queue was full).
-\item \textbf{consume()} Forwards the first message from the queue to the target component and removes it from the queue, if this could successfully be done.
-\item \textbf{full()} \texttt{true}, if the queue if full (i.e. \texttt{size() == n}), \texttt{false} otherwise.
-\item \textbf{schedule()} Indicates a state switch initiated by the scheduler .
-\end{itemize}
-
-While in the listening state, received messages will be stored in the corresponding client queue and acknowledged, as long as there is still space in the queue. If the queue is full, the message will be dropped and an empty acknowledgement will be sent to indicate the full queue.
-
-When in the consuming state, the driver will try to forward values to board components as long as they are available.
-
-A scheduler determines when to switch between the two states. The default scheduler tries to read a message from the medium and switches to consuming, if no messages are available. It will stay in the consuming state as long as values can be consumed, and switch back into listening state if forwarding fails. It is possible for the user to define a more elaborate scheduler, if so desired \textcolor{red}{(or rather: will be)}.
+An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for received data packages and stores received values. If it has received values and can write to the hardware queue at some point, it switches to consuming received messages. Messages are then shifted from the software queue to the hardware queue, until either the hardware queue is filled or the software queue is emptied. If the software queue was full before shifting the first message, a poll is sent in addition. After shifting all values possible, the port switches back to listening for more values. 
 
 \begin{figure}[h]
 \centering
@@ -609,14 +569,33 @@ A scheduler determines when to switch between the two states. The default schedu
 \node[state, below=10em] (read) at (listen) {Consume};
 
 \draw[extend, black] (anchor) to node[auto] {} (listen);
-\draw[arr, black, out=330,in=30,looseness=6] (listen) to node[midway, right=0.5em] {$\inferrule{snd(v)}{ack(store(v))}$} (listen);
-\draw[arr, black, bend left=20] (listen) to node[midway, right=0.2em] {$\inferrule{schedule()}{ }$} (read);
-\draw[arr, black, bend left=20] (read) to node[midway, left=0.2em] {$\inferrule{schedule()}{ }$} (listen);
-\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.2em] {$\inferrule{[full()]}{consume() ~~ poll}$} (read);
-\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!empty(r) ~\wedge~ !full(q)]}{consume()}$} (read);
+\draw[arr, black, out=330,in=30,looseness=6] (listen) to node[midway, right=0.5em] {$\inferrule{data(v)}{ack(store(q,v))}$} (listen);
+\draw[arr, black, bend right=20] (listen) to node[midway, left=0.2em] {$\inferrule{[!empty(q) ~\wedge~ !full(r)]}{ }$} (read);
+\draw[arr, black, bend right=20] (read) to node[midway, right=0.2em] {$\inferrule{ [empty(q) \vee full(r)]}{ }$} (listen);
+\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.2em] {$\inferrule{[full(q) ~ \wedge ~ !full(r)]}{store(r, take(q)) ~~ poll}$} (read);
+\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!full(q) ~ \wedge ~ !empty(q) ~\wedge~ !full(r)]}{store(r, take(q))}$} (read);
 \end{tikzpicture}
-\label{fig:cfg:board}
-\caption{Control flow graph of the board-side driver}
+\label{fig:cfg:boardIn}
+\caption{Board-side control flow graph of an in-going port}
+\end{figure}
+
+\newpage
+The out-going port is even simpler (see \Cref{fig:cfg:boardOut}). It shifts values from the hardware queue to the software queue as long as possible. Then it sends a data message with all values contained in the software queue.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\node[state] (listen) at (0,0) {Init};
+\node[above left = 2em and 4em] (anchor) at (listen){};
+
+\draw[extend, black] (anchor) to node[auto] {} (listen);
+\draw[arr, black, out=330, in=30, looseness=6] (listen) to node[midway, right=0.2em] {$\inferrule{[!empty(r) ~\wedge ~ !full(q)]}{store(q, take(r))}$} (listen);
+\draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=1em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q, n))}$} (listen);
+\end{tikzpicture}
+\label{fig:cfg:boardOut}
+\caption{Board-side control flow graph of an out-going port}
 \end{figure}
 
 \subsection{Message Encoding}
@@ -627,7 +606,7 @@ The first 8 bit of the header are reserved for the \textit{protocol version}, th
 
 \paragraph{Procotol Version 1}
 
-This version reserves the next 4 bit of the header for the type of the message. In general, a message looks like depicted in \Cref{fig:proto:bitorder}.\\
+This version reserves the next 4 bit of the header for the type of the message. In general, a message looks like depicted in \Cref{fig:proto:bitorder}. Values in this protocol version are expected to be properly aligned with 32-bit, meaning that, as described in \Cref{sec:arch:bitwidth}, values are padded host-side to a multiple of 32-bit and then split into 32-bit blocks.\\
 
 \begin{figure}
 \centering
@@ -684,9 +663,9 @@ The target bits are used to differentiate between the debug message type. The bi
 \centering
 \begin{tabular}{ c | c } 
 Severity & Encoding \\ \hline
-Info & 0100 \\
+Info & 0011 \\
 Warning & 1000 \\
-Error &  1111 \\
+Error &  1101 \\
  \end{tabular}
 \caption{Debug message encoding}
 \label{tab:protoDebug}
