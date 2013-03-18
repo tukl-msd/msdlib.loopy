@@ -20,15 +20,16 @@
       dvipsnames,svgnames]{xcolor}
 \definecolor{light-green}{rgb}{0.9,1,0.85}
 
-
 \usepackage{tikz}
-\usetikzlibrary{shapes,matrix,arrows,shadows,positioning,fit,calc,decorations.pathreplacing,decorations.pathmorphing,decorations.shapes,decorations.text,automata}
+\usepackage[underline=false,rounded corners=true]{pgf-umlsd}
+
+%tikzlibaries
+\usetikzlibrary{backgrounds,shapes,matrix,arrows,shadows,positioning,fit,calc,decorations.pathreplacing,decorations.pathmorphing,decorations.shapes,decorations.text,automata}
 \tikzset{math mode/.style = {execute at begin node=$, execute at end node=$}}
 
-%tikz
-\pgfdeclarelayer{background}
-\pgfdeclarelayer{foreground}
-\pgfsetlayers{background,main,foreground}
+%layer definition (insert threadground from pgf-umlsd)
+\pgfdeclarelayer{lower}
+\pgfsetlayers{background,lower,threadground,main}
 
 % boxes
 \tikzstyle{class}=[draw, text width=6em, minimum height=2.5em, text centered]
@@ -43,9 +44,8 @@
 \tikzstyle{aggregate}=[arr, >=open diamond]
 \tikzstyle{extend}=[arr, >=open triangle 90]
 %others
-\tikzstyle{ann} = [above, text width=5em, text centered]
+\tikzstyle{ann} = [above, text centered]
 
-\usepackage[underline=false,rounded corners=true]{pgf-umlsd}
 
 \lstset{literate=
 {Ö}{{\"O}}1
@@ -126,7 +126,6 @@
 %    \tikzstyle{instcolor#3}=[fill=#2]
 %}
 
-
 \begin{document}
 
 \selectlanguage{english}
@@ -149,16 +148,18 @@ This document is intended to give an overview over the HOPP Driver Generator for
 
 %define scope of the generator
 The HOPP Driver Generator itself is intended to provide embedded system developers %that's kinda vague
-with a simple, convenient interface to communicate with their designed hardware components. % that's not better...
+with a simple, convenient API to communicate with their designed hardware components. % that's not better...
+This interface provides methods for synchronous as well as asynchronous communication over different communication media, for example Ethernet.
+
 To our knowledge, such an interface for communication with VHDL components has not been done so far, though extensive research exists concerning efficient communication between PCs and FPGAs over different communication channels, mainly Ethernet \cite{lofgren05, alachiotis10, alachiotis12}.
 
-Our interface has been prototyped with a \texttt{C++} frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet. The design enables easy extension to support other frontend languages, FPGA boards or transport media.
+The architecture has been prototyped with a \texttt{C++} frontend communicating with a Xilinx Virtex 6 ML-605 FPGA over Ethernet. The design of the driver generator enables easy extension to support other frontend languages, FPGA boards or transport media.
 
 \section{Origins and Goals}
 \label{sec:goals}
 The HOPP Driver Generator originally was and currently is developed by the Software Technology Group of the University of Kaiserslautern in cooperation with the Microelectronic Design Research Group of the University of Kaiserslautern.
 
-The design goals of this project are:
+The non-functional design goals of this project are:
 
 \begin{itemize}
 %those are not really "design" goals, but hey... text... for now
@@ -174,7 +175,7 @@ The design goals of this project are:
 This section explains the terminology used in this document and the project in general.
 
 \paragraph{Driver}
-The complete software product is called the \textit{driver}. It enables  \textcolor{red}{software-side} communication with the hardware platform.
+The complete software product is called the \textit{driver}. It enables programmatic, \textcolor{red}{software-side} communication with the hardware platform.
 
 \paragraph{Board / board-side}
 The driver is split in two parts, one of which has to be uploaded and executed to the hardware platform itself. This part of the driver is referred to as board-side driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead.
@@ -337,6 +338,7 @@ For a more detailed documentation of the code and provided methods, Javadoc styl
 \draw[arr,<->] (cloud) to node [auto] {} (bdriver);
 \draw[arr,<->] (bdriver) to node [auto] {} (vhdl3);
 \end{tikzpicture}
+
 \caption{A high-level view of the data flow from a host application to vhdl components on the board through the generated driver}
 \label{fig:dataFlow}
 \end{figure}
@@ -368,8 +370,8 @@ This section describes, how the host-side API, the hardware designer programs hi
 
 \draw[arr,-] (port) to node[auto] {} (component);
 
-\node[ann, above right = 0em and 1.5em] (ann1) at (component) {1};
-\node[ann, above left = 0em and 2em] (ann2) at (port) {1..n};
+\node[ann, above right = 0em and 3.8em] (ann1) at (component) {1};
+\node[ann, above left = 0em and 3.8em] (ann2) at (port) {1..n};
 
 \draw[arr,-,shorten >= -0.4em] (in) to node[auto] {} (anchor_in_a);
 \draw[arr,-,shorten >= -0.4em] (out) to node[auto] {} (anchor_out_a);
@@ -383,10 +385,10 @@ This section describes, how the host-side API, the hardware designer programs hi
 
 \end{tikzpicture}
 \caption{Exposed classes of the host part}
-\label{fig:archHost}
+\label{fig:api:host}
 \end{figure}
 
-The exposed architecture of the host software is depicted in \Cref{fig:archHost}. A board is described using multiple \textit{components}. A component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or from the component.
+The exposed architecture of the host software is depicted in \Cref{fig:api:host}. A board is described using multiple \textit{components}. A component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or from the component.
 
 \subsection{Component}
 \label{sec:api:component}
@@ -406,16 +408,113 @@ Since such components only hold a single state and perform no processing, commun
 
 \subsection{Port}
 \label{sec:api:port}
- A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be sending (\textit{in-going}), receiving (\textit{out-going}) or bi-directional (\textit{dual}). Values sent to or received from a port have an arbitrary, but fixed bitwidth. Ports are the only way to communicate with components or the board in general (beside aforementioned GPIO components). 
+ A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be sending (\textit{in-going}), receiving (\textit{out-going}) or bi-directional (\textit{dual}). These designations seem counter-intuitive at first, since they do not describe the ports on the host-side, but the ports of the driver itself. The user should work with the driver, as if it were the actual board. Consequently, data is sent to an in-going port an received from an out-going port. Values sent to or received from a port have an arbitrary, but fixed bitwidth. Ports are the only way to communicate with components or the board in general (beside aforementioned GPIO components). 
 
 Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. The values are expected to be written or read asynchronously. While the order between messages to a single port is maintained, the order between messages to different ports may differ from the order of performed operations.
 
 Details about the implementation of ports can be found in \Cref{sec:impl:cpp}.
 
+\subsection{State}
+\label{sec:api:state}
+Another important part of the API is the \textit{state}, which describes the current progress of a read or write operations. A state is returned by asynchronous operations and can be used to keep track of the operations progress. A \textit{write state} indicates, how many values have already been written to the board (and how many have not), a \textit{read state} indicates, how many values have already been read to the given memory area (and how many still remain).
+Synchronous operations do not return a state, since such an operation is always finished, once it returns.
+
 \section{Architecture}
 \label{sec:arch}
 %Queueing, threads, ... - basically, the picture from the whiteboard, as this is NOT a feature of the C++ implementation, but the essential part of the protocol architecture...
 %Interesting for driver developers and people trying to extend the existing driver, NOT for users!
+
+This section provides an overview of the drivers architecture, that should be followed by all implementations.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\tikzstyle{outerClass}=[inner sep=8pt,draw=black]
+
+\node[class, fill=white] (port1) at (0,0) {In Port};
+\node[class, below = 2em, fill=white] (port2) at (port1) {In Port};
+\node[class, below = 2em, fill=white] (port3) at (port2) {Out Port};
+
+\node[ann, above left = 2em and -2.3em] (compText) at (port1) {Component};
+
+\begin{pgfonlayer}{lower}
+\node[outerClass, fit =(port1) (port2) (port3) (compText), fill=white] (comp) {};
+\end{pgfonlayer}
+
+\node[class, below right = 0em and 8em, fill=white] (writer) at (port1) {Writer};
+\node[class, right = 8em, fill=white] (reader) at (port3) {Reader};
+
+\draw[arr, black] (port1) to node[auto] {} (writer);
+\draw[arr, black] (port2) to node[auto] {} (writer);
+\draw[arr, black] (reader) to node[auto] {} (port3);
+
+\begin{pgfonlayer}{background}
+\node[group, fit = (comp) (reader), label={66:host-side driver}, fill=blue!10] (host) {};
+\end{pgfonlayer}
+\node[netCloud, below right =0em and 10em] (net) at (writer) {Transport Medium};
+
+\draw[arr, black] (writer) to node[auto] {} (net);
+\draw[arr, black] (net) to node[auto] {} (reader);
+
+\path let \p1=(comp.west), \p2=(comp.east)
+in node[class, above = 8em, minimum width=\x2-\x1-\pgflinewidth] (app) at (port1) {Application};
+
+\draw[arr, black, <->] (app) to node[auto] {} (comp);
+\end{tikzpicture}
+\label{fig:arch:host}
+\caption{General architecture of the host-side driver}
+\end{figure}
+
+The architecture of the host-side driver is depicted by \Cref{fig:arch:host}. The host-side API consists of the components and ports described in \Cref{sec:api}, as well as modules handling communication with the medium, i.e., a reader and a writer module. An application communicates with the driver through components and ports.
+
+In-going ports are connected to the writer, while out-going ports are connected to the reader. Writer and reader are not exposed to the application and steps necessary for communication are performed internally.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+\coordinate(center);
+
+\tikzstyle{outerClass}=[inner sep=7pt,draw=black]
+
+\node[netCloud] (net) at (0,0) {Transport Medium};
+
+\node[class, below left= 8em and 2em, fill=white] (reader) at (net) {Reader};
+\node[class, below right= 8em and 2em, fill=white] (writer) at (net) {Writer};
+
+\draw[arr, black] (net) to node[auto] {} (reader);
+\draw[arr, black] (writer) to node[auto] {} (net);
+
+\node[class, below = 3em, fill=white] (axiw) at (reader) {AXI Writer};
+\node[class, below = 3em, fill=white] (axir) at (writer) {AXI Reader};
+
+\draw[arr, black] (reader) to node[auto] {} (axiw);
+\draw[arr, black] (axir) to node[auto] {} (writer);
+
+\begin{pgfonlayer}{lower}
+\node[group, fit=(reader) (axir), label={70:board-side driver}, fill=blue!10] (board) {};
+\end{pgfonlayer}
+
+\node[ann, above left=3em and -0.5em] (procText) at (reader) {Processor};
+
+\begin{pgfonlayer}{background}
+\node[outerClass, fit=(procText) (board)] (proc) {};
+\end{pgfonlayer}
+
+\node[class,  below= 6em] (comp) at (board) {board-side components};
+
+\draw[arr, black] (axiw) to node[auto] {} (comp);
+\draw[arr, black] (comp) to node[auto] {} (axir);
+
+\end{tikzpicture}
+\label{fig:arch:board}
+\caption{General architecture of the board-side driver}
+\end{figure}
+
+The architecture of the board-side driver is depicted by \Cref{fig:arch:board}.
+The board side driver is basically a thread running on the processor of the board. It handles communication with the medium similar as the host-side driver through a writer and a reader module. Another module handles communication with the components implemented on the board. %(connected over AXI stream in our case, but could also be something else)
+In our case, the components are attached with AXI stream interfaces, but using other interfaces is generally possible. %though not with the current implementation
 
 \subsection{Queueing}
 \label{sec:arch:queue}
@@ -474,7 +573,7 @@ This section describes the state of the driver and summarises messages that are 
   \item \textbf{take(q)} Returns the first value of a queue \texttt{q}. Removes the value from the queue.
   \item \textbf{drop(q,i)} Drops the first \texttt{i} values of \texttt{q}.
   \item \textbf{peek(q,i)} Obtain the first \texttt{i} values of \texttt{q}. Returns a smaller number of values, if only less are available, i.e., \texttt{size(q)} \textless ~\texttt{i}.
-  \item \textbf{asgn(a, v)} Assigns a value \texttt{v} to an address  \texttt{a}.
+  \item \textbf{asgn(a,v)} Assigns a value \texttt{v} to an address  \texttt{a}.
 \end{itemize}
 
 Messages are exchanged between the application and the client-side driver, as well as between client-side and board-side driver. The following messages are the most important ones influencing the state of the driver:
@@ -486,7 +585,6 @@ Messages are exchanged between the application and the client-side driver, as we
   \item \textbf{ack(i)} Acknowledges successful reception of \texttt{i} values.
   \item \textbf{poll} A request message for additional data.
 \end{itemize}
-
 
 \subsubsection{Host-Side Driver}
 Since values can be written asynchronously, each port maintains its own state and can perform transitions independent of the other ports. The state of the host-side driver is constructed from the individual states of all ports.
@@ -573,7 +671,7 @@ An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for
 \draw[arr, black, bend right=20] (listen) to node[midway, left=0.2em] {$\inferrule{[!empty(q) ~\wedge~ !full(r)]}{ }$} (read);
 \draw[arr, black, bend right=20] (read) to node[midway, right=0.2em] {$\inferrule{ [empty(q) \vee full(r)]}{ }$} (listen);
 \draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.2em] {$\inferrule{[full(q) ~ \wedge ~ !full(r)]}{store(r, take(q)) ~~ poll}$} (read);
-\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!full(q) ~ \wedge ~ !empty(q) ~\wedge~ !full(r)]}{store(r, take(q))}$} (read);
+\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!full(q) ~ \wedge ~ !empty(q) ~\wedge~ !full(r)]}{store(r,take(q))}$} (read);
 \end{tikzpicture}
 \label{fig:cfg:boardIn}
 \caption{Board-side control flow graph of an in-going port}
@@ -591,8 +689,8 @@ The out-going port is even simpler (see \Cref{fig:cfg:boardOut}). It shifts valu
 \node[above left = 2em and 4em] (anchor) at (listen){};
 
 \draw[extend, black] (anchor) to node[auto] {} (listen);
-\draw[arr, black, out=330, in=30, looseness=6] (listen) to node[midway, right=0.2em] {$\inferrule{[!empty(r) ~\wedge ~ !full(q)]}{store(q, take(r))}$} (listen);
-\draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=1em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q, n))}$} (listen);
+\draw[arr, black, out=330, in=30, looseness=6] (listen) to node[midway, right=0.2em] {$\inferrule{[!empty(r) ~\wedge ~ !full(q)]}{store(q,take(r))}$} (listen);
+\draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=0.5em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q,n))}$} (listen);
 \end{tikzpicture}
 \label{fig:cfg:boardOut}
 \caption{Board-side control flow graph of an out-going port}
@@ -680,30 +778,32 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
-  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newthread{app}{application}
-  \newinst{cl}{client}
-  \newinst{cq}{clientQueue}  
+  \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40, node distance = 12em]
+  \newthread{app}{Application}
+  \newinst{cl}{Host}
+  \newinst{cq}{Host Queue}
+  \newthread{io}{I/O Handler}
 
 \begin{sdblock}{Write}{}
   \begin{call}{app}{nbwrite(a,v)}{cl}{write* w}
     \begin{call}{cl}{nbwrite(a,v)}{cq}{write* w}
     \end{call}
+    \mess{cl}{notify()}{io}
   \end{call}
 \end{sdblock}
 \end{sequencediagram}
 
-\caption{An application writing values through the client-side driver api}
-\label{fig:seq:clientWrite}
+\caption{An application writing values through the host-side driver api}
+\label{fig:seq:host:write}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{clientQueue}  
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
+  \newinst{cq}{Host Queue}  
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
 
 \begin{sdblock}{Send}{}
   \begin{callself}{io}{schedule(a)}{}
@@ -715,8 +815,8 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \end{sdblock}
 \end{sequencediagram}
 
-\caption{A client sending data}
-\label{fig:seq:clientSend}
+\caption{A host sending data over the medium}
+\label{fig:seq:host:send}
 \end{figure}
 
 
@@ -724,33 +824,38 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{clientQueue}  
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
+  \newthread{app}{Application}
+  \newinst{cq}{Host Queue}  
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
 
-\begin{sdblock}{Receive nb ACK}{}
+\begin{sdblock}{Receive ACK}{}
  \begin{callself}{io}{schedule(read)}{}
     \postlevel
-    \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+    \begin{call}{io}{recv()}{m}{ack(a,s(v))}
     \end{call}
+    \postlevel
+    \begin{callself}{io}{update(first(a))}{}
+    \end{callself}
     \begin{call}{io}{remove(a,s(v))}{cq}{}
     \end{call}
-    \begin{callself}{io}{update(w)}{}
-    \end{callself}
+    \begin{sdblock}{alt}{[queue.empty()]}
+      \mess{io}{notify()}{app}
+    \end{sdblock}
   \end{callself}
 \end{sdblock}
 \end{sequencediagram}
-\caption{The client-side driver receiving an acknowledgement from the server}
-\label{fig:seq:clientAck}
+\caption{The host-side driver receiving an acknowledgement from the server}
+\label{fig:seq:host:ack}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{clientQueue}
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
+  \newinst{cq}{Host Queue}
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
 \begin{sdblock}{Receive Poll}{}
   \begin{callself}{io}{schedule(read)}{}
     \postlevel
@@ -763,18 +868,18 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
   \end{callself}
 \end{sdblock}
 \end{sequencediagram}
-\caption{The client-side driver receiving a data request from the server}
-\label{fig:seq:clientPoll}
+\caption{The host-side driver receiving a data request from the server}
+\label{fig:seq:host:poll}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{m}{medium}
-  \newthread{ser}{server}
-  \newinst{sq}{serverQueue}
- \begin{sdblock}{Server Read}{}
+  \newinst{m}{Medium}
+  \newthread{ser}{Board}
+  \newinst{sq}{SW Queue}
+ \begin{sdblock}{Board Read}{}
   \begin{callself}{ser}{schedule(read)}{}
     \begin{call}{ser}{recv()}{m}{(a,v)}
     \end{call}
@@ -785,8 +890,8 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
   \end{callself}
 \end{sdblock}
 \end{sequencediagram}
-\caption{The server-side driver receiving a data package from the client}
-\label{fig:seq:serverRead}
+\caption{The board-side driver receiving a data package from the client}
+\label{fig:seq:board:read}
 \end{figure}
 
 %Composition example
@@ -794,13 +899,13 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newthread{app}{application}
-  \newinst{cl}{client}
-  \newinst{cq}{clientQueue}
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
-  \newthread{ser}{server}
-  \newinst{sq}{serverQueue}
+  \newthread{app}{Application}
+  \newinst{cl}{Host}
+  \newinst{cq}{Host Queue}
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
+  \newthread{ser}{Server}
+  \newinst{sq}{SW Queue}
 \begin{sdblock}{Non-Blocking Write}{}
 \node at (app) {};
 \node at (cl) {};
@@ -811,7 +916,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \node at (io) {};
 \node at (m) {};
 \end{sdblock}
-\begin{sdblock}{Server Read}{}
+\begin{sdblock}{Board Read}{}
 \node at (m) {};
 \node at (ser) {};
 \node at (sq) {};
@@ -833,13 +938,13 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newthread{app}{application}
-  \newinst{cl}{client}
-  \newinst{cq}{clientQueue}
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
-  \newthread{ser}{server}
-  \newinst{sq}{serverQueue}
+  \newthread{app}{Application}
+  \newinst{cl}{Host}
+  \newinst{cq}{Host Queue}
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
+  \newthread{ser}{Board}
+  \newinst{sq}{SW Queue}
   
 \begin{sdblock}{Non-Blocking Write}{}
   \begin{call}{app}{nbwrite(a,v)}{cl}{write* w}
@@ -880,7 +985,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \end{sdblock}
 
 \end{sequencediagram}
-\caption{A sequence diagram for a non-blocking write. Note, that non-blocking only means, the client does not wait for the target \textbf{component} to receive the message, but still waits for the client queue to receive the values.}
+\caption{A sequence diagram for a non-blocking write. Note, that non-blocking only means, the host does not wait for the target \textbf{component} to receive the message, but still waits for the client host to receive the values.}
 \label{fig:seq:nbwrite}
 \end{figure}
 
@@ -888,20 +993,20 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newthread{app}{application}
-  \newinst{cl}{client}
-  \newinst{cq}{clientQueue}
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
-  \newthread{ser}{server}
-  \newinst{sq}{serverQueue}
+  \newthread{app}{Application}
+  \newinst{cl}{Host}
+  \newinst{cq}{Host Queue}
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
+  \newthread{ser}{Board}
+  \newinst{sq}{SW Queue}
   
 \begin{sdblock}{Blocking Write}{}
   \begin{call}{app}{write(a,v)}{cl}{}
     \begin{call}{cl}{write(a,v)}{cq}{}
       %\begin{call}{io}{store(a,v)}{cq}{}
       %\end{call}
-% problem with this call over the first version: this doesn't directly inform the comHandler of NEW data for a component
+% problem with this call over the first version: this doesn't directly inform the I/O Handler of NEW data for a component
 % instead, when the handler schedules a component, he doesn't know if he should send data or wait for a poll.
 % we COULD solve this with an additional boolean flag on client side.
 % I'm not convinced, that the first version can be implemented, since it would basically circumvent the scheduler.
@@ -949,7 +1054,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \end{sdblock}
 
 \end{sequencediagram}
-\caption{A sequence diagram for a blocking write. Note, that only the application is blocked, not the communication handler, which may process non-blocking writes sent before the blocking write \textbf{after} the non-blocking write.}
+\caption{A sequence diagram for a blocking write. Note, that only the application is blocked, not the I/O handler, which may process non-blocking writes sent before the blocking write \textbf{after} the non-blocking write.}
 \label{fig:seq:bwrite}
 \end{figure}
 
@@ -958,11 +1063,11 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{clientQueue}
-  \newthread{io}{comHandler}
-  \newinst{m}{medium}
-  \newthread{ser}{server}
-  \newinst{sq}{serverQueue}
+  \newinst{cq}{Host Queue}
+  \newthread{io}{I/O Handler}
+  \newinst{m}{Medium}
+  \newthread{ser}{Board}
+  \newinst{sq}{SW Queue}
 
 \begin{sdblock}{Polling}{}
 
@@ -1225,8 +1330,6 @@ Since plain \texttt{C} doesn't have any concept of classes, using a model with c
 
 \paragraph{\texttt{C++} Unparser}
 For the \texttt{C++} unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
-
-
 
 \addtocontents{toc}{\protect\vspace*{\fill}}
 
