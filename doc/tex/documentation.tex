@@ -93,16 +93,6 @@
     \draw (messbeg) node[#2] {#3};
 }
 
-%% mostly used between altblocks
-%% \separateline[line style]{from}{to}
-\newcommand{\separateline}[3][dotted, color=black, very thick]{
-    \stepcounter{seqlevel}
-    \path
-    (#2)+(.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (from) {}
-    (#3)+(-.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (to) {};
-    \draw[#1] (from) -- (to);
-}
-
 %% \begin{altblock}{from}{condition}{to}
 %% %%calls here
 %% \end{altblock}
@@ -114,17 +104,27 @@
     \draw (from) node[above right] {[#2]};
 }{}
 
-%%
+%% mostly used between altblocks
+%% \separateline[line style]{from}{to}
+\newcommand{\separateline}[3][dotted, color=black, very thick]{
+    \stepcounter{seqlevel}
+    \path
+    (#2)+(.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (from) {}
+    (#3)+(-.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (to) {};
+    \draw[#1] (from) -- (to);
+}
+
+%% inverse to prelevel - adds an empty line
 \newcommand{\postlevel}{\addtocounter{seqlevel}{+1}}
 
-%% \newthread[thread distance]{color fill style}{left}{right}
-%\renewcommand{\newthread}[4][1]{
-%    \newinst[#1]{#3}{#4}
-%    \stepcounter{threadnum}
-%    \node[below of=inst\theinstnum,node distance=1em] (thread\thethreadnum) {};
-%    \tikzstyle{threadcolor\thethreadnum}=[fill=#2]
-%    \tikzstyle{instcolor#3}=[fill=#2]
-%}
+%% \newthread[thread distance]{left}{right}
+\renewcommand{\newthread}[3][0.2]{
+    \newinst[#1]{#2}{#3}
+    \stepcounter{threadnum}
+    \node[below of=inst\theinstnum,node distance=1em] (thread\thethreadnum) {};
+    \tikzstyle{threadcolor\thethreadnum}=[fill=gray!30]
+    \tikzstyle{instcolor#2}=[fill=gray!30]
+}
 
 \begin{document}
 
@@ -410,7 +410,9 @@ Since such components only hold a single state and perform no processing, commun
 \label{sec:api:port}
  A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be sending (\textit{in-going}), receiving (\textit{out-going}) or bi-directional (\textit{dual}). These designations seem counter-intuitive at first, since they do not describe the ports on the host-side, but the ports of the driver itself. The user should work with the driver, as if it were the actual board. Consequently, data is sent to an in-going port an received from an out-going port. Values sent to or received from a port have an arbitrary, but fixed bitwidth. Ports are the only way to communicate with components or the board in general (beside aforementioned GPIO components). 
 
-Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. The values are expected to be written or read asynchronously. While the order between messages to a single port is maintained, the order between messages to different ports may differ from the order of performed operations.
+Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. Instead, a \textit{task} is scheduled for the operation, which will be performed asynchronously. While the order between tasks and therefore values to a single port is maintained, the order between tasks executed at different ports may differ from the order they were scheduled in.
+
+Ports are generally \textit{forwarding}, meaning that values are send automatically from host to board and vice versa as soon as available. Out-going ports can be switched into \textit{polling} mode explicitly, resulting in values being not forwarded but only send if requested by the user. The interface of these ports looks identical and the difference is only visible in performance. A polling port is useful in cases, where the attached component generates values periodically without additional input, e.g., a random number generator.
 
 Details about the implementation of ports can be found in \Cref{sec:impl:cpp}.
 
@@ -523,7 +525,9 @@ Due to restricted resources on the board and desired parallelism between the dif
 The first and most important queue is the client-side \textit{write queue}. Such a queue is introduced for each in-going port. Writing to a port does not directly result in a message sent to the board, since the board has restricted resources and may not be able to process or even store the value. The client queue provides a first mechanism of \textit{flow control}. Values are queued up at the client, when the board buffers have been filled and no more values can be received, until the board signals that it can receive more values now.
 Additionally, the client buffer offers \textit{congestion avoidance} to a small degree, since several small values can be packaged together in one message. This results in a smaller amount of messages being sent over the medium.
 
-The client also contains \textit{read queues} for each out-going port. These queues cache values received by the board for read operations performed by the application. Values are pushed from the board into theses queues automatically. These queues lead to smaller resource consumption on the board, since only a small number of out-going values have to be cached. Read cycles are faster, since no polling messages have to be sent but available values can directly be consumed. On the downside, client-side read queues lead to some possibly unnecessary traffic on the medium, since values are send without being requested at the board. \textcolor{red}{The worst case here being a component that constantly generates values, that usually are only required by request, for example a random number generator. We therefore should also allow the usual poll semantic in specification language, drivers and protocol. These do not require a read queue, but write results directly in the provided memory area.}
+The client also contains \textit{read queues} for each out-going port. These queues cache values received by the board for read operations performed by the application. Values are pushed from the board into theses queues automatically. These queues lead to smaller resource consumption on the board, since only a small number of out-going values have to be cached. Read cycles are faster, since no polling messages have to be sent but available values can directly be consumed. On the downside, client-side read queues lead to some possibly unnecessary traffic on the medium, since values are send without being requested at the board. 
+
+To counter above disadvantage, \textit{polling ports} are introduced. These are special out-going ports, to which data is not actively forwarded. Instead, the port requests values, as soon as a read operation is performed on the port. While this results generally in longer response cycles compared to forwarding ports, the medium traffic is reduced as values are only sent if needed. This is especially useful in a scenario, where a component constantly generates values, for example a random number generator. These ports do not require a read queue on the host. Instead, the number of unserviced polls is stored in a \textit{poll counter} at the board-side port. Note, that this has no effect on the host-side API. Only the response times and memory behaviour of the driver may change.
 
 With only client-queues, the board-side driver would only be capable of receiving and processing a single value at a time, which has to be directly written to a component, resulting in an increase of messages and therefore communication overhead. In order to enable reception of multiple values at once, a \textit{board-side queue} (or \textit{software queue}) is introduced for each in-going port on the board as well. Received values are stored in these queues first and forwarded to the target component later on, if the component can process further values. In contrast to the client-side queues, are size-restricted and can only hold a certain number of values, specified in the board description file.
 Similar queues are introduced for out-going ports, to reduce traffic caused by values being sent back to the host-side driver. These queues cache results from components which are then send in one message.
@@ -534,7 +538,6 @@ Since the FPGA usually only has a single processor and is not capable of multi-t
 \label{sec:arch:threads}
 As stated in \Cref{sec:api:port}, %where else
 the driver should support asynchronous writes and reads. The order of messages to the same port has to be maintained, while the order of messages to different ports can be changed. The processing of operations at ports is independent from other ports. In particular, a synchronous operation on a port should not influence an asynchronous operation on another port.\\
-
 Consider the following example to understand why asynchronous operations should still be processed during a synchronous operation. A board specification contains an adder component with two in-going ports and an out-going port. If a values are written at both ports, they will be consumed and a result will be returned at the out-going port. Consider further, that a value is currently stored at port A. The user now writes another value to port A asynchronously, followed by writing three values to port B synchronously. The value for port A cannot be written directly, since port A is still blocked with a value. However, the first value for port B can be written, and both values are consumed. Now the second value for port B can be written, blocking the port for the third value. This third value cannot be written, until the second value is consumed, which requires another value at port A. If write operations are performed asynchronously, the asynchronous write to port A will never reach this port, since the application is still blocked from the write to port B. Allowing asynchronous writes to be processed in parallel resolves this situation. The value for port A can be written in between the writes to port B or at any point afterwards.\\
 
 Asynchronous operations can be realised by dedicated I/O threads, handling communication between host-side and board-side driver. These threads modify the client-side queues described above in \Cref{sec:arch:queue}. In general, a single thread, that covers the complete communication is be sufficient. For better separation between writing and reading operations, two threads can be introduced for, one for each of these operations. This solution if preferable, since reading from the medium usually involves longer periods of listening for messages, which would unnecessarily delay write operations. A third solution, implementing the independence of operations on different ports, is introduction of a single thread for each port. This, however, results in a possibly large number of threads. Depending on the host platform, a smaller number is preferable.
@@ -696,6 +699,34 @@ The out-going port is even simpler (see \Cref{fig:cfg:boardOut}). It shifts valu
 \caption{Board-side control flow graph of an out-going port}
 \end{figure}
 
+A polling port is slightly more complex, since it can only send, it values are requested. Once a poll arrives, the ports poll counter \texttt{s} is incremented by the number of requested values. If the poll counter is greater than zero, the port may start sending values. The port is only allowed to send as many messages as requested, but is also restricted by the software queue size \texttt{n}. Consequently, it can only send \texttt{max(s,n)} values per step.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1, transform shape]
+\coordinate(center);
+
+\node[state] (idle) at (0,0) {Idle};
+
+\node[above left = 2em and 4em] (anchor) at (idle){};
+\draw[extend, black] (anchor) to node[auto] {} (idle);
+
+\draw[arr, black, out=330, in=30, looseness=6] (idle) to node[midway, right=0.2em] {$\inferrule{poll(i)}{s~+=~i}$} (idle);
+
+\node[state, below = 6em] (send) at (idle) {Send};
+\draw[arr, black, bend right=20] (idle) to node[midway, left=0.2em] {$\inferrule{[s > 0]}{ }$} (send);
+\draw[arr, black, bend right=20] (send) to node[midway, right=0.2em] {$\inferrule{[s == 0]}{ }$} (idle);
+
+\draw[arr, black, out=330, in=30, looseness=6] (send) to node[midway, right=0.2em] {$\inferrule{poll(i)}{s~+=~i}$} (send);
+\draw[arr, black, out=210, in=150, looseness=6] (send) to node[midway, left=0.2em] {$\inferrule{[i > 0]}{data(take(q,max(i,n)))}$} (send);
+
+%\draw[arr, black, out=330, in=30, looseness=6] (listen) to node[midway, right=0.2em] {$\inferrule{[!empty(r) ~\wedge ~ !full(q)]}{store(q,take(r))}$} (listen);
+%\draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=0.5em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q,n))}$} (listen);
+\end{tikzpicture}
+\label{fig:cfg:boardOut}
+\caption{Board-side control flow graph of an out-going port}
+\end{figure}
+
 \subsection{Message Encoding}
 \label{sec:protocol:encode}
 This section covers the translation of the above messages into messages on the communication medium. Messages can be split into header and payload. The header describes the payload to follow, the payload contains a number of 32-bit values that are sent to or form a component.
@@ -704,9 +735,9 @@ The first 8 bit of the header are reserved for the \textit{protocol version}, th
 
 \paragraph{Procotol Version 1}
 
-This version reserves the next 4 bit of the header for the type of the message. In general, a message looks like depicted in \Cref{fig:proto:bitorder}. Values in this protocol version are expected to be properly aligned with 32-bit, meaning that, as described in \Cref{sec:arch:bitwidth}, values are padded host-side to a multiple of 32-bit and then split into 32-bit blocks.\\
+This version reserves the next 4 bit of the header for the \textit{type} field, which  determines which kind of message is represented. Depending on the type, the 4-bit \textit{ID} field is used as identifier for either ports, gpio components or error types. Finally, the 16-bit field \textit{size} marks either the size of the payload in 32-bit values, or, for messages with only small data content, is used directly to store the data without utilizing the payload field, i.e. a payload size of 0. This leads to messages, that generally look as depicted in \Cref{fig:proto:bitorder}. \\
 
-\begin{figure}
+\begin{figure}[h]
 \centering
 \begin{bytefield}{32}
   \bitheader{0,7,11,15,31} \\
@@ -717,6 +748,9 @@ This version reserves the next 4 bit of the header for the type of the message. 
 \label{fig:proto:bitorder}
 \end{figure}
 
+Values in this protocol version are expected to be properly aligned with 32-bit, meaning that, as described in \Cref{sec:arch:bitwidth}, values are padded host-side to a multiple of 32-bit and then split into 32-bit blocks.
+Note, that due to the size being only a 16-bit field, only $2^{16}-1$ such values can be written or read with a single message. The API has no such restriction and host-side queues are not bound by any size constraint either. This admittedly unlikely scenario has to be treated in the I/O thread, by splitting tasks accordingly.
+
 The control flow graphs in \Cref{sec:protocol:cfg} specify what types of messages are required. A short overview of the messages together with their type encoding and their fields is provided in \Cref{tab:proto:messages}. The following paragraphs provide a more detailed description of the message and their meaning.
 
 \begin{table}[h]
@@ -726,7 +760,7 @@ Message & Type & ID & Size & Payload\\ \hline
 Data & 1001 & Port ID & Payload Size & Yes\\
 GPIO & 1110 & GPIO ID & GPIO State & No\\
 Ack & 1111 & Port ID & Ack Count & No\\
-Poll & 1010 & Port ID & Unused & No\\
+Poll & 1010 & Port ID & Poll Count & No\\
 Reset & 0000 & Unused & Unused & No\\
 Debug & 0111 & Debug Type & Payload Size & Yes
  \end{tabular}
@@ -738,23 +772,29 @@ Debug & 0111 & Debug Type & Payload Size & Yes
 A data message marks either a set of values for a specific component being sent from the host to the board or a set of values from a specific component being sent from the board to the host. As such, it requires an identifier for the target or source component as well as the size of the contained payload in words (i.e. 32-bit values). 
 Values sent with a data message are expected to always be full 32-bit values.
 
+The direction the data message is sent in, determines if it is addressed at an in-going or out-going port. Data messages from the host are directed at in-going ports, data messages from the board are directed at out-going ports. Consequently, 16 in-going and 16 out-going ports can be addressed using a 4-bit ID field.
+
 \paragraph{Acknowledgement}
 The acknowledgement confirms reception of a number of values by a specific component. For this purpose, no payload is required. Instead, the number of acknowledged values is encoded within the \textit{size} field.
 
 \paragraph{Data Request (Poll)}
-A data request is used to inform the host, that additional values can now be received. This is necessary if the queue was full beforehand, i.e. a partial acknowledgement was (most likely) sent. The poll does require neither a payload nor a size, but only the identifier of the component, that can now receive values.
+A data request is used to inform the host, that additional values can now be received. This is necessary if the queue was full beforehand, i.e. a partial acknowledgement was (most likely) sent. This poll does require neither a payload nor a size, but only the identifier of the component, that can now receive values.
+
+The data request is also used at polling ports. Here, it notifies the board, the the host requires values from the port. The Size field is used to specify how many values are requested.
+
+As with data messages, the direction of the poll message determines if an in-going or out-going port is addressed. However, the translation is inverse to the data message. A poll from the host is addressed at an out-going port, a poll from the board at an in-going port.
 
 \paragraph{GPIO Message}
-A GPIO message is a special type of data message, addressed to a GPIO component. GPIO components use their own address space, disjunct from the addresses used by "normal" components. They are not connected via AXI Stream interfaces but direct memory addresses, consequently they do not influence the port restriction on the microblaze.
+A GPIO message is a special type of data message, addressed to a GPIO component. GPIO components use their own address space, disjunct from the addresses used by "normal" components. They are not connected via AXI Stream interfaces but direct memory addresses, consequently they do not influence any port restrictions.
 
-Furthermore, GPIO components do only store their current state and perform no calculation like vhdl components. The state is represented by an 8 bit value and is encoded directly in the size field instead of the payload. Storing only the current state also means, that no queues exist for GPIO components and no acknowledgements are required. The new state is simply written into (or read from) memory
+Furthermore, GPIO components do only store their current state and perform no calculation like VHDL components. The state is represented by an 8 bit value and is encoded directly in the size field instead of the payload. Storing only the current state also means, that no queues exist for GPIO components and no acknowledgements are required. The new state is simply written into (or read from) memory
 
 \paragraph{Reset Message}
 This message is not specified in the protocol above. A reset message sent by the host-side driver resets the state of the board-side driver, clearing all queues and setting the reset flag for all components. The board-side driver acknowledges a successful reset by answering with a reset message. 
 The target and size fields are unused by the reset message.
 
 \paragraph{Debug Message}
-This message also is not specified in the protocol. It marks a notification of some sort, sent by the board. This can be debug output of the driver running on the microblaze, a warning message about skipped messages or an unhandled error, that occurred on the board. For these messages, the payload contains a string.
+This message also is not specified in the protocol. It marks a notification of some sort, sent by the board. This can be debug output of the driver running on the board, a warning message about skipped messages or an unhandled error, that occurred on the board. For these messages, the payload contains a string.
 The target bits are used to differentiate between the debug message type. The bit encoding is shown in \Cref{tab:protoDebug}. Values in between have been left unused for future use (e.g. finer grained warnings or info messages).
 
 \begin{table}[h]
@@ -772,7 +812,9 @@ Error &  1101 \\
 While it is possible to provide debug output over the JTag cable, the FPGA is programmed with, this quickly slows down computation with larger debug outputs. Using the Ethernet connection also for debug output vastly accelerates such computations.
 
 \subsection{Sequence charts}
-Some sequence charts to visualise the envisioned process. For example, \Cref{fig:seq:nbwrite} shows in detail, how a non-blocking write is handled. First of all, the values are stored client-side. The application receives a pointer to a \texttt{write} object, which represents the current state of the scheduled write, i.e., how many values have been received by the component on the server.
+\label{sec:protocol:sequence}
+
+The following sequence charts describe typical interaction patterns and offer a different view than the control flow graphs in \Cref{sec:protocol:cfg}. They use the same methods and messages as declared earlier, but may introduce additional ones. The intended functionality of these methods should be obvious from the name and parameters.,
 
 %write first & more
 \begin{figure}[h]
@@ -780,15 +822,18 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40, node distance = 12em]
   \newthread{app}{Application}
-  \newinst{cl}{Host}
-  \newinst{cq}{Host Queue}
-  \newthread{io}{I/O Handler}
+  \newinst[1]{port}{Port}
+  \newinst{tq}{Task Queue}
+  \newthread[1]{io}{I/O Handler}
 
 \begin{sdblock}{Write}{}
-  \begin{call}{app}{nbwrite(a,v)}{cl}{write* w}
-    \begin{call}{cl}{nbwrite(a,v)}{cq}{write* w}
+  \begin{call}{app}{nbwrite(v)}{port}{write* w}
+    \begin{callself}{port}{createTask(v)}{write* w}
+    \end{callself}
+    \postlevel
+    \begin{call}{port}{put(w)}{tq}{}
     \end{call}
-    \mess{cl}{notify()}{io}
+    \mess{port}{notify()}{io}
   \end{call}
 \end{sdblock}
 \end{sequencediagram}
@@ -797,20 +842,27 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \label{fig:seq:host:write}
 \end{figure}
 
+
+The host-side view on a write operation is depicted in \Cref{fig:seq:host:write}. An application writes values to a port. The port stores the written values to its local queue and notifies the I/O thread, that new values are available to be written. This notification may get ignored, if the I/O handler isn't waiting for a notification, but is still busy processing. In this case, the values will be written, whenever the corresponding port is reached by the thread. 
+
+In case of a non-blocking write operation as in \Cref{fig:seq:host:write}, the write operation returns after this notification and the application an continue. In case of a blocking write operation, the port starts waiting for a notification after notifying the I/O handler. This notification will be sent after all values got acknowledged (compare to \Cref{fig:seq:host:ack}).
+
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{Host Queue}  
-  \newthread{io}{I/O Handler}
-  \newinst{m}{Medium}
+  \newinst{cq}{Task Queue}
+  \newthread[1]{io}{I/O Handler}
+  \newinst[1]{m}{Medium}
 
 \begin{sdblock}{Send}{}
-  \begin{callself}{io}{schedule(a)}{}
-    \begin{call}{io}{check(a)}{cq}{(v)}
-    \end{call}
-    \begin{call}{io}{send(a,v)}{m}{}
-    \end{call}
+  \begin{callself}{io}{schedule(pid)}{}
+    \begin{sdblock}{alt}{[!q.empty()]}
+      \begin{call}{io}{take(n)}{cq}{v}
+      \end{call}
+      \begin{call}{io}{data(pid,v)}{m}{}
+      \end{call}
+    \end{sdblock}
   \end{callself}
 \end{sdblock}
 \end{sequencediagram}
@@ -819,28 +871,26 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \label{fig:seq:host:send}
 \end{figure}
 
+The I/O handler iterates over all ports. There, it checks if the port is ready to send values. That implies, that values have to be available, there are no unacknowledged values in transit, and the port is not blocked. If this is the case, the I/O handler puts a data package on the medium. This process is depicted in \Cref{fig:seq:host:send}.
 
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newthread{app}{Application}
-  \newinst{cq}{Host Queue}  
-  \newthread{io}{I/O Handler}
-  \newinst{m}{Medium}
+  \newthread{port}{Port}
+  \newinst{cq}{Task Queue}
+  \newthread[1]{io}{I/O Handler}
+  \newinst[1]{m}{Medium}
 
 \begin{sdblock}{Receive ACK}{}
  \begin{callself}{io}{schedule(read)}{}
     \postlevel
-    \begin{call}{io}{recv()}{m}{ack(a,s(v))}
+    \begin{call}{io}{recv()}{m}{ack(pid,i)}
     \end{call}
-    \postlevel
-    \begin{callself}{io}{update(first(a))}{}
-    \end{callself}
-    \begin{call}{io}{remove(a,s(v))}{cq}{}
+    \begin{call}{io}{update(i)}{cq}{}
     \end{call}
-    \begin{sdblock}{alt}{[queue.empty()]}
-      \mess{io}{notify()}{app}
+    \begin{sdblock}{alt}{[q.empty()]}
+      \mess{io}{notify()}{port}
     \end{sdblock}
   \end{callself}
 \end{sdblock}
@@ -849,22 +899,24 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \label{fig:seq:host:ack}
 \end{figure}
 
+After sending a data message, the I/O handler continues its iteration. It also listens for incoming messages. One of these is the acknowledgement, which indicates board-side reception of sent data messages. Receiving an acknowledgement leads to update of the port queue (see \Cref{fig:seq:host:ack}). If the port queue is empty afterwards, the port is notified of this. If a blocking write operation was stalled at the port, it can now return and the application can continue its computations.
+
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{Host Queue}
-  \newthread{io}{I/O Handler}
-  \newinst{m}{Medium}
+  \newinst{cq}{Task Queue}
+  \newthread[1]{io}{I/O Handler}
+  \newinst[1]{m}{Medium}
 \begin{sdblock}{Receive Poll}{}
   \begin{callself}{io}{schedule(read)}{}
     \postlevel
-    \begin{call}{io}{recv()}{m}{(poll, a)}
+    \begin{call}{io}{recv()}{m}{poll(pid)}
     \end{call}
-    \begin{call}{io}{getValues(a)}{cq}{(v)}
-    \end{call}
-    \begin{call}{io}{send(a,v)}{m}{}
-    \end{call}
+    \begin{sdblock}{alt}{[p.transit \textless ~ 0]}
+      \begin{call}{io}{reset()}{cq}{(v)}
+      \end{call}
+    \end{sdblock}
   \end{callself}
 \end{sdblock}
 \end{sequencediagram}
@@ -872,16 +924,18 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \label{fig:seq:host:poll}
 \end{figure}
 
+Another message that can be received by the I/O handler is a poll for additional data, depicted in \Cref{fig:seq:host:poll}. This request is answered with re-setting the polled ports transit counter, if the port is stalled. As a result, the data will be sent from the polled port at the next iteration, or as soon as available. If the port was not stalled, the poll will be ignored. This implies, there is either data already in transit (i.e., will arrive after the poll was sent - which is exactly what the poll is supposed to achieve) or there is no data to send despite the port not being blocked (in which case data will be sent as soon as available even without the poll).
+
 \begin{figure}[h]
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
   \newinst{m}{Medium}
-  \newthread{ser}{Board}
-  \newinst{sq}{SW Queue}
+  \newthread[1]{ser}{Board}
+  \newinst[1]{sq}{SW Queue}
  \begin{sdblock}{Board Read}{}
   \begin{callself}{ser}{schedule(read)}{}
-    \begin{call}{ser}{recv()}{m}{(a,v)}
+    \begin{call}{ser}{recv()}{m}{data(a,v)}
     \end{call}
     \begin{call}{ser}{store(a,v)}{sq}{}
     \end{call}
@@ -894,6 +948,8 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \label{fig:seq:board:read}
 \end{figure}
 
+On the board, a single thread is running. This thread, similar to the host-side I/O thread, listens to incoming messages. Receiving a data message results in the message being stored at the software queue and values being acknowledged (cf. \Cref{fig:seq:board:read}). At a later point, values will be shifted from the software queue to the hardware queue without further involvement of the host.
+
 %Composition example
 \begin{figure}[h]
 \centering
@@ -901,10 +957,10 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
   \newthread{app}{Application}
   \newinst{cl}{Host}
-  \newinst{cq}{Host Queue}
+  \newinst{cq}{Task Queue}
   \newthread{io}{I/O Handler}
   \newinst{m}{Medium}
-  \newthread{ser}{Server}
+  \newthread{ser}{Board}
   \newinst{sq}{SW Queue}
 \begin{sdblock}{Non-Blocking Write}{}
 \node at (app) {};
@@ -921,7 +977,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \node at (ser) {};
 \node at (sq) {};
 \end{sdblock}
-\begin{sdblock}{Receive nb ACK}{}
+\begin{sdblock}{Receive ACK}{}
 \node at (cq) {};
 \node at (io) {};
 \node at (m) {};
@@ -930,6 +986,8 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \caption{Composed example of a non-blocking write using the building blocks defined before.}
 \label{fig:seq:comp1}
 \end{figure}
+
+A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp1}. This example shows the complete effects of a non-blocking write initiated by the application. First of all, the non-blocking write is handled host-side resulting in the values being stored in the port queue. Once the I/O thread reaches this port, the values are sent over the medium. The board receives the values, stores them in the software queue and sends an acknowledgement. The acknowledgement is in turn received by the I/O handler again which updates the port queue updating the write task and removing it from the queue.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Following are the complete use-cases... (which take about a page each)
@@ -940,7 +998,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
   \newthread{app}{Application}
   \newinst{cl}{Host}
-  \newinst{cq}{Host Queue}
+  \newinst{cq}{Task Queue}
   \newthread{io}{I/O Handler}
   \newinst{m}{Medium}
   \newthread{ser}{Board}
@@ -977,9 +1035,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
     \postlevel
     \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
     \end{call}
-    \begin{callself}{io}{update(w)}{}
-    \end{callself}
-    \begin{call}{io}{remove(a,s(v))}{cq}{}
+    \begin{call}{io}{update(a,s(v))}{cq}{}
     \end{call}
   \end{callself}
 \end{sdblock}
@@ -995,7 +1051,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
   \newthread{app}{Application}
   \newinst{cl}{Host}
-  \newinst{cq}{Host Queue}
+  \newinst{cq}{Task Queue}
   \newthread{io}{I/O Handler}
   \newinst{m}{Medium}
   \newthread{ser}{Board}
@@ -1063,7 +1119,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 \centering
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
-  \newinst{cq}{Host Queue}
+  \newinst{cq}{Task Queue}
   \newthread{io}{I/O Handler}
   \newinst{m}{Medium}
   \newthread{ser}{Board}
@@ -1119,6 +1175,7 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 
 
 \section{Current Driver Implementations}
+The current implementations include a \texttt{C++} host-side driver and a board-side driver for the Virtex-6 ML605 board. These implementations are described in detail here, giving driver developers an idea, how an implementation of this architecture can look like. 
 
 %Currently, three of these components are supported:
 %\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
@@ -1129,20 +1186,25 @@ Some sequence charts to visualise the envisioned process. For example, \Cref{fig
 
 \subsection{C++ Host-Side Driver}
 \label{sec:impl:cpp}
-%Implementation details about the C++ Driver
+The following sections will highlight selected, important aspects of the \texttt{C++} implementation of the host-side driver.
 
-The host side consists of several cpp sources and headers files. These files can be imported in any host side project and be used to wrap communication with components on the board.
+\subsubsection{Structure}
+The host side driver is structured roughly into three groups of files and classes, located in different folders. The folder \textit{api} contains everything, the application should have access to, i.e., components and ports. The folder \textit{io} contains files handling communication between host-side driver and the medium. These files are not required directly by an application. The third group of files contains utility classes used by both io and api. These files are simply located in the root folder of the driver.
 
-The actual communication is performed in the \textit{communication medium}, which is unique per driver and does not require additional interaction from the user.
+The api files used by the application have been described in some detail in \Cref{sec:api} already. A detailed description of methods generated for writing and reading values can be found in the api specification of a generated driver. It is advisable, to provide these operations for single values and for groups of multiple values. How these values are grouped, depends on the language. The \texttt{C++} implementation provides these operations for arrays (together with a size parameter) and \texttt{std::vectors} of values.
+
+\subsubsection{I/O Handler}
+The driver implements two separate threads for write and read operations, which has been presented as preferred solution in \Cref{sec:arch:threads}.
+The reading thread utilizes the \texttt{select} method defined in TCP, which waits for incoming messages without consuming CPU resources. The writing thread iterates over all in-going ports, until an iteration writes no values. If this happens, it starts waiting for new data, an acknowledgement or a poll.
 
 \subsubsection{Communication medium}
-Each driver is bound to a single communication medium, which wraps lower-level communication (essentially transport layer and below) between host and board driver. The communication medium abstracts from the actually used technology and provides a homogeneous api for the I/O threads. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
+The communication medium is part of the I/O handler of the driver and wraps lower-level communication (essentially transport layer and below) between host and board driver. The communication medium abstracts from the actually used technology and provides a homogeneous api for the I/O threads. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
 
 Currently, three communication mediums are envisioned:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
 \item \textbf{Ethernet Lite}, which is already implemented
 \item \textbf{USB/UART}, which is considered as second interface and
-\item \textbf{PCI Express}, which will not be implemented in the initial driver generator.
+\item \textbf{PCI Express}, which is not implemented in the initial driver generator.
 \end{itemize}
 
 \paragraph{Ethernet Lite}
@@ -1157,6 +1219,7 @@ While communication over USB/UART is rather slow, it provides a more simple meth
 
 \paragraph{PCI Express}
 \textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
+
 
 \subsection{Virtex 6 ML 605 Board-Side Driver}
 %Implementation details about the Virtex 6 Driver
