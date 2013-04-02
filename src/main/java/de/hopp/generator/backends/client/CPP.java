@@ -105,10 +105,10 @@ public class CPP extends Visitor<NE> implements Backend {
                 )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"));
 
         int queueSizeSW = defaultQueueSizeSW, queueSizeHW = defaultQueueSizeHW;
-        for(Constant c : term.constants().term()) {
+        for(Option o : term.opts().term()) {
             // duplicates and invalid parameters are already caught by sanity check
-            if(c instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)c).qsize();
-            if(c instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)c).qsize();
+            if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
+            if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
         }
         
         consts = add(consts, MDefinition(MDocumentation(Strings(
@@ -125,7 +125,7 @@ public class CPP extends Visitor<NE> implements Backend {
         visit(term.gpios());
         visit(term.scheduler());
         visit(term.cores());
-        visit(term.instances());
+        visit(term.insts());
         
         consts = add(consts, MDefinition(MDocumentation(Strings(
                 "The number of in-going component ports"
@@ -144,7 +144,7 @@ public class CPP extends Visitor<NE> implements Backend {
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos term)   { }
     public void visit(BackendsPos term)  { }
-    public void visit(ConstantsPos term) { }
+    public void visit(OptionsPos term) { }
 
     @Override
     public void visit(MediumPos term) {

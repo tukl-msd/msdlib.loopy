@@ -64,7 +64,7 @@ public class BoardUtils {
         // TODO medium parameters
         for(de.hopp.generator.frontend.GPIO gpio : board.gpios())
             rslt += "\n  -GPIO component " + gpio.name();
-        for(Instance inst : board.instances())
+        for(Instance inst : board.insts())
             rslt += "\n  -VHDL Component " + inst.name() + " (" + inst.core() + ")";
         return rslt;
     }

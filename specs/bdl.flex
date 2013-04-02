@@ -39,8 +39,8 @@ DecNumber      = 0 | [1-9][0-9]*
 HexNumber      = 0 [x] [0-9a-f]*
 VerPart        = 0 [0-9]+
 
-Identifier     = [:jletter:] [[:jletterdigit:]-_]*
-String         = [[:jletterdigit:]-_.:]*
+Identifier     = [:jletter:] [[:jletterdigit:]\-_]*
+String         = [[:jletterdigit:]\-_.:]*
 %%
 
 /* ignore whitespaces and comments */
@@ -52,9 +52,9 @@ String         = [[:jletterdigit:]-_.:]*
 "}"             { return symbol(sym.END); }
 "{:"            { yybegin(code);      // state switch to code block
                   return symbol(sym.CBEGIN); }
-<code>          { return symbol(sym.CODE, yytext()); }
 <code> ":}"     { yybegin(YYINITIAL); // state switch back to default
                   return symbol(sym.CEND); }
+<code> [.]*     { return symbol(sym.CODE, yytext()); }
 
 /* Keywords */
 "import"        { return symbol(sym.IMPORT); }

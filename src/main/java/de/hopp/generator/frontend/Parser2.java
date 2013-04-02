@@ -36,7 +36,7 @@ public class Parser2 {
     }
     
     private BDLFile testfile() {
-        return BDLFile(Imports(), Backends(), Constants(), DEFAULT(), Medium("ethernet", "mac AA:BB:CC:DD:EE:FF"),
+        return BDLFile(Imports(), Backends(), Options(), 
                 Cores(
                    Core("adder", Strings("sample2.bdf"), Port("in1", IN()), Port("out1", OUT()), Port("in2", IN())),
                    Core("fifo",  Strings("sample2.bdf"), Port("in1", IN()), Port("out1", OUT())),
@@ -50,7 +50,7 @@ public class Parser2 {
                     Instance("rng_b",   "rng",   CPUAxis("in1"), CPUAxis("out1")),
                     Instance("adder_a", "adder", CPUAxis("in1"), CPUAxis("out1"), CPUAxis("in2")),
                     Instance("fifo_a",  "fifo",  CPUAxis("in1"), CPUAxis("out1"))
-                ));
+                ), Medium("ethernet", "mac AA:BB:CC:DD:EE:FF"), DEFAULT());
     }
     
     private void sanityCheck(BDLFile bdf) {
@@ -84,7 +84,7 @@ public class Parser2 {
         }
             
         // check declaration of referenced cores
-        for(Instance inst : bdf.instances()) {
+        for(Instance inst : bdf.insts()) {
             if(!cores.containsKey(inst.core())) errors.addError(new ParserError("Instantiated undefined core " + inst.core())); 
         
             // check connection of all declared ports
@@ -98,7 +98,7 @@ public class Parser2 {
         
         // check for duplicate instance identifiers
         Map<String, Instance> instances = new HashMap<String, Instance>();
-        for(Instance inst : bdf.instances())
+        for(Instance inst : bdf.insts())
             if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name()));
             else instances.put(inst.name(), inst);
         instances.clear();
@@ -112,7 +112,7 @@ public class Parser2 {
         
         // check axis connection count (one for cpu axis, two for others)
         Map<String, Integer> connections = new HashMap<String, Integer>();
-        for(Instance inst : bdf.instances())
+        for(Instance inst : bdf.insts())
             for(Binding bind : inst.bind()) {
                 if(bind instanceof CPUAxis) continue; 
                 // increment counter for this axis
@@ -132,16 +132,16 @@ public class Parser2 {
         boolean sw = false, hw = false;
         
         // invalid options for the board in general
-        for(Constant c : bdf.constants()) {
+        for(Option o : bdf.opts()) {
             // poll is simply not allowed
-            if(c instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option")); 
+            if(o instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option")); 
             // neither is bitwidth
-            else if(c instanceof BITWIDTH) errors.addError(new ParserError("encountered option \"width\" as board option"));
+            else if(o instanceof BITWIDTH) errors.addError(new ParserError("encountered option \"width\" as board option"));
             // swqueue and hwqueue are allowed to occur at most once
-            else if(c instanceof SWQUEUE)
+            else if(o instanceof SWQUEUE)
                 if(sw) errors.addError(new ParserError("duplicate board option \"swqueue\""));
                 else sw = true;
-            else if(c instanceof HWQUEUE)
+            else if(o instanceof HWQUEUE)
                 if(hw) errors.addError(new ParserError("duplicate board option \"swqueue\""));
                 else hw = true;
         }
@@ -151,22 +151,22 @@ public class Parser2 {
         for(Core core : bdf.cores()) {
             for(Port port : core.ports()) {
                 sw = false; hw = false; poll = false; width = false;
-                for(Constant c : port.constants()) {
-                    if(c instanceof POLL)
+                for(Option o : port.opts()) {
+                    if(o instanceof POLL)
                         // poll is not allowed to occur at in-going ports
                         if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port")); 
                         // at out-going ports it must occur at most once
                         else if(poll) errors.addError(new ParserError("duplicate port option \"poll\""));
                         else poll = true;
                     // bitwidth is allowed to occur at most once
-                    else if(c instanceof BITWIDTH)
+                    else if(o instanceof BITWIDTH)
                         if(width) errors.addError(new ParserError("duplicate port option \"bitwidth\""));
                         else width = true;
                     // swqueue and hwqueue are allowed to occur at most once
-                    else if(c instanceof SWQUEUE)
+                    else if(o instanceof SWQUEUE)
                         if(sw) errors.addError(new ParserError("duplicate port option \"swqueue\""));
                         else sw = true;
-                    else if(c instanceof HWQUEUE)
+                    else if(o instanceof HWQUEUE)
                         if(hw) errors.addError(new ParserError("duplicate port option \"hwqueue\""));
                         else hw = true;
                 }

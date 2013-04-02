@@ -151,17 +151,17 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     }
     
     // We assume all imports to be accumulated at the parser
-    public void visit(ImportsPos   term) { }
-    public void visit(BackendsPos  term) { }
-    public void visit(ConstantsPos term) { }
+    public void visit(ImportsPos  term) { }
+    public void visit(BackendsPos term) { }
+    public void visit(OptionsPos  term) { }
 
     @Override
     public void visit(BDLFilePos term) {
         // add queue size constants
         int queueSizeHW = defaultQueueSizeHW, queueSizeSW = defaultQueueSizeSW;
-        for(Constant c : term.constants().term()) {
-           if(c instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)c).qsize();
-           if(c instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)c).qsize();
+        for(Option o : term.opts().term()) {
+           if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
+           if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
         }
         addConst("HW_QUEUE_SIZE", String.valueOf(queueSizeHW), "Size of the queues implemented in hardware.");
         addConst("SW_QUEUE_SIZE", String.valueOf(queueSizeSW), "Size of the queues on the microblaze.");
@@ -175,7 +175,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         visit(term.scheduler());
         visit(term.gpios());
         visit(term.cores());
-        visit(term.instances());
+        visit(term.insts());
 
         addConst("IN_STREAM_COUNT", String.valueOf(axiStreamIdMaster), "Number of in-going stream interfaces.");
         addConst("OUT_STREAM_COUNT", String.valueOf(axiStreamIdSlave), "Number of out-going stream interfaces.");

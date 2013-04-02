@@ -1,18 +1,17 @@
 package de.hopp.generator.frontend;
 
 import java_cup.runtime.*;
-import de.hopp.generator.bdl.*;
 
 /* Preliminaries to set up and use the scanner.  */
 //init with {: scanner.init();              :};
 //scan with {: return getScanner().next_token(); :};
 
 parser code {:
-  protected BDLFile board = BDL.BDLFile();
-
-  public BDLFile getBDLFile() {
-    return board;
-  }
+//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
+//
+//  public BDLFile getBDLFile() {
+//    return board;
+//  }
 :}
 
 /* terminals */
@@ -25,120 +24,119 @@ terminal CORE, SOURCE;
 terminal IN, OUT, WIDTH, POLL;
 terminal GPIO, INSTANCE, BIND;
 terminal SCHEDULER;
-terminal String CODE;
+terminal String CODE, STR;
 terminal String ID, HEX, VER;
 terminal Integer DEC;
 
 /* non terminals */
 non terminal BDLFile file;
-non terminal Import import;
-non temrinal Backend backend;
+non terminal Import imp;
+non terminal Backend backend;
 non terminal Medium medium;
-non terminal Constant option;
+non terminal Option option;
 non terminal Core core;
 non terminal String version;
 non terminal String source;
 non terminal Port port;
-non temrinal Instance instance;
+non terminal Instance instance;
 non terminal Binding bind;
 non terminal Scheduler scheduler;
+
+non terminal Decl decl;
+non terminal Decls decl_list;
+non terminal Strings source_list;
+non terminal Ports port_list;
+non terminal inst_decl;
+non terminal gpio_callback;
+non terminal bind_list;
 
 /* grammar */
 start with file;
 
-file ::= ( import:i
-         | backend:b
-         | medium:m
-         | option:o
-         | core:c
-         | instance:i
-         )*;
+file ::= decl_list:l {:
+  Imports imports     = BDL.Imports();
+  Backends backends   = BDL.Backends();
+  Options opts        = BDL.Options();
+  Cores cores         = BDL.Cores();
+  GPIOs gpios         = BDL.GPIOs();
+  Instances insts     = BDL.Instances();
+  Medium medium       = BDL.Medium("", "");
+  Scheduler scheduler = BDL.DEFAULT();
+  for(Decl d : l) {
+         if(d instanceof Import)    { imports.add((Import)d); }
+    else if(d instanceof Backend)   { backends.add((Backend)d); }
+    else if(d instanceof Option)    { opts.add((Option)d); }
+    else if(d instanceof Core)      { cores.add((Core)d); }
+    else if(d instanceof GPIO)      { gpios.add((GPIO)d); }
+    else if(d instanceof Instance)  { insts.add((Instance)d); }
+    else if(d instanceof Medium)    { medium = (Medium)d; }       // TODO catch duplicates
+    else if(d instanceof Scheduler) { scheduler = (Scheduler)d; } // TODO catch duplicates
+  }
 
-import ::= IMPORT ID:id {: RESULT = BDL.Import(id); :};
+  RESULT = BDL.BDLFile(imports, backends, opts, cores, gpios, insts, medium, scheduler);
+:};
 
-backend ::= HOST    {: :}
-          | BOARD   {: :}
-          | PROJECT {: :}
+decl_list ::= decl:d decl_list:l {: RESULT = l.appFront(d); :}
+            | {: RESULT = BDL.Decls(); :};
+
+decl ::= imp:i       {: RESULT = i; :}
+       | backend:b   {: RESULT = b; :}
+       | option:o    {: RESULT = o; :}
+       | core:c      {: RESULT = c; :}
+       | instance:i  {: RESULT = i; :}
+       | medium:m    {: RESULT = m; :}
+       | scheduler:s {: RESULT = s; :}
+       ;
+
+imp ::= IMPORT ID:id {: RESULT = BDL.Import(id); :};
+
+backend ::= HOST    ID:i {: RESULT = BDL.Backend(i); :}
+          | BOARD   ID:i {: RESULT = BDL.Backend(i); :}
+          | PROJECT ID:i {: RESULT = BDL.Backend(i); :}
           ;
 
 medium ::= MEDIUM {: :};
 
-option ::= SWQUEUE DEC:d {: :}
-         | HWQUEUE DEC:d {: :}
-         | WIDTH DEC:d   {: :}
-         | POLL
+option ::= SWQUEUE DEC:d {: RESULT = BDL.SWQUEUE(d); :}
+         | HWQUEUE DEC:d {: RESULT = BDL.HWQUEUE(d); :}
+         | WIDTH DEC:d   {: RESULT = BDL.BITWIDTH(d); :}
+         | POLL          {: RESULT = BDL.POLL(); :}
          ;
 
-core ::= CORE ID:id version:v BEGIN (source | port)* END {: :};
+core ::= CORE ID:id version:v BEGIN source_list:s port_list:p END {: RESULT = BDL.Core(id, s, p); :};
 
-version ::= DEC:a (DEC|VER):b ID:c {: :};
+source_list ::= source:s source_list:l {: l.appFront(s); :}
+              | {: RESULT = BDL.Strings(); :}
+              ;
 
-source ::= SOURCE ID:id {: :};
+port_list ::= port:p port_list:l {: l.appFront(p); :}
+            | {: RESULT = BDL.Ports(); :}
+            ;
 
-port   ::= IN  ID:id {: :} // +port options
-         | OUT ID:id {: :} // +port options
+version ::= DEC:a DEC:b ID:c {: :}
+          | DEC:a VER:b ID:c {: :}
+          ;
+
+source ::= SOURCE ID:id {: RESULT = id; :};
+
+port   ::= IN  ID:id {: RESULT = BDL.IN();  :} // +port options
+         | OUT ID:id {: RESULT = BDL.OUT(); :} // +port options
          ;
 
-instance ::= INSTANCE ID:core ID:id (BEGIN (bind)* END)? {: :}
-           | GPIO ID:id (CBEGIN CODE CEND)? {: :}
+instance ::= INSTANCE ID:core ID:id inst_decl {: :}
+           | GPIO ID:id gpio_callback {: :}
            ;
+
+inst_decl ::= BEGIN bind_list END
+            | ;
+
+bind_list ::= bind bind_list
+            | ;
 
 bind ::= BIND ID:port ID:axis {: :};
 
-scheduler ::= SCHEDULER CBEING CODE:c CEND {: :};
+gpio_callback ::= CBEGIN CODE CEND
+                | ;
 
-//non terminal MHSFile file;
-//non terminal Blocks block_list;
-//non terminal Block block;
-//non terminal Attributes attr_list;
-//non terminal Attribute attr;
-//non terminal Type type;
-//non terminal Assignments assgn_list;
-//non terminal Assignment assgn;
-//non terminal Expression expression;
-//non terminal Value val, lit;
-//non terminal Range range;
-//
-///* grammar */
-//start with file;
-//
-//file       ::= attr_list:a block_list:b   {: RESULT = MHS.MHSFile (a,b); :}
-//             ;
-///* blocks */
-//block_list ::= block:hd block_list:tl     {: RESULT = tl.appFront(hd); :} 
-//             |                            {: RESULT = MHS.Blocks(); :}
-//             ;
-//block      ::= BEGIN ID:i attr_list:l END {: RESULT = MHS.Block(i,l); :}
-//             ;
-//type       ::= BUS_INTERFACE              {: RESULT = MHS.BUS_INTERFACE(); :}
-//             | PARAMETER                  {: RESULT = MHS.PARAMETER(); :}
-//             | PORT                       {: RESULT = MHS.PORT(); :}
-//             ;
-//
-///* attributes */
-//attr_list  ::= attr:hd attr_list:tl       {: RESULT = tl.appFront(hd); :}
-//             |                            {: RESULT = MHS.Attributes(); :}
-//	     ;
-//attr       ::= type:t assgn_list:l        {: RESULT = MHS.Attribute(t,l); :}
-//             ;
-//assgn_list ::= assgn:hd COM assgn_list:tl {: RESULT = tl.appFront(hd); :}
-//             | assgn:a                    {: RESULT = MHS.Assignments(a); :}
-//             ;
-//assgn      ::= ID:i EQ expression:e       {: RESULT = MHS.Assignment(i,e); :}
-//             ;
-//expression ::= val:v AND expression:e     {: RESULT = e instanceof AndExp ? ((AndExp)e).appFront//(v) :
-//                                               MHS.AndExp(v,(Value)e); :}
-//             | val:v                      {: RESULT = v; :}
-//             ;
-//val        ::= lit:l DOT val:v            {: RESULT = v instanceof DotList ?//((DotList)v).appFront(l.toString()) : MHS.DotList(l.toString(),v.toString()); :}
-//             | lit:l                      {: RESULT = l; :}
-//             ;
-//lit        ::= ID:i                       {: RESULT = MHS.Ident(i); :}
-//             | DEC:d                      {: RESULT = MHS.Number(d); :}
-//             | HEX:h                      {: RESULT = MHS.MemAddr(h); :}
-//             | VER:v                      {: RESULT = MHS.Ident(v); :}
-//             | range:r                    {: RESULT = r; :}                  
-//             ;
-//range      ::= OBR DEC:l COL DEC:u CBR    {: RESULT = MHS.Range(l,u); :}
-//             ;
+scheduler ::= SCHEDULER CBEGIN CODE:c CEND {: :};
 

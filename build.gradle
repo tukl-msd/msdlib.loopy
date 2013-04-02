@@ -10,9 +10,8 @@ String specDir      = "$projectDir/specs"
 String genDir       = "$projectDir/src-gen"
 String parserGenDir = "$genDir/de/hopp/generator/frontend"
 
-String flexSpec     = "$specDir/mhs.flex";
-String cupSpec      = "$specDir/mhs.cup"
-String mhsSpec      = "$specDir/mhs.katja"
+String flexSpec     = "$specDir/bdl.flex"
+String cupSpec      = "$specDir/bdl.cup"
 String bdlSpec      = "$specDir/bdl.katja"
 String boardSpec    = "$specDir/board.katja"
 String modelSpec    = "$specDir/cmodel.katja"
@@ -22,7 +21,6 @@ String cupLib       = "$libDir/java-cup-11a.jar"
 String katja        = "$libDir/katja.jar"
 String katjaCommon  = "$genLibDir/katja.common.jar"
 
-String mhs          = "$genLibDir/MHS.jar"
 String bdl          = "$genLibDir/BDL.jar"
 String board        = "$genLibDir/BoardSpec.jar"
 String model        = "$genLibDir/Model.jar"
@@ -40,7 +38,7 @@ dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
   // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
-  compile files("$katjaCommon", "$model", "$board", "$mhs", "$bdl")
+  compile files("$katjaCommon", "$model", "$board","$bdl")
   testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
@@ -72,7 +70,7 @@ task removeGen << {
 
 // removes generated AST
 task removeAST << {
-  delete "$mhs"
+  delete "$bdl"
 }
 
 // removes generated board model
@@ -83,22 +81,6 @@ task removeBoard << {
 // removes generated c/c++ model and common files
 task removeModel << {
   delete "$model", "$katjaCommon"
-}
-
-// builds the ast model used by the cup parser
-task buildAST {
-  inputs.files("$katja", "$mhsSpec")
-  outputs.files("$mhs")
-  doLast {
-    ant.java(jar:"$katja",fork:true) {
-      arg(value: "-b")
-      arg(value: "java")
-      arg(value: "-d")
-      arg(value: "$genLibDir")
-      arg(value: "-o")
-      arg(value: "$mhsSpec")
-    }
-  }
 }
 
 // builds the ast model of bdl files
@@ -178,7 +160,7 @@ clean.dependsOn removeGen
 // clean.dependsOn removeBoard
 // clean.dependsOn removeModel
 
-runKatja.dependsOn buildAST
+//runKatja.dependsOn buildAST
 runKatja.dependsOn buildBDL
 runKatja.dependsOn buildBoard
 runKatja.dependsOn buildModel
