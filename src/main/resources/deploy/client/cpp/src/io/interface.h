@@ -63,32 +63,33 @@ public:
 	 * @param val The integer value to be sent.
 	 * @return true if successful, false otherwise.
 	 */
-	virtual bool send(int val) = 0;
+	virtual void send(int val) = 0;
 	/**
 	 * Send a vector of integer values to the board.
 	 * @param val A vector of integer values to be sent.
 	 * @return true if successful, false otherwise.
 	 */
-	virtual bool send(std::vector<int> val) = 0;
+	virtual void send(std::vector<int> val) = 0;
 	/**
 	 * Send an array of integer values to the board.
 	 * @param val An array of integer values to be sent.
 	 * @param size The size of the array.
 	 * @return true if successful, false otherwise.
 	 */
-	virtual bool send(int val[], int size) = 0;
+	virtual void send(int val[], int size) = 0;
 	/**
 	 * Reads a single integer value from the medium.
 	 * @param val Pointer to where the read value should be stored.
 	 * @return true if successful, false otherwise
 	 */
-	virtual bool readInt(int *val) = 0;
+	virtual void readInt(int *val) = 0;
 	/**
 	 * Waits until data arrives or a timeout occurs.
 	 * @param timeout Number of seconds until a timeout occurs.
+	 * @param utimeout Number of microseconds until a timeout occurs
 	 * @return true, if data arrived before timeout, false otherwise
 	 */
-	virtual bool waitForData(int timeout) = 0;
+	virtual bool waitForData(unsigned int timeout, unsigned int utimeout) = 0;
 };
 
 /**
@@ -97,7 +98,7 @@ public:
  */
 class ethernet : public interface {
 private:
-	int Data_SocketFD;
+	int socketFD_send;
 	const char *ip;
 	unsigned short int port;
 
@@ -109,7 +110,7 @@ private:
 
 // -------------------- communication -----------------------------
 //	bool writeValues(int buf[], int size);
-	bool readInt    (int buf[], int size);
+	void readInt    (int buf[], int size);
 public:
 // ---------------- constructor & destructor -------------------------
 	/**
@@ -126,32 +127,33 @@ public:
 	 * @param val the value to be sent.
 	 * @return true if sending was successful, false otherwise
 	 */
-	bool send(int val);
+	void send(int val);
 	/**
 	 * Send a vector of integer values to the board.
 	 * @param val A vector of integer values to be sent.
 	 * @return true if successful, false otherwise.
 	 */
-	bool send(std::vector<int> val);
+	void send(std::vector<int> val);
 	/**
 	 * Send an array of integer values to the board.
 	 * @param val an array of integer values to be sent.
 	 * @param size the size of the array.
 	 * @return true if sending was susccessful, false otherwise
 	 */
-	bool send(int val[], int size);
+	void send(int val[], int size);
 	/**
 	 * Reads a single integer value from the medium.
 	 * @param val Pointer to where the read value should be stored.
 	 * @return true if successful, false otherwise
 	 */
-	bool readInt(int *val);
+	void readInt(int *val);
 	/**
 	 * Waits until data arrives or a timeout occurs.
 	 * @param timeout Number of seconds until a timeout occurs.
+	 * @param utimeout Number of microseconds until a timeout occurs
 	 * @return true, if data arrived before timeout, false otherwise
 	 */
-	bool waitForData(int timeout);
+	bool waitForData(unsigned int timeout, unsigned int utimeout);
 };
 //
 ///**

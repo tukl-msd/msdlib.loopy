@@ -1,0 +1,144 @@
+package de.hopp.generator.frontend;
+
+import java_cup.runtime.*;
+import de.hopp.generator.bdl.*;
+
+/* Preliminaries to set up and use the scanner.  */
+//init with {: scanner.init();              :};
+//scan with {: return getScanner().next_token(); :};
+
+parser code {:
+  protected BDLFile board = BDL.BDLFile();
+
+  public BDLFile getBDLFile() {
+    return board;
+  }
+:}
+
+/* terminals */
+terminal BEGIN, END, CBEGIN, CEND;
+terminal IMPORT;
+terminal HOST, BOARD, PROJECT;
+terminal SWQUEUE, HWQUEUE;
+terminal MEDIUM, MAC, IP, MASK, GATE, PORT;
+terminal CORE, SOURCE;
+terminal IN, OUT, WIDTH, POLL;
+terminal GPIO, INSTANCE, BIND;
+terminal SCHEDULER;
+terminal String CODE;
+terminal String ID, HEX, VER;
+terminal Integer DEC;
+
+/* non terminals */
+non terminal BDLFile file;
+non terminal Import import;
+non temrinal Backend backend;
+non terminal Medium medium;
+non terminal Constant option;
+non terminal Core core;
+non terminal String version;
+non terminal String source;
+non terminal Port port;
+non temrinal Instance instance;
+non terminal Binding bind;
+non terminal Scheduler scheduler;
+
+/* grammar */
+start with file;
+
+file ::= ( import:i
+         | backend:b
+         | medium:m
+         | option:o
+         | core:c
+         | instance:i
+         )*;
+
+import ::= IMPORT ID:id {: RESULT = BDL.Import(id); :};
+
+backend ::= HOST    {: :}
+          | BOARD   {: :}
+          | PROJECT {: :}
+          ;
+
+medium ::= MEDIUM {: :};
+
+option ::= SWQUEUE DEC:d {: :}
+         | HWQUEUE DEC:d {: :}
+         | WIDTH DEC:d   {: :}
+         | POLL
+         ;
+
+core ::= CORE ID:id version:v BEGIN (source | port)* END {: :};
+
+version ::= DEC:a (DEC|VER):b ID:c {: :};
+
+source ::= SOURCE ID:id {: :};
+
+port   ::= IN  ID:id {: :} // +port options
+         | OUT ID:id {: :} // +port options
+         ;
+
+instance ::= INSTANCE ID:core ID:id (BEGIN (bind)* END)? {: :}
+           | GPIO ID:id (CBEGIN CODE CEND)? {: :}
+           ;
+
+bind ::= BIND ID:port ID:axis {: :};
+
+scheduler ::= SCHEDULER CBEING CODE:c CEND {: :};
+
+//non terminal MHSFile file;
+//non terminal Blocks block_list;
+//non terminal Block block;
+//non terminal Attributes attr_list;
+//non terminal Attribute attr;
+//non terminal Type type;
+//non terminal Assignments assgn_list;
+//non terminal Assignment assgn;
+//non terminal Expression expression;
+//non terminal Value val, lit;
+//non terminal Range range;
+//
+///* grammar */
+//start with file;
+//
+//file       ::= attr_list:a block_list:b   {: RESULT = MHS.MHSFile (a,b); :}
+//             ;
+///* blocks */
+//block_list ::= block:hd block_list:tl     {: RESULT = tl.appFront(hd); :} 
+//             |                            {: RESULT = MHS.Blocks(); :}
+//             ;
+//block      ::= BEGIN ID:i attr_list:l END {: RESULT = MHS.Block(i,l); :}
+//             ;
+//type       ::= BUS_INTERFACE              {: RESULT = MHS.BUS_INTERFACE(); :}
+//             | PARAMETER                  {: RESULT = MHS.PARAMETER(); :}
+//             | PORT                       {: RESULT = MHS.PORT(); :}
+//             ;
+//
+///* attributes */
+//attr_list  ::= attr:hd attr_list:tl       {: RESULT = tl.appFront(hd); :}
+//             |                            {: RESULT = MHS.Attributes(); :}
+//	     ;
+//attr       ::= type:t assgn_list:l        {: RESULT = MHS.Attribute(t,l); :}
+//             ;
+//assgn_list ::= assgn:hd COM assgn_list:tl {: RESULT = tl.appFront(hd); :}
+//             | assgn:a                    {: RESULT = MHS.Assignments(a); :}
+//             ;
+//assgn      ::= ID:i EQ expression:e       {: RESULT = MHS.Assignment(i,e); :}
+//             ;
+//expression ::= val:v AND expression:e     {: RESULT = e instanceof AndExp ? ((AndExp)e).appFront//(v) :
+//                                               MHS.AndExp(v,(Value)e); :}
+//             | val:v                      {: RESULT = v; :}
+//             ;
+//val        ::= lit:l DOT val:v            {: RESULT = v instanceof DotList ?//((DotList)v).appFront(l.toString()) : MHS.DotList(l.toString(),v.toString()); :}
+//             | lit:l                      {: RESULT = l; :}
+//             ;
+//lit        ::= ID:i                       {: RESULT = MHS.Ident(i); :}
+//             | DEC:d                      {: RESULT = MHS.Number(d); :}
+//             | HEX:h                      {: RESULT = MHS.MemAddr(h); :}
+//             | VER:v                      {: RESULT = MHS.Ident(v); :}
+//             | range:r                    {: RESULT = r; :}                  
+//             ;
+//range      ::= OBR DEC:l COL DEC:u CBR    {: RESULT = MHS.Range(l,u); :}
+//             ;
+

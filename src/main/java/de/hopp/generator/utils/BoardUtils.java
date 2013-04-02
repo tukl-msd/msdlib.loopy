@@ -1,16 +1,12 @@
 package de.hopp.generator.utils;
 
 import katja.common.NE;
-import de.hopp.generator.board.BUTTONS;
-import de.hopp.generator.board.Board;
-import de.hopp.generator.board.Component;
-import de.hopp.generator.board.ETHERNET;
-import de.hopp.generator.board.ETHERNET_LITE;
-import de.hopp.generator.board.LEDS;
-import de.hopp.generator.board.PCIE;
-import de.hopp.generator.board.SWITCHES;
-import de.hopp.generator.board.UART;
-import de.hopp.generator.board.VHDL;
+import de.hopp.generator.board.*;
+import de.hopp.generator.frontend.BDLFile;
+import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.frontend.CorePos;
+import de.hopp.generator.frontend.Instance;
+import de.hopp.generator.frontend.PortPos;
 
 public class BoardUtils {
     
@@ -62,6 +58,17 @@ public class BoardUtils {
 //        return false;
 //    }
     
+    public static String printBoard(BDLFile board) {
+        String rslt = "parsed the following board";
+        rslt += "\n  -medium " + board.medium().name();
+        // TODO medium parameters
+        for(de.hopp.generator.frontend.GPIO gpio : board.gpios())
+            rslt += "\n  -GPIO component " + gpio.name();
+        for(Instance inst : board.instances())
+            rslt += "\n  -VHDL Component " + inst.name() + " (" + inst.core() + ")";
+        return rslt;
+    }
+    
     public static String printBoard(Board board) {
         String rslt = "board has the following components";
         for(Component comp : board.components()) {
@@ -96,5 +103,30 @@ public class BoardUtils {
             });
         }
         return rslt;
+    }
+    
+    /**
+     * Returns the unique port with given port id and core id
+     * @param file
+     * @param coreID
+     * @param portID
+     * @return
+     */
+    public static PortPos getPort(BDLFilePos file, String coreID, String portID) {
+        CorePos core = null;
+        for(CorePos c : file.cores()) {
+            if(c.name().term().equals(coreID)) {
+                core = c; break;
+            }
+        }
+        if(core == null) return null;
+        
+        PortPos port = null;
+        for(PortPos p : core.ports()) {
+            if(p.name().term().equals(portID)) {
+                port = p; break;
+            }
+        }
+        return port;
     }
 }

@@ -16,8 +16,12 @@ struct Message* message_new() {
 }
 
 void message_payload(struct Message *m, int values[], int size) {
-	m->payload = values;
 	m->payloadSize = size;
+	m->payload = values;
+//	m->payload = malloc(sizeof(int) * size);
+//	int i;
+//	for(i = 0; i < size; i++) m->payload[i] = values[i];
+
 }
 
 void message_header(struct Message *m, int header[], int size) {
@@ -34,10 +38,6 @@ void message_header(struct Message *m, int header[], int size) {
 
 void message_free(struct Message *m) {
 	free(m->header);
-//	free(m->payload);
-//  m->header = NULL;
-//  m->payload = NULL;
-//	m->headerSize = 0;
-//	m->payloadSize = 0;
+	free(m->payload);
 	free(m);
 }

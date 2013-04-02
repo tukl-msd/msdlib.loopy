@@ -86,45 +86,45 @@
 
 %% \leftsidelabel{thread}{side}{label}
 %% side: left right above below
-\newcommand{\sidelabel}[3]{
-    \stepcounter{seqlevel}
-    \path
-    (#1)+(0,-\theseqlevel*\unitfactor-0.7*\unitfactor) node (messbeg) {};
-    \draw (messbeg) node[#2] {#3};
-}
+%\newcommand{\sidelabel}[3]{
+%    \stepcounter{seqlevel}
+%    \path
+%    (#1)+(0,-\theseqlevel*\unitfactor-0.7*\unitfactor) node (messbeg) {};
+%    \draw (messbeg) node[#2] {#3};
+%}
 
 %% \begin{altblock}{from}{condition}{to}
 %% %%calls here
 %% \end{altblock}
-\newenvironment{altblock}[3]{
-    \stepcounter{seqlevel}
-    \path
-    (#1)+(.1,-\theseqlevel*\unitfactor-\unitfactor) node (from) {}
-    (#3)+(-.1,-\theseqlevel*\unitfactor-\unitfactor) node (to) {};
-    \draw (from) node[above right] {[#2]};
-}{}
+%\newenvironment{altblock}[3]{
+%    \stepcounter{seqlevel}
+%    \path
+%    (#1)+(.1,-\theseqlevel*\unitfactor-\unitfactor) node (from) {}
+%    (#3)+(-.1,-\theseqlevel*\unitfactor-\unitfactor) node (to) {};
+%    \draw (from) node[above right] {[#2]};
+%}{}
 
 %% mostly used between altblocks
 %% \separateline[line style]{from}{to}
-\newcommand{\separateline}[3][dotted, color=black, very thick]{
-    \stepcounter{seqlevel}
-    \path
-    (#2)+(.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (from) {}
-    (#3)+(-.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (to) {};
-    \draw[#1] (from) -- (to);
-}
+%\newcommand{\separateline}[3][dotted, color=black, very thick]{
+%    \stepcounter{seqlevel}
+%    \path
+%    (#2)+(.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (from) {}
+%    (#3)+(-.1,-\theseqlevel*\unitfactor-.8*\unitfactor) node (to) {};
+%    \draw[#1] (from) -- (to);
+%}
 
 %% inverse to prelevel - adds an empty line
-\newcommand{\postlevel}{\addtocounter{seqlevel}{+1}}
+%\newcommand{\postlevel}{\addtocounter{seqlevel}{+1}}
 
 %% \newthread[thread distance]{left}{right}
-\renewcommand{\newthread}[3][0.2]{
-    \newinst[#1]{#2}{#3}
-    \stepcounter{threadnum}
-    \node[below of=inst\theinstnum,node distance=1em] (thread\thethreadnum) {};
-    \tikzstyle{threadcolor\thethreadnum}=[fill=gray!30]
-    \tikzstyle{instcolor#2}=[fill=gray!30]
-}
+%\renewcommand{\newthread}[3][0.2]{
+%    \newinst[#1]{#2}{#3}
+%    \stepcounter{threadnum}
+%    \node[below of=inst\theinstnum,node distance=1em] (thread\thethreadnum) {};
+%    \tikzstyle{threadcolor\thethreadnum}=[fill=gray!30]
+%    \tikzstyle{instcolor#2}=[fill=gray!30]
+%}
 
 \begin{document}
 
@@ -244,7 +244,7 @@ If the tools described in \Cref{sec:setup} are correctly installed, the followin
 %
 %\draw[arr] (gen) to node[auto] {} (edk);
 %\draw[arr] (gen) to node[auto] {} (compile);
-%\draw[arr] (app) to node[auto] {} (compile);
+%\draw[arr] (app) to node[auto] {} (compile);group
 %
 %\draw[arr] (edk) to node[auto] {} (run);
 %\draw[arr] (compile) to node[auto] {} (run);
@@ -351,7 +351,7 @@ This section describes, how the host-side API, the hardware designer programs hi
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 \node[class] (component) at (0,0) {Component};
 \node[class, right=15em] (port) at (component) {Port};
@@ -430,7 +430,7 @@ This section provides an overview of the drivers architecture, that should be fo
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 
 \tikzstyle{outerClass}=[inner sep=8pt,draw=black]
@@ -596,7 +596,7 @@ The state of an in-going port is physically represented by two variables \texttt
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 
 \node[state] (init) at (0,0) {Init};
@@ -628,7 +628,7 @@ Values are automatically pushed forward from the board and stored in \texttt{r}.
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 
 \node[state] (init) at (0,0) {Init};
@@ -662,7 +662,7 @@ An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 
 \node[state] (listen) at (0,0) {Listen};
@@ -685,7 +685,7 @@ The out-going port is even simpler (see \Cref{fig:cfg:boardOut}). It shifts valu
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 
 \node[state] (listen) at (0,0) {Init};
@@ -703,7 +703,7 @@ A polling port is slightly more complex, since it can only send, it values are r
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=1, transform shape]
+\begin{tikzpicture}
 \coordinate(center);
 
 \node[state] (idle) at (0,0) {Idle};
@@ -842,7 +842,6 @@ The following sequence charts describe typical interaction patterns and offer a 
 \label{fig:seq:host:write}
 \end{figure}
 
-
 The host-side view on a write operation is depicted in \Cref{fig:seq:host:write}. An application writes values to a port. The port stores the written values to its local queue and notifies the I/O thread, that new values are available to be written. This notification may get ignored, if the I/O handler isn't waiting for a notification, but is still busy processing. In this case, the values will be written, whenever the corresponding port is reached by the thread. 
 
 In case of a non-blocking write operation as in \Cref{fig:seq:host:write}, the write operation returns after this notification and the application an continue. In case of a blocking write operation, the port starts waiting for a notification after notifying the I/O handler. This notification will be sent after all values got acknowledged (compare to \Cref{fig:seq:host:ack}).
@@ -889,10 +888,13 @@ The I/O handler iterates over all ports. There, it checks if the port is ready t
     \end{call}
     \begin{call}{io}{update(i)}{cq}{}
     \end{call}
-    \begin{sdblock}{alt}{[q.empty()]}
-      \mess{io}{notify()}{port}
-    \end{sdblock}
+    \postlevel\postlevel\postlevel\postlevel
   \end{callself}
+  \prelevel\prelevel\prelevel\prelevel\prelevel
+  \begin{sdblock}{alt}{[q.empty()]}
+    \mess{io}{notify()}{port}
+  \end{sdblock}
+  \postlevel
 \end{sdblock}
 \end{sequencediagram}
 \caption{The host-side driver receiving an acknowledgement from the server}
@@ -935,11 +937,11 @@ Another message that can be received by the I/O handler is a poll for additional
   \newinst[1]{sq}{SW Queue}
  \begin{sdblock}{Board Read}{}
   \begin{callself}{ser}{schedule(read)}{}
-    \begin{call}{ser}{recv()}{m}{data(a,v)}
+    \begin{call}{ser}{recv()}{m}{data(pid,v)}
     \end{call}
-    \begin{call}{ser}{store(a,v)}{sq}{}
+    \begin{call}{ser}{store(v)}{sq}{i}
     \end{call}
-    \begin{call}{ser}{ack(a,v)}{m}{}
+    \begin{call}{ser}{ack(pid,i)}{m}{}
     \end{call}
   \end{callself}
 \end{sdblock}
@@ -956,19 +958,19 @@ On the board, a single thread is running. This thread, similar to the host-side 
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
   \newthread{app}{Application}
-  \newinst{cl}{Host}
-  \newinst{cq}{Task Queue}
+  \newinst{port}{Port}
+  \newinst{tq}{Task Queue}
   \newthread{io}{I/O Handler}
   \newinst{m}{Medium}
   \newthread{ser}{Board}
   \newinst{sq}{SW Queue}
 \begin{sdblock}{Non-Blocking Write}{}
 \node at (app) {};
-\node at (cl) {};
-\node at (cq) {};
+\node at (port) {};
+\node at (tq) {};
 \end{sdblock}
 \begin{sdblock}{Send}{}
-\node at (cq) {};
+\node at (tq) {};
 \node at (io) {};
 \node at (m) {};
 \end{sdblock}
@@ -978,7 +980,8 @@ On the board, a single thread is running. This thread, similar to the host-side 
 \node at (sq) {};
 \end{sdblock}
 \begin{sdblock}{Receive ACK}{}
-\node at (cq) {};
+\node at (port) {};
+\node at (tq) {};
 \node at (io) {};
 \node at (m) {};
 \end{sdblock}
@@ -997,7 +1000,7 @@ A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp
 \begin{sequencediagram}
   \tikzstyle{inststyle}+=[rounded corners=3.2mm, top color=gray!40]
   \newthread{app}{Application}
-  \newinst{cl}{Host}
+  \newinst{cl}{Port}
   \newinst{cq}{Task Queue}
   \newthread{io}{I/O Handler}
   \newinst{m}{Medium}
@@ -1005,37 +1008,37 @@ A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp
   \newinst{sq}{SW Queue}
   
 \begin{sdblock}{Non-Blocking Write}{}
-  \begin{call}{app}{nbwrite(a,v)}{cl}{write* w}
-    \begin{call}{cl}{nbwrite(a,v)}{cq}{write* w}
-      %\begin{call}{io}{store(a,v)}{cq}{}
-      %\end{call}
+  \begin{call}{app}{nbwrite(v)}{cl}{write* w}
+    \begin{callself}{cl}{createTask(v)}{write* w}
+    \end{callself}
+    \begin{call}{cl}{put(w)}{cq}{}
     \end{call}
   \end{call}
 
   \prelevel\prelevel
-  \begin{callself}{io}{schedule(a)}{}
-    \begin{call}{io}{check(a)}{cq}{(v)}
+  \begin{callself}{io}{schedule(pid)}{}
+    \begin{call}{io}{take(n)}{cq}{v}
     \end{call}
-    \begin{call}{io}{send(a,v)}{m}{}
+    \begin{call}{io}{data(pid,v)}{m}{}
     \end{call}
   \end{callself}
 
   \prelevel\prelevel
   \begin{callself}{ser}{schedule(read)}{}
-    \begin{call}{ser}{recv()}{m}{(a,v)}
+    \begin{call}{ser}{recv()}{m}{data(pid,v)}
     \end{call}
-    \begin{call}{ser}{store(a,v)}{sq}{s(v)}
+    \begin{call}{ser}{store(pid,v)}{sq}{s(v)}
     \end{call}
-    \begin{call}{ser}{ack(a,s(v))}{m}{} % this is only the server-side ack, not the component ack!! for component ack, it has to be out of the mb queue!
+    \begin{call}{ser}{ack(pid,s(v))}{m}{} % this is only the server-side ack, not the component ack!! for component ack, it has to be out of the mb queue!
     \end{call}
   \end{callself}
 
   \prelevel
   \begin{callself}{io}{schedule(read)}{}
     \postlevel
-    \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+    \begin{call}{io}{recv()}{m}{ack(pid,s(v))}
     \end{call}
-    \begin{call}{io}{update(a,s(v))}{cq}{}
+    \begin{call}{io}{update(s(v))}{cq}{}
     \end{call}
   \end{callself}
 \end{sdblock}
@@ -1058,10 +1061,11 @@ A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp
   \newinst{sq}{SW Queue}
   
 \begin{sdblock}{Blocking Write}{}
-  \begin{call}{app}{write(a,v)}{cl}{}
-    \begin{call}{cl}{write(a,v)}{cq}{}
-      %\begin{call}{io}{store(a,v)}{cq}{}
-      %\end{call}
+  \begin{call}{app}{write(v)}{cl}{}
+    \begin{callself}{cl}{createTask(v)}{write *w}
+    \end{callself}
+    \postlevel
+    \begin{call}{cl}{put(w)}{cq}{ }
 % problem with this call over the first version: this doesn't directly inform the I/O Handler of NEW data for a component
 % instead, when the handler schedules a component, he doesn't know if he should send data or wait for a poll.
 % we COULD solve this with an additional boolean flag on client side.
@@ -1078,18 +1082,18 @@ A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp
     \prelevel\prelevel\prelevel\prelevel\prelevel\prelevel\prelevel\prelevel
     \prelevel\prelevel\prelevel
 
-    \begin{callself}{io}{schedule(a)}{}
-      \begin{call}{io}{check(a)}{cq}{(v)}
+    \begin{callself}{io}{schedule(pid)}{}
+      \begin{call}{io}{take(n)}{cq}{v}
       \end{call}
-      \begin{call}{io}{send(a,v)}{m}{}
+      \begin{call}{io}{data(pid,v)}{m}{}
       \end{call}
     \end{callself}
 
     \prelevel\prelevel
     \begin{callself}{ser}{schedule(read)}{}
-      \begin{call}{ser}{recv()}{m}{(a,v)}
+      \begin{call}{ser}{recv()}{m}{data(pid,v)}
       \end{call}
-      \begin{call}{ser}{store(a,v)}{sq}{s(v)}
+      \begin{call}{ser}{store(v)}{sq}{s(v)}
       \end{call}
       \begin{call}{ser}{ack(a,s(v))}{m}{} % this is only the server-side ack, not the component ack!! for component ack, it has to be out of the mb queue!
       \end{call}
@@ -1098,9 +1102,9 @@ A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp
     \prelevel
     \begin{callself}{io}{schedule(read)}{}
       \postlevel
-      \begin{call}{io}{recv()}{m}{(ack,a,s(v))}
+      \begin{call}{io}{recv()}{m}{ack(pid,s(v))}
       \end{call}
-      \begin{call}{io}{remove(a,s(v))}{cq}{}
+      \begin{call}{io}{update(s(v))}{cq}{}
       \end{call}
     \mess{io}{notify()}{cl}
     \end{callself}
@@ -1222,11 +1226,27 @@ While communication over USB/UART is rather slow, it provides a more simple meth
 
 
 \subsection{Virtex 6 ML 605 Board-Side Driver}
-%Implementation details about the Virtex 6 Driver
+The following sections will highlight selected, important aspects of the implementation of the Virtex-6 ML605 board-side driver.
 
-The board-side driver consists of several files that can roughly be split into three groups: files handling communication with the host-side driver, files handling communication with board components and setup files.
+\subsubsection{Structure}
+The board-side driver is structured similarly to the host-side driver. There are three groups of files, located in dedicated folders. 
 
-All these files have to be imported in a new Xilinx SDK project started from an existing XPS project. The \texttt{.elf} file generated from this project then has to be uploaded to the target board.
+The first group, files handling communication over the medium - is located in the \textit{medium} folder. The content of this folder varies, depending on the medium, the board should be attached to. Medium-specific setup and communication is handled here. A contained folder \textit{protocol} includes files for protocol encoding and decoding (independent from the attached medium). An incoming messages is passed to the protocol decoder and subsequently delegated according to its header.
+
+A second folder \textit{components} contains files concerning hardware components of the board and communication with these components. This includes VHDL components attached with AXI stream interfaces as well as GPIO components or the interrupt controller of the board.
+
+The third group of files contains utility functions and structures, used by both other groups. These files are located directly in the root folder.  This includes software queues and the setup required for these.
+
+The main method for the board-side driver thread is located in the \texttt{main.c}. It calls initialisation procedures of the medium and all components and starts the scheduling loop.
+
+\subsubsection{Scheduler}
+The default scheduling loop performs the following operations:
+
+First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
+
+The loop also shifts messages from in-going microblaze queues to in-going hardware queues and vice versa from out-going hardware queues to the out-going microblaze queue. Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium. 
+
+The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
 
 \subsubsection{Restrictions}
 This section covers restrictions of the Virtex 6 board and (if available) implemented workarounds.
@@ -1238,28 +1258,9 @@ The microblaze on the Virtex 6 only allows 16 AXI master interfaces and 16 AXI s
 As explained in \Cref{sec:arch} and \Cref{sec:protocol}, transmitted values are padded to a multiple of 32-bit for transmission and have to be re-translated at the board-side driver.
 Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the ARM) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values, in order to save some board resources.
 
-\subsubsection{Implementation Details}
-
-\paragraph{Medium}
-The medium folder contains a source and header file for the medium the board is attached to. In this file, medium-specific setup is performed and listening to incoming messages is handled. An incoming message is passed to the protocol interpreter, which distributes the content of the message in accordance to its header.
-
-\paragraph{Components}
-The components folder contains code for component-specific setup and communication between the boards general purpose cpu and designed IP cores. Code for controlling gpio components will also be generated in this folder.
-
-\paragraph{General}
-Several files are generated directly in the \texttt{src} folder of the project. These files contain data types used by all file groups, files required for initialisation, and files linking between medium and components. 
-
-Among these files is the \texttt{main.c}, which calls the initialisation procedures of the medium and all components and starts the scheduling loop. This loop performs three kinds of operations:
-
-First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
-
-The loop also shifts messages from in-going microblaze queues to in-going hardware queues and vice versa from out-going hardware queues to the out-going microblaze queue. Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium. 
-
-The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
-
 
 \chapter{Generator}
-This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator.\textcolor{red}{A reference to the third Katja report might be useful.}
+This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator. \textcolor{red}{A reference to the third Katja report might be useful.}
 
 \section{Used Libraries}
 This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction. Still, as the generator code depends on them, they are introduced here for future developers.

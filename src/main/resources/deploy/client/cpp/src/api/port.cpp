@@ -21,51 +21,74 @@ in::in(int pid) : writeTaskQueue(new LinkedQueue<WriteState>()), transit(new int
 }
 
 // GENERAL WRITE
-std::shared_ptr<State> in::write(std::shared_ptr<WriteState> s) {
-	// acquire writer lock
-	std::unique_lock<std::mutex> lock(writer_mutex);
-
-	printf("\nwriting state");
-
-	// notify, if queue is empty and nothing is in transit
-	if(writeTaskQueue->empty() && *transit == 0) {
-		printf("\nnotify writer");
-		can_write.notify_one();
-	}
+void in::write(std::shared_ptr<WriteState> s) {
+	// acquire port lock
+	std::unique_lock<std::mutex> port_lock(port_mutex);
 
 	// put the value in the queue
 	writeTaskQueue->put(s);
 
+	// acquire writer lock
+	std::unique_lock<std::mutex> write_lock(writer_mutex);
+
+	// notify, if the port is ready (may notify for tasks further ahead in queue, but doesn't matter)
+	if(*transit == 0) can_write.notify_one();
+
+	// release the port lock!
+	port_lock.unlock();
+
+	// wait for the queue to get empty
+	task_empty.wait(write_lock);
+}
+
+std::shared_ptr<State> in::nbwrite(std::shared_ptr<WriteState> s) {
+	// acquire port lock
+	std::unique_lock<std::mutex> port_lock(port_mutex);
+
+	// put the value in the queue
+	writeTaskQueue->put(s);
+
+	// acquire writer lock
+	std::unique_lock<std::mutex> write_lock(writer_mutex);
+
+	// notify, if the port is ready
+	if(*transit == 0) can_write.notify_one();
+
+	// release locks and return state pointer
 	return s;
 }
 
 void in::block() {
-	writeTaskQueue->block();
+	//acquire port lock
+	std::unique_lock<std::mutex> port_lock(port_mutex);
+
+	// if the queue is empty, return
+	if(writeTaskQueue->empty()) return;
+
+	// otherwise wait for it to get empty
+	task_empty.wait(port_lock);
 }
 
 // BLOCKING WRITES
 void in::write(int val) {
 	write(std::shared_ptr<WriteState>(new WriteState(val)));
-	block();
 }
 void in::write(std::vector<int> val) {
 	write(std::shared_ptr<WriteState>(new WriteState(val)));
-	block();
 }
 void in::write(int val[], int size) {
 	write(std::shared_ptr<WriteState>(new WriteState(val, size)));
-	block();
 }
 
 // NON-BLOCKING WRITES
 std::shared_ptr<State> in::nbwrite(int val) {
-	return write(std::shared_ptr<WriteState>(new WriteState(val)));
+	return nbwrite(std::shared_ptr<WriteState>(new WriteState(val)));
 }
 std::shared_ptr<State> in::nbwrite(std::vector<int> val) {
-	return write(std::shared_ptr<WriteState>(new WriteState(val)));
+	return nbwrite(std::shared_ptr<WriteState>(new WriteState(val)));
 }
 std::shared_ptr<State> in::nbwrite(int val[], int size) {
-	return write(std::shared_ptr<WriteState>(new WriteState(val, size)));
+	return nbwrite(std::shared_ptr<WriteState>(new WriteState(val, size)));
 }
 
 // STREAMED WRITES (BLOCKING)
@@ -83,9 +106,31 @@ out::out(int pid) : readValueQueue(new LinkedQueue<int>()), readTaskQueue(new Li
 	outPorts[pid] = this;
 }
 
-std::shared_ptr<State> out::read(std::shared_ptr<ReadState> &s) {
+void out::read(std::shared_ptr<ReadState> &s) {
 	// acquire port lock
-	 std::lock_guard<std::mutex> lock(out_port_mutex);
+	 std::unique_lock<std::mutex> lock(port_mutex);
+
+	// if there are unfinished tasks in the read queue, append this one
+	if(! readTaskQueue->empty()) {
+		readTaskQueue->put(s);
+	} else while(!s->finished()) {
+		// if the result queue is empty, append this read to the task list and return
+		if(readValueQueue->empty()) {
+			readTaskQueue->put(s);
+			break;
+		}
+		// otherwise, take a value, update the state and do another iteration
+		int a = *readValueQueue->take();
+		s->values[s->processed()] = a;
+		s->done++;
+	}
+
+	task_empty.wait(lock);
+}
+
+std::shared_ptr<State> out::nbread(std::shared_ptr<ReadState> &s) {
+	// acquire port lock
+	 std::unique_lock<std::mutex> lock(port_mutex);
 
 	// if there are unfinished tasks in the read queue, just append this one
 	if(! readTaskQueue->empty()) {
@@ -110,7 +155,7 @@ std::shared_ptr<State> out::read(std::shared_ptr<ReadState> &s) {
 
 void out::block() {
 	// acquire port lock (yet again)
-	std::unique_lock<std::mutex> lock(out_port_mutex);
+	std::unique_lock<std::mutex> lock(port_mutex);
 
 	// return, if the task queue is empty
 	if(readTaskQueue->empty()) return;
@@ -128,60 +173,32 @@ int out::read() {
 void out::read(int &val) {
 	std::shared_ptr<ReadState> s (new ReadState(&val));
 	read(s);
-	block();
 }
 void out::read(std::vector<int> &val) {
 	std::shared_ptr<ReadState> s (new ReadState(&val));
 	read(s);
-	block();
-//	unsigned int size = val.size();
-//	val.clear();
-//	for(unsigned int i = 0; i < size; i++) val.push_back(read());
 }
 void out::read(int val[], unsigned int size) {
 	std::shared_ptr<ReadState> s (new ReadState(val, size));
 	read(s);
-	block();
-	//	for(unsigned int i = 0; i < size; i++) val[i] = read();
 }
 
 // NON-BLOCKING READS
 std::shared_ptr<State> out::nbread(int &val) {
 	std::shared_ptr<ReadState> s(new ReadState(&val));
-	read(s);
+	nbread(s);
 	return s;
 }
 
 std::shared_ptr<State> out::nbread(std::vector<int> &val) {
 	std::shared_ptr<ReadState> s(new ReadState(&val));
-	read(s);
+	nbread(s);
 	return s;
-
-	//	// store the vector size and clear the vector
-//	unsigned int size = val.size();
-//	val.clear();
-//
-//	// read queue
-//	for(unsigned int i = 0; i < size; i++) {
-//		// abort, if the queue is empty
-//		if(portResultQueue->size() == 0) break;
-//		// otherwise append the first value and update the state
-//		val.push_back(*portResultQueue->take());
-//		s->done ++;
-//	}
 }
 std::shared_ptr<State> out::nbread(int val[], int size) {
 	std::shared_ptr<ReadState> s(new ReadState(val, size));
-	read(s);
+	nbread(s);
 	return s;
-
-//	for(int i = 0; i < size; i++) {
-//		// abort, if the queue is empty
-//		if(portResultQueue->size() == 0) break;
-//		// otherwise append the first value and update the state
-//		val[i] = *portResultQueue->take();
-//		s->done ++;
-//	}
 }
 
 // STREAMED READS (BLOCKING)

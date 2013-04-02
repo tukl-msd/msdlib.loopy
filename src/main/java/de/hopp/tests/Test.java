@@ -1,6 +1,7 @@
 package de.hopp.tests;
 
 import static de.hopp.generator.board.BoardSpec.Board;
+import static de.hopp.generator.board.BoardSpec.Components;
 import static de.hopp.generator.board.BoardSpec.ETHERNET_LITE;
 import static de.hopp.generator.board.BoardSpec.UART;
 import static de.hopp.generator.model.Model.*;
@@ -10,11 +11,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import de.hopp.generator.board.*;
+import de.hopp.generator.backends.unparser.CUnparser;
+import de.hopp.generator.board.Board;
 import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.InvalidConstruct;
-import de.hopp.generator.model.*;
-import de.hopp.generator.unparser.CUnparser;
+import de.hopp.generator.model.MClass;
+import de.hopp.generator.model.MFile;
+import de.hopp.generator.model.MMethod;
 
 
 public class Test {
@@ -50,6 +53,6 @@ public class Test {
 	
     public static Board defaultBoard() {
 //        return Board(UART(),  ETHERNET_LITE(IP(192,168,1,10),IP(255,255,255,0), IP(192,168,1,1), 8844));
-        return Board(UART(), ETHERNET_LITE());
+        return Board(Components(UART(), ETHERNET_LITE()));
     }
 }

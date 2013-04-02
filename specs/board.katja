@@ -10,29 +10,41 @@ external String
 external int
 
 // TODO restrict to single Medium here
-Board (Components components)
+Board (Components components, BoardOptions options)
 
 // Put ip, port, etc. in board or leave it in config?
 // Cannot get these from .mhs, so they have to be stored in config anyway...
 // Probably needs some identifier as well...
+Component = Medium | GPIO | VHDL
+
 Medium    = UART() | ETHERNET_LITE() | ETHERNET() | PCIE()
 GPIO      = LEDS() | SWITCHES() | BUTTONS()
-Component = Medium | GPIO | VHDL
 
 VHDL (VHDLCore core, Instances instances)
 
 VHDLCore (String file, Ports ports)
 
-Port = IN   (String name)
-     | OUT  (String name)
-     | DUAL (String name)
+Port = IN   (String name, PortOptions options)
+     | OUT  (String name, PortOptions options)
+     | DUAL (String name, PortOptions options)
+
+BoardOption = QueueSize
+
+QueueSize = HWQUEUESIZE (int qsize)
+          | SWQUEUESIZE (int qsize)
+
+PortOption = QueueSize 
+           | WIDTH (int width)
+           | POLL()
 
 // IP (int, int, int, int)
 
 // TODO support raw and socket mode??
 //Mode = RAW() | SOCKET()
 
-Components * Component
-Ports      * Port
-Instances  * String
-// VHDLCores  * VHDLCore
+Components   * Component
+BoardOptions * BoardOption
+Ports        * Port
+PortOptions  * PortOption
+Instances    * String
+// VHDLCores    * VHDLCore

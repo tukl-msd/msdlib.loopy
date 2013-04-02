@@ -64,6 +64,7 @@ static void set_unaligned ( int *target, int *data ) {
         res = (void*)target;
         for (i=0; i<4; i++) *(res++) = ((*(byte++)) & 0xFF);
     } else *target = *data;
+    if(DEBUG) xil_printf(" to %d", *target);
 }
 
 static int get_unaligned ( int *data ) {
@@ -101,16 +102,14 @@ void medium_read() {
 	xemacif_input(netif);
 }
 
-err_t test(void *arg, struct tcp_pcb *newpcb, err_t err) {
-	printf("\nwhatever...");
-	return err;
-}
-
-
-err_t test2(void *arg, struct tcp_pcb *tpcb, u16_t len) {
-	printf("\nclosing");
-	tcp_close(tpcb);
-	return 0;
+void print(struct Message *m) {
+	xil_printf("\nsending message of size %d", m->headerSize + m->payloadSize);
+	xil_printf("\nheader int:  %d", m->header[0]);
+	xil_printf(" (Payload: ", m->payloadSize);
+	int i;
+	for(i = 0; i < m->payloadSize-1; i++) xil_printf("%d, ", m->payload[i]);
+	xil_printf("%d", m->payload[m->payloadSize-1]);
+	xil_printf(" )");
 }
 
 void medium_send(struct Message *m) {
@@ -119,23 +118,38 @@ void medium_send(struct Message *m) {
 //		} else
 //			print("no space in tcp_sndbuf\n\r");
 	// I have no idea what I'm doing!
-
-	if(DEBUG) xil_printf("\nsending message of size %d", m->headerSize + m->payloadSize);
-	if(DEBUG) xil_printf("\nheader int:  %d", m->header[0]);
+	if(DEBUG) print(m);
 
 	// allocate transport buffer for the message
-	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, 4 * (m->headerSize + m->payloadSize), PBUF_POOL);
+	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, sizeof(int) * (m->headerSize + m->payloadSize), PBUF_POOL);
 
 	int i;
-	// write header data in buffer
+
+	// unalign header and data
 	for(i = 0; i < m->headerSize; i++)
-		set_unaligned((void*)(((int)(p->payload))+(4*i)), &m->header[i]);
-
-//	for(i = 0; i < m->headerSize; i++) *(((int*)(p->payload))+(4*i)) = m->header[i];
-
-	// write payload in buffer
+		set_unaligned(&m->header[i], &m->header[i]);
 	for(i = 0; i < m->payloadSize; i++)
-		set_unaligned((void*)(((int)(p->payload))+(4*(i+m->headerSize))), &m->payload[i]);
+		set_unaligned(&m->payload[i], &m->payload[i]);
+
+	// write header and payload
+	for(i = 0; i < m->headerSize; i++)
+		((int*)p->payload)[i] = m->header[i];
+	for(i = 0; i < m->payloadSize; i++)
+		((int*)p->payload)[i+m->headerSize] = m->payload[i];
+
+//	for(i = 0; i < m->headerSize + m->payloadSize; i++) {
+//		xil_printf("\nval: %d", ((int*)p->payload)[i]);
+//	}
+//
+//	// write header data in buffer
+//	for(i = 0; i < m->headerSize; i++)
+//		set_unaligned((void*)(((int)(p->payload))+(sizeof(int)*i)), &m->header[i]);
+//
+////	for(i = 0; i < m->headerSize; i++) *(((int*)(p->payload))+(4*i)) = m->header[i];
+//
+//	// write payload in buffer
+//	for(i = 0; i < m->payloadSize; i++)
+//		set_unaligned((void*)(((int)(p->payload))+(sizeof(int)*(i+m->headerSize))), &m->payload[i]);
 
 	// set i to total size of application layer message
 //	i = m->headerSize + m->payloadSize;
@@ -175,6 +189,8 @@ void medium_send(struct Message *m) {
 //	#endif
 
 	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
+//	m->header = NULL;
+//	m->payload = NULL;
 	pbuf_free(p);
 }
 

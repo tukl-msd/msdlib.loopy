@@ -127,7 +127,7 @@ int decode_header_v1(int first) {
 #define version 1
 
 // message types
-#define data  8
+#define data  9
 #define poll 10
 #define gpio 14
 #define ack  15

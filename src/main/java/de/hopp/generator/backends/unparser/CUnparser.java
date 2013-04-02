@@ -16,7 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.hopp.generator.unparser;
+package de.hopp.generator.backends.unparser;
 
 import static de.hopp.generator.model.Model.*;
 import katja.common.NE;

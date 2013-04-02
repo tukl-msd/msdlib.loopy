@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <string>
 #include <math.h>
+#include <iostream>
 
 #include <netdb.h>
 #include <errno.h>
@@ -19,6 +21,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include "../exceptions.h"
 
 #define LED_SETTING 0
 #define SWITCH_POLL 1
@@ -40,9 +43,10 @@ void interface::decRef() {
 
 // new constructor using member initialisation list
 ethernet::ethernet(const char *ip, unsigned short int port) :
-		Data_SocketFD(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
-//		sockfd(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
+		socketFD_send(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
+//		socketFD_recv(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)),
 				ip(ip), port(port) {
+
 	setup();
 }
 
@@ -60,10 +64,10 @@ void ethernet::setup() {
 
 	if(DEBUG) printf("setting up data socket @%s:%d ...", ip, port);
 
-	if (-1 == Data_SocketFD){ //|| -1 == Config_SocketFD){
-		printf(" failed to create socket");
-		exit(EXIT_FAILURE);
-	}
+	// throw an exception, if socket creation faileds
+	if (-1 == socketFD_send) //|| -1 == Config_SocketFD)
+		throw mediumException(std::string("failed to create socket: ") +
+						strerror(errno) + " (" + std::to_string(errno) + ")");
 
 	// Initialize Socket memory
 	memset(&stSockAddr, 0, sizeof(stSockAddr));
@@ -74,22 +78,24 @@ void ethernet::setup() {
 	Res = inet_pton(AF_INET, ip, &stSockAddr.sin_addr);
 
 	if (0 > Res){
-		printf(" error: first parameter is not a valid address family");
-		close(Data_SocketFD);
-		exit(EXIT_FAILURE);
+//		close(sockedFD_send);
+		teardown();
+		throw mediumException("first parameter is not a valid address family");
+
 	}
 	else if (0 == Res){
-		printf(" char string (second parameter does not contain valid ip address)");
-		close(Data_SocketFD);
-		exit(EXIT_FAILURE);
+//		close(sockedFD_send);
+		teardown();
+		throw mediumException("second parameter does not contain valid ip address");
 	}
 
-	if (-1 == connect(Data_SocketFD, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))){
-		printf(" connect failed: %s (%d)", strerror(errno), errno);
-		close(Data_SocketFD);
-		exit(EXIT_FAILURE);
+	if (-1 == connect(socketFD_send, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))){
+//		close(socketFD_send);
+		teardown();
+		// TODO this is slightly ridiculous... not sure, if I should construct the string this way in C++ ...
+		throw mediumException(std::string("failed to open Ethernet connection: ") +
+				strerror(errno) + " (" + std::to_string(errno) + ")");
 	}
-
 
 //	// listening socket
 //	struct addrinfo hints, *res;
@@ -104,7 +110,7 @@ void ethernet::setup() {
 //	getaddrinfo("192.168.1.23", "8845", &hints, &res);
 //
 //	// make a socket:
-//	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+//	sockedFD_recv = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 //
 //	char ipstr[INET6_ADDRSTRLEN];
 //	inet_ntop(res->ai_family, res->ai_addr, ipstr, sizeof ipstr);
@@ -113,7 +119,7 @@ void ethernet::setup() {
 
 //	struct sockaddr_in my_addr;
 //
-//	sockfd = socket(PF_INET, SOCK_STREAM, 0);
+//	socketFD_recv = socket(PF_INET, SOCK_STREAM, 0);
 //
 //	my_addr.sin_family = AF_INET;
 //	my_addr.sin_port = htons(port2);     // short, network byte order
@@ -121,13 +127,13 @@ void ethernet::setup() {
 //	memset(my_addr.sin_zero, '\0', sizeof my_addr.sin_zero);
 //
 //	// bind it to the port we passed in to getaddrinfo():
-//	bind(sockfd, (struct sockaddr *)&my_addr, sizeof my_addr);
-////	bind(sockfd, res->ai_addr, res->ai_addrlen);
+//	bind(sockedFD_recv, (struct sockaddr *)&my_addr, sizeof my_addr);
+////	bind(socketFD_recv, res->ai_addr, res->ai_addrlen);
 //
 //	printf("  %s\n", inet_ntoa(my_addr.sin_addr));
 //
 //	// listen to the port
-//	listen(sockfd, 20);
+//	listen(socketFD_recv, 20);
 
 	//everything else --> listening loop...
 
@@ -136,19 +142,20 @@ void ethernet::setup() {
 
 void ethernet::teardown() {
 	// Disconnect the Socket
-//	shutdown(Data_SocketFD, SHUT_RDWR);
-	close(Data_SocketFD);
-//	shutdown(sockfd, SHUT_RDWR);
-//	close(sockfd);
+//	shutdown(socketFD_send, SHUT_RDWR);
+	if(close(socketFD_send) != 0) throw mediumException(
+			std::string("failed to close Ethernet connection: ") +
+			strerror(errno) + " (" + std::to_string(errno) + ")");
+//	shutdown(socketFD_recv, SHUT_RDWR);
+//	close(sockedFD_recv);
 }
 
-bool ethernet::send(int val) {
-	return send(&val, 1);
+void ethernet::send(int val) {
+	send(&val, 1);
 }
 
-// all following procedures & methods are helpers for the test application
-
-bool ethernet::send(int buf[], int size) {
+void ethernet::send(int buf[], int size) {
+	// print debug message
 	if(DEBUG) {
 		printf("\nsending package of size %d with values: ", size);
 		int i;
@@ -160,78 +167,80 @@ bool ethernet::send(int buf[], int size) {
 	}
 
 	// write data
-	if(write(Data_SocketFD, buf, size*4) < 0) {
-		// catch write errors
-		if(DEBUG) {
-			printf(" ERROR writing to socket");
-			perror(NULL);
-		}
-		return false;
-	}
+	if(write(socketFD_send, buf, size*4) < 0) throw mediumException(
+			std::string("failed writing to socket: ") +
+			strerror(errno) + " (" + std::to_string(errno) + ")");
 
+	// print finishing debug message
 	if(DEBUG) printf(" done");
-
-	return true;
 }
 
 // lazy version... probably to many conversions between vectors and arrays currently ;)
-bool ethernet::send(std::vector<int> val) {
-	int buf[val.size()];
+void ethernet::send(std::vector<int> val) {
+	// convert vector to string array
+//	int buf[val.size()];
+//	for(unsigned int i = 0; i < val.size(); i++) buf[i] = val.at(i);
 
-	for(unsigned int i = 0; i < val.size(); i++) {
-		buf[i] = val.at(i);
-	}
-	return send(buf, val.size());
+	// use array method
+	send(val.data(), val.size());
 }
 
-bool ethernet::readInt(int buf[], int size) {
+//void ethernet::readInt(int buf[], int size) {
+//
+//	// print debug message
+//	if(DEBUG) printf("\nreading package of size %d ... ", size);
+//
+//	// read data
+//	if(read(socketFD_send, buf, size*4) < 0) throw mediumException(
+//			std::string("failed reading from socket: ") +
+//			strerror(errno) + " (" + std::to_string(errno) + ")");
+//
+//	// print another debug message
+//	if(DEBUG) {
+//		printf(" values: ");
+//		int i;
+//		for(i = 0; i < size; i++) {
+//			printf("%d", buf[i]);
+//			if(i < size-1) printf(", ");
+//		}
+//	}
+//}
 
-	if(DEBUG) printf("\nreading package of size %d ... ", size);
-
-	// read data
-	if(read(Data_SocketFD, buf, size*4) < 0) {
-		// catch read errors
-		if(DEBUG) printf(" ERROR reading from socket");
-		return false;
-	}
-
-	if(DEBUG) {
-		printf(" values: ");
-		int i;
-		for(i = 0; i < size; i++) {
-			printf("%d", buf[i]);
-			if(i < size-1) printf(", ");
-		}
-	}
-
-	return true;
+void ethernet::readInt(int *val) {
+//	recv(socketFD_send, val, 4, 0);
+	if(recv(socketFD_send, val, 4, 0) < 0) throw mediumException(
+			std::string("failed reading from socket: ") +
+			strerror(errno) + " (" + std::to_string(errno) + ")");
 }
 
-bool ethernet::readInt(int *val) {
-	return recv(Data_SocketFD, val, 4, 0) > 0;
-}
-
-bool ethernet::waitForData(int timeout) {
+bool ethernet::waitForData(unsigned int timeout, unsigned int utimeout) {
 
 	struct timeval tv;
 	fd_set readfds;
 
 	tv.tv_sec = timeout;
-	tv.tv_usec = 0;
+	tv.tv_usec = utimeout;
 
 	FD_ZERO(&readfds);
-	FD_SET(Data_SocketFD, &readfds);
+	FD_SET(socketFD_send, &readfds);
 
-	select(Data_SocketFD+1, &readfds, NULL, NULL, &tv);
+	// wait for the timeout or data
+	if(select(socketFD_send+1, &readfds, NULL, NULL, &tv) < 0) throw mediumException(
+			std::string("failed while waiting for incoming messages: ") +
+			strerror(errno) + " (" + std::to_string(errno) + ")");
 
-	if (FD_ISSET(Data_SocketFD, &readfds)) return true;
-//	struct sockaddr_storage their_addr;
-//	socklen_t addr_size;
-//
-//	addr_size = sizeof their_addr;
-//	int n = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-//	if(n > 0) printf("\ngot a new socket!!!");
+	// if we have data, return true
+	if (FD_ISSET(socketFD_send, &readfds)) return true;
+
+	// else false
 	return false;
+
+	//	struct sockaddr_storage their_addr;
+	//	socklen_t addr_size;
+	//
+	//	addr_size = sizeof their_addr;
+	//	int n = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+	//	if(n > 0) printf("\ngot a new socket!!!");
 }
 
 //uart::uart() {

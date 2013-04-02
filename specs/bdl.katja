@@ -1,0 +1,58 @@
+specification BDL
+
+backend java {
+  package de.hopp.generator.frontend
+  import java.lang.String
+  import java.lang.Integer
+}
+
+root BDLFile Pos
+
+external String
+external Integer
+
+BDLFile (Imports imports, Backends backends, Constants constants, Scheduler scheduler, Medium medium, Cores cores, GPIOs gpios, Instances instances)
+
+Import (String file)
+
+// selected backends for generation
+Backend (String name)
+
+Scheduler = DEFAULT() | USER_DEFINED(Code schedule)
+
+// Definition of a new ipcore
+Core (String name, Strings source, Ports ports)
+
+Port (String name, Direction direction, Constants constants)
+Direction = IN() | OUT() | DUAL()
+
+// Instance of an ipcore
+Instance(String name, String core, Bindings bind)
+
+Binding = Axis(String port, String axis)
+        | CPUAxis(String port)
+
+GPIO (String name, Direction direction, Code callback)
+
+// Definition of the attached medium
+Medium (String name, String content)
+
+// General constants and flags for board and ports (care for invalid combinations)
+Constant = HWQUEUE(Integer qsize)
+         | SWQUEUE(Integer qsize)
+         | BITWIDTH(Integer bit)
+         | POLL()
+
+// code injection for scheduler and gpio callbacks
+Code(Strings code, Strings importline)
+
+// List types
+Imports     * Import
+Backends    * Backend
+Constants   * Constant
+Cores       * Core
+GPIOs       * GPIO
+Instances   * Instance
+Ports       * Port
+Strings     * String
+Bindings    * Binding

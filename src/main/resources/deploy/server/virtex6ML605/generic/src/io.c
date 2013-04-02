@@ -90,6 +90,8 @@ void send_gpio(unsigned char gid, unsigned char val) {
 //	for(i = 0; i < m->payloadSize; i++) UartSendInt(m->payload[i]);
 //}
 
+
+
 void flush_queue(unsigned char pid) {
 	if(DEBUG) xil_printf("\nflushing %d ...", pid);
 
@@ -100,6 +102,8 @@ void flush_queue(unsigned char pid) {
 	}
 
 	if(DEBUG) xil_printf(" count: %d", outQueueSize);
+	int i;
+
 	// otherwise, encode a data header
 	struct Message *m = encode_data(pid, outQueueSize);
 
@@ -107,9 +111,6 @@ void flush_queue(unsigned char pid) {
 	message_payload(m, outQueue, outQueueSize);
 
 	medium_send(m);
-//	if(DEBUG) xil_printf(" (RAW: ");
-//	test_send(m);
-//	if(DEBUG) xil_printf(" )");
 
 	message_free(m);
 	outQueueSize = 0;

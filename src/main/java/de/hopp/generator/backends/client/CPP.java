@@ -1,6 +1,6 @@
 package de.hopp.generator.backends.client;
 
-import static de.hopp.generator.backends.BackendUtils.doxygen;
+import static de.hopp.generator.backends.BackendUtils.*;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.Files.copy;
@@ -8,6 +8,7 @@ import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addDoc;
 import static de.hopp.generator.utils.Model.addInit;
 import static de.hopp.generator.utils.Model.addParam;
+import static de.hopp.generator.utils.BoardUtils.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,13 +19,14 @@ import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.Backend;
 import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
-import de.hopp.generator.board.*;
-import de.hopp.generator.board.Board.Visitor;
+import de.hopp.generator.frontend.*;
+import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MClass;
 import de.hopp.generator.model.MConstr;
 import de.hopp.generator.model.MDestr;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MInitList;
+import de.hopp.generator.model.Strings;
 
 /**
  * Generation backend for a host-side C++ driver.
@@ -37,7 +39,8 @@ public class CPP extends Visitor<NE> implements Backend {
     private ErrorCollection errors;
     
     private MFile comps;
-
+    private MFile consts;
+    
     // temp variables for construction of local methods of VHDL components
     private MClass  comp;
     private MConstr constructor;
@@ -46,7 +49,7 @@ public class CPP extends Visitor<NE> implements Backend {
     // MOAR integers...
     private int      pi = 0,      po = 0;
     private int     gpi = 0,     gpo = 0;
-    private int core_pi = 0, core_po = 0;
+//    private int core_pi = 0, core_po = 0;
     
     // local variables for global default methods
 //    private MMethod clean;
@@ -54,13 +57,19 @@ public class CPP extends Visitor<NE> implements Backend {
     public CPP() {
         comps = MFile(MDocumentation(Strings()), "components", MDefinitions(), MStructs(),
                 MEnums(), MAttributes(), MProcedures(), MClasses());
+        consts = MFile(MDocumentation(Strings()), "constants", MDefinitions(), MStructs(),
+                MEnums(), MAttributes(), MProcedures(), MClasses());
+        
+        comps  = addDoc(comps,  "Describes user-defined IPCores and instantiates all cores present within this driver.");
+        consts = addDoc(consts, "Defines several constants used by the client.");
     }
     
     public String getName() {
         return "C++";
     }
     
-    public void generate(Board board, Configuration config, ErrorCollection errors) {
+    @Override
+    public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
         this.config = config;
         this.errors = errors;
         
@@ -72,17 +81,8 @@ public class CPP extends Visitor<NE> implements Backend {
             return;
         }
        
-        // generate and deploy board-specific MFiles
+        // generate  board-specific MFiles
         visit(board);
-        
-        // generate api specification
-        config.IOHANDLER().println("  generate client-side api specification ... ");
-        doxygen(config.clientDir(), config.IOHANDLER(), errors);
-    }
-    
-    public void visit(Board board) {
-        comps = addDoc(comps, "Describes user-defined IPCores and instantiates all cores present within this driver.");
-        visit(board.components());
         
         // unparse generated MFiles
         File clientSrc = new File(config.clientDir(), "src");
@@ -90,162 +90,181 @@ public class CPP extends Visitor<NE> implements Backend {
         printMFile(comps, clientApi, UnparserType.HEADER, errors);
         printMFile(comps, clientApi, UnparserType.CPP, errors);
         
-        // generate & print the constants file with the debug flag
-        printMFile(MFile(MDocumentation(Strings(
-                    "Defines several constants used by the client."
-                )), "constants", MDefinitions(
-                    MDefinition(MDocumentation(Strings(
-                            "If set, enables additional console output for debugging purposes"
-                    )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"),
-                    MDefinition(MDocumentation(Strings(
-                            "Defines the size of the server queues.",
-                            "This is equivalent with the maximal number of values, that should be send in one message"
-                    )), MModifiers(PUBLIC()), "QUEUE_SIZE", "8"),
-                    MDefinition(MDocumentation(Strings(
-                            "The number of in-going component ports"
-                    )), MModifiers(PUBLIC()),  "IN_PORT_COUNT", String.valueOf(pi)),
-                    MDefinition(MDocumentation(Strings(
-                            "The number of out-going component ports"
-                    )), MModifiers(PUBLIC()), "OUT_PORT_COUNT", String.valueOf(po)),
-                    MDefinition(MDocumentation(Strings(
-                            "The number of gpi components"
-                    )), MModifiers(PUBLIC()), "GPI_COUNT", String.valueOf(gpi)),
-                    MDefinition(MDocumentation(Strings(
-                            "The number of gpo components"
-                    )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo))
-                ), MStructs(), MEnums(), MAttributes(), MProcedures()),
-                clientSrc, UnparserType.HEADER, errors);
-    }
-    
-    public void visit(Components comps) {
-        for(Component c : comps) visit(c);
-    }
-    
-    public void visit(UART term) {
-//        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
-//                MPointerType(MType("interface")), "intrfc",
-//                MCodeFragment("new uart()", MQuoteInclude("interface.h"))));
-    }
-    
-    public void visit(ETHERNET_LITE term) {
-//        comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
-//                MPointerType(MType("interface")), "intrfc",
-//                MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
-    }
-    
-    public void visit(ETHERNET term) {
-        // TODO Auto-generated method stub
-    }
-    
-    public void visit(PCIE term) {
-        // TODO Auto-generated method stub
-    }
-    
-    public void visit(LEDS term) {
-        comps = add(comps, MAttribute(MDocumentation(Strings(
-                    "The board's LED component.",
-                    "This object is used to manipulate the state of the LEDs of the board."
-                )), MModifiers(), MType("leds"),
-                "gpio_leds", MInitList(Strings(String.valueOf(gpo++)), MQuoteInclude("gpio.h"))));
-    }
-    
-    public void visit(SWITCHES term) {
-        comps = add(comps, MAttribute(MDocumentation(Strings(
-                    "The board's switch component.",
-                    "This object is used to read the state of the switches of the board."
-                )), MModifiers(), MType("switches"),
-                "gpio_switches", MInitList(Strings(String.valueOf(gpi++)), MQuoteInclude("gpio.h"))));
-    }
-    
-    public void visit(BUTTONS term) {
-        comps = add(comps, MAttribute(MDocumentation(Strings(
-                    "The board's button component.",
-                    "This object is used to read the state of the buttons of the board."
-                )), MModifiers(), MType("buttons"),
-                "gpio_buttons", MInitList(Strings(String.valueOf(gpi++)), MQuoteInclude("gpio.h"))));
-    }
-    
-    public void visit(VHDL vhdl) {
-        // generate a class for the vhdl core
-        visit(vhdl.core());
+        // print the constants file
+        printMFile(consts, clientSrc, UnparserType.HEADER, errors);
         
-        
-        // iterate over instances
-        for(String instance : vhdl.instances()) {
-            MInitList init = MInitList(Strings());
-            
-            // add ports
-            for(Port p : vhdl.core().ports()) {
-                init = add(init, p.Switch(new Port.Switch<MInitList, NE>() {
-                    MInitList init = MInitList(Strings());
-                    public MInitList CaseIN(IN p)     { addInPort();  return init; }
-                    public MInitList CaseOUT(OUT p)   { addOutPort(); return init; }
-                    public MInitList CaseDUAL(DUAL p) { 
-                        addInPort(); addOutPort();
-                        return init;
-                    }
-                    private void addInPort() {
-                        init = add(init, String.valueOf(pi));
-                        pi++;
-                    }
-                    private void addOutPort() {
-                        init = add(init, String.valueOf(po));
-                        po++;
-                    }
-                }));
-            }
-            
-            // add attribute to component file
-            comps = add(comps, MAttribute(MDocumentation(Strings(
-                    "An instance of the #" + vhdl.core().file() + " core."
-                )), MModifiers(PUBLIC()), MType(vhdl.core().file()), instance, init));
+        // generate api specification
+        config.IOHANDLER().println("  generate client-side api specification ... ");
+        doxygen(config.clientDir(), config.IOHANDLER(), errors);
+    }
 
-            // and increment the port counts
-//            pi += core_pi; po += core_po;
+    @Override
+    public void visit(BDLFilePos term) {
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                    "If set, enables additional console output for debugging purposes"
+                )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"));
+
+        int queueSizeSW = defaultQueueSizeSW, queueSizeHW = defaultQueueSizeHW;
+        for(Constant c : term.constants().term()) {
+            // duplicates and invalid parameters are already caught by sanity check
+            if(c instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)c).qsize();
+            if(c instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)c).qsize();
+        }
+        
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "Defines the default size of the boards hardware queues."
+            )), MModifiers(PUBLIC()), "QUEUE_SIZE_HW", String.valueOf(queueSizeHW)));
+        
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "Defines the default size of the boards software queues.",
+                "This is equivalent with the maximal number of values, " +
+                "that should be send in one message"
+            )), MModifiers(PUBLIC()), "QUEUE_SIZE_SW", String.valueOf(queueSizeSW)));
+        
+        visit(term.medium());
+        visit(term.gpios());
+        visit(term.scheduler());
+        visit(term.cores());
+        visit(term.instances());
+        
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "The number of in-going component ports"
+            )), MModifiers(PUBLIC()),  "IN_PORT_COUNT", String.valueOf(pi)));
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "The number of out-going component ports"
+            )), MModifiers(PUBLIC()), "OUT_PORT_COUNT", String.valueOf(po)));
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "The number of gpi components"
+            )), MModifiers(PUBLIC()), "GPI_COUNT", String.valueOf(gpi)));
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "The number of gpo components"
+            )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo)));
+    }
+
+    // We assume all imports to be accumulated at the parser
+    public void visit(ImportsPos term)   { }
+    public void visit(BackendsPos term)  { }
+    public void visit(ConstantsPos term) { }
+
+    @Override
+    public void visit(MediumPos term) {
+        if(term.name().equals("ethernet")) {
+//          comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
+//          MPointerType(MType("interface")), "intrfc",
+//          MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
         }
     }
-    
-    public void visit(VHDLCore core) {
+
+    @Override
+    public void visit(GPIOPos term) {
+        // construct init block according to GPIO direction
+        MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude("gpio.h")));
+        init = init.replaceParams(term.direction().Switch(new DirectionPos.Switch<Strings, NE>() {
+            public Strings CaseINPos(INPos term) {
+                return Strings(String.valueOf(gpi++));
+            }
+            public Strings CaseOUTPos(OUTPos term) {
+                return Strings(String.valueOf(gpo++));
+            }
+            public Strings CaseDUALPos(DUALPos term) {
+                return Strings(String.valueOf(gpi++), String.valueOf(gpo++));
+            }
+        }));
+
+        // TODO generate class? (currently has to be statically generated in gpio folder
+        
+        // add attribute for the GPIO component
+        comps = add(comps, MAttribute(MDocumentation(Strings(
+                "An instance of the #" + term.name().term() + " core."
+            )), MModifiers(PUBLIC()), MType("class " + term.name().term()), "gpio_"+term.name().term(), init));
+        term.name();
+        term.callback();
+        
+    }
+
+    @Override
+    public void visit(InstancePos term) {
+        if(!hasCPUConnection(term)) return;
+        
         comp = MClass(MDocumentation(Strings(
-                    "An abstract representation of a(n) #" + core.file() + " core."
-                ), SEE("components.h for a list of specific core instances within this board driver.")
-                ), MModifiers(), core.file(), MExtends(MExtend(PRIVATE(), MType("component"))),
-                MStructs(), MEnums(), MAttributes(), MMethods());
+                "An abstract representation of the #" + term.name().term() + " core."
+            ), SEE("components.h for a list of core instances within this board driver.")
+            ), MModifiers(), term.name().term(), MExtends(MExtend(PRIVATE(), MType("component"))),
+            MStructs(), MEnums(), MAttributes(), MMethods());
 
         constructor = MConstr(MDocumentation(Strings(
-                    "Constructor for #" + core.file() + " cores.",
-                    "Creates a new " + core.file() + " instance on a board attached to the provided communication medium."
-                )), MModifiers(PUBLIC()), MParameters(), MMemberInits(), MCode(Strings()));
+                "Constructor for the #" + term.name().term() + " core.",
+                "Creates a new " + term.name().term() + " instance on a board attached to the provided communication medium."
+            )), MModifiers(PUBLIC()), MParameters(), MMemberInits(), MCode(Strings(), MQuoteInclude("component.h")));
         destructor  = MDestr(MDocumentation(Strings(
-                    "Destructor for #" + core.file() + " cores.",
-                    "Deletes registered ports and unregisters the core from the communication medium."
-                )), MModifiers(PUBLIC()), MParameters(), MCode(Strings()));
+                "Destructor for the #" + term.name().term() + " core.",
+                "Deletes registered ports and unregisters the core from the communication medium."
+            )), MModifiers(PUBLIC()), MParameters(), MCode(Strings()));
 
-//        core_pi = 0;
-//        core_po = 0;
+        MInitList init = MInitList(Strings());
+        // add ports
+        for(BindingPos bind : term.bind()) {
+            if(isMasterConnection(bind)) init = add(init, String.valueOf(pi++));
+            if(isSlaveConnection(bind))  init = add(init, String.valueOf(po++));
+        }
         
-        visit(core.ports());
+        // visit bindings to add ports to component
+        visit(term.bind());
         
+        // compose class and add to file
         comp  = add(comp,  constructor);
         comp  = add(comp,  destructor);
         comps = add(comps, comp);
+
+        // add attribute to component file
+        comps = add(comps, MAttribute(MDocumentation(Strings(
+                "An instance of the #" + term.name().term() + " core."
+            )), MModifiers(PUBLIC()), MType("class " + term.name().term()), term.name().term(), init));
+    }
+
+    public void visit(final CPUAxisPos axis) {
+        PortPos port = getPort(axis.root(), ((InstancePos)axis.parent().parent()).core().term(), axis.port().term());
+        port.direction().Switch(new DirectionPos.Switch<Object, NE>() {
+            public Object CaseDUALPos(DUALPos term) {
+                addPort(axis.port().term(), "dual", "A bi-directional AXI-Stream port.", false);
+                return null;
+            }
+            public Object CaseOUTPos(OUTPos term) {
+                addPort(axis.port().term(), "out", "An out-going AXI-Stream port.", true);
+                return null;
+            }
+            public Object CaseINPos(INPos term) {
+                addPort(axis.port().term(), "in", "An in-going AXI-Stream port.", true);
+                return null;
+            }
+        });
     }
     
-    public void visit(Ports ports) {
-        for(Port p : ports) { visit(p); }
+    private boolean hasCPUConnection(InstancePos term) {
+        for(BindingPos bind : term.bind()) if(isCPUConnection(bind)) return true;
+        return false;
+    }
+
+    private boolean isCPUConnection(BindingPos term) {
+        if(term instanceof CPUAxisPos) return true;
+        return false;
     }
     
-//    public void visit(IN   port) { addPort(port.name(),   "in", "An in-going");      core_pi++; }
-//    public void visit(OUT  port) { addPort(port.name(),  "out", "An out-going");     core_po++; }
-//    public void visit(DUAL port) { addPort(port.name(), "dual", "A bi-directional"); core_pi++; core_po++; }
-    public void visit(IN   port) {
-        addPort(port.name(),   "in", "An in-going AXI-Stream port.", true);
+    private static boolean isMasterConnection(BindingPos term) {
+        PortPos port = getPort(term.root(), ((InstancePos)term.parent().parent()).core().term(), term.port().term());
+        return port.direction().Switch(new DirectionPos.Switch<Boolean, NE>() {
+            public Boolean CaseDUALPos(DUALPos term) { return true;  }
+            public Boolean CaseOUTPos(OUTPos term)   { return false; }
+            public Boolean CaseINPos(INPos term)     { return true;  }
+        });
     }
-    public void visit(OUT  port) {
-        addPort(port.name(),  "out", "An out-going AXI-Stream port.", true); 
-    }
-    public void visit(DUAL port) {
-        addPort(port.name(), "dual", "A bi-directional AXI-Stream port.", false);
+    private static boolean isSlaveConnection(BindingPos term) {
+        PortPos port = getPort(term.root(), ((InstancePos)term.parent().parent()).core().term(), term.port().term());
+        return port.direction().Switch(new DirectionPos.Switch<Boolean, NE>() {
+            public Boolean CaseDUALPos(DUALPos term) { return true;  }
+            public Boolean CaseOUTPos(OUTPos term)   { return true; }
+            public Boolean CaseINPos(INPos term)     { return false;  }
+        });
     }
     
     private void addPort(String name, String type, String docPart, boolean single) {
@@ -269,11 +288,52 @@ public class CPP extends Visitor<NE> implements Backend {
             constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_out"));
             constructor = addInit(constructor, MMemberInit(name, name + "_in", name + "_out"));
         }
+    }
+    
+    @Override
+    public void visit(CodePos term) {
+        // TODO Auto-generated method stub
         
-//        destructor  = addLines( destructor, MCode(Strings("delete " + name + ";")));
     }
 
-    public void visit(Instances term) { }
-    public void visit(Integer term)   { }
-    public void visit(String term)    { }
+    // list types
+    public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
+    public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }
+    public void visit(BindingsPos  term) { for( BindingPos bind : term) visit(bind); }
+
+    // general (handled before this visitor)
+    public void visit(ImportPos term)       { }
+    public void visit(de.hopp.generator.frontend.BackendPos term) { }
+
+    // scheduler (handled directly inside the board)
+    public void visit(DEFAULTPos term)      { }
+    public void visit(USER_DEFINEDPos term) { }
+    
+    // attributes (handled directly inside the board or port if occurring)
+    public void visit(HWQUEUEPos  arg0) { }
+    public void visit(SWQUEUEPos  arg0) { }
+    public void visit(BITWIDTHPos term) { }
+    public void visit(POLLPos     term) { }
+    
+    // cores
+    // we do not need to visit cores here, since a class will be created
+    // for each instance directly connected to the boards CPU, not for each core
+    public void visit(CoresPos term) { }
+    public void visit(CorePos  term) { }
+    
+    // ports (see above)
+    public void visit(PortsPos term) { }
+    public void visit(PortPos  term) { }
+    public void visit(INPos    term) { }
+    public void visit(OUTPos   term) { }
+    public void visit(DUALPos  term) { }
+    
+    // component axis (these get ignored... that's the whole point)
+    public void visit(AxisPos term) { }
+    
+    // literals
+    public void visit(StringsPos term) { }
+    public void visit(StringPos  term) { }
+    public void visit(IntegerPos term) { }
+
 }

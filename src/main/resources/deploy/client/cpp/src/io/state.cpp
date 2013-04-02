@@ -17,6 +17,14 @@ bool State::finished() {
 	return size == done;
 }
 
+//bool State::failed() {
+//	return fail;
+//}
+//
+//std::string State::message() {
+//	return m;
+//}
+
 unsigned int State::processed() {
 	return done;
 }
@@ -29,17 +37,17 @@ unsigned int State::total() {
 	return size;
 }
 
-WriteState::WriteState(int val) : State(1, 0) {
+WriteState::WriteState(int val) : State(1) {
 	values = (int*)malloc(1 * sizeof(int));
 	values[0] = val;
 }
 
-WriteState::WriteState(std::vector<int> val) : State(val.size(), 0) {
+WriteState::WriteState(std::vector<int> val) : State(val.size()) {
 	values = (int*)malloc(size * sizeof(int));
 	for(unsigned int i = 0; i < size; i++) values[i] = val.at(i);
 }
 
-WriteState::WriteState(int val[], int size) : State(size, 0) {
+WriteState::WriteState(int val[], int size) : State(size) {
 	values = (int*)malloc(size * sizeof(int));
 	for(int i = 0; i < size; i++) values[i] = val[i];
 }
@@ -49,13 +57,13 @@ WriteState::~WriteState() {
 	values = NULL;
 }
 
-ReadState::ReadState(int *val) : State(1, 0) {
+ReadState::ReadState(int *val) : State(1) {
 	values = val;
 }
-ReadState::ReadState(std::vector<int> *val) : State(val->size(), 0) {
+ReadState::ReadState(std::vector<int> *val) : State(val->size()) {
 	values = val->data();
 }
-ReadState::ReadState(int val[], int size) : State(size,0) {
+ReadState::ReadState(int val[], int size) : State(size) {
 	values = val;
 }
 

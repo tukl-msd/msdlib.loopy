@@ -1,5 +1,6 @@
 package de.hopp.generator;
 
+import static de.hopp.generator.frontend.BDL.BDLFilePos;
 import static de.hopp.generator.utils.BoardUtils.printBoard;
 import static de.hopp.generator.utils.Ethernet.unparseIP;
 import static de.hopp.generator.utils.Ethernet.unparseMAC;
@@ -9,12 +10,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 import de.hopp.generator.backends.Backend;
-import de.hopp.generator.board.Board;
 import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.UsageError;
+import de.hopp.generator.frontend.BDLFilePos;
 import de.hopp.generator.frontend.ClientBackend;
 import de.hopp.generator.frontend.Parser2;
-import de.hopp.generator.frontend.ProjectBackend;
 import de.hopp.generator.frontend.ServerBackend;
 
 public class Main {
@@ -139,11 +139,13 @@ public class Main {
         // start parser
         IO.println();
         IO.println("starting parser");
-        Board board = new Parser2(config).parse(schemaFile);
-        IO.debug(printBoard(board));
+        BDLFilePos board;
+        board =  BDLFilePos(new Parser2(errors).parse(schemaFile));
         
         // if there are errors abort here
         showStatus();
+        
+        IO.debug(printBoard(board.term()));
         
         // unparse generated server models to corresponding files
         IO.println();
@@ -264,18 +266,18 @@ public class Main {
                     IO.error(e.getMessage());
                     throw new ExecutionFailed();
                 }
-            } else if(args[i].equals("-p") || args[i].equals("--project")) {
-                // project backend - currently only xps14.1
-                if(i + 1 >= args.length) {
-                    IO.error("no argument left for "+args[i]);
-                    throw new ExecutionFailed();
-                }
-                try {
-                    ProjectBackend.fromName(args[++i]);
-                } catch(IllegalArgumentException e) {
-                    IO.error(e.getMessage());
-                    throw new ExecutionFailed();
-                }
+//            } else if(args[i].equals("-p") || args[i].equals("--project")) {
+//                // project backend - currently only xps14.1
+//                if(i + 1 >= args.length) {
+//                    IO.error("no argument left for "+args[i]);
+//                    throw new ExecutionFailed();
+//                }
+//                try {
+//                    ProjectBackend.fromName(args[++i]);
+//                } catch(IllegalArgumentException e) {
+//                    IO.error(e.getMessage());
+//                    throw new ExecutionFailed();
+//                }
             // LOGGING flags
             } else if(args[i].equals("-d") || args[i].equals("--debug")) {
                 config.enableDebug();
@@ -376,4 +378,5 @@ public class Main {
         // so there are no errors, look if there are some warning and print them
         if(errors.hasWarnings()) errors.showWarnings(IO);
     }
+    
 }

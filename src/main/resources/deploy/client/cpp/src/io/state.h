@@ -28,12 +28,15 @@ protected:
 	unsigned int size;
 	/** Number of already written or read values. */
 	unsigned int done;
+	/** Failed flag */
+	bool fail;
+	/** Message of an occurred exception. */
+	std::string m;
 	/**
 	 * Internal constructor, initialising size and done values.
 	 * @param size Total number of values to be processed.
-	 * @param done Number of values already processed.
 	 */
-	State(int size, int done) : size(size), done(done) { }
+	State(int size) : size(size), done(0), fail(false), m("") { }
 public:
 	virtual ~State() { };
 
@@ -41,9 +44,26 @@ public:
 	 * Checks, if a call has finished.
 	 * This means, all values have been processed and is
 	 * equivalent with #size == #done.
-	 * @return true if the write or read was finished, false otherwise.
+	 * @return true if the operation has been finished, false otherwise.
 	 */
 	bool finished();
+
+	/*
+	 * Checks, if a call has failed.
+	 * This indicates some sort error in the driver.
+	 * A description of what went wrong is available using message().
+	 * @return true if the operation failed, false otherwise.
+	 */
+//	bool failed();
+
+	/*
+	 * If failed() is true, a description of what went wrong is
+	 * available using this method.
+	 * @return A description of what went wrong,
+	 *         an empty string if operation has not failed.
+	 */
+//	std::string message();
+
 	/**
 	 * Checks, how many values have already been processed.
 	 * @return The number of processed values.
@@ -71,6 +91,7 @@ class WriteState : public State {
 friend class in;
 friend class dual;
 friend class QueueElem;
+friend void scheduleWriter();
 friend void acknowledge_unsafe(unsigned char cid, unsigned int count);
 friend std::vector<int> take(std::shared_ptr<LinkedQueue<WriteState>> q, unsigned int count);
 private:
@@ -104,6 +125,7 @@ public:
  */
 class ReadState : public State {
 friend class out;
+friend void scheduleReader();
 friend void read_unsafe(unsigned char pid, int val);
 private:
 	/** Pointer to storage for read values. */

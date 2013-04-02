@@ -239,7 +239,7 @@ void LinkedQueue<T>::block() {
 	std::unique_lock<std::recursive_mutex> lock(mutex);
 
 	/* wait for the queue to get empty */
-	is_empty.wait(lock);
+	if(nodeCount != 0) is_empty.wait(lock);
 }
 
 #endif /* LINKEDQUEUE_H_ */

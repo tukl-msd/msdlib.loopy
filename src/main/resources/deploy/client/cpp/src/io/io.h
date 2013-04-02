@@ -26,11 +26,6 @@
 #include "../api/gpio.h"
 //#include "../linkedQueue.h"
 
-/** An Exception that marks a failed write operation on a port. */
-class writeException {};
-/** An Exception that marks a failed read operation on a port.  */
-class readException {};
-
 /** Scheduling loop for the writer thread */
 void scheduleWriter();
 /** Scheduling loop for the reader thread */

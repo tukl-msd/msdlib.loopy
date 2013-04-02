@@ -23,6 +23,8 @@
 #include "../linkedQueue.h"
 #include "../io/state.h"
 
+#include <exception>
+
 /**
  * An abstract representation of an AXI-Stream port.
  * This marks a general port without a direction and should not be instantiated.
@@ -46,21 +48,28 @@ private:
 	std::shared_ptr<LinkedQueue<WriteState>> writeTaskQueue;
 	std::shared_ptr<int> transit;
 
-	std::shared_ptr<State> write(std::shared_ptr<WriteState> s);
+	void write(std::shared_ptr<WriteState> s);
+	std::shared_ptr<State> nbwrite(std::shared_ptr<WriteState> s);
 
-	/** Wait until a blocking write has been finished.
-	 *  Acquires the port lock and waits for a notification from the
-	 *  underlying writer, that the write queue has been processed.
-	 *  Since no more writes can occur after the first blocking write,
-	 *  it is ensured, that the blocking write had to be the last one in
-	 *  the queue.
-	 *  @Warning This method is not implemented so far!
+	/**
+	 * Wait until a blocking write has been finished.
+	 * Acquires the port lock and waits for a notification from the
+	 * underlying writer, that the write queue has been processed.
+	 * Since no more writes can occur after the first blocking write,
+	 * it is ensured, that the blocking write had to be the last one in
+	 * the queue.
+	 * @Warning This method is not implemented so far!
 	 */
 	void block();
-
+	/**
+	 * Similar to the default block, but can throw an exception,
+	 * if the underlying
+	 *
+	 */
+	void block(std::shared_ptr<State> s);
 //protected:
-	std::mutex in_port_mutex;
-	std::condition_variable in_empty;
+	std::mutex port_mutex;
+	std::condition_variable_any task_empty;
 //	std::condition_variable in_not_empty;
 public:
 	/**
@@ -75,6 +84,12 @@ public:
 	 * Writes an integer value to this port and waits for the write to return.
 	 * This implies waiting for the board to receive and acknowledge the written value.
 	 * @param val The integer value to be written.
+	 * @throws protocolException  Indicates a problem with message encoding.
+	 *                            This should not happen, when using this port interface.
+	 * @throws interfaceException Indicates a problem with the communication medium.
+	 *                            This usually means, that the connection to the board
+	 *                            has been lost for some reason (and therefore, the driver
+	 *                            has failed completely).
 	 * @warning Though described as a blocking write, this method currently only blocks
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
@@ -85,6 +100,12 @@ public:
 	 * Writes a vector of integer values to this port and waits for the write to return.
 	 * This implies waiting for the board to receive and acknowledge the written values.
 	 * @param val The integer vector to be written.
+	 * @throws protocolException  Indicates a problem with message encoding.
+	 *                            This should not happen, when using this port interface.
+	 * @throws interfaceException Indicates a problem with the communication medium.
+	 *                            This usually means, that the connection to the board
+	 *                            has been lost for some reason (and therefore, the driver
+	 *                            has failed completely).
 	 * @warning Though described as a blocking write, this method currently only blocks
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
@@ -96,6 +117,12 @@ public:
 	 * This implies waiting for the board to receive and acknowledge the written values.
 	 * @param val The integer array to be written.
 	 * @param size The size of the integer array.
+	 * @throws protocolException  Indicates a problem with message encoding.
+	 *                            This should not happen, when using this port interface.
+	 * @throws interfaceException Indicates a problem with the communication medium.
+	 *                            This usually means, that the connection to the board
+	 *                            has been lost for some reason (and therefore, the driver
+	 *                            has failed completely).
 	 * @warning Though described as a blocking write, this method currently only blocks
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
@@ -143,6 +170,12 @@ public:
 	 * @param val The integer value to be written.
 	 * @return The port, the value has been written to.
      *         Returning the port allows concatenating stream operations.
+	 * @throws protocolException  Indicates a problem with message encoding.
+	 *                            This should not happen, when using this port interface.
+	 * @throws interfaceException Indicates a problem with the communication medium.
+	 *                            This usually means, that the connection to the board
+	 *                            has been lost for some reason (and therefore, the driver
+	 *                            has failed completely).
 	 * @warning Though described as a blocking write, this method currently only blocks
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
@@ -155,6 +188,12 @@ public:
 	 * @param val The vector of integers to be written.
 	 * @return The port, the vector has been written to.
      *         Returning the port allows concatenating stream operations.
+	 * @throws protocolException  Indicates a problem with message encoding.
+	 *                            This should not happen, when using this port interface.
+	 * @throws interfaceException Indicates a problem with the communication medium.
+	 *                            This usually means, that the connection to the board
+	 *                            has been lost for some reason (and therefore, the driver
+	 *                            has failed completely).
 	 * @warning Though described as a blocking write, this method currently only blocks
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
@@ -184,12 +223,13 @@ private:
 	 * @param s #State of the read operation to be executed.
 	 * @return updated #State
 	 */
-	std::shared_ptr<State> read(std::shared_ptr<ReadState> &s);
+	void read(std::shared_ptr<ReadState> &s);
+	std::shared_ptr<State> nbread(std::shared_ptr<ReadState> &s);
 	void block();
 //protected:
-	std::mutex out_port_mutex;
+	std::mutex port_mutex;
 	std::condition_variable task_empty;
-	std::condition_variable val_not_empty;
+//	std::condition_variable val_not_empty;
 public:
 	/**
 	 * Constructor for an out-going data port.
@@ -295,5 +335,13 @@ public:
 	dual(unsigned char wid, unsigned char rid) : in(wid), out(rid) { }
 	~dual() { }
 };
+
+//class writeException : public std::exception {
+//private:
+//	std::string message;
+//public:
+//	writeException(std::string message) : message(message) { }
+//	const char* what() { return message.c_str(); }
+//};
 
 #endif /* PORT_H_ */

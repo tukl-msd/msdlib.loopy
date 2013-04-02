@@ -11,16 +11,19 @@ import java.io.InputStreamReader;
 
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
+import de.hopp.generator.backends.unparser.CUnparser;
+import de.hopp.generator.backends.unparser.CppUnparser;
+import de.hopp.generator.backends.unparser.HUnparser;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.Warning;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MFileInFile;
-import de.hopp.generator.unparser.CUnparser;
-import de.hopp.generator.unparser.CppUnparser;
-import de.hopp.generator.unparser.HUnparser;
 
 public class BackendUtils {
 
+    public static final int defaultQueueSizeSW = 50;
+    public static final int defaultQueueSizeHW = 10;
+    
     public enum UnparserType { HEADER, C, CPP }
     
     public static MFileInFile.Visitor<InvalidConstruct> createUnparser(UnparserType type, StringBuffer buf, String name) {

@@ -11,23 +11,31 @@
 #include <vector>
 
 /**
- * Superclass for the host-side protocol encoder and decoder.
+ * Abstract superclass for the host-side protocol encoder and decoder.
  * This class describes the functionality required by a protocol.
  * All future protocols have to be subclass of this protocol and provide
  * at least the described functionality.
  * The encoder has to be defined statically. The decoder is chosen
  * dynamically, depending on the version number of received messages.
+ * @see protocol_v1 Version 1 of the protocol.
  */
 class protocol {
 public:
 	protocol();
 	virtual ~protocol() { };
+
+	/**
+	 * The maximal payload size for a message.
+	 * @return maximal payload size.
+	 */
+	virtual unsigned int max_size() = 0;
+
 	/**
 	 * Decodes an incoming message.
 	 * @param first The first integer-sized value of the message.
-	 * @return good question TODO
+	 * @throws protocolException For errors or unexpected header values encountered during decoding.
 	 */
-	virtual int decode(int first) = 0;
+	virtual void decode(int first) = 0;
 	/**
 	 * Encodes a data package.
 	 * This includes generating and appending a fitting header.
@@ -56,12 +64,13 @@ public:
  */
 class protocol_v1 : public protocol {
 private:
-	void printHeader(int header);
+	static const unsigned int MAX_SIZE = 65536;
 	int construct_header(unsigned char type, unsigned char id, unsigned int size);
 public:
 	protocol_v1();
 	~protocol_v1() { };
-	int decode(int first);
+	unsigned int max_size();
+	void decode(int first);
 	std::vector<int> encode_data(unsigned char cid, std::vector<int> val);
 	std::vector<int> encode_gpio(unsigned char gid, unsigned char val);
 	std::vector<int> encode_reset();

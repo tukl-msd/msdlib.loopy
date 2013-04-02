@@ -1,9 +1,11 @@
 package de.hopp.generator.backends.server.virtex6;
 
+import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
+import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
 import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.model.Model.*;
-import static de.hopp.generator.utils.BoardUtils.hasGpioComponent;
+import static de.hopp.generator.utils.BoardUtils.getPort;
 import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addLines;
@@ -18,17 +20,12 @@ import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.Backend;
 import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
-import de.hopp.generator.board.*;
-import de.hopp.generator.board.Board.Visitor;
+import de.hopp.generator.exceptions.ParserError;
+import de.hopp.generator.frontend.*;
+import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
 
-/**
- * Generation backend for a server-side driver for the Virtex 6 ML 605 platform.
- * This visitor generates a server-side driver for this platform, which can communicate
- * with any client-side driver.
- * @author Thomas Fischer
- */
 public class Virtex6ML605 extends Visitor<NE> implements Backend {
 
     private static String sourceDir = "deploy" + '/' + "server" + '/' + "virtex6ML605";
@@ -55,54 +52,6 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     
     private int gpiCount = 0;
     private int gpoCount = 0;
-    
-    public String getName() {
-        return "Virtex6ML605";
-    }
-    
-    public void generate(Board board, Configuration config, ErrorCollection errors) {
-        this.config = config;
-        this.errors = errors;
-        this.IO = config.IOHANDLER();
-        this.debug = config.debug();
-        
-        serverSrc = new File(config.serverDir(), "src");
-        
-        // deploy board-independent files and directories
-        try { 
-            copy(sourceDir + '/' + "generic", config.serverDir(), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy generic sources due to:\n" + e.getMessage()));
-            return;
-        }
-        
-        // add gpio utils file, if gpio components are present
-        try {
-            if(hasGpioComponent(board)) {
-                File target = new File(new File(serverSrc, "components"), "gpio");
-                copy(sourceDir + '/' + "gpio" + '/' + "gpio.h", new File(target, "gpio.h"), IO);
-                copy(sourceDir + '/' + "gpio" + '/' + "gpio.c", new File(target, "gpio.c"), IO);
-            }
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy generic GPIO sources due to:\n" + e.getMessage()));
-            return;
-        }
-        
-        // generate and deploy board-specific MFiles
-        visit(board);
-        
-        IO.println("  generate server-side api specification ... ");
-        doxygen(config.serverDir(), IO, errors);
-        
-        // TODO for now, no project generation!
-//        if(project == null) {
-//            errors.addError(new GenerationFailed("No project generation backend specified"));
-//            return;
-//        }
-//        
-//        // run the project generator
-//        project.generate(board, config, errors);
-    }
     
     public Virtex6ML605() {
         
@@ -148,28 +97,85 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
     }
     
-    public MFile getComponentsFile() {
-        return components;
-    }
-    public MFile getConstantsFile() {
-        return constants;
+    public String getName() {
+        return "Virtex6ML605";
     }
     
-    public void visit(Board board) {
+    public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
+
+        this.config = config;
+        this.errors = errors;
+        this.IO     = config.IOHANDLER();
+        this.debug  = config.debug();
         
+        serverSrc = new File(config.serverDir(), "src");
+        
+        // deploy board-independent files and directories
+        try { 
+            copy(sourceDir + '/' + "generic", config.serverDir(), IO);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy generic sources due to:\n" + e.getMessage()));
+            return;
+        }
+        
+        // add gpio utils file, if gpio components are present
+        try {
+            if(!board.gpios().isEmpty()) {
+                File target = new File(new File(serverSrc, "components"), "gpio");
+                copy(sourceDir + '/' + "gpio" + '/' + "gpio.h", new File(target, "gpio.h"), IO);
+                copy(sourceDir + '/' + "gpio" + '/' + "gpio.c", new File(target, "gpio.c"), IO);
+            }
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed("Failed to copy generic GPIO sources due to:\n" + e.getMessage()));
+            return;
+        }
+
         // add the debug constant
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         
+        // generate and deploy board-specific MFiles
+        visit(board);
+        
+        IO.println("  generate server-side api specification ... ");
+        doxygen(config.serverDir(), IO, errors);
+        
+        // TODO for now, no project generation!
+//        if(project == null) {
+//            errors.addError(new GenerationFailed("No project generation backend specified"));
+//            return;
+//        }
+//        
+//        // run the project generator
+//        project.generate(board, config, errors);
+        
+    }
+    
+    // We assume all imports to be accumulated at the parser
+    public void visit(ImportsPos   term) { }
+    public void visit(BackendsPos  term) { }
+    public void visit(ConstantsPos term) { }
+
+    @Override
+    public void visit(BDLFilePos term) {
         // add queue size constants
-        addConst("HW_QUEUE_SIZE", "4", "Size of the queues implemented in hardware.");
-        addConst("SW_QUEUE_SIZE", "8", "Size of the queues on the microblaze.");
+        int queueSizeHW = defaultQueueSizeHW, queueSizeSW = defaultQueueSizeSW;
+        for(Constant c : term.constants().term()) {
+           if(c instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)c).qsize();
+           if(c instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)c).qsize();
+        }
+        addConst("HW_QUEUE_SIZE", String.valueOf(queueSizeHW), "Size of the queues implemented in hardware.");
+        addConst("SW_QUEUE_SIZE", String.valueOf(queueSizeSW), "Size of the queues on the microblaze.");
         addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "Maximal number of shifts between mb and hw queues per schedule cycle");
         
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
         
         // visit board components
-        visit(board.components());
+        visit(term.medium());
+        visit(term.scheduler());
+        visit(term.gpios());
+        visit(term.cores());
+        visit(term.instances());
 
         addConst("IN_STREAM_COUNT", String.valueOf(axiStreamIdMaster), "Number of in-going stream interfaces.");
         addConst("OUT_STREAM_COUNT", String.valueOf(axiStreamIdSlave), "Number of out-going stream interfaces.");
@@ -200,47 +206,140 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         components = add(components, axi_read);
         
         // unparse the generated MFiles
-//        File serverSrc = new File(config.serverDir(), "src");
         File compSrc   = new File(serverSrc,   "components");
         printMFile(constants,  serverSrc, UnparserType.HEADER, errors);
         printMFile(components,   compSrc, UnparserType.HEADER, errors);
         printMFile(components,   compSrc, UnparserType.C,      errors);
     }
-    
-    public void visit(Components comps) {
-        for(Component c : comps) visit(c);            
-    }
 
-    public void visit(PCIE term)     { }
-    public void visit(ETHERNET term) { }
-    public void visit(ETHERNET_LITE term) {
+    
+    @Override
+    public void visit(MediumPos term) {
+        // TODO Auto-generated method stub
         // deploy Ethernet medium files
-        try {
-            File target = new File(serverSrc, "medium");
-            copy(sourceDir + '/' + "ethernet.c", new File(target, "medium.c"), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy ethernet sources due to:\n" + e.getMessage()));
+        switch(term.name().term()) {
+        case "ethernet": try {
+                File target = new File(serverSrc, "medium");
+                copy(sourceDir + '/' + "ethernet.c", new File(target, "medium.c"), IO);
+            } catch(IOException e) {
+                errors.addError(new GenerationFailed("Failed to copy ethernet sources due to:\n" + e.getMessage()));
+            }
+                
+            // add Ethernet specific constants
+            addIP("IP",   config.getIP(), "ip address");
+            addIP("MASK", config.getMask(), "subnet mask");
+            addIP("GW",   config.getGW(), "standard gateway");
+            addMAC(config.getMAC());
+            addConst("PORT", "8844", "The port for this boards TCP- connection.");
+            break;
+        default: errors.addError(new ParserError("unknown medium " + term.name().term()));
         }
-            
-        // add Ethernet specific constants
-        addIP("IP",   config.getIP(), "ip address");
-        addIP("MASK", config.getMask(), "subnet mask");
-        addIP("GW",   config.getGW(), "standard gateway");
-        addMAC(config.getMAC());
-        addConst("PORT", "8844", "The port for this boards TCP- connection.");
     }
 
-    public void visit(UART term) {
-        // deploy UART/USB medium files
-        try {
-            File target = new File(serverSrc, "medium");
-            copy(sourceDir + '/' + "uart.c", new File(target, "medium.c"), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy uart sources due to:\n" + e.getMessage()));
+    @Override
+    public void visit(GPIOPos term) {
+        switch(term.name().term()) {
+        case "leds":     addLEDs();     break;
+        case "switches": addSwitches(); break;
+        case "buttons":  addButtons();  break;
+        default: errors.addError(new ParserError("Unknown GPIO device " + term.name().term() + " for " + getName()));
         }
     }
+
+    @Override
+    public void visit(CPUAxisPos term) {
+        PortPos port = getPort(term.root(), ((InstancePos)term.parent().parent()).core().term(), term.port().term());
+        port.direction().termDirection().Switch(new Direction.Switch<Boolean, NE>() {
+            public Boolean CaseIN(IN term) {
+                addWriteStream();
+                return null;
+            }
+            public Boolean CaseOUT(OUT term) {
+                addReadStream();
+                return null;
+            }
+            public Boolean CaseDUAL(DUAL term) {
+                addWriteStream();
+                addReadStream();
+                return null;
+            }
+        });
+    }
     
-    public void visit(LEDS term) {
+    private void addWriteStream() {
+        if(axiStreamIdMaster>15) {
+            errors.addError(new ParserError("too many writing AXI stream interfaces for " + getName()));
+            return;
+        }
+        axi_write = addLines(axi_write, MCode(Strings(
+                "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
+                ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
+                )));
+        axiStreamIdMaster++;
+    }
+
+    private void addReadStream() {
+        if(axiStreamIdSlave>15) {
+            errors.addError(new ParserError("too many reading AXI stream interfaces for " + getName()));
+            return;
+        }
+        axi_read  = addLines(axi_read,  MCode(Strings(
+                "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
+                ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
+                )));
+        axiStreamIdSlave++;
+    }
+    
+    @Override
+    public void visit(CodePos term) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    // list types
+    public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
+    public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }
+    public void visit(BindingsPos  term) { for( BindingPos bind : term) visit(bind); }
+
+    // general (handled before this visitor)
+    public void visit(ImportPos term)       { }
+    public void visit(de.hopp.generator.frontend.BackendPos term) { }
+
+    // scheduler (handled directly inside the board)
+    public void visit(DEFAULTPos term)      { }
+    public void visit(USER_DEFINEDPos term) { }
+    
+    // attributes (handled directly inside the board or port if occurring)
+    public void visit(HWQUEUEPos  arg0) { }
+    public void visit(SWQUEUEPos  arg0) { }
+    public void visit(BITWIDTHPos term) { }
+    public void visit(POLLPos     term) { }
+    
+    // cores
+    // we do not need to visit cores here, since a class will be created
+    // for each instance directly connected to the boards CPU, not for each core
+    public void visit(CoresPos term) { }
+    public void visit(CorePos  term) { }
+    
+    // ports (see above)
+    public void visit(PortsPos term) { }
+    public void visit(PortPos  term) { }
+    public void visit(INPos    term) { }
+    public void visit(OUTPos   term) { }
+    public void visit(DUALPos  term) { }
+    
+    // ignore instances here, just visit port bindings
+    public void visit(InstancePos term) { visit(term.bind()); }
+    // component axis (these get ignored... that's the whole point)
+    public void visit(AxisPos     term) { }
+    
+    // literals
+    public void visit(StringsPos term) { }
+    public void visit(StringPos  term) { }
+    public void visit(IntegerPos term) { }
+
+    
+    private void addLEDs() {
         // deploy LED files
         try {
             File target = new File(new File(serverSrc, "components"), "gpio");
@@ -255,7 +354,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 MForwardDecl("int init_LED()")));
     }
 
-    public void visit(SWITCHES term) {
+    public void addSwitches() {
         // deploy switch files
         try {
             File target = new File(new File(serverSrc, "components"), "gpio");
@@ -288,7 +387,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                    MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)"))));
     }
 
-    public void visit(BUTTONS term) {
+    private void addButtons() {
         // deploy button files
         try {
             File target = new File(new File(serverSrc, "components"), "gpio");
@@ -318,42 +417,6 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 ), MQuoteInclude("xbasic_types.h"), MForwardDecl("u32 read_buttons()"))));
     }
     
-    public void visit(VHDL term) {
-        // generate read and write procedures for all ports of the vhdl component
-        for(@SuppressWarnings("unused") String instance : term.instances()) {
-            for(Port port : term.core().ports()) {
-                if(port instanceof IN) {
-                    if(axiStreamIdMaster>15) continue; //TODO: throw exception: to many master interfaces / in-going ports
-                    axi_write = addLines(axi_write, MCode(Strings(
-                            "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
-                            ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
-                            )));
-                    axiStreamIdMaster++;
-                } else if(port instanceof OUT) {
-                    if(axiStreamIdSlave>15) continue; //TODO: throw exception: to many slave interfaces / out-going ports
-                    axi_read  = addLines(axi_read,  MCode(Strings(
-                            "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
-                            ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
-                            )));
-                    axiStreamIdSlave++;
-                } else {
-                    // TODO: throw exception: invalid port type for AXI Stream
-                }
-            }
-        }
-    }
-    
-    public void visit(VHDLCore term) { }
-    public void visit(Ports term)    { }
-    public void visit(IN term)       { }
-    public void visit(OUT term)      { }
-    public void visit(DUAL term)     { }
-    
-    // literals
-    public void visit(Integer term)   { }
-    public void visit(Instances term) { }
-    public void visit(String term)    { }
-
     private void addIP(String id, int[] ip, String doc) {
         addConst(id + "_1", "" + ip[0], "The first  8 bits of the " + doc + " of this board.");
         addConst(id + "_2", "" + ip[1], "The second 8 bits of the " + doc + " of this board.");

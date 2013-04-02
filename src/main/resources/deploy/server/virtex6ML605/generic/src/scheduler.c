@@ -33,7 +33,7 @@ void schedule() {
 
 				// try to write, skip if the hw queue is full
 				if(axi_write(peek(inQueue[pid]), pid)) {
-					xil_printf("\nfailed to write");
+					if(DEBUG) xil_printf("\nfailed to write to AXI stream");
 					break;
 				}
 
@@ -62,10 +62,8 @@ void schedule() {
 				if(axi_read(&val, pid)) break;
 
 				// otherwise store the value in the sw queue
-				if(DEBUG) xil_printf("\nfound a value @ %d! : %d", pid, val);
 				outQueue[outQueueSize] = val;
-				outQueueSize ++;
-
+				outQueueSize++;
 			}
 			// flush sw queue
 			flush_queue(pid);

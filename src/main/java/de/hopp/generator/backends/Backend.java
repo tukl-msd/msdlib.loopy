@@ -2,7 +2,7 @@ package de.hopp.generator.backends;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.board.Board;
+import de.hopp.generator.frontend.BDLFilePos;
 
 public interface Backend {
     String getName();
@@ -10,5 +10,6 @@ public interface Backend {
     // TODO parse parameters
     // TODO print usage
     
-    void generate(Board board, Configuration config, ErrorCollection errors);
+    void generate(BDLFilePos board, Configuration config, ErrorCollection errors);
+    
 }

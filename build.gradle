@@ -13,6 +13,7 @@ String parserGenDir = "$genDir/de/hopp/generator/frontend"
 String flexSpec     = "$specDir/mhs.flex";
 String cupSpec      = "$specDir/mhs.cup"
 String mhsSpec      = "$specDir/mhs.katja"
+String bdlSpec      = "$specDir/bdl.katja"
 String boardSpec    = "$specDir/board.katja"
 String modelSpec    = "$specDir/cmodel.katja"
 
@@ -22,6 +23,7 @@ String katja        = "$libDir/katja.jar"
 String katjaCommon  = "$genLibDir/katja.common.jar"
 
 String mhs          = "$genLibDir/MHS.jar"
+String bdl          = "$genLibDir/BDL.jar"
 String board        = "$genLibDir/BoardSpec.jar"
 String model        = "$genLibDir/Model.jar"
 
@@ -38,7 +40,7 @@ dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
   // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
-  compile files("$katjaCommon", "$model", "$board", "$mhs")
+  compile files("$katjaCommon", "$model", "$board", "$mhs", "$bdl")
   testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
@@ -95,6 +97,22 @@ task buildAST {
       arg(value: "$genLibDir")
       arg(value: "-o")
       arg(value: "$mhsSpec")
+    }
+  }
+}
+
+// builds the ast model of bdl files
+task buildBDL {
+  inputs.files("$katja", "$bdlSpec")
+  outputs.files("$bdl")
+  doLast {
+    ant.java(jar:"$katja",fork:true) {
+      arg(value: "-b")
+      arg(value: "java")
+      arg(value: "-d")
+      arg(value: "$genLibDir")
+      arg(value: "-o")
+      arg(value: "$bdlSpec")
     }
   }
 }
@@ -161,6 +179,7 @@ clean.dependsOn removeGen
 // clean.dependsOn removeModel
 
 runKatja.dependsOn buildAST
+runKatja.dependsOn buildBDL
 runKatja.dependsOn buildBoard
 runKatja.dependsOn buildModel
 
