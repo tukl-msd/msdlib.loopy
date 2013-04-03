@@ -90,7 +90,7 @@ non terminal Bindings inst_decl;
 non terminal Bindings bind_list;
 non terminal Bindings bind_list_part;
 non terminal Strings gpio_callback;
-non terminal Options option_list;
+non terminal Options option_list, option_list_part;
 non terminal Direction direct;
 
 /* grammar */
@@ -106,12 +106,12 @@ file ::= decl_list:l {:
   Medium medium       = BDL.Medium("", -1);
   Scheduler scheduler = BDL.DEFAULT();
   for(Decl d : l) {
-         if(d instanceof Import)    { imports.add((Import)d); }
-    else if(d instanceof Backend)   { backends.add((Backend)d); }
-    else if(d instanceof Option)    { opts.add((Option)d); }
-    else if(d instanceof Core)      { cores.add((Core)d); }
-    else if(d instanceof Instance)  { insts.add((Instance)d); }
-    else if(d instanceof GPIO)      { gpios.add((GPIO)d); }
+         if(d instanceof Import)    {  imports =  imports.add((Import)d);   }
+    else if(d instanceof Backend)   { backends = backends.add((Backend)d);  }
+    else if(d instanceof Option)    {     opts =     opts.add((Option)d);   }
+    else if(d instanceof Core)      {    cores =    cores.add((Core)d);     }
+    else if(d instanceof Instance)  {    insts =    insts.add((Instance)d); }
+    else if(d instanceof GPIO)      {    gpios =    gpios.add((GPIO)d);     }
     else if(d instanceof Medium)    {
       // TODO catch duplicates?
       // check, if the medium is already defined. If so, throw exception
@@ -148,7 +148,10 @@ backend ::= HOST    ID:id {: RESULT = BDL.Backend(id, idleft); :}
 
 medium ::= MEDIUM ID:id STR:s {: RESULT = BDL.Medium(id, idleft, s); :}; // TODO
 
-option_list ::= option:o option_list:l {: RESULT = l.appFront(o); :}
+option_list ::= BEGIN option_list_part:l END {: RESULT = l; :}
+              | {: RESULT = BDL.Options(); :};
+
+option_list_part ::= option:o option_list_part:l {: RESULT = l.appFront(o); :}
               | {: RESULT = BDL.Options(); :};
 
 option ::= SWQUEUE DEC:d {: RESULT = BDL.SWQUEUE(d); :}
@@ -159,17 +162,15 @@ option ::= SWQUEUE DEC:d {: RESULT = BDL.SWQUEUE(d); :}
 
 core ::= CORE ID:id version:v BEGIN source_list:s port_list:p END {: RESULT = BDL.Core(id, v, idleft, s, p); :};
 
-source_list ::= source:s source_list:l {: l.appFront(s); :}
+source_list ::= source:s source_list:l {: RESULT = l.appFront(s); :}
               | {: RESULT = BDL.Strings(); :}
               ;
 
-port_list ::= port:p port_list:l {: l.appFront(p); :}
+port_list ::= port:p port_list:l {: RESULT = l.appFront(p); :}
             | {: RESULT = BDL.Ports(); :}
             ;
 
-version ::= DEC:a DEC:b ID:c {: RESULT = String.valueOf(a) + "." + b + "." + c; :}
-          | DEC:a VER:b ID:c {: RESULT = String.valueOf(a) + "." + b + "." + c; :}
-          ;
+version ::= DEC:a VER:b VER:c {: RESULT = String.valueOf(a) + b + c; :};
 
 source ::= SOURCE PATH:path {: RESULT = path; :};
 

@@ -148,7 +148,10 @@ public class Parser {
             
         // check declaration of referenced cores
         for(Instance inst : bdf.insts()) {
-            if(!cores.containsKey(inst.core())) errors.addError(new ParserError("Instantiated undefined core " + inst.core(), "", -1)); 
+            if(!cores.containsKey(inst.core())) {
+                errors.addError(new ParserError("Instantiated undefined core " + inst.core(), "", -1));
+                continue;
+            }
         
             // check connection of all declared ports
             for(Port port : cores.get(inst.core()).ports()) {

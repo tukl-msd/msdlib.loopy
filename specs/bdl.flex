@@ -37,8 +37,8 @@ Comment = {SingleLineComment} | {MultiLineComment}
 
 /* numbers and identifiers */
 DecNumber       = 0 | [1-9][0-9]*
-HexNumber       = 0 [x] [0-9a-f]*
-VerPart         = 0 [0-9]+
+//HexNumber       = 0 [x] [0-9a-f]*
+VerPart         = "." [:jletterdigit:]+
 
 Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 %%
@@ -123,5 +123,5 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 
 /* literals */
 {DecNumber}     { return symbol(sym.DEC, Integer.valueOf(yytext())); }
-{HexNumber}     { return symbol(sym.HEX, yytext()); }
+//{HexNumber}     { return symbol(sym.HEX, yytext()); }
 {VerPart}       { return symbol(sym.VER, yytext()); }

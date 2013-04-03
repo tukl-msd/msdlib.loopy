@@ -145,7 +145,9 @@ public class Main {
         // if there are errors abort here
         showStatus();
         
-        IO.debug(printBoard(board.term()));
+        IO.println(printBoard(board.term()));
+        
+        IO.println(board.term().toString());
         
         // unparse generated server models to corresponding files
         IO.println();
