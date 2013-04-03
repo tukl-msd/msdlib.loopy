@@ -3,32 +3,32 @@ board virtex6ml605
 project mhs
 
 // gpio components
-gpio button {:
-  send_gpio(gpo_buttons, read_buttons());
-:}
+gpio button // {:
+ // send_gpio(gpo_buttons, read_buttons());
+//:}
 
-gpio switch
-gpio led
+gpio i switch dfgh
+gpio out led
 
 // queue sizes
 swqueue 25
 hwqueue 10
 
-medium ethernet {
+/* medium ethernet {
   mac  AA:BB:CC:DD:EE:FF
   ip   192.168.2.10
   mask 255.255.255.0
   gate 192.168.1.1
-}
+} */
 
-core rng 1.00.a {
+/* core rng 1.00.a {
   source /some/file/refere.nce
 
   in in1 {
     width 32
   }
   out out1
-}
+} 
 
 core adder 1.00.a {
   source /some/file/refere.nce
@@ -36,17 +36,17 @@ core adder 1.00.a {
   in in1
   in in2
   out out1
-}
+} 
 
 core fifo 1.00.a {
   source /some/file/refere.nce
 
   in in1
   out out1
-}
+} */
 
 // instantiate cores
-instance rng rng_a {
+/* instance rng rng_a {
   cpu in1 {
     swqueue 10
     hwqueue  5
@@ -54,7 +54,7 @@ instance rng rng_a {
   cpu out1 {
     poll
   }
-}
+} */
 
 instance rng rng_b {
   cpu in1, out1
@@ -68,6 +68,6 @@ instance fifo fifo_a {
   cpu in1, out1
 }
 
-scheduler {:
+/* scheduler {:
   // plain code... no analysis takes place here. Maybe print a warning, that no guarantees are given for this scheduler
-:}
+:} */

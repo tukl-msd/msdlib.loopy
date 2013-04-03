@@ -25,7 +25,7 @@ String bdl          = "$genLibDir/BDL.jar"
 String board        = "$genLibDir/BoardSpec.jar"
 String model        = "$genLibDir/Model.jar"
 
-String cupParserFile = "parser"
+String cupParserFile = "BDLFileParser"
 String cupParser     = "$parserGenDir/{$cupParserFile}.java"
 String flexScanner   = "$parserGenDir/Lexer.java"
 String symTab        = "$parserGenDir/sym.java"

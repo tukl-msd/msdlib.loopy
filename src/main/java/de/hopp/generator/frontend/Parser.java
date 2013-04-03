@@ -1,29 +1,41 @@
 package de.hopp.generator.frontend;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import static de.hopp.generator.frontend.BDL.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+
+import java_cup.runtime.Symbol;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.ParserWarning;
+import de.hopp.generator.exceptions.UsageError;
 
-import static de.hopp.generator.frontend.BDL.*;
-
-public class Parser2 {
+public class Parser {
 
     private ErrorCollection errors;
     
-    public Parser2(ErrorCollection errors) {
+    public Parser(ErrorCollection errors) {
         this.errors = errors;
     }
     
     public BDLFile parse(File file){
-        // assume, that a flex/cup combination exists to provide a valid BDLFile
+        // resolve all imports (recursively) and construct one big BDLFile
+        LinkedList<File> files = new LinkedList<File>();
+        Set<String> fileNames = new HashSet<String>();
+        files.add(file);
         
-        // we furthermore assume, that THIS bdl file is complete and imports are already resolved
-        // (as in: one object modelling the board described by ALL these files together)
-        BDLFile bdl = testfile();
+        BDLFile bdl = parse(files, fileNames);
+        
+        // abort, if errors occurred
+        if(errors.hasErrors()) return null;
         
         // perform sanity checks on the parsed bdl file
         sanityCheck(bdl);
@@ -35,22 +47,73 @@ public class Parser2 {
         return bdl;
     }
     
+    private BDLFile parse(LinkedList<File> files, Set<String> fileNames) {
+        // if the file list is empty, return null
+        if(files.isEmpty()) return null;
+        
+        // get the first file from the list and remove it
+        File file = files.remove();
+        
+        try {
+            if(fileNames.contains(file.getCanonicalPath())) return parse(files, fileNames);
+            
+            // construct scanner and parser
+            InputStream input = new FileInputStream(file);
+            BDLFileScanner scanner = new BDLFileScanner(input);
+            BDLFileParser parser = new BDLFileParser(scanner);
+            
+            // set attributes of the parser
+            parser.setErrorCollection(errors);
+            parser.setFilename(file.getCanonicalPath());
+            
+            // parse the file
+            try {
+                Symbol symbol = parser.parse();
+                
+                // abort, if errors occurred while parsing
+                if(errors.hasErrors()) return null;
+                
+                // otherwise, cast the result to a BDLFile
+                BDLFile bdl = (BDLFile) symbol.value;
+                
+                // add all imports of this file
+                for(Import imp : bdl.imports()) files.add(new File(imp.file()));
+                
+                // return merge of this file and recursive call
+                return merge(bdl, parse(files, fileNames));
+            } catch(Exception e) {
+                e.printStackTrace();
+                errors.addError(new ParserError("Encountered error while parsing: " + e.getMessage(), file.getCanonicalPath(), -1));
+            }
+        } catch(IOException e) {
+            errors.addError(new UsageError("File not found " + file.getPath()));
+        }
+        return null;
+    }
+    
+    private BDLFile merge(BDLFile file1, BDLFile file2) {
+        // if the second file is null, return the first file
+        if(file2 == null) return file1;
+        
+        return file1;
+    }
+        
     private BDLFile testfile() {
         return BDLFile(Imports(), Backends(), Options(), 
                 Cores(
-                   Core("adder", Strings("sample2.bdf"), Port("in1", IN()), Port("out1", OUT()), Port("in2", IN())),
-                   Core("fifo",  Strings("sample2.bdf"), Port("in1", IN()), Port("out1", OUT())),
-                   Core("rng",   Strings("sample2.bdf"), Port("in1", IN()), Port("out1", OUT()))
+                   Core("adder", "1.00.a", 0, Strings("sample2.bdf"), Port("in1",IN(),0), Port("out1",OUT(),0), Port("in2",IN(),0)),
+                   Core("fifo",  "1.00.a", 0, Strings("sample2.bdf"), Port("in1",IN(),0), Port("out1",OUT(),0)),
+                   Core("rng",   "1.00.a", 0, Strings("sample2.bdf"), Port("in1",IN(),0), Port("out1",OUT(),0))
                 ), GPIOs(
-                    GPIO("leds",     OUT(), Code(Strings())),
-                    GPIO("switches",  IN(), Code(Strings())),
-                    GPIO("buttons",   IN(), Code(Strings()))
+                    GPIO("leds",     OUT(),0),
+                    GPIO("switches",  IN(),0),
+                    GPIO("buttons",   IN(),0)
                 ), Instances(
-                    Instance("rng_a",   "rng",   CPUAxis("in1"), CPUAxis("out1")),
-                    Instance("rng_b",   "rng",   CPUAxis("in1"), CPUAxis("out1")),
-                    Instance("adder_a", "adder", CPUAxis("in1"), CPUAxis("out1"), CPUAxis("in2")),
-                    Instance("fifo_a",  "fifo",  CPUAxis("in1"), CPUAxis("out1"))
-                ), Medium("ethernet", "mac AA:BB:CC:DD:EE:FF"), DEFAULT());
+                    Instance("rng_a",   "rng",   0, CPUAxis("in1",0), CPUAxis("out1",0)),
+                    Instance("rng_b",   "rng",   0, CPUAxis("in1",0), CPUAxis("out1",0)),
+                    Instance("adder_a", "adder", 0, CPUAxis("in1",0), CPUAxis("out1",0), CPUAxis("in2",0)),
+                    Instance("fifo_a",  "fifo",  0, CPUAxis("in1",0), CPUAxis("out1",0))
+                ), Medium("ethernet", 0, "mac AA:BB:CC:DD:EE:FF"), DEFAULT());
     }
     
     private void sanityCheck(BDLFile bdf) {
@@ -65,27 +128,27 @@ public class Parser2 {
             for(String source : core.source()) {
                 File sourcefile = new File(source);
                 if(!sourcefile.exists() || !sourcefile.isFile())
-                    errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist"));
+                    errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", "", -1));
             }
         }
         
         // check for duplicate core identifiers
         Map<String, Core> cores = new HashMap<String, Core>();
         for(Core core : bdf.cores()) {
-            if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name()));
+            if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name(), "", -1));
             else cores.put(core.name(), core);
             
             // check for duplicate port identifiers
             Map<String, Port> ports = new HashMap<String, Port>();
             for(Port port : core.ports()) {
-                if(ports.containsKey(port.name())) errors.addError(new ParserError("Duplicate port identifier " + port.name()));
+                if(ports.containsKey(port.name())) errors.addError(new ParserError("Duplicate port identifier " + port.name(), "", -1));
                 else ports.put(port.name(), port);
             }
         }
             
         // check declaration of referenced cores
         for(Instance inst : bdf.insts()) {
-            if(!cores.containsKey(inst.core())) errors.addError(new ParserError("Instantiated undefined core " + inst.core())); 
+            if(!cores.containsKey(inst.core())) errors.addError(new ParserError("Instantiated undefined core " + inst.core(), "", -1)); 
         
             // check connection of all declared ports
             for(Port port : cores.get(inst.core()).ports()) {
@@ -99,14 +162,14 @@ public class Parser2 {
         // check for duplicate instance identifiers
         Map<String, Instance> instances = new HashMap<String, Instance>();
         for(Instance inst : bdf.insts())
-            if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name()));
+            if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name(), "", -1));
             else instances.put(inst.name(), inst);
         instances.clear();
         
         // check for duplicate gpio instances
         Map<String, GPIO> gpios = new HashMap<String, GPIO>();
         for(GPIO gpio : bdf.gpios())
-            if(gpios.containsKey(gpio.name())) errors.addError(new ParserError("Duplicate GPIO instance " + gpio.name()));
+            if(gpios.containsKey(gpio.name())) errors.addError(new ParserError("Duplicate GPIO instance " + gpio.name(), "", -1));
             else gpios.put(gpio.name(), gpio);
         gpios.clear();
         
@@ -125,7 +188,7 @@ public class Parser2 {
                 errors.addWarning(new ParserWarning("Axis " + axis + " is only connected to a single port."));
             if(connections.get(axis).compareTo(2) > 0)
                 errors.addError(new ParserError("Axis " + axis + " is connected to " + connections.get(axis) +
-                        " ports. Only two ports can be connected with a single axis."));
+                        " ports. Only two ports can be connected with a single axis.", "", -1));
         } connections.clear();
         
         // check for invalid attribute combinations
@@ -134,15 +197,15 @@ public class Parser2 {
         // invalid options for the board in general
         for(Option o : bdf.opts()) {
             // poll is simply not allowed
-            if(o instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option")); 
+            if(o instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option", "", -1)); 
             // neither is bitwidth
-            else if(o instanceof BITWIDTH) errors.addError(new ParserError("encountered option \"width\" as board option"));
+            else if(o instanceof BITWIDTH) errors.addError(new ParserError("encountered option \"width\" as board option", "", -1));
             // swqueue and hwqueue are allowed to occur at most once
             else if(o instanceof SWQUEUE)
-                if(sw) errors.addError(new ParserError("duplicate board option \"swqueue\""));
+                if(sw) errors.addError(new ParserError("duplicate board option \"swqueue\"", "", -1));
                 else sw = true;
             else if(o instanceof HWQUEUE)
-                if(hw) errors.addError(new ParserError("duplicate board option \"swqueue\""));
+                if(hw) errors.addError(new ParserError("duplicate board option \"swqueue\"", "", -1));
                 else hw = true;
         }
         
@@ -154,20 +217,20 @@ public class Parser2 {
                 for(Option o : port.opts()) {
                     if(o instanceof POLL)
                         // poll is not allowed to occur at in-going ports
-                        if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port")); 
+                        if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port", "", -1)); 
                         // at out-going ports it must occur at most once
-                        else if(poll) errors.addError(new ParserError("duplicate port option \"poll\""));
+                        else if(poll) errors.addError(new ParserError("duplicate port option \"poll\"", "", -1));
                         else poll = true;
                     // bitwidth is allowed to occur at most once
                     else if(o instanceof BITWIDTH)
-                        if(width) errors.addError(new ParserError("duplicate port option \"bitwidth\""));
+                        if(width) errors.addError(new ParserError("duplicate port option \"bitwidth\"", "", -1));
                         else width = true;
                     // swqueue and hwqueue are allowed to occur at most once
                     else if(o instanceof SWQUEUE)
-                        if(sw) errors.addError(new ParserError("duplicate port option \"swqueue\""));
+                        if(sw) errors.addError(new ParserError("duplicate port option \"swqueue\"", "", -1));
                         else sw = true;
                     else if(o instanceof HWQUEUE)
-                        if(hw) errors.addError(new ParserError("duplicate port option \"hwqueue\""));
+                        if(hw) errors.addError(new ParserError("duplicate port option \"hwqueue\"", "", -1));
                         else hw = true;
                 }
             }

@@ -1,14 +1,16 @@
 package de.hopp.generator.backends.client;
 
-import static de.hopp.generator.backends.BackendUtils.*;
+import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
+import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
+import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.utils.BoardUtils.getPort;
 import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addDoc;
 import static de.hopp.generator.utils.Model.addInit;
 import static de.hopp.generator.utils.Model.addParam;
-import static de.hopp.generator.utils.BoardUtils.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -159,6 +161,13 @@ public class CPP extends Visitor<NE> implements Backend {
     public void visit(GPIOPos term) {
         // construct init block according to GPIO direction
         MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude("gpio.h")));
+        
+//        switch(term.name().term()) {
+//        case "led": init.replaceParams(Strings(String.valueOf(gpo++))); break;
+//        case "buttons": init.replaceParams(Strings(String.valueOf(gpi++))); break;
+//        case "switch": init.replaceParams(Strings(String.valueOf(gpi++))); break;
+//        default: errors.addError(new UsageError("abc"));
+//        }
         init = init.replaceParams(term.direction().Switch(new DirectionPos.Switch<Strings, NE>() {
             public Strings CaseINPos(INPos term) {
                 return Strings(String.valueOf(gpi++));
@@ -290,12 +299,6 @@ public class CPP extends Visitor<NE> implements Backend {
         }
     }
     
-    @Override
-    public void visit(CodePos term) {
-        // TODO Auto-generated method stub
-        
-    }
-
     // list types
     public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
     public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }

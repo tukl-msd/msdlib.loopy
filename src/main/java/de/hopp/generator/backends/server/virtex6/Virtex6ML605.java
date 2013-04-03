@@ -232,7 +232,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
             addMAC(config.getMAC());
             addConst("PORT", "8844", "The port for this boards TCP- connection.");
             break;
-        default: errors.addError(new ParserError("unknown medium " + term.name().term()));
+        default: errors.addError(new ParserError("unknown medium " + term.name().term(), "", -1));
         }
     }
 
@@ -242,7 +242,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         case "leds":     addLEDs();     break;
         case "switches": addSwitches(); break;
         case "buttons":  addButtons();  break;
-        default: errors.addError(new ParserError("Unknown GPIO device " + term.name().term() + " for " + getName()));
+        default: errors.addError(new ParserError("Unknown GPIO device " + term.name().term() + " for " + getName(), "", -1));
         }
     }
 
@@ -268,7 +268,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     
     private void addWriteStream() {
         if(axiStreamIdMaster>15) {
-            errors.addError(new ParserError("too many writing AXI stream interfaces for " + getName()));
+            errors.addError(new ParserError("too many writing AXI stream interfaces for " + getName(), "", -1));
             return;
         }
         axi_write = addLines(axi_write, MCode(Strings(
@@ -280,7 +280,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
 
     private void addReadStream() {
         if(axiStreamIdSlave>15) {
-            errors.addError(new ParserError("too many reading AXI stream interfaces for " + getName()));
+            errors.addError(new ParserError("too many reading AXI stream interfaces for " + getName(), "", -1));
             return;
         }
         axi_read  = addLines(axi_read,  MCode(Strings(
@@ -290,12 +290,6 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         axiStreamIdSlave++;
     }
     
-    @Override
-    public void visit(CodePos term) {
-        // TODO Auto-generated method stub
-        
-    }
-
     // list types
     public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
     public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }

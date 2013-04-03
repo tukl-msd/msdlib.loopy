@@ -14,7 +14,7 @@ import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.BDLFilePos;
 import de.hopp.generator.frontend.ClientBackend;
-import de.hopp.generator.frontend.Parser2;
+import de.hopp.generator.frontend.Parser;
 import de.hopp.generator.frontend.ServerBackend;
 
 public class Main {
@@ -50,7 +50,8 @@ public class Main {
     
     private void showUsage() {
         config.setPrintLevel(Configuration.LOG_INFO);
-         // show usage line
+        
+        // show usage line
         IO.println("Usage: java de.hopp.generator.Main [options] <filename>");
         IO.println();
     
@@ -139,8 +140,7 @@ public class Main {
         // start parser
         IO.println();
         IO.println("starting parser");
-        BDLFilePos board;
-        board =  BDLFilePos(new Parser2(errors).parse(schemaFile));
+        BDLFilePos board = BDLFilePos(new Parser(errors).parse(schemaFile));
         
         // if there are errors abort here
         showStatus();

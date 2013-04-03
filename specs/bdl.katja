@@ -13,40 +13,37 @@ external Integer
 
 BDLFile (Imports imports, Backends backends, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
 
-Decl = Import | Backend | Scheduler | Medium | Option | Core | GPIO | Instance
+Decl = Import | Backend | Option | Core | GPIO | Instance | Medium | Scheduler
 
-Import (String file)
+Import (String file, Integer line)
 
 // selected backends for generation
-Backend (String name)
+Backend (String name, Integer line)
 
-Scheduler = DEFAULT() | USER_DEFINED(Code schedule)
+Scheduler = DEFAULT() | USER_DEFINED(Integer line, Strings content)
 
 // Definition of a new ipcore
-Core (String name, Strings source, Ports ports)
+Core (String name, String version, Integer line, Strings source, Ports ports)
 
-Port (String name, Direction direction, Options opts)
+Port (String name, Direction direction, Integer line, Options opts)
 Direction = IN() | OUT() | DUAL()
 
 // Instance of an ipcore
-Instance(String name, String core, Bindings bind)
+Instance(String name, String core, Integer line, Bindings bind)
 
-Binding = Axis(String port, String axis)
-        | CPUAxis(String port)
+Binding = Axis(String port, String axis, Integer line, Options opts)
+        | CPUAxis(String port, Integer line, Options opts)
 
-GPIO (String name, Direction direction, Code callback)
+GPIO (String name, Direction direction, Integer line, Strings callback)
 
 // Definition of the attached medium
-Medium (String name, String content)
+Medium (String name, Integer line, Strings content)
 
 // General constants and flags for board and ports (care for invalid combinations)
 Option = HWQUEUE(Integer qsize)
        | SWQUEUE(Integer qsize)
        | BITWIDTH(Integer bit)
        | POLL()
-
-// code injection for scheduler and gpio callbacks
-Code(Strings code, Strings importline)
 
 // List types
 Imports   * Import
