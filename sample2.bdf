@@ -3,9 +3,9 @@ board virtex6ml605
 project mhs
 
 // gpio components
-gpio in button // {:
- // send_gpio(gpo_buttons, read_buttons());
-//:}
+gpio in button {:
+  send_gpio(gpo_buttons, read_buttons());
+}
 
 gpio in switch
 gpio out led
@@ -14,35 +14,35 @@ gpio out led
 swqueue 25
 hwqueue 10
 
-/* medium ethernet {
-  mac  AA:BB:CC:DD:EE:FF
-  ip   192.168.2.10
-  mask 255.255.255.0
-  gate 192.168.1.1
-} */
+medium ethernet {
+  mac  "00:0a:35:00:01:02"
+  ip   "192.168.2.10"
+  mask "255.255.255.0"
+  gate "192.168.1.1"
+}
 
 core rng 1.00.a {
-//  source /some/file/refere.nce
+  source "sample2.bdf"
 
-  in in1 {
+  port in in1 {
     width 32
   }
-  out out1
+  port out out1
 } 
 
 core adder 1.00.a {
-//  source /some/file/refere.nce
+  source "sample2.bdf"
 
-  in in1
-  in in2
-  out out1
+  port in in1
+  port in in2
+  port out out1
 } 
 
 core fifo 1.00.a {
-//  source /some/file/refere.nce
+  source "sample2.bdf"
 
-  in in1
-  out out1
+  port in in1
+  port out out1
 }
 
 // instantiate cores
@@ -68,6 +68,7 @@ instance fifo fifo_a {
   cpu in1, out1
 }
 
-/* scheduler {:
-  // plain code... no analysis takes place here. Maybe print a warning, that no guarantees are given for this scheduler
-:} */
+
+//scheduler {:
+  //plain code... no analysis takes place here. Maybe print a warning, that no guarantees are given for this scheduler
+//:}

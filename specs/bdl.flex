@@ -21,64 +21,57 @@ import java_cup.runtime.*;
   }
 %}
 
-%xstates code
-%xstates medium
-%xstates path
+%states CODE, STRING
 
 /* whitespaces */
 LineTerminator = \r|\n|\r\n
 InputCharacter = [^\r\n]
 WhiteSpace     = {LineTerminator} | [ \t\f]
+StringCharacter = [^\r\n\"\\]
 
 /* comments */
-SingleLineComment = "//" {InputCharacter}* {LineTerminator}
- MultiLineComment = "/*" [^*] ~"*/" | "/*" "*"+ "/"
-Comment = {SingleLineComment} | {MultiLineComment}
+Comment = {TraditionalComment} | {EndOfLineComment}// | {DocumentationComment}
+TraditionalComment = "/*" ~"*/"
+EndOfLineComment = "//" {InputCharacter}* {LineTerminator}
+//DocumentationComment = "/**" ~"*/"
 
 /* numbers and identifiers */
 DecNumber       = 0 | [1-9][0-9]*
-//HexNumber       = 0 [x] [0-9a-f]*
+HexNumber       = [0-9a-f]*
 VerPart         = "." [:jletterdigit:]+
 
 Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 %%
 
 /* ignore whitespaces and comments */
-{WhiteSpace}    { /* ignore */ }
-{Comment}       { /* ignore */ }
-
-","             { return symbol(sym.COMMA); }
+<YYINITIAL> {WhiteSpace}    { /* ignore */ }
+<YYINITIAL> {Comment}       { /* ignore */ }
 
 /* Blocks */
-"{"             { return symbol(sym.BEGIN); }
-"}"             { return symbol(sym.END); }
-"{:"            { yybegin(code);      // state switch to code block
-                  return symbol(sym.CBEGIN); }
-<code> {
-  ":}"     { yybegin(YYINITIAL); // state switch back to default
-                  return symbol(sym.CEND); }
-  [.]*     { return symbol(sym.CODE, yytext()); }
+<YYINITIAL> {
+  "{"  { return symbol(sym.BEGIN); }
+  "}"  { return symbol(sym.END); }
+  "{:" { yybegin(CODE);      // state switch to code block
+                   string.setLength(0);
+                   return symbol(sym.CBEGIN); }
+  ":}" { }
 }
 
-"medium"        { yybegin(medium); // state switch to medium blcok
-                  return symbol(sym.MEDIUM); }
-<medium> {
-  "{"           { string.setLength(0); }
-  "}"           { yybegin(YYINITIAL); // state switch back to default
-                  return symbol(sym.STR, string.toString()); }
-  [^\n\r\"\\]+  { string.append(yytext()); }
-  \\t           { string.append('\t'); }
-  \\n           { string.append('\n'); }
-
-  \\r           { string.append('\r'); }
-  \\\"          { string.append('\"'); }
-  \\            { string.append('\\'); }
+<CODE> {
+  {Comment} {string.append(yytext()); } // append comments
+  ":}"      { yybegin(YYINITIAL); return symbol(sym.CEND, string.toString()); } // switch state back, if :} out of comment occurs
+  ({InputCharacter} | {WhiteSpace}) { string.append(yytext()); } // otherwise append
 }
 
-<path> {
-  [.]*          { yybegin(YYINITIAL); // state switch back to default
-                  return symbol(sym.PATH, yytext()); }
+<STRING> {
+  \"            { yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); }
+  {StringCharacter}+ { string.append( yytext() ); }
 }
+
+<YYINITIAL> {
+\"              { yybegin(STRING); string.setLength(0); }
+
+","             { return symbol(sym.COMMA); }
 
 /* Keywords */
 "import"        { return symbol(sym.IMPORT); }
@@ -93,17 +86,19 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "hwqueue"       { return symbol(sym.HWQUEUE); }
 
 /* medium related */
-//"mac"         { return symbol(sym.MAC); }
-//"ip"          { return symbol(sym.IP); }
-//"mask"        { return symbol(sym.MASK); }
-//"gate"        { return symbol(sym.GATE); }
+"medium"        { return symbol(sym.MEDIUM); }
+"mac"           { return symbol(sym.MAC);  }
+"ip"            { return symbol(sym.IP);   }
+"mask"          { return symbol(sym.MASK); }
+"gate"          { return symbol(sym.GATE); }
+"port"          { return symbol(sym.PORT); }
 
 /* core related */
 "core"          { return symbol(sym.CORE); }
-"source"        { yybegin(path); // state switch to path
-                  return symbol(sym.SOURCE); }
+"source"        { return symbol(sym.SOURCE); }
 
 /* port related */
+"port"          { return symbol(sym.PORT); }
 "width"         { return symbol(sym.WIDTH); }
 "in"            { return symbol(sym.IN); }
 "out"           { return symbol(sym.OUT); }
@@ -118,6 +113,9 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 
 "scheduler"     { return symbol(sym.SCHEDULER); }
 
+//{HexNumber} ":" {HexNumber} ":" {HexNumber} { return symbol(sym.MACADDR, yytext()); }
+
+
 /* identifiers */
 {Identifier}    { return symbol(sym.ID, yytext()); }
 
@@ -125,3 +123,5 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 {DecNumber}     { return symbol(sym.DEC, Integer.valueOf(yytext())); }
 //{HexNumber}     { return symbol(sym.HEX, yytext()); }
 {VerPart}       { return symbol(sym.VER, yytext()); }
+. { System.err.println("Illegal character: "+yytext()+" in line "+(yyline+1)+" , column "+(yycolumn+1)); }
+}

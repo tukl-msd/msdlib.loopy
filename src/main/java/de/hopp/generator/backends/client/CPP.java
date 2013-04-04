@@ -149,14 +149,16 @@ public class CPP extends Visitor<NE> implements Backend {
     public void visit(OptionsPos term) { }
 
     @Override
-    public void visit(MediumPos term) {
-        if(term.name().equals("ethernet")) {
+    public void visit(ETHERNETPos term) {
 //          comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
 //          MPointerType(MType("interface")), "intrfc",
 //          MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
-        }
     }
 
+    public void visit(UARTPos term) { }
+    
+    public void visit(PCIEPos term) { }
+    
     @Override
     public void visit(GPIOPos term) {
         // construct init block according to GPIO direction
@@ -303,20 +305,31 @@ public class CPP extends Visitor<NE> implements Backend {
     public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
     public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }
     public void visit(BindingsPos  term) { for( BindingPos bind : term) visit(bind); }
-
+    public void visit(MOptionsPos  term) { for( MOptionPos  opt : term) visit( opt); }
+    
     // general (handled before this visitor)
-    public void visit(ImportPos term)       { }
-    public void visit(de.hopp.generator.frontend.BackendPos term) { }
+    public void visit(ImportPos term)  { }
+    public void visit(BackendPos term) { }
 
     // scheduler (handled directly inside the board)
     public void visit(DEFAULTPos term)      { }
     public void visit(USER_DEFINEDPos term) { }
     
-    // attributes (handled directly inside the board or port if occurring)
+    // missing medium declaration
+    public void visit(NONEPos term) { }
+    
+    // options (handled directly inside the board or port if occurring)
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
     public void visit(POLLPos     term) { }
+    
+    // same goes for medium options
+    public void visit(MACPos    term) { }
+    public void visit(IPPos     term) { }
+    public void visit(MASKPos   term) { }
+    public void visit(GATEPos   term) { }
+    public void visit(PORTIDPos term) { }
     
     // cores
     // we do not need to visit cores here, since a class will be created
@@ -333,6 +346,9 @@ public class CPP extends Visitor<NE> implements Backend {
     
     // component axis (these get ignored... that's the whole point)
     public void visit(AxisPos term) { }
+    
+    // positions
+    public void visit(PositionPos term) { }
     
     // literals
     public void visit(StringsPos term) { }

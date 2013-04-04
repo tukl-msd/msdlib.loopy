@@ -15,29 +15,32 @@ BDLFile (Imports imports, Backends backends, Options opts, Cores cores, GPIOs gp
 
 Decl = Import | Backend | Option | Core | GPIO | Instance | Medium | Scheduler
 
-Import (String file, Integer line)
+Import (String file, Position pos)
 
 // selected backends for generation
-Backend (String name, Integer line)
+Backend (String name, Position pos)
 
-Scheduler = DEFAULT() | USER_DEFINED(Integer line, Strings content)
+Scheduler = DEFAULT() | USER_DEFINED(Position pos, Strings content)
 
 // Definition of a new ipcore
-Core (String name, String version, Integer line, Strings source, Ports ports)
+Core (String name, String version, Position pos, Imports source, Ports ports)
 
-Port (String name, Direction direction, Integer line, Options opts)
+Port (String name, Direction direction, Position pos, Options opts)
 Direction = IN() | OUT() | DUAL()
 
 // Instance of an ipcore
-Instance(String name, String core, Integer line, Bindings bind)
+Instance(String name, String core, Position pos, Bindings bind)
 
-Binding = Axis(String port, String axis, Integer line, Options opts)
-        | CPUAxis(String port, Integer line, Options opts)
+Binding = Axis(String port, String axis, Position pos, Options opts)
+        | CPUAxis(String port, Position pos, Options opts)
 
-GPIO (String name, Direction direction, Integer line, Strings callback)
+GPIO (String name, Direction direction, Position pos, Strings callback)
 
 // Definition of the attached medium
-Medium (String name, Integer line, Strings content)
+Medium = NONE()
+       | ETHERNET(MOptions opts)
+       | UART(MOptions opts) 
+       | PCIE(MOptions opts)
 
 // General constants and flags for board and ports (care for invalid combinations)
 Option = HWQUEUE(Integer qsize)
@@ -45,10 +48,19 @@ Option = HWQUEUE(Integer qsize)
        | BITWIDTH(Integer bit)
        | POLL()
 
+MOption = MAC  (String  val)
+        | IP   (String  val)
+        | MASK (String  val)
+        | GATE (String  val)
+        | PORTID (Integer val)
+
+Position (String filename, Integer line)
+
 // List types
 Imports   * Import
 Backends  * Backend
 Options   * Option
+MOptions  * MOption
 Cores     * Core
 GPIOs     * GPIO
 Instances * Instance

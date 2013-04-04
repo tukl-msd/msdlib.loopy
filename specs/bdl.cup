@@ -5,12 +5,16 @@ import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.ErrorCollection;
 
 /* Preliminaries to set up and use the scanner.  */
-//init with {: scanner.init();              :};
+//init with {: scanner.init(); :};
 //scan with {: return getScanner().next_token(); :};
 
 action code {:
   void error(String message, int line, int column) {
     parser.errors.addError(new ParserError("Syntax Error: " + message, parser.filename, line));
+  }
+
+  Position pos(int line) {
+     return BDL.Position(parser.filename, line);
   }
 :}
 
@@ -54,17 +58,18 @@ parser code {:
 :}
 
 /* terminals */
-terminal BEGIN, END, CBEGIN, CEND, COMMA;
+terminal BEGIN, END, CBEGIN, COMMA;
+terminal String CEND;
 terminal IMPORT;
 terminal HOST, BOARD, PROJECT;
 terminal SWQUEUE, HWQUEUE, WIDTH, POLL;
-terminal MEDIUM/*, MAC, IP, MASK, GATE */;
+terminal MEDIUM, MAC, IP, MASK, GATE;
 terminal CORE, SOURCE, PORT;
 terminal IN, OUT, DUAL;
 terminal GPIO, INSTANCE, BIND, CPU;
 terminal SCHEDULER;
-terminal String CODE, PATH, STR;
-terminal String ID, HEX, VER;
+terminal String STRING_LITERAL;
+terminal String ID, VER;
 terminal Integer DEC;
 
 /* non terminals */
@@ -73,9 +78,10 @@ non terminal Import imp;
 non terminal Backend backend;
 non terminal Medium medium;
 non terminal Option option;
+non terminal MOption medium_option;
 non terminal Core core;
 non terminal String version;
-non terminal String source;
+non terminal Import source;
 non terminal Port port;
 non terminal Instance instance;
 non terminal GPIO gpio;
@@ -84,128 +90,337 @@ non terminal Scheduler scheduler;
 
 non terminal Decl decl;
 non terminal Decls decl_list;
-non terminal Strings source_list;
+non terminal Imports source_list;
 non terminal Ports port_list;
 non terminal Bindings inst_decl;
 non terminal Bindings bind_list;
 non terminal Bindings bind_list_part;
-non terminal Strings gpio_callback;
+non terminal String code_block;
 non terminal Options option_list, option_list_part;
+non terminal MOptions medium_option_list, medium_option_list_part;
 non terminal Direction direct;
+
 
 /* grammar */
 start with file;
 
-file ::= decl_list:l {:
-  Imports imports     = BDL.Imports();
-  Backends backends   = BDL.Backends();
-  Options opts        = BDL.Options();
-  Cores cores         = BDL.Cores();
-  GPIOs gpios         = BDL.GPIOs();
-  Instances insts     = BDL.Instances();
-  Medium medium       = BDL.Medium("", -1);
-  Scheduler scheduler = BDL.DEFAULT();
-  for(Decl d : l) {
-         if(d instanceof Import)    {  imports =  imports.add((Import)d);   }
-    else if(d instanceof Backend)   { backends = backends.add((Backend)d);  }
-    else if(d instanceof Option)    {     opts =     opts.add((Option)d);   }
-    else if(d instanceof Core)      {    cores =    cores.add((Core)d);     }
-    else if(d instanceof Instance)  {    insts =    insts.add((Instance)d); }
-    else if(d instanceof GPIO)      {    gpios =    gpios.add((GPIO)d);     }
-    else if(d instanceof Medium)    {
-      // TODO catch duplicates?
-      // check, if the medium is already defined. If so, throw exception
-      medium = (Medium)d;
-    }
-    else if(d instanceof Scheduler) { 
-      if(scheduler instanceof USER_DEFINED) error("Duplicate Scheduler", lleft, lright);
-      scheduler = (Scheduler)d;
-    }
-  }
+file ::=
+     decl_list:l
+     {:
+         Imports imports     = BDL.Imports();
+         Backends backends   = BDL.Backends();
+         Options opts        = BDL.Options();
+         Cores cores         = BDL.Cores();
+         GPIOs gpios         = BDL.GPIOs();
+         Instances insts     = BDL.Instances();
+         Medium medium       = BDL.NONE();
+         Scheduler scheduler = BDL.DEFAULT();
+         for(Decl d : l) {
+                if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
+           else if(d instanceof Backend)  { backends = backends.add((Backend)d);  }
+           else if(d instanceof Option)   {     opts =     opts.add((Option)d);   }
+           else if(d instanceof Core)     {    cores =    cores.add((Core)d);     }
+           else if(d instanceof Instance) {    insts =    insts.add((Instance)d); }
+           else if(d instanceof GPIO)     {    gpios =    gpios.add((GPIO)d);     }
+           else if(d instanceof Medium)   {
+             // TODO catch duplicates?
+             // check, if the medium is already defined. If so, throw exception
+             medium = (Medium)d;
+           }
+           else if(d instanceof Scheduler) { 
+             if(scheduler instanceof USER_DEFINED) error("Duplicate Scheduler", lleft, lright);
+             scheduler = (Scheduler)d;
+           }
+         }
+       
+         RESULT = BDL.BDLFile(imports, backends, opts, cores, gpios, insts, medium, scheduler);
+     :}
+  ;
 
-  RESULT = BDL.BDLFile(imports, backends, opts, cores, gpios, insts, medium, scheduler);
-:};
+decl_list ::=
+     decl:d decl_list:l
+     {:
+         RESULT = l.appFront(d);
+     :}
+  |
+     {:
+         RESULT = BDL.Decls();
+     :}
+  ;
 
-decl_list ::= decl:d decl_list:l {: RESULT = l.appFront(d); :}
-            | {: RESULT = BDL.Decls(); :};
+decl ::= 
+     imp:i       {: RESULT = i; :}
+  |  backend:b   {: RESULT = b; :}
+  |  option:o    {: RESULT = o; :}
+  |  core:c      {: RESULT = c; :}
+  |  instance:i  {: RESULT = i; :}
+  |  gpio:g      {: RESULT = g; :}
+  |  medium:m    {: RESULT = m; :}
+  |  scheduler:s {: RESULT = s; :}
+  ;
 
-decl ::= imp:i       {: RESULT = i; :}
-       | backend:b   {: RESULT = b; :}
-       | option:o    {: RESULT = o; :}
-       | core:c      {: RESULT = c; :}
-       | instance:i  {: RESULT = i; :}
-       | gpio:g      {: RESULT = g; :}
-       | medium:m    {: RESULT = m; :}
-       | scheduler:s {: RESULT = s; :}
-       ;
+imp ::=
+     IMPORT ID:id
+     {:
+         RESULT = BDL.Import(id, pos(idleft));
+     :}
+  ;
 
-imp ::= IMPORT ID:id {: RESULT = BDL.Import(id, idleft); :};
+backend ::=
+     HOST    ID:id {: RESULT = BDL.Backend(id, pos(idleft)); :}
+  |  BOARD   ID:id {: RESULT = BDL.Backend(id, pos(idleft)); :}
+  |  PROJECT ID:id {: RESULT = BDL.Backend(id, pos(idleft)); :}
+  ;
 
-backend ::= HOST    ID:id {: RESULT = BDL.Backend(id, idleft); :}
-          | BOARD   ID:id {: RESULT = BDL.Backend(id, idleft); :}
-          | PROJECT ID:id {: RESULT = BDL.Backend(id, idleft); :}
-          ;
+option_list ::=
+     BEGIN option_list_part:l END
+     {:
+         RESULT = l;
+     :}
+  |  
+     {:
+         RESULT = BDL.Options();
+     :}
+  ;
 
-medium ::= MEDIUM ID:id STR:s {: RESULT = BDL.Medium(id, idleft, s); :}; // TODO
+option_list_part ::=
+     option:o option_list_part:l
+     {:
+         RESULT = l.appFront(o);
+     :}
+  | 
+     {:
+         RESULT = BDL.Options();
+     :}
+  ;
 
-option_list ::= BEGIN option_list_part:l END {: RESULT = l; :}
-              | {: RESULT = BDL.Options(); :};
+option ::=
+     SWQUEUE DEC:d
+     {:
+         RESULT = BDL.SWQUEUE(d);
+     :}
+  |  HWQUEUE DEC:d
+     {:
+         RESULT = BDL.HWQUEUE(d);
+     :}
+  |  WIDTH DEC:d
+     {:
+         RESULT = BDL.BITWIDTH(d);
+     :}
+  |  POLL
+     {:
+         RESULT = BDL.POLL();
+     :}
+  ;
 
-option_list_part ::= option:o option_list_part:l {: RESULT = l.appFront(o); :}
-              | {: RESULT = BDL.Options(); :};
+core ::=
+     CORE ID:id version:v BEGIN source_list:s port_list:p END
+     {:
+         RESULT = BDL.Core(id, v, pos(idleft), s, p);
+     :}
+  ;
 
-option ::= SWQUEUE DEC:d {: RESULT = BDL.SWQUEUE(d); :}
-         | HWQUEUE DEC:d {: RESULT = BDL.HWQUEUE(d); :}
-         | WIDTH DEC:d   {: RESULT = BDL.BITWIDTH(d); :}
-         | POLL          {: RESULT = BDL.POLL(); :}
-         ;
+version ::=
+     DEC:a VER:b VER:c
+     {:
+         RESULT = String.valueOf(a) + b + c;
+     :}
+  ;
 
-core ::= CORE ID:id version:v BEGIN source_list:s port_list:p END {: RESULT = BDL.Core(id, v, idleft, s, p); :};
+source_list ::=
+     source:s source_list:l
+     {:
+         RESULT = l.appFront(s);
+     :}
+  |
+     {:
+         RESULT = BDL.Imports();
+     :}
+  ;
 
-source_list ::= source:s source_list:l {: RESULT = l.appFront(s); :}
-              | {: RESULT = BDL.Strings(); :}
-              ;
+source ::=
+     SOURCE STRING_LITERAL:path
+     {:
+         RESULT = BDL.Import(path, pos(pathleft));
+     :}
+  ;
 
-port_list ::= port:p port_list:l {: RESULT = l.appFront(p); :}
-            | {: RESULT = BDL.Ports(); :}
-            ;
+port_list ::=
+     port:p port_list:l
+     {:
+         RESULT = l.appFront(p);
+     :}
+  | 
+     {:
+         RESULT = BDL.Ports();
+     :}
+  ;
 
-version ::= DEC:a VER:b VER:c {: RESULT = String.valueOf(a) + b + c; :};
+port   ::=
+     PORT direct:d  ID:id  option_list:opts
+     {: 
+         RESULT = BDL.Port(id, d, pos(idleft), opts);
+     :}
+  ;
 
-source ::= SOURCE PATH:path {: RESULT = path; :};
+instance ::=
+     INSTANCE ID:core ID:id inst_decl:b
+     {:
+         RESULT = BDL.Instance(id, core, pos(idleft), b);
+     :}
+  ;
 
-port   ::= IN  ID:id option_list:opts  {: RESULT = BDL.Port(id, BDL.IN(),   idleft, opts); :}
-         | OUT ID:id option_list:opts  {: RESULT = BDL.Port(id, BDL.OUT(),  idleft, opts); :}
-         | DUAL ID:id option_list:opts {: RESULT = BDL.Port(id, BDL.DUAL(), idleft, opts); :}
-         ;
+gpio ::=
+     GPIO direct:d ID:id code_block:cb
+     {:
+         RESULT = BDL.GPIO(id, d, pos(idleft), cb);
+     :}
+  |  GPIO ID:id code_block:cb
+     {:
+         error("GPIO specification is missing a direction attribute", idleft, idright);
+     :}
+  ;
 
-instance ::= INSTANCE ID:core ID:id inst_decl:b {: RESULT = BDL.Instance(id, core, idleft, b); :};
+direct ::=
+     IN   {: RESULT = BDL.IN();   :}
+  |  OUT  {: RESULT = BDL.OUT();  :}
+  |  DUAL {: RESULT = BDL.DUAL(); :}
+  |  ID:i
+     {:
+         error("unknown direction specifier \"" + i + "\"", ileft, iright); RESULT = BDL.IN();
+     :}
+  ;
 
-gpio ::= GPIO direct:d ID:id gpio_callback:cb {: RESULT = BDL.GPIO(id, d, idleft, cb); :}
-       | GPIO ID:id gpio_callback:cb {: error("GPIO specification is missing a direction attribute", idleft, idright); :}
-       ;
+inst_decl ::=
+     BEGIN bind_list:l END
+     {:
+         RESULT = l;
+     :}
+  |
+     {:
+         RESULT = BDL.Bindings();
+     :}
+  ;
 
-direct ::= IN   {: RESULT = BDL.IN(); :}
-         | OUT  {: RESULT = BDL.OUT(); :}
-         | DUAL {: RESULT = BDL.DUAL(); :}
-         | ID:i {: error("unknown direction specifier \"" + i + "\"", ileft, iright); RESULT = BDL.IN(); :}
-         ;
+bind_list ::=
+     bind:b bind_list:l
+     {:
+         RESULT = b.addAll(l);
+     :}
+  |
+     {:
+         RESULT = BDL.Bindings();
+     :}
+  ;
 
-inst_decl ::= BEGIN bind_list:l END {: RESULT = l; :}
-            | {: RESULT = BDL.Bindings(); :};
+bind_list_part ::=
+     COMMA ID:port bind_list_part:l
+     {:
+         RESULT = l.appFront(BDL.CPUAxis(port, pos(portleft)));
+     :}
+  |  COMMA ID:port
+     {:
+         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), BDL.Options()));
+     :}
+  ;
 
-bind_list ::= bind:b bind_list:l {: RESULT = b.addAll(l); :}
-            | {: RESULT = BDL.Bindings(); :};
+bind ::=
+     BIND ID:port ID:axis option_list:opts
+     {:
+         RESULT = BDL.Bindings(BDL.Axis(axis, port, pos(portleft), opts));
+     :}
+  |  CPU ID:port option_list:opts
+     {:
+         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), opts));
+     :}
+  |  CPU ID:port bind_list_part:l
+     {:
+         RESULT = l.appFront(BDL.CPUAxis(port, pos(portleft)));
+     :}
+  ;
 
-bind ::= BIND ID:port ID:axis option_list:opts {: RESULT = BDL.Bindings(BDL.Axis(axis, port, portleft, opts)); :}
-       | CPU ID:port option_list:opts {: RESULT = BDL.Bindings(BDL.CPUAxis(port, portleft, opts)); :}
-       | CPU ID:port bind_list_part:l {: RESULT = l.appFront(BDL.CPUAxis(port, portleft)); :};
+code_block ::=
+     CBEGIN CEND:c
+     {:
+         RESULT = c;
+     :}
+  |  CBEGIN:b error
+     {:
+         error("could not find matching closing code bracket", bleft, bright);
+         RESULT = "";
+     :}
+  |  BEGIN:b error CEND
+     {:
+         error("expected code block but found declaration block", bleft, bright);
+         RESULT = "";
+     :}
+  |
+     {:
+         RESULT = "";
+     :}
+  ;
 
-bind_list_part ::= COMMA ID:port bind_list_part:l {: RESULT = l.appFront(BDL.CPUAxis(port, portleft)); :}
-                | COMMA ID:port {: RESULT = BDL.Bindings(BDL.CPUAxis(port, portleft, BDL.Options())); :};
+medium ::= // TODO
+     MEDIUM ID:id medium_option_list:mol
+     {: 
+         switch(id) {
+           case "ethernet": RESULT = BDL.ETHERNET(mol); break;
+           case "uart"    : RESULT = BDL.UART(mol); break;
+           case "pcie"    : RESULT = BDL.PCIE(mol); break;
+           default        : error("unknown medium " + id, idleft, idright);
+         }
+     :}
+  ;
 
-gpio_callback ::= CBEGIN CODE:c CEND {: RESULT = BDL.Strings(c); :}
-                | {: RESULT = BDL.Strings(); :};
+medium_option_list ::=
+     BEGIN medium_option_list_part:mol END
+     {:
+         RESULT = mol;
+     :}
+  |  
+     {:
+         RESULT = BDL.MOptions();
+     :}
+  ;
 
-scheduler ::= SCHEDULER:s CBEGIN CODE:c CEND {: RESULT = BDL.USER_DEFINED(sleft, BDL.Strings()); :};
+medium_option_list_part ::=
+     medium_option:mo medium_option_list_part:mol
+     {:
+         RESULT = mol.appFront(mo);
+     :}
+  | 
+     {:
+         RESULT = BDL.MOptions();
+     :}
+  ;
+
+medium_option ::=
+     MAC STRING_LITERAL:s
+     {:
+         RESULT = BDL.MAC(s);
+     :}
+  |  IP STRING_LITERAL:s
+     {:
+         RESULT = BDL.IP(s);
+     :}
+  |  MASK STRING_LITERAL:s
+     {:
+         RESULT = BDL.MASK(s);
+     :}
+  |  GATE STRING_LITERAL:s
+     {:
+         RESULT = BDL.GATE(s);
+     :}
+  |  PORT DEC:v
+     {:
+         RESULT = BDL.PORTID(v);
+     :}
+  ;
+
+scheduler ::=
+     SCHEDULER:s code_block:cb
+     {:
+         RESULT = BDL.USER_DEFINED(pos(sleft), cb);
+     :}
+  ;
 

@@ -214,26 +214,34 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
 
     
     @Override
-    public void visit(MediumPos term) {
+    public void visit(ETHERNETPos term) {
         // TODO Auto-generated method stub
         // deploy Ethernet medium files
-        switch(term.name().term()) {
-        case "ethernet": try {
-                File target = new File(serverSrc, "medium");
-                copy(sourceDir + '/' + "ethernet.c", new File(target, "medium.c"), IO);
-            } catch(IOException e) {
-                errors.addError(new GenerationFailed("Failed to copy ethernet sources due to:\n" + e.getMessage()));
-            }
-                
-            // add Ethernet specific constants
-            addIP("IP",   config.getIP(), "ip address");
-            addIP("MASK", config.getMask(), "subnet mask");
-            addIP("GW",   config.getGW(), "standard gateway");
-            addMAC(config.getMAC());
-            addConst("PORT", "8844", "The port for this boards TCP- connection.");
-            break;
-        default: errors.addError(new ParserError("unknown medium " + term.name().term(), "", -1));
-        }
+//        switch(term.name().term()) {
+//        case "ethernet": try {
+//                File target = new File(serverSrc, "medium");
+//                copy(sourceDir + '/' + "ethernet.c", new File(target, "medium.c"), IO);
+//            } catch(IOException e) {
+//                errors.addError(new GenerationFailed("Failed to copy ethernet sources due to:\n" + e.getMessage()));
+//            }
+//                
+//            // add Ethernet specific constants
+//            addIP("IP",   config.getIP(), "ip address");
+//            addIP("MASK", config.getMask(), "subnet mask");
+//            addIP("GW",   config.getGW(), "standard gateway");
+//            addMAC(config.getMAC());
+//            addConst("PORT", "8844", "The port for this boards TCP- connection.");
+//            break;
+//        default: errors.addError(new ParserError("unknown medium " + term.name().term(), "", -1));
+//        }
+    }
+    
+    public void visit(UARTPos term) {
+        
+    }
+    
+    public void visit(PCIEPos term) {
+        
     }
 
     @Override
@@ -294,20 +302,31 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
     public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }
     public void visit(BindingsPos  term) { for( BindingPos bind : term) visit(bind); }
-
+    public void visit(MOptionsPos  term) { for( MOptionPos opt  : term) visit(opt);  }
+    
     // general (handled before this visitor)
-    public void visit(ImportPos term)       { }
-    public void visit(de.hopp.generator.frontend.BackendPos term) { }
+    public void visit(ImportPos term) { }
+    public void visit(BackendPos term) { }
 
     // scheduler (handled directly inside the board)
     public void visit(DEFAULTPos term)      { }
     public void visit(USER_DEFINEDPos term) { }
     
-    // attributes (handled directly inside the board or port if occurring)
+    // missing medium declaration
+    public void visit(NONEPos term) { }
+    
+    // options (handled directly inside the board or port if occurring)
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
     public void visit(POLLPos     term) { }
+    
+    // same goes for medium options
+    public void visit(MACPos    term) { }
+    public void visit(IPPos     term) { }
+    public void visit(MASKPos   term) { }
+    public void visit(GATEPos   term) { }
+    public void visit(PORTIDPos term) { }
     
     // cores
     // we do not need to visit cores here, since a class will be created
@@ -326,6 +345,9 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     public void visit(InstancePos term) { visit(term.bind()); }
     // component axis (these get ignored... that's the whole point)
     public void visit(AxisPos     term) { }
+
+    // position
+    public void visit(PositionPos term) { }
     
     // literals
     public void visit(StringsPos term) { }

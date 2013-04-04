@@ -99,21 +99,24 @@ public class Parser {
     }
         
     private BDLFile testfile() {
+        Position pos = Position("",0);
+        Imports imp = Imports(Import("sample2.bdf", pos));
+        
         return BDLFile(Imports(), Backends(), Options(), 
                 Cores(
-                   Core("adder", "1.00.a", 0, Strings("sample2.bdf"), Port("in1",IN(),0), Port("out1",OUT(),0), Port("in2",IN(),0)),
-                   Core("fifo",  "1.00.a", 0, Strings("sample2.bdf"), Port("in1",IN(),0), Port("out1",OUT(),0)),
-                   Core("rng",   "1.00.a", 0, Strings("sample2.bdf"), Port("in1",IN(),0), Port("out1",OUT(),0))
+                   Core("adder", "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos), Port("in2",IN(),pos)),
+                   Core("fifo",  "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos)),
+                   Core("rng",   "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos))
                 ), GPIOs(
-                    GPIO("leds",     OUT(),0),
-                    GPIO("switches",  IN(),0),
-                    GPIO("buttons",   IN(),0)
+                    GPIO("leds",     OUT(),pos),
+                    GPIO("switches",  IN(),pos),
+                    GPIO("buttons",   IN(),pos)
                 ), Instances(
-                    Instance("rng_a",   "rng",   0, CPUAxis("in1",0), CPUAxis("out1",0)),
-                    Instance("rng_b",   "rng",   0, CPUAxis("in1",0), CPUAxis("out1",0)),
-                    Instance("adder_a", "adder", 0, CPUAxis("in1",0), CPUAxis("out1",0), CPUAxis("in2",0)),
-                    Instance("fifo_a",  "fifo",  0, CPUAxis("in1",0), CPUAxis("out1",0))
-                ), Medium("ethernet", 0, "mac AA:BB:CC:DD:EE:FF"), DEFAULT());
+                    Instance("rng_a",   "rng",   pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
+                    Instance("rng_b",   "rng",   pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
+                    Instance("adder_a", "adder", pos, CPUAxis("in1",pos), CPUAxis("out1",pos), CPUAxis("in2",pos)),
+                    Instance("fifo_a",  "fifo",  pos, CPUAxis("in1",pos), CPUAxis("out1",pos))
+                ), ETHERNET(MOptions(MAC("00:0a:35:00:01:02"))), DEFAULT());
     }
     
     private void sanityCheck(BDLFile bdf) {
@@ -125,23 +128,23 @@ public class Parser {
         
         // check existence of referenced core sources
         for(Core core : bdf.cores()) {
-            for(String source : core.source()) {
-                File sourcefile = new File(source);
+            for(Import source : core.source()) {
+                File sourcefile = new File(source.file());
                 if(!sourcefile.exists() || !sourcefile.isFile())
-                    errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", "", -1));
+                    errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", source.pos()));
             }
         }
         
         // check for duplicate core identifiers
         Map<String, Core> cores = new HashMap<String, Core>();
         for(Core core : bdf.cores()) {
-            if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name(), "", -1));
+            if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name(), core.pos()));
             else cores.put(core.name(), core);
             
             // check for duplicate port identifiers
             Map<String, Port> ports = new HashMap<String, Port>();
             for(Port port : core.ports()) {
-                if(ports.containsKey(port.name())) errors.addError(new ParserError("Duplicate port identifier " + port.name(), "", -1));
+                if(ports.containsKey(port.name())) errors.addError(new ParserError("Duplicate port identifier " + port.name(), port.pos()));
                 else ports.put(port.name(), port);
             }
         }
@@ -149,30 +152,30 @@ public class Parser {
         // check declaration of referenced cores
         for(Instance inst : bdf.insts()) {
             if(!cores.containsKey(inst.core())) {
-                errors.addError(new ParserError("Instantiated undefined core " + inst.core(), "", -1));
+                errors.addError(new ParserError("Instantiated undefined core " + inst.core(), inst.pos()));
                 continue;
             }
         
             // check connection of all declared ports
             for(Port port : cores.get(inst.core()).ports()) {
                 boolean connected = false;
-                for(Binding binding : inst.bind()) if(binding.port().equals(port.name())) connected = true;
+                for(Binding bind : inst.bind()) if(bind.port().equals(port.name())) connected = true;
                 if(!connected) errors.addWarning(new ParserWarning("Port " + port.name() + " of " +
-                        inst.core() + " instance " + inst.name() + " is not connected"));
+                        inst.core() + " instance " + inst.name() + " is not connected", inst.pos()));
             }
         } cores.clear();
         
         // check for duplicate instance identifiers
         Map<String, Instance> instances = new HashMap<String, Instance>();
         for(Instance inst : bdf.insts())
-            if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name(), "", -1));
+            if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name(), inst.pos()));
             else instances.put(inst.name(), inst);
         instances.clear();
         
         // check for duplicate gpio instances
         Map<String, GPIO> gpios = new HashMap<String, GPIO>();
         for(GPIO gpio : bdf.gpios())
-            if(gpios.containsKey(gpio.name())) errors.addError(new ParserError("Duplicate GPIO instance " + gpio.name(), "", -1));
+            if(gpios.containsKey(gpio.name())) errors.addError(new ParserError("Duplicate GPIO instance " + gpio.name(), gpio.pos()));
             else gpios.put(gpio.name(), gpio);
         gpios.clear();
         
@@ -188,7 +191,7 @@ public class Parser {
             }
         for(String axis : connections.keySet()) {
             if(connections.get(axis).compareTo(2) < 0)
-                errors.addWarning(new ParserWarning("Axis " + axis + " is only connected to a single port."));
+                errors.addWarning(new ParserWarning("Axis " + axis + " is only connected to a single port.", "", -1));
             if(connections.get(axis).compareTo(2) > 0)
                 errors.addError(new ParserError("Axis " + axis + " is connected to " + connections.get(axis) +
                         " ports. Only two ports can be connected with a single axis.", "", -1));
@@ -220,20 +223,20 @@ public class Parser {
                 for(Option o : port.opts()) {
                     if(o instanceof POLL)
                         // poll is not allowed to occur at in-going ports
-                        if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port", "", -1)); 
+                        if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port", port.pos())); 
                         // at out-going ports it must occur at most once
-                        else if(poll) errors.addError(new ParserError("duplicate port option \"poll\"", "", -1));
+                        else if(poll) errors.addError(new ParserError("duplicate port option \"poll\"", port.pos()));
                         else poll = true;
                     // bitwidth is allowed to occur at most once
                     else if(o instanceof BITWIDTH)
-                        if(width) errors.addError(new ParserError("duplicate port option \"bitwidth\"", "", -1));
+                        if(width) errors.addError(new ParserError("duplicate port option \"bitwidth\"", port.pos()));
                         else width = true;
                     // swqueue and hwqueue are allowed to occur at most once
                     else if(o instanceof SWQUEUE)
-                        if(sw) errors.addError(new ParserError("duplicate port option \"swqueue\"", "", -1));
+                        if(sw) errors.addError(new ParserError("duplicate port option \"swqueue\"", port.pos()));
                         else sw = true;
                     else if(o instanceof HWQUEUE)
-                        if(hw) errors.addError(new ParserError("duplicate port option \"hwqueue\"", "", -1));
+                        if(hw) errors.addError(new ParserError("duplicate port option \"hwqueue\"", port.pos()));
                         else hw = true;
                 }
             }
