@@ -5,8 +5,9 @@ import java_cup.runtime.*;
 %%
 
 %class BDLFileScanner
-%unicode
+%cupsym BDLFileSymbols
 %cup
+%unicode
 %line
 %column
 
@@ -49,79 +50,79 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 
 /* Blocks */
 <YYINITIAL> {
-  "{"  { return symbol(sym.BEGIN); }
-  "}"  { return symbol(sym.END); }
+  "{"  { return symbol(BDLFileSymbols.BEGIN); }
+  "}"  { return symbol(BDLFileSymbols.END); }
   "{:" { yybegin(CODE);      // state switch to code block
                    string.setLength(0);
-                   return symbol(sym.CBEGIN); }
+                   return symbol(BDLFileSymbols.CBEGIN); }
   ":}" { }
 }
 
 <CODE> {
   {Comment} {string.append(yytext()); } // append comments
-  ":}"      { yybegin(YYINITIAL); return symbol(sym.CEND, string.toString()); } // switch state back, if :} out of comment occurs
+  ":}"      { yybegin(YYINITIAL); return symbol(BDLFileSymbols.CEND, string.toString()); } // switch state back, if :} out of comment occurs
   ({InputCharacter} | {WhiteSpace}) { string.append(yytext()); } // otherwise append
 }
 
 <STRING> {
-  \"            { yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); }
+  \"            { yybegin(YYINITIAL); return symbol(BDLFileSymbols.STRING_LITERAL, string.toString()); }
   {StringCharacter}+ { string.append( yytext() ); }
+ {LineTerminator} { System.err.println("Unterminated String: "+yytext()+" in line "+(yyline+1)+" , column "+(yycolumn+1)); }
 }
 
 <YYINITIAL> {
 \"              { yybegin(STRING); string.setLength(0); }
-
-","             { return symbol(sym.COMMA); }
+","             { return symbol(BDLFileSymbols.COMMA); }
 
 /* Keywords */
-"import"        { return symbol(sym.IMPORT); }
+"import"        { return symbol(BDLFileSymbols.IMPORT); }
 
 /* selected backends */
-"host"          { return symbol(sym.HOST); }
-"board"         { return symbol(sym.BOARD); }
-"project"       { return symbol(sym.PROJECT); }
+"host"          { return symbol(BDLFileSymbols.HOST); }
+"board"         { return symbol(BDLFileSymbols.BOARD); }
+"project"       { return symbol(BDLFileSymbols.PROJECT); }
 
 /* global options */
-"swqueue"       { return symbol(sym.SWQUEUE); }
-"hwqueue"       { return symbol(sym.HWQUEUE); }
+"swqueue"       { return symbol(BDLFileSymbols.SWQUEUE); }
+"hwqueue"       { return symbol(BDLFileSymbols.HWQUEUE); }
 
 /* medium related */
-"medium"        { return symbol(sym.MEDIUM); }
-"mac"           { return symbol(sym.MAC);  }
-"ip"            { return symbol(sym.IP);   }
-"mask"          { return symbol(sym.MASK); }
-"gate"          { return symbol(sym.GATE); }
-"port"          { return symbol(sym.PORT); }
+"medium"        { return symbol(BDLFileSymbols.MEDIUM); }
+"mac"           { return symbol(BDLFileSymbols.MAC);  }
+"ip"            { return symbol(BDLFileSymbols.IP);   }
+"mask"          { return symbol(BDLFileSymbols.MASK); }
+"gate"          { return symbol(BDLFileSymbols.GATE); }
+"port"          { return symbol(BDLFileSymbols.PORT); }
 
 /* core related */
-"core"          { return symbol(sym.CORE); }
-"source"        { return symbol(sym.SOURCE); }
+"core"          { return symbol(BDLFileSymbols.CORE); }
+"source"        { return symbol(BDLFileSymbols.SOURCE); }
 
 /* port related */
-"port"          { return symbol(sym.PORT); }
-"width"         { return symbol(sym.WIDTH); }
-"in"            { return symbol(sym.IN); }
-"out"           { return symbol(sym.OUT); }
-"dual"          { return symbol(sym.DUAL); }
-"poll"          { return symbol(sym.POLL); }
+"port"          { return symbol(BDLFileSymbols.PORT); }
+"width"         { return symbol(BDLFileSymbols.WIDTH); }
+"in"            { return symbol(BDLFileSymbols.IN); }
+"out"           { return symbol(BDLFileSymbols.OUT); }
+"dual"          { return symbol(BDLFileSymbols.DUAL); }
+"poll"          { return symbol(BDLFileSymbols.POLL); }
 
 /* instance related */
-"gpio"          { return symbol(sym.GPIO); }
-"instance"      { return symbol(sym.INSTANCE); }
-"bind"          { return symbol(sym.BIND); }
-"cpu"           { return symbol(sym.CPU); }
+"gpio"          { return symbol(BDLFileSymbols.GPIO); }
+"instance"      { return symbol(BDLFileSymbols.INSTANCE); }
+"bind"          { return symbol(BDLFileSymbols.BIND); }
+"cpu"           { return symbol(BDLFileSymbols.CPU); }
 
-"scheduler"     { return symbol(sym.SCHEDULER); }
+"scheduler"     { return symbol(BDLFileSymbols.SCHEDULER); }
 
-//{HexNumber} ":" {HexNumber} ":" {HexNumber} { return symbol(sym.MACADDR, yytext()); }
+//{HexNumber} ":" {HexNumber} ":" {HexNumber} { return symbol(BDLFileSymbols.MACADDR, yytext()); }
 
 
 /* identifiers */
-{Identifier}    { return symbol(sym.ID, yytext()); }
+{Identifier}    { return symbol(BDLFileSymbols.ID, yytext()); }
 
 /* literals */
-{DecNumber}     { return symbol(sym.DEC, Integer.valueOf(yytext())); }
-//{HexNumber}     { return symbol(sym.HEX, yytext()); }
-{VerPart}       { return symbol(sym.VER, yytext()); }
+{DecNumber}     { return symbol(BDLFileSymbols.DEC, Integer.valueOf(yytext())); }
+//{HexNumber}     { return symbol(BDLFileSymbols.HEX, yytext()); }
+{VerPart}       { return symbol(BDLFileSymbols.VER, yytext()); }
 . { System.err.println("Illegal character: "+yytext()+" in line "+(yyline+1)+" , column "+(yycolumn+1)); }
 }

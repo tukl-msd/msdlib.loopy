@@ -5,10 +5,10 @@ project mhs
 // gpio components
 gpio in button {:
   send_gpio(gpo_buttons, read_buttons());
-}
+:}
 
 gpio in switch
-gpio out led
+gpio in led
 
 // queue sizes
 swqueue 25
@@ -69,6 +69,6 @@ instance fifo fifo_a {
 }
 
 
-//scheduler {:
+scheduler {:
   //plain code... no analysis takes place here. Maybe print a warning, that no guarantees are given for this scheduler
-//:}
+:}

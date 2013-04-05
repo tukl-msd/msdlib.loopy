@@ -48,11 +48,11 @@ parser code {:
   }
 
   public void syntax_error(Symbol cur_token) {
-    report_error("Syntax Error in BDL file", cur_token);
+//    report_error("Syntax Error in BDL file", cur_token);
   }
 
   public void unrecovered_syntax_error(Symbol cur_token) {
-    errors.addError(new ParserError("Fatal Error: Couldn't repair and continue parse", filename, -1));
+    errors.addError(new ParserError("Fatal Error: Couldn't repair and continue parse", filename, cur_token.left));
     done_parsing();
   }
 :}
@@ -92,9 +92,7 @@ non terminal Decl decl;
 non terminal Decls decl_list;
 non terminal Imports source_list;
 non terminal Ports port_list;
-non terminal Bindings inst_decl;
-non terminal Bindings bind_list;
-non terminal Bindings bind_list_part;
+non terminal Bindings bind_block, bind_list_part, cpu_bind_list_part;
 non terminal String code_block;
 non terminal Options option_list, option_list_part;
 non terminal MOptions medium_option_list, medium_option_list_part;
@@ -116,7 +114,8 @@ file ::=
          Medium medium       = BDL.NONE();
          Scheduler scheduler = BDL.DEFAULT();
          for(Decl d : l) {
-                if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
+                if(d == null) continue;
+           else if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
            else if(d instanceof Backend)  { backends = backends.add((Backend)d);  }
            else if(d instanceof Option)   {     opts =     opts.add((Option)d);   }
            else if(d instanceof Core)     {    cores =    cores.add((Core)d);     }
@@ -127,12 +126,11 @@ file ::=
              // check, if the medium is already defined. If so, throw exception
              medium = (Medium)d;
            }
-           else if(d instanceof Scheduler) { 
+           else if(d instanceof Scheduler) {
              if(scheduler instanceof USER_DEFINED) error("Duplicate Scheduler", lleft, lright);
              scheduler = (Scheduler)d;
            }
          }
-       
          RESULT = BDL.BDLFile(imports, backends, opts, cores, gpios, insts, medium, scheduler);
      :}
   ;
@@ -140,7 +138,8 @@ file ::=
 decl_list ::=
      decl:d decl_list:l
      {:
-         RESULT = l.appFront(d);
+         if(d == null) RESULT = l;
+         else RESULT = l.appFront(d);
      :}
   |
      {:
@@ -148,7 +147,7 @@ decl_list ::=
      :}
   ;
 
-decl ::= 
+decl ::=
      imp:i       {: RESULT = i; :}
   |  backend:b   {: RESULT = b; :}
   |  option:o    {: RESULT = o; :}
@@ -177,7 +176,7 @@ option_list ::=
      {:
          RESULT = l;
      :}
-  |  
+  |
      {:
          RESULT = BDL.Options();
      :}
@@ -188,7 +187,7 @@ option_list_part ::=
      {:
          RESULT = l.appFront(o);
      :}
-  | 
+  |
      {:
          RESULT = BDL.Options();
      :}
@@ -211,12 +210,28 @@ option ::=
      {:
          RESULT = BDL.POLL();
      :}
+//  |  medium_option:mo
+//     {:
+//         error("option is only valid in context of a medium", moleft, moright);
+//     :}
   ;
 
 core ::=
      CORE ID:id version:v BEGIN source_list:s port_list:p END
      {:
          RESULT = BDL.Core(id, v, pos(idleft), s, p);
+     :}
+  |  CORE:c error END
+     {:
+         error("expected core identifier after keyword", cleft, cright); 
+     :}
+  |  CORE:c ID error END
+     {:
+         error("expected version string after core identifier", cleft, cright);
+     :}
+  |  CORE:c ID version BEGIN error END
+     {:
+         error("core declaration requires at least one source reference before the port list", cleft, cright);
      :}
   ;
 
@@ -232,9 +247,9 @@ source_list ::=
      {:
          RESULT = l.appFront(s);
      :}
-  |
+  |  source:s
      {:
-         RESULT = BDL.Imports();
+         RESULT = BDL.Imports(s);
      :}
   ;
 
@@ -243,6 +258,10 @@ source ::=
      {:
          RESULT = BDL.Import(path, pos(pathleft));
      :}
+  |  SOURCE:s error
+     {:
+         error("source attribute is missing path", sleft, sright);
+     :}
   ;
 
 port_list ::=
@@ -250,23 +269,24 @@ port_list ::=
      {:
          RESULT = l.appFront(p);
      :}
-  | 
+  |
      {:
          RESULT = BDL.Ports();
      :}
   ;
 
 port   ::=
-     PORT direct:d  ID:id  option_list:opts
+     PORT direct:d ID:id option_list:opts
      {: 
          RESULT = BDL.Port(id, d, pos(idleft), opts);
      :}
-  ;
-
-instance ::=
-     INSTANCE ID:core ID:id inst_decl:b
+  |  PORT:p ID option_list
      {:
-         RESULT = BDL.Instance(id, core, pos(idleft), b);
+         error("port is missing a valid direction specifier", pleft, pright);
+     :}
+  |  PORT:p direct option_list
+     {:
+         error("port is missing an identifier", pleft, pright);
      :}
   ;
 
@@ -275,9 +295,13 @@ gpio ::=
      {:
          RESULT = BDL.GPIO(id, d, pos(idleft), cb);
      :}
-  |  GPIO ID:id code_block:cb
+  |  GPIO:g ID code_block
      {:
-         error("GPIO specification is missing a direction attribute", idleft, idright);
+         error("GPIO specification is missing a valid direction specifier", gleft, gright);
+     :}
+  |  GPIO:g direct code_block
+     {:
+         error("GPIO specification is missing an identifier", gleft, gright);
      :}
   ;
 
@@ -285,14 +309,21 @@ direct ::=
      IN   {: RESULT = BDL.IN();   :}
   |  OUT  {: RESULT = BDL.OUT();  :}
   |  DUAL {: RESULT = BDL.DUAL(); :}
-  |  ID:i
+//  |  ID:i
+//     {:
+//         error("unknown direction specifier \"" + i + "\"", ileft, iright); RESULT = BDL.IN();
+//     :}
+  ;
+
+instance ::=
+     INSTANCE ID:core ID:id bind_block:b
      {:
-         error("unknown direction specifier \"" + i + "\"", ileft, iright); RESULT = BDL.IN();
+         RESULT = BDL.Instance(id, core, pos(idleft), b);
      :}
   ;
 
-inst_decl ::=
-     BEGIN bind_list:l END
+bind_block ::=
+     BEGIN bind_list_part:l END
      {:
          RESULT = l;
      :}
@@ -302,8 +333,8 @@ inst_decl ::=
      :}
   ;
 
-bind_list ::=
-     bind:b bind_list:l
+bind_list_part ::=
+     bind:b bind_list_part:l
      {:
          RESULT = b.addAll(l);
      :}
@@ -313,8 +344,33 @@ bind_list ::=
      :}
   ;
 
-bind_list_part ::=
-     COMMA ID:port bind_list_part:l
+bind ::=
+     BIND ID:port ID:axis option_list:opts
+     {:
+         RESULT = BDL.Bindings(BDL.Axis(axis, port, pos(portleft), opts));
+     :}
+  |
+     BIND:b ID option_list
+     {:
+         error("axis declaration missing port/axis identifier. Use \"cpu\" for processor connected port", bleft, bright);
+     :}
+  |  CPU ID:port option_list:opts
+     {:
+         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), opts));
+     :}
+  |  CPU ID:port cpu_bind_list_part:l option_list:opts
+     {:
+         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft)));
+         for(Binding b : l) RESULT = RESULT.add(((CPUAxis)b).replaceOpts(opts));
+     :}
+  |  CPU:c ID ID option_list:opts
+     {:
+         error("cpu axis declaration with two identifiers. Use \"bind\" for non-processor connected ports or separate multiple processor-connected ports with comma", cleft, cright);
+     :}
+  ;
+
+cpu_bind_list_part ::=
+     COMMA ID:port cpu_bind_list_part:l
      {:
          RESULT = l.appFront(BDL.CPUAxis(port, pos(portleft)));
      :}
@@ -324,20 +380,6 @@ bind_list_part ::=
      :}
   ;
 
-bind ::=
-     BIND ID:port ID:axis option_list:opts
-     {:
-         RESULT = BDL.Bindings(BDL.Axis(axis, port, pos(portleft), opts));
-     :}
-  |  CPU ID:port option_list:opts
-     {:
-         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), opts));
-     :}
-  |  CPU ID:port bind_list_part:l
-     {:
-         RESULT = l.appFront(BDL.CPUAxis(port, pos(portleft)));
-     :}
-  ;
 
 code_block ::=
      CBEGIN CEND:c
@@ -349,9 +391,9 @@ code_block ::=
          error("could not find matching closing code bracket", bleft, bright);
          RESULT = "";
      :}
-  |  BEGIN:b error CEND
+  |  error:e
      {:
-         error("expected code block but found declaration block", bleft, bright);
+         error("expected opening code block", eleft, eright);
          RESULT = "";
      :}
   |
@@ -362,7 +404,7 @@ code_block ::=
 
 medium ::= // TODO
      MEDIUM ID:id medium_option_list:mol
-     {: 
+     {:
          switch(id) {
            case "ethernet": RESULT = BDL.ETHERNET(mol); break;
            case "uart"    : RESULT = BDL.UART(mol); break;
@@ -377,7 +419,7 @@ medium_option_list ::=
      {:
          RESULT = mol;
      :}
-  |  
+  |
      {:
          RESULT = BDL.MOptions();
      :}
@@ -388,7 +430,7 @@ medium_option_list_part ::=
      {:
          RESULT = mol.appFront(mo);
      :}
-  | 
+  |
      {:
          RESULT = BDL.MOptions();
      :}
@@ -414,6 +456,10 @@ medium_option ::=
   |  PORT DEC:v
      {:
          RESULT = BDL.PORTID(v);
+     :}
+  |  option:o
+     {:
+         error("option is invalid in context of a medium", oleft, oright);
      :}
   ;
 
