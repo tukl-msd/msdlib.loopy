@@ -159,9 +159,9 @@ decl ::=
   ;
 
 imp ::=
-     IMPORT ID:id
+     IMPORT String:imp
      {:
-         RESULT = BDL.Import(id, pos(idleft));
+         RESULT = BDL.Import(imp, pos(impleft));
      :}
   ;
 

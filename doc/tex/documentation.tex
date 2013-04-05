@@ -68,12 +68,19 @@
 
 %\lstdefinelanguage{java}{backgroundcolor=\color{light-green}}
 
+\lstdefinelanguage{bdl}{
+  keywords={import,medium,schedule,core,instance,gpio,source,port,bind,cpu,
+        swqueue,hwqueue,poll,width,in,out,dual,mac,ip,mask,gate},
+  comment=[l]{//},morecomment=[n]{/*}{*/}
+}
+
 \lstset{
    %language=katja,
    basicstyle=\footnotesize,
    backgroundcolor=\color{light-green},
    frame=single,
-   framerule=0pt
+   framerule=0pt,
+   breaklines=true
 }
 
 \renewcommand\arraystretch{1.2}
@@ -216,11 +223,155 @@ In order to generate an \texttt{.elf} file that can is used to program the FPGA,
 \textcolor{red}{It is furthermore desirable to skip user-interfaction with the EDK completely. This would require generation of the board support package and external call of Xilinx' compiler.}
 
 \section{Board Description Language}
-In this section, the board description language is introduced. This language is used to specify a board, for which a driver and project files should be generated. 
+In this section, the \textit{board description language} (abbreviated: \textit{bdl}) is introduced. The language is used to specify a board, for which a driver and project files should be generated. 
+
+A board specification file consists of several \textit{declarations}, that may appear in arbitrary order. For improved readability of the board description file, it is advisable, to provide declarations in the same order as they are explained in this document.
+
+In the declarations, the terms of \textit{blocks} and \textit{code blocks} are used. A block is used to wrap properties of a specific declaration in the file. It is surrounded with curly brackets \texttt{\{\}}.
+A code block is a block that directly be induced in the driver, i.e., contains code in the target language of the driver. The code is surrounded by curly brackets and colons \texttt{\{::\}}.
+
+\subsubsection{Import}
+Import declarations reference additional board description files, that also should be used to generate the driver. The driver generator will collect all imported files recursively and compile one large driver out of all these files.
+
+\begin{lstlisting}[language=bdl]
+import "some/samplefile.bdf"
+\end{lstlisting}
+
+The declaration consists of the keyword \texttt{import} followed by a string containing the path of the file to be imported.
+
+\subsubsection{Backend}
+A backend declaration tells the driver generator, for which target platforms the driver should be generated.
+
+%As of now, it is a bit unclear, how this will look like, i.e. which keywords, how many, what parameters, ...
+
+Not all features that can be described using the bdl are necessarily supported by all backends. Check documentation of the backend implementations for details. Documentation of the prototype implementations for teh C++ host-side backend and the Virtex6ML605 board-side backend can be found in \Cref{sec:impl}
+
+\subsubsection{Medium}
+The medium declaration describes over which medium board and host should communicate with each other.
+
+\begin{lstlisting}[language=bdl]
+medium ethernet { ... }
+\end{lstlisting}
+
+It consists of the keyword \texttt{medium} followed by the medium identifier and a block describing medium-specific properties. Depending on the chosen medium, several properties are possible and required.
+
+\paragraph{Ethernet}
+The Ethernet medium is selected using the keyword \texttt{ethernet}. The following block has to specify the mac address, ip address, subnet mask, standard gateway and port number.
+
+\begin{lstlisting}[language=bdl]
+medium ethernet {
+  mac  "00:0a:35:00:01:02"
+  ip   "192.168.2.10"
+  mask "255.255.255.0"
+  gate "192.168.1.1"
+  port 8844
+}
+\end{lstlisting}
+
+All theses properties are specified in a rather intuitive way.
+
+\paragraph{USB/UART}
+Connection over USB/UART is done with the keyword \texttt{uart}. No property block is provided for this communication medium as no further configuration is required.
+
+\begin{lstlisting}[language=bdl]
+medium uart
+\end{lstlisting}
+
+\subsubsection{Scheduler}
+With use of the scheduler declaration, it is possible to override the default scheduler on the board. This can improve general driver performance for specific applications.
+
+\begin{lstlisting}[language=bdl]
+schedule {: ... :}
+\end{lstlisting}
+
+The declaration consists of the keyword \texttt{schedule} followed by a code block containing the code of the user-defined scheduler.
+
+Note, that no guarantees can be given for a user-defined scheduler. For a more detailed description of the default scheduler and actions required by a user-defined scheduler, check out the board-side control flow graphs in \Cref{sec:protocol:cfg}.
+
+\subsubsection{Options}
+Several global properties of the board are specified directly without using distinct blocks. At this time, this includes the global queue sizes (see \Cref{sec:arch:queue} for more details about the different queue types)
+
+\begin{lstlisting}[language=bdl]
+swqueue 128
+hwqueue 32
+\end{lstlisting}
+
+If not specified otherwise, the default queue sizes are taken (1024 for the software queue, 64 for the hardware queue)
+
+\subsubsection{GPIO}
+The GPIO declaration is used to add GPIO devices to the board design. These devices are integrated deeper in the board design and require distinct treatment.
+
+\begin{lstlisting}[language=bdl]
+gpio in buttons {:
+  if(state == 1) reset();
+  else if(state == 2) setLEDState(10);
+:}
+\end{lstlisting}
+
+As all other declarations, the GPIO declaration begins with a keyword. The next part of the declaration is a direction specifier, telling the generator if the component is an input, output or dual component.
+Afterwards, the identifier of the component is required. This identifier has to be known to the specified board backend.
+Finally, an optional code block can be used to override board-side standard behaviour of the GPIO component. This code block is only valid for input components (or the input part of a dual component). The default behaviour for input components is forwarding of the value to the host-side driver.
+
+\subsubsection{Core}
+A core is a template for components on the board. It contains behaviour specification in form of vhdl files and a matching description of the interface.
+
+\begin{lstlisting}[language=bdl]
+core adder 1.00.a  {
+  ...
+}
+\end{lstlisting}
+
+A core is declared by the keyword \texttt{core} followed by the name of the core and a version string. Properties of the core are described within a following declaration block. This block consists of two parts. First is a list of sources, that describe the implementation of the core.
+
+\begin{lstlisting}[language=bdl]
+  source "cores/adder_1_00_a.vhd"
+\end{lstlisting}
+
+Source references are very similar to import declarations and only differ in the used keyword and allowed occurrences within the bdl file.
+
+The second part of the core declaration block describes the interface of the core.
+
+\begin{lstlisting}[language=bdl]
+  port in in1, in2, in3
+  port out out1 {
+    width 16
+  }
+\end{lstlisting}
+
+An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The standard bitwidth of a port is 32-bit.
+
+\subsubsection{Instance}
+The instance declaration instantiates a core on the board. This effectively creates a component on the board with the behaviour and interface specified by the core. The interface declaration itself connects this component with other components.
+
+\begin{lstlisting}[language=bdl]
+instance adder adder1 {
+  ...
+}
+\end{lstlisting}
+
+An instance declaration begins with the keyword \texttt{instance}, followed by a reference to the used core and the identifier of the instance itself. A property block is used to make connections between the ports of the core instance with other core instances.
+
+\begin{lstlisting}[language=bdl]
+  bind in1 myAxis
+  cpu in2, in3 {
+    swqueue 10
+    hwqueue 5
+  }
+  cpu out1 {
+    poll
+  }
+\end{lstlisting}
+
+The \texttt{bind} keyword connects a port with an axis. An axis is basically a connection between exactly two ports.
+The keyword \texttt{cpu} connects the specified port to the board-side driver. %keyword questionable...
+The host-side driver will provide methods for direct communication with these ports of the component. Another block is used for properties of these driver-attached ports.
+
+Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the default queue sizes of the board are used and forwarding is enabled.
 
 \section{Process}
 \label{sec:process}
 If the tools described in \Cref{sec:setup} are correctly installed, the following steps should provide you with a working version of the driver generator.
+
 
 %\begin{figure}
 %\centering
@@ -1179,6 +1330,7 @@ A composition of these smaller building blocks is depicted by \Cref{fig:seq:comp
 
 
 \section{Current Driver Implementations}
+\label{sec:impl}
 The current implementations include a \texttt{C++} host-side driver and a board-side driver for the Virtex-6 ML605 board. These implementations are described in detail here, giving driver developers an idea, how an implementation of this architecture can look like. 
 
 %Currently, three of these components are supported:

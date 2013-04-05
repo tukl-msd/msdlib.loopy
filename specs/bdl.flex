@@ -59,7 +59,7 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 }
 
 <CODE> {
-  {Comment} {string.append(yytext()); } // append comments
+  {Comment} {string.append(yytext()); } // append comments. They may also include :} symbols
   ":}"      { yybegin(YYINITIAL); return symbol(BDLFileSymbols.CEND, string.toString()); } // switch state back, if :} out of comment occurs
   ({InputCharacter} | {WhiteSpace}) { string.append(yytext()); } // otherwise append
 }
