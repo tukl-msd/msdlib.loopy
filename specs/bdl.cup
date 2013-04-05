@@ -93,7 +93,7 @@ non terminal Decls decl_list;
 non terminal Imports source_list;
 non terminal Ports port_list;
 non terminal Bindings bind_block, bind_list_part, cpu_bind_list_part;
-non terminal String code_block;
+non terminal Code code_block;
 non terminal Options option_list, option_list_part;
 non terminal MOptions medium_option_list, medium_option_list_part;
 non terminal Direction direct;
@@ -112,7 +112,7 @@ file ::=
          GPIOs gpios         = BDL.GPIOs();
          Instances insts     = BDL.Instances();
          Medium medium       = BDL.NONE();
-         Scheduler scheduler = BDL.DEFAULT();
+         Scheduler scheduler = BDL.Scheduler(pos(-1), BDL.DEFAULT());
          for(Decl d : l) {
                 if(d == null) continue;
            else if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
@@ -194,26 +194,22 @@ option_list_part ::=
   ;
 
 option ::=
-     SWQUEUE DEC:d
+     SWQUEUE:key DEC:val
      {:
-         RESULT = BDL.SWQUEUE(d);
+         RESULT = BDL.SWQUEUE(pos(keyleft),val);
      :}
-  |  HWQUEUE DEC:d
+  |  HWQUEUE:key DEC:val
      {:
-         RESULT = BDL.HWQUEUE(d);
+         RESULT = BDL.HWQUEUE(pos(keyleft),val);
      :}
-  |  WIDTH DEC:d
+  |  WIDTH:key DEC:val
      {:
-         RESULT = BDL.BITWIDTH(d);
+         RESULT = BDL.BITWIDTH(pos(keyleft),val);
      :}
-  |  POLL
+  |  POLL:key
      {:
-         RESULT = BDL.POLL();
+         RESULT = BDL.POLL(pos(keyleft));
      :}
-//  |  medium_option:mo
-//     {:
-//         error("option is only valid in context of a medium", moleft, moright);
-//     :}
   ;
 
 core ::=
@@ -350,9 +346,10 @@ bind ::=
          RESULT = BDL.Bindings(BDL.Axis(axis, port, pos(portleft), opts));
      :}
   |
-     BIND:b ID option_list
+     BIND:b ID:port option_list:opts
      {:
          error("axis declaration missing port/axis identifier. Use \"cpu\" for processor connected port", bleft, bright);
+         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), opts));
      :}
   |  CPU ID:port option_list:opts
      {:
@@ -363,9 +360,13 @@ bind ::=
          RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft)));
          for(Binding b : l) RESULT = RESULT.add(((CPUAxis)b).replaceOpts(opts));
      :}
-  |  CPU:c ID ID option_list:opts
+  |  CPU:c ID:id1 ID:id2 option_list:opts
      {:
          error("cpu axis declaration with two identifiers. Use \"bind\" for non-processor connected ports or separate multiple processor-connected ports with comma", cleft, cright);
+         RESULT = BDL.Bindings(
+           BDL.CPUAxis(id1, pos(id1left)),
+           BDL.CPUAxis(id2, pos(id2left))
+         );
      :}
   ;
 
@@ -384,21 +385,21 @@ cpu_bind_list_part ::=
 code_block ::=
      CBEGIN CEND:c
      {:
-         RESULT = c;
+         RESULT = BDL.USER_DEFINED(c);
      :}
   |  CBEGIN:b error
      {:
          error("could not find matching closing code bracket", bleft, bright);
-         RESULT = "";
+         RESULT = BDL.DEFAULT();
      :}
   |  error:e
      {:
          error("expected opening code block", eleft, eright);
-         RESULT = "";
+         RESULT = BDL.DEFAULT();
      :}
   |
      {:
-         RESULT = "";
+         RESULT = BDL.DEFAULT();
      :}
   ;
 
@@ -406,10 +407,11 @@ medium ::= // TODO
      MEDIUM ID:id medium_option_list:mol
      {:
          switch(id) {
-           case "ethernet": RESULT = BDL.ETHERNET(mol); break;
-           case "uart"    : RESULT = BDL.UART(mol); break;
-           case "pcie"    : RESULT = BDL.PCIE(mol); break;
+           case "ethernet": RESULT = BDL.ETHERNET(pos(idleft),mol); break;
+           case "uart"    : RESULT = BDL.UART(pos(idleft),mol); break;
+           case "pcie"    : RESULT = BDL.PCIE(pos(idleft),mol); break;
            default        : error("unknown medium " + id, idleft, idright);
+                            RESULT = BDL.NONE();
          }
      :}
   ;
@@ -437,36 +439,32 @@ medium_option_list_part ::=
   ;
 
 medium_option ::=
-     MAC STRING_LITERAL:s
+     MAC:key STRING_LITERAL:val
      {:
-         RESULT = BDL.MAC(s);
+         RESULT = BDL.MAC(pos(keyleft),val);
      :}
-  |  IP STRING_LITERAL:s
+  |  IP:key STRING_LITERAL:val
      {:
-         RESULT = BDL.IP(s);
+         RESULT = BDL.IP(pos(keyleft),val);
      :}
-  |  MASK STRING_LITERAL:s
+  |  MASK:key STRING_LITERAL:val
      {:
-         RESULT = BDL.MASK(s);
+         RESULT = BDL.MASK(pos(keyleft),val);
      :}
-  |  GATE STRING_LITERAL:s
+  |  GATE:key STRING_LITERAL:val
      {:
-         RESULT = BDL.GATE(s);
+         RESULT = BDL.GATE(pos(keyleft),val);
      :}
-  |  PORT DEC:v
+  |  PORT:key DEC:val
      {:
-         RESULT = BDL.PORTID(v);
-     :}
-  |  option:o
-     {:
-         error("option is invalid in context of a medium", oleft, oright);
+         RESULT = BDL.PORTID(pos(keyleft),val);
      :}
   ;
 
 scheduler ::=
      SCHEDULER:s code_block:cb
      {:
-         RESULT = BDL.USER_DEFINED(pos(sleft), cb);
+         RESULT = BDL.Scheduler(pos(sleft), cb);
      :}
   ;
 

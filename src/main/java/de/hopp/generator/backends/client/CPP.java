@@ -311,7 +311,10 @@ public class CPP extends Visitor<NE> implements Backend {
     public void visit(ImportPos term)  { }
     public void visit(BackendPos term) { }
 
-    // scheduler (handled directly inside the board)
+    // scheduler (irrelevant for host-side driver
+    public void visit(SchedulerPos term) { }
+    
+    // code blocks (handled directly when occurring)
     public void visit(DEFAULTPos term)      { }
     public void visit(USER_DEFINEDPos term) { }
     

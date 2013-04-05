@@ -20,8 +20,6 @@ Import (String file, Position pos)
 // selected backends for generation
 Backend (String name, Position pos)
 
-Scheduler = DEFAULT() | USER_DEFINED(Position pos, Strings content)
-
 // Definition of a new ipcore
 Core (String name, String version, Position pos, Imports source, Ports ports)
 
@@ -34,25 +32,29 @@ Instance(String name, String core, Position pos, Bindings bind)
 Binding = Axis(String port, String axis, Position pos, Options opts)
         | CPUAxis(String port, Position pos, Options opts)
 
-GPIO (String name, Direction direction, Position pos, Strings callback)
+GPIO (String name, Direction direction, Position pos, Code callback)
 
 // Definition of the attached medium
 Medium = NONE()
-       | ETHERNET(MOptions opts)
-       | UART(MOptions opts) 
-       | PCIE(MOptions opts)
+       | ETHERNET(Position pos, MOptions opts)
+       | UART    (Position pos, MOptions opts) 
+       | PCIE    (Position pos, MOptions opts)
 
 // General constants and flags for board and ports (care for invalid combinations)
-Option = HWQUEUE(Integer qsize)
-       | SWQUEUE(Integer qsize)
-       | BITWIDTH(Integer bit)
-       | POLL()
+Option = HWQUEUE (Position pos, Integer qsize)
+       | SWQUEUE (Position pos, Integer qsize)
+       | BITWIDTH(Position pos, Integer bit)
+       | POLL    (Position pos)
 
-MOption = MAC  (String  val)
-        | IP   (String  val)
-        | MASK (String  val)
-        | GATE (String  val)
-        | PORTID (Integer val)
+MOption = MAC    (Position pos, String val)
+        | IP     (Position pos, String val)
+        | MASK   (Position pos, String val)
+        | GATE   (Position pos, String val)
+        | PORTID (Position pos, Integer val)
+
+Scheduler (Position pos, Code code)
+
+Code = DEFAULT() | USER_DEFINED(Strings content)
 
 Position (String filename, Integer line)
 

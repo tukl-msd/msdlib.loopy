@@ -108,17 +108,33 @@ public class Parser {
                    Core("fifo",  "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos)),
                    Core("rng",   "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos))
                 ), GPIOs(
-                    GPIO("leds",     OUT(),pos),
-                    GPIO("switches",  IN(),pos),
-                    GPIO("buttons",   IN(),pos)
+                    GPIO("leds",     OUT(),pos,DEFAULT()),
+                    GPIO("switches",  IN(),pos,DEFAULT()),
+                    GPIO("buttons",   IN(),pos,DEFAULT())
                 ), Instances(
                     Instance("rng_a",   "rng",   pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
                     Instance("rng_b",   "rng",   pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
                     Instance("adder_a", "adder", pos, CPUAxis("in1",pos), CPUAxis("out1",pos), CPUAxis("in2",pos)),
                     Instance("fifo_a",  "fifo",  pos, CPUAxis("in1",pos), CPUAxis("out1",pos))
-                ), ETHERNET(MOptions(MAC("00:0a:35:00:01:02"))), DEFAULT());
+                ), ETHERNET(pos,MAC(pos,"00:0a:35:00:01:02")), Scheduler(pos,DEFAULT()));
     }
     
+    /**
+     * Checks several conditions, which are assumed to hold for the model.
+     * Adds errors to the error collection of the parser, if conditions
+     * do not hold. May also add warnings for less severe conditions, that
+     * are not necessarily required by the model but may indicate user errors
+     * nonetheless or require the users attention otherwise.
+     *  - existence of all referenced source files
+     *  - no duplicate identifiers for cores, ports or instances
+     *  - correct connection of all ports
+     *    - no duplicate connections
+     *    - no unconnected ports or dangling axis
+     *    - at most two ports at the same axis
+     *  - no duplicate options or unexpected options in wrong context
+     *  - correct format of string options (esp Ethernet options)
+     * @param bdf
+     */
     private void sanityCheck(BDLFile bdf) {
         // what to do here (sequentially) and what to do in visitor? ... 
         
@@ -242,55 +258,116 @@ public class Parser {
             }
         }
         
+        // check, if the scheduler or gpio callbacks have been overridden and add appropriate warning
+        if(bdf.scheduler().code() instanceof USER_DEFINED) errors.addWarning(new ParserWarning(
+                "Default scheduler was overridden. Note that no guarantees can be made for user-defined schedulers.",
+                bdf.scheduler().pos()));
+        // TODO what exactly do we override here? board-side or host-side gpio behaviour?
+        // TODO what exactly IS default behaviour?
+        //       host-side: none
+        //       board-side: send value to host. Host does "something" with it...
+        //     --> I GUESS, we want to override board-side behaviour... e.g. reset on click or write the value
+        //         into some component
+        //     This CAN be done via a host-side thread, but is REALLY inefficient due to a complete communication cycle
+        //      plus potential queue overhead...
+        for(GPIO gpio : bdf.gpios()) if(gpio.callback() instanceof USER_DEFINED)
+            errors.addWarning(new ParserWarning("Default gpio callback behaviour was overridden", gpio.pos()));
+        
+        
+        
 //        // check options of Ethernet medium for validity
-//        if(bdf.medium() instanceof Ethernet) {
-//            Ethernet medium = (Ethernet)bdf.medium();
-//            checkIP(medium.ip().ip());
-//            checkIP(medium.mask().ip());
-//            checkIP(medium.gate().ip());
-//            checkMAC(medium.mac().mac());
-//        }
+        if(bdf.medium() instanceof ETHERNET) {
+            ETHERNET medium = (ETHERNET)bdf.medium();
+            boolean mac = false, ip = false, mask = false, gate = false, port = false;
+            for(MOption opt : medium.opts()) {
+                if(opt instanceof MAC) {
+                    if(mac) {
+                        errors.addError(new ParserError("duplicate mac address attribute", opt.pos()));
+                        continue;
+                    } mac = true;
+                    MAC o = (MAC)opt;
+                    checkMAC(o.val(), opt.pos());
+                } else if(opt instanceof IP) {
+                    if(ip) {
+                        errors.addError(new ParserError("duplicate ip address attribute", opt.pos()));
+                        continue;
+                    } ip = true;
+                    IP o = (IP)opt;
+                    checkIP(o.val(), opt.pos());
+                } else if(opt instanceof MASK) {
+                    if(mask) {
+                        errors.addError(new ParserError("duplicate network mask attribute", opt.pos()));
+                        continue;
+                    } mask = true;
+                    MASK o = (MASK)opt;
+                    checkIP(o.val(), opt.pos());
+                } else if(opt instanceof GATE) {
+                    if(gate) {
+                        errors.addError(new ParserError("duplicate gateway attribute", opt.pos()));
+                        continue;
+                    } gate = true;
+                    GATE o = (GATE)opt;
+                    checkIP(o.val(), opt.pos());
+                } else if(opt instanceof PORTID) {
+                    if(port) {
+                        errors.addError(new ParserError("duplicate port attribute", opt.pos()));
+                        continue;
+                    } port = true;
+//                    PORTID o = (PORTID)opt;
+                }
+            }
+            if(!mac)  errors.addError(
+                new ParserError("Ethernet specification is missing mac address attribute", medium.pos()));
+            if(!ip)   errors.addError(
+                new ParserError("Ethernet specification is missing ip address attribute", medium.pos()));
+            if(!mask) errors.addError(
+                new ParserError("Ethernet specification is missing network mask attribute", medium.pos()));
+            if(!gate) errors.addError(
+                new ParserError("Ethernet specification is missing gateway attribute", medium.pos()));
+            if(!port) errors.addError(
+                new ParserError("Ethernet specification is missing port attribute", medium.pos()));
+        }
     }
     
-//    private void checkIP(String ip) {
-//        String[] parts = ip.split("\\.");
-//        if(parts.length < 4)
-//            errors.addError(new ParserError("ip consists of only " + parts.length + " parts (expected 4)"));
-//        if(parts.length > 4)
-//            errors.addError(new ParserError("ip consists of " + parts.length + " parts (expected 4)"));
-//        for(int i = 0; i < parts.length; i++) {
-//            String part = parts[i];
-//            try {
-//                int intpart = Integer.valueOf(part);
-//                if(intpart <   0)
-//                    errors.addError(new ParserError("part " + (i+1) + " of ip is smaller than 0"));
-//                if(intpart > 255)
-//                    errors.addError(new ParserError("part " + (i+1) + " of ip is greater than 255"));
-//            } catch (NumberFormatException e) {
-//                errors.addError(new ParserError("part " + (i+1) + " of ip is not a valid decimal number"));
-//            }
-//        }
-//    }
-//    
-//    private void checkMAC(String mac) {
-//        String[] parts = mac.split(":");
-//        if(parts.length < 6)
-//            errors.addError(new ParserError("mac consists of only " + parts.length + " parts (expected 6)"));
-//        if(parts.length > 6)
-//            errors.addError(new ParserError("mac consists of " + parts.length + " parts (expected 6)"));
-//        for(int i = 0; i < parts.length; i++) {
-//            String part = parts[i];
-//            try {
-//                int intpart = Integer.parseInt(part, 16);
-//                if(intpart <   0) // < 0x00
-//                    errors.addError(new ParserError("part " + (i+1) + " of mac is smaller than 0x00"));
-//                if(intpart > 255) // > 0xFF
-//                    errors.addError(new ParserError("part " + (i+1) + " of mac is smaller than 0xFF"));
-//            } catch(NumberFormatException e) {
-//                errors.addError(new ParserError("part " + (i+1) + " of mac is not a valid hexadecimal number"));
-//            }
-//        }
-//    }
+    private void checkIP(String ip, Position pos) {
+        String[] parts = ip.split("\\.");
+        if(parts.length < 4)
+            errors.addError(new ParserError("ip consists of only " + parts.length + " parts (expected 4)", pos));
+        if(parts.length > 4)
+            errors.addError(new ParserError("ip consists of " + parts.length + " parts (expected 4)", pos));
+        for(int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            try {
+                int intpart = Integer.valueOf(part);
+                if(intpart <   0)
+                    errors.addError(new ParserError("part " + (i+1) + " of ip is smaller than 0", pos));
+                if(intpart > 255)
+                    errors.addError(new ParserError("part " + (i+1) + " of ip is greater than 255", pos));
+            } catch (NumberFormatException e) {
+                errors.addError(new ParserError("part " + (i+1) + " of ip is not a valid decimal number", pos));
+            }
+        }
+    }
+    
+    private void checkMAC(String mac, Position pos) {
+        String[] parts = mac.split(":");
+        if(parts.length < 6)
+            errors.addError(new ParserError("mac consists of only " + parts.length + " parts (expected 6)", pos));
+        if(parts.length > 6)
+            errors.addError(new ParserError("mac consists of " + parts.length + " parts (expected 6)", pos));
+        for(int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            try {
+                int intpart = Integer.parseInt(part, 16);
+                if(intpart <   0) // < 0x00
+                    errors.addError(new ParserError("part " + (i+1) + " of mac is smaller than 0x00", pos));
+                if(intpart > 255) // > 0xFF
+                    errors.addError(new ParserError("part " + (i+1) + " of mac is smaller than 0xFF", pos));
+            } catch(NumberFormatException e) {
+                errors.addError(new ParserError("part " + (i+1) + " of mac is not a valid hexadecimal number", pos));
+            }
+        }
+    }
 }
 
 
