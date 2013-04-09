@@ -159,7 +159,7 @@ decl ::=
   ;
 
 imp ::=
-     IMPORT String:imp
+     IMPORT STRING_LITERAL:imp
      {:
          RESULT = BDL.Import(imp, pos(impleft));
      :}

@@ -1,7 +1,15 @@
 package de.hopp.generator.backends.server.virtex6;
 
-import de.hopp.generator.backends.Backend;
+import de.hopp.generator.Configuration;
+import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.frontend.BDLFilePos;
 
-public interface ProjectBackend extends Backend {
 
+public interface ProjectBackend {
+    String getName();
+    
+    // TODO parse parameters
+    // TODO print usage
+    
+    void generate(BDLFilePos board, Configuration config, ErrorCollection errors);
 }

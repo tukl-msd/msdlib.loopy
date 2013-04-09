@@ -6,22 +6,21 @@ backend java {
   import java.lang.Integer
 }
 
-root MHSFile Pos;
-
 external String
 external Integer
 
 MHSFile   ( Attributes attributes, Blocks blocks )
 Block     ( String name, Attributes attributes )
-Attribute ( Type type, Assignments assignments )
 
-Type = BUS_INTERFACE() | PARAMETER() | PORT()
+Attribute = BUS_INTERFACE( String name, String axis )
+          | PARAMETER( Assignments assignments )
+          | PORT( Assignments assignments )
 
 Assignment ( String name, Expression expression )
 
 Expression = Value | AndExp
 
-Value = DotList | Ident | Number | MemAddr | Range
+Value = Ident | Number | MemAddr | Range
 
 Ident   ( String val )
 Number  ( Integer val )
@@ -32,4 +31,3 @@ Blocks      * Block
 Attributes  * Attribute
 Assignments * Assignment
 AndExp      * Value
-DotList     * String

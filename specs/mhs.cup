@@ -1,14 +1,17 @@
 package de.hopp.generator.frontend;
 
 import java_cup.runtime.*;
+import katja.common.NE;
 import de.hopp.generator.board.*;
+import de.hopp.generator.parser.*;
+import de.hopp.generator.parser.Number;
 
 /* Preliminaries to set up and use the scanner.  */
 //init with {: scanner.init();              :};
 //scan with {: return getScanner().next_token(); :};
 
 parser code {:
-  protected Board board = BoardSpec.Board();
+  protected Board board = BoardSpec.Board(BoardSpec.Components());
 
   public Board getBoard() {
     return board;
@@ -46,16 +49,14 @@ block_list ::= block:hd block_list:tl     {: RESULT = tl.appFront(hd); :}
              ;
 block      ::= BEGIN ID:i attr_list:l END {: RESULT = MHS.Block(i,l); :}
              ;
-type       ::= BUS_INTERFACE              {: RESULT = MHS.BUS_INTERFACE(); :}
-             | PARAMETER                  {: RESULT = MHS.PARAMETER(); :}
-             | PORT                       {: RESULT = MHS.PORT(); :}
-             ;
 
 /* attributes */
 attr_list  ::= attr:hd attr_list:tl       {: RESULT = tl.appFront(hd); :}
              |                            {: RESULT = MHS.Attributes(); :}
 	     ;
-attr       ::= type:t assgn_list:l        {: RESULT = MHS.Attribute(t,l); :}
+attr       ::= BUS_INTERFACE ID:p EQ ID:a    {: RESULT = MHS.BUS_INTERFACE(p,a); :}
+             | PARAMETER assgn_list:l     {: RESULT = MHS.PARAMETER(l); :}
+             | PORT assgn_list:l          {: RESULT = MHS.PORT(l); :}
              ;
 assgn_list ::= assgn:hd COM assgn_list:tl {: RESULT = tl.appFront(hd); :}
              | assgn:a                    {: RESULT = MHS.Assignments(a); :}
@@ -66,7 +67,22 @@ expression ::= val:v AND expression:e     {: RESULT = e instanceof AndExp ? ((An
                                                MHS.AndExp(v,(Value)e); :}
              | val:v                      {: RESULT = v; :}
              ;
-val        ::= lit:l DOT val:v            {: RESULT = v instanceof DotList ? ((DotList)v).appFront(l.toString()) : MHS.DotList(l.toString(),v.toString()); :}
+val        ::= lit:l DOT val:v {:
+              String hd, tl;
+	      hd = l.Switch(new Value.Switch<String, NE>() {
+                  public String CaseIdent(Ident term) { return term.val(); }
+                  public String CaseNumber(Number term) { return term.val().toString(); }
+                  public String CaseMemAddr(MemAddr term) { return term.val(); }
+                  public String CaseRange(Range term) { return "[" + term.u() + ":" + term.l() + "]"; }
+              });
+	      tl = v.Switch(new Value.Switch<String, NE>() {
+	          public String CaseIdent(Ident term) { return term.val(); }
+	          public String CaseNumber(Number term) { return term.val().toString(); }
+	          public String CaseMemAddr(MemAddr term) { return term.val(); }
+	          public String CaseRange(Range term) { return "[" + term.u() + ":" + term.l() + "]"; }
+	      });
+	      RESULT = MHS.Ident(hd + "." + tl);
+             :}
              | lit:l                      {: RESULT = l; :}
              ;
 lit        ::= ID:i                       {: RESULT = MHS.Ident(i); :}

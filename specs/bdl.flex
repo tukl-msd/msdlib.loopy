@@ -38,7 +38,7 @@ EndOfLineComment = "//" {InputCharacter}* {LineTerminator}
 
 /* numbers and identifiers */
 DecNumber       = 0 | [1-9][0-9]*
-HexNumber       = [0-9a-f]*
+//HexNumber       = [0-9a-f]*
 VerPart         = "." [:jletterdigit:]+
 
 Identifier      = [:jletter:] [[:jletterdigit:]\-_]*

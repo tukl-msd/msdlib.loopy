@@ -6,16 +6,21 @@ import static de.hopp.generator.utils.Ethernet.unparseIP;
 import static de.hopp.generator.utils.Ethernet.unparseMAC;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+
+import java_cup.runtime.Symbol;
 
 import de.hopp.generator.backends.Backend;
 import de.hopp.generator.exceptions.ExecutionFailed;
+import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.BDLFilePos;
-import de.hopp.generator.frontend.ClientBackend;
-import de.hopp.generator.frontend.Parser;
-import de.hopp.generator.frontend.ServerBackend;
+import de.hopp.generator.frontend.*;
+import de.hopp.generator.parser.MHSFile;
 
 public class Main {
     

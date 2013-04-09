@@ -16,6 +16,11 @@ import de.hopp.generator.backends.unparser.CppUnparser;
 import de.hopp.generator.backends.unparser.HUnparser;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.Warning;
+import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.frontend.BindingPos;
+import de.hopp.generator.frontend.CorePos;
+import de.hopp.generator.frontend.InstancePos;
+import de.hopp.generator.frontend.PortPos;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MFileInFile;
 
@@ -73,7 +78,7 @@ public class BackendUtils {
      * @param target file into which the buffer content should be printed
      * @throws IOException error during file creation or the print
      */
-    private static void printBuffer(StringBuffer buf, File target) throws IOException {
+    public static void printBuffer(StringBuffer buf, File target) throws IOException {
         // create the files and parent directories if they don't exist
         if(target.getParentFile() != null && ! target.getParentFile().exists())
             target.getParentFile().mkdirs();
@@ -119,5 +124,34 @@ public class BackendUtils {
                 if(input != null) input.close();
             } catch(IOException e) { /* well... memory leak... */ }
         }
+    }
+    
+    public static PortPos getPort(BindingPos bind) {
+        String portName = bind.port().term();
+
+        if(!(bind.parent().parent() instanceof InstancePos)) throw new IllegalStateException();
+        InstancePos inst = ((InstancePos)bind.parent().parent());
+        
+        String coreName = inst.core().term();
+        
+        BDLFilePos file = inst.root();
+        
+        CorePos core = null;
+        for(CorePos c : file.cores()) if(c.name().term().equals(coreName)) {
+            core = c;
+            break;
+        }
+        
+        if(core == null) throw new IllegalStateException();
+        
+        PortPos port = null;
+        for(PortPos p : core.ports()) if(p.name().term().equals(portName)) {
+            port = p;
+            break;
+        }
+        
+        if(port == null) throw new IllegalStateException();
+        
+        return port;
     }
 }

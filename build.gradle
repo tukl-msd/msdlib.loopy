@@ -13,23 +13,23 @@ String parserGenDir = "$genDir/de/hopp/generator/frontend"
 String flexSpec     = "$specDir/bdl.flex"
 String cupSpec      = "$specDir/bdl.cup"
 String bdlSpec      = "$specDir/bdl.katja"
-String boardSpec    = "$specDir/board.katja"
+String mhsSpec      = "$specDir/mhs.katja"
 String modelSpec    = "$specDir/cmodel.katja"
 
 String flexLib      = "$libDir/JFlex.jar"
 String cupLib       = "$libDir/java-cup-11a.jar"
 String katja        = "$libDir/katja.jar"
-String katjaCommon  = "$genLibDir/katja.common.jar"
 
+String katjaCommon  = "$genLibDir/katja.common.jar"
 String bdl          = "$genLibDir/BDL.jar"
-String board        = "$genLibDir/BoardSpec.jar"
+String mhs          = "$genLibDir/MHS.jar"
 String model        = "$genLibDir/Model.jar"
 
 String cupParserFile = "BDLFileParser"
 String symbolFile    = "BDLFileSymbols"
-String cupParser     = "$parserGenDir/{$cupParserFile}.java"
-String flexScanner   = "$parserGenDir/Lexer.java"
-String symTab        = "$parserGenDir/{$symbolFile}.java"
+String cupParser     = "$parserGenDir/{$cupParserFile}"
+String flexScanner   = "$parserGenDir/Lexer"
+String symTab        = "$parserGenDir/{$symbolFile}"
 
 repositories {
   mavenCentral()
@@ -39,7 +39,7 @@ dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
   // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
-  compile files("$katjaCommon", "$model", "$board","$bdl")
+  compile files("$katjaCommon", "$bdl", "$mhs", "$model")
   testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
@@ -49,9 +49,6 @@ sourceSets {
       srcDirs "src-gen"
     }
     resources {
-      // srcDirs "deploy"
-      // srcDir projectDir 
-      // include 'deploy/'
       srcDirs 'src/main/resources' 
     }
   }
@@ -69,57 +66,10 @@ task removeGen << {
   delete "$genLibDir"
 }
 
-// removes generated AST
-task removeAST << {
-  delete "$bdl"
-}
-
-// removes generated board model
-task removeBoard << {
-  delete "$board"
-}
-
-// removes generated c/c++ model and common files
-task removeModel << {
-  delete "$model", "$katjaCommon"
-}
-
-// builds the ast model of bdl files
+// builds the ast model of bdl files and katja common
 task buildBDL {
   inputs.files("$katja", "$bdlSpec")
-  outputs.files("$bdl")
-  doLast {
-    ant.java(jar:"$katja",fork:true) {
-      arg(value: "-b")
-      arg(value: "java")
-      arg(value: "-d")
-      arg(value: "$genLibDir")
-      arg(value: "-o")
-      arg(value: "$bdlSpec")
-    }
-  }
-}
-
-// builds the ast of the board
-task buildBoard {
-  inputs.files("$katja", "$boardSpec")
-  outputs.files("$board")
-  doLast {
-    ant.java(jar:"$katja",fork:true) {
-      arg(value: "-b")
-      arg(value: "java")
-      arg(value: "-d")
-      arg(value: "$genLibDir")
-      arg(value: "-o")
-      arg(value: "$boardSpec")
-    }
-  }
-}
-
-// builds the c/c++ model used by the generator
-task buildModel {
-  inputs.files("$katja", "$modelSpec")
-  outputs.files("$katjaCommon", "$model")
+  outputs.files("$bdl", "$katjaCommon")
   doLast {
     ant.java(jar:"$katja",fork:true) {
       arg(value: "-b")
@@ -128,6 +78,38 @@ task buildModel {
       arg(value: "$genLibDir")
       arg(value: "-o")
       arg(value: "-j")
+      arg(value: "$bdlSpec")
+    }
+  }
+}
+
+// builds the ast model of mhs files
+task buildMHS {
+  inputs.files("$katja", "$mhsSpec")
+  outputs.files("$mhs")
+  doLast {
+    ant.java(jar:"$katja",fork:true) {
+      arg(value: "-b")
+      arg(value: "java")
+      arg(value: "-d")
+      arg(value: "$genLibDir")
+      arg(value: "-o")
+      arg(value: "$mhsSpec")
+    }
+  }
+}
+
+// builds the c/c++ model used by the generator
+task buildModel {
+  inputs.files("$katja", "$modelSpec")
+  outputs.files("$model")
+  doLast {
+    ant.java(jar:"$katja",fork:true) {
+      arg(value: "-b")
+      arg(value: "java")
+      arg(value: "-d")
+      arg(value: "$genLibDir")
+      arg(value: "-o")
       arg(value: "$modelSpec")
     }
   }
@@ -157,13 +139,10 @@ task runCup {
 task generateResources
 
 clean.dependsOn removeGen
-// clean.dependsOn removeAST
-// clean.dependsOn removeBoard
-// clean.dependsOn removeModel
 
 //runKatja.dependsOn buildAST
 runKatja.dependsOn buildBDL
-runKatja.dependsOn buildBoard
+runKatja.dependsOn buildMHS
 runKatja.dependsOn buildModel
 
 generateResources.dependsOn runKatja
@@ -175,7 +154,7 @@ compileJava.dependsOn generateResources
 jar {
   // add main class to manifest
   manifest {
-    attributes("Main-Class": "de.hopp.Main")
+    attributes("Main-Class": "de.hopp.generator.Main")
   }
 
   // the following line is responsible for packaging all compile dependencies as well
