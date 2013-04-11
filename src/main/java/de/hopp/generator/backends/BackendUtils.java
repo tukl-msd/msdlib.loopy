@@ -40,7 +40,9 @@ public class BackendUtils {
         throw new IllegalStateException();
     }
     
-    public static void printMFile(MFile mfile, File target, UnparserType type, ErrorCollection errors) {
+    public static void printMFile(MFile mfile, UnparserType type, ErrorCollection errors) {
+        
+        File target = new File (mfile.directory());
         
         // setup buffer
         StringBuffer buf = new StringBuffer(16384);

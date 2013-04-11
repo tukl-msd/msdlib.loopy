@@ -32,7 +32,7 @@ external Integer
 
 
 // file and class model
-MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures procedures, MClasses classes )
+MFile ( MDocumentation doc, String name, String directory, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures procedures, MClasses classes )
 MClass ( MDocumentation doc, MModifiers modifiers, String name, MExtends extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = MVisibility | CONSTANT() | STATIC() | INLINE() // don't know if more are required

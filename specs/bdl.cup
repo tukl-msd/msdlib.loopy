@@ -61,8 +61,8 @@ parser code {:
 terminal BEGIN, END, CBEGIN, COMMA;
 terminal String CEND;
 terminal IMPORT;
-terminal HOST, BOARD, PROJECT;
-terminal SWQUEUE, HWQUEUE, WIDTH, POLL;
+terminal BACKEND;
+terminal SWQUEUE, HWQUEUE, DEBUG, WIDTH, POLL;
 terminal MEDIUM, MAC, IP, MASK, GATE;
 terminal CORE, SOURCE, PORT;
 terminal IN, OUT, DUAL;
@@ -166,9 +166,10 @@ imp ::=
   ;
 
 backend ::=
-     HOST    ID:id {: RESULT = BDL.Backend(id, pos(idleft)); :}
-  |  BOARD   ID:id {: RESULT = BDL.Backend(id, pos(idleft)); :}
-  |  PROJECT ID:id {: RESULT = BDL.Backend(id, pos(idleft)); :}
+     BACKEND ID:id STRING_LITERAL:content 
+     {:
+         RESULT = BDL.Backend(id, content, pos(idleft));
+     :}
   ;
 
 option_list ::=
@@ -205,6 +206,10 @@ option ::=
   |  WIDTH:key DEC:val
      {:
          RESULT = BDL.BITWIDTH(pos(keyleft),val);
+     :}
+  |  DEBUG:key
+     {:
+         RESULT = BDL.DEBUG(pos(keyleft));
      :}
   |  POLL:key
      {:

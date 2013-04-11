@@ -1,37 +1,31 @@
 package de.hopp.generator;
 
-import static de.hopp.generator.utils.Ethernet.unparseIP;
-import static de.hopp.generator.utils.Ethernet.unparseMAC;
-
 import java.io.File;
 
+import de.hopp.generator.backends.client.ClientBackend;
+import de.hopp.generator.backends.server.ServerBackend;
+
 /**
- * Configuration of the generator run itself, not of the board
- * (but the board layout is stored here as well).
+ * Configuration of the generator run itself, not of the board.
  * @author Thomas Fischer
  *
  */
 public class Configuration {
 
+    private String[] args;
+    
+    // backends
+    private ClientBackend client;
+    private ServerBackend server;
+    
     // destination folders
     public final static String defaultServerDir = "server";
     public final static String defaultClientDir = "client";
-
+    public final static String defaultTempDir   = "temp";
+            
     private File serverDir = new File(defaultServerDir);
     private File clientDir = new File(defaultClientDir);
-    
-    // Ethernet related properties
-    public static final String[] defaultMAC  = {"00","0a","35","00","01","02"};
-    public static final int[]    defaultIP   = {192,169,  1, 10},
-                                 defaultGW   = {192,169,  1, 23},
-                                 defaultMask = {255,255,255,  0};
-    public static final int      defaultPort = 8844;
-
-    private String[] mac  = defaultMAC;
-    private int []   ip   = defaultIP,
-                     gw   = defaultGW,
-                     mask = defaultMask;
-    private int      port = defaultPort;
+    private File tempDir   = new File(defaultTempDir);
     
     // logging related properties
     public static final int LOG_QUIET   = 0;
@@ -39,18 +33,25 @@ public class Configuration {
     public static final int LOG_VERBOSE = 200;
     public static final int LOG_DEBUG   = 300;
 
-    private int loglevel = 1;
+    private int loglevel = LOG_INFO;
 
     private IOHandler IO;
     
     // debug flag (for generated driver)
     private boolean debug   = false;
     
+    // progress flags
+    private boolean dryrun    = false;
+    private boolean parseonly = false;
+    
     
 //    /** setup an empty driver generator configuration */
     public Configuration() { 
         IO = new IOHandler(this);
     }
+    
+    public void setServer(ServerBackend server) { this.server = server; }
+    public void setClient(ClientBackend client) { this.client = client; }
     
     /** set the directory, into which the client-side files of the driver should be generated */
     public void setClientDir(File dir) {
@@ -62,74 +63,32 @@ public class Configuration {
         this.serverDir = dir;
     }
     
-    /** enables the debug flag, which will result in additional console prints of the driver */
-    public void enableDebug() {
-        debug = true;
-//        loglevel = PRINT_DEBUG;
+    public void setTempDir(File dir) {
+        this.tempDir = dir;
     }
-    /** enables the verbose flag, which will result in additional console prints of the driver generator */
+    
+    /** sets the log level to debug, which will result in additional console prints of the generator */
+    public void enableDebug() {
+        loglevel = LOG_DEBUG;
+    }
+    /** sets the log level to verbose, which will result in additional console prints of the generator */
     public void enableVerbose() {
         loglevel = LOG_VERBOSE;
-//        verbose = true;
     }
+    /** sets the log level to quiet, which will disable console prints of the generator */
     public void enableQuiet() {
         loglevel = LOG_QUIET;
     }
-
-    /** set mac address, which should be generated in driver. The mac
-     * address is checked for validity.
-     * @param mac target mac address represented as string array. The
-     * array should contain exactly six hexadecimal strings of length two.
-     */
-    public void setMac(String[] mac) {
-        if(mac.length != 6) throw new IllegalArgumentException("invalid mac address: must contain 6 components");
-        for(String s : mac) if(s.length() != 2)
-            throw new IllegalArgumentException("invalid mac address: each component has to be 2 characters long");
-        for(String s : mac) if(!isHexString(s))
-            throw new IllegalArgumentException("invalid mac address: only hexadecimal characters are allowed");
-        this.mac = mac;
+    
+    public void enableDryrun() {
+        dryrun = true;
+    }
+    public void enableParseonly() {
+        parseonly = true;
     }
     
-    private static boolean isHexString(String s) {
-        for(char c : s.toCharArray()) {
-            if(!isHexCharacter(c)) return false;
-        }
-        return true;
-    }
-    
-    private static boolean isHexCharacter(char c) {
-        return c >= 0 || c <= 9 || c >= 'a' || c <= 'f' || c >= 'A' || c <= 'F'; 
-    }
-    
-    /** set the ip address, which should be generated in the driver.
-     *  The ip address is checked for validity.
-     * @param ip ip address, represented as string array. The array
-     * should contain exactly four decimal numbers ranging from 0 to 255
-     */
-    public void setIP(String[] ip) {
-        this.ip = convertIPAddress(ip);
-    }
-   
-    /** set the subnet mask, which should be generated in the driver.
-     *  The subnet mask is checked for validity.
-     * @param mask subnet mask, represented as string array. The array
-     * should contain exactly four decimal numbers ranging from 0 to 255
-     */
-    public void setMask(String[] mask) {
-        this.mask = convertIPAddress(mask);
-    }
-   
-    /** set the standard gateway, which should be generated in the driver.
-     *  The standard gateway is checked for validity.
-     * @param gw standard gateway, represented as string array. The array
-     * should contain exactly four decimal numbers ranging from 0 to 255
-     */
-    public void setGW(String[] gw) {
-        this.gw = convertIPAddress(gw);
-    }
-    
-    public void setPort(int port) {
-        this.port = port;
+    public void setUnusued(String[] args) {
+        this.args = args;
     }
    
     /**
@@ -142,45 +101,23 @@ public class Configuration {
         else loglevel = printLevel;
     }
 
-    /** converts ip addresses represented as string arrays int integer arrays.
-     * Also does validity checks for the given ip address.
-     * @throws IllegalArgumentException The given string array does not fulfill
-     * format requirements for ip addresses, i.e. wrong size or wrong contents.
-     */
-    private static int[] convertIPAddress(String[] ip) throws IllegalArgumentException {
-        int[] targ = new int[4];
-        if(ip.length != 4) throw new IllegalArgumentException("invalid ip address: must contain 4 components");
-        for(String s : ip) if(s.length() < 1 || s.length() > 3)
-            throw new IllegalArgumentException("invalid ip address: each component has to be 1-3 characters long");
-        for(int i = 0; i<ip.length; i++) {
-            try {
-                int j = Integer.valueOf(ip[i]);
-                if (j < 0 | j > 255) 
-                    throw new IllegalArgumentException("invalid ip address: components can only range from 0 to 255");
-                targ[i] = j;
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("invalid ip address: components have to be decimal numbers");
-            }
-        }
-        return targ;
-    }
-
+    public String[] UNUSED() { return args; }
+    
+    public ServerBackend server() { return server; }
+    public ClientBackend client() { return client; }
+    
     /** get the directory, into which the server files should be generated */
     public File serverDir()  { return serverDir; }
     /** get the directory, into which the client files should be generated */
     public File clientDir()  { return clientDir; }
+    /** get the directory, into which temporary files should be generated */
+    public File tempDir()    { return tempDir; }
     /** get the debug flag indicating additional console print outs of the generated driver */
     public boolean debug()   { return debug; }
-    /** get the MAC address for the board */
-    public String[] getMAC() { return mac; }
-    /** get the IP address for the board */
-    public int[] getIP()     { return ip; }
-    /** get the subnet mask for the board */
-    public int[] getMask()   { return mask; }
-    /** get the standard gateway for the board */
-    public int[] getGW()     { return gw; }
-    /** get the port over which Ethernet communication should be sent */
-    public int getPort()     { return port; }
+    
+    public boolean dryrun() { return dryrun; }
+    public boolean parseonly() { return parseonly; }
+    
     /** check if the generator is set to produce no console output */
     public boolean QUIET()   { return loglevel == LOG_QUIET; }
     /** check if the generator is set to produce more console output */
@@ -192,22 +129,22 @@ public class Configuration {
     
     /** print this config on console */
     public void printConfig() {
-        IO.println("- client folder    : " + clientDir().getAbsolutePath());
-        IO.println("- server folder    : " + serverDir().getAbsolutePath());
-        
-        IO.print  ("- log level        : ");
+        IO.println("- host backend    : " + client().getName());
+        IO.println("- board backend   : " + server().getName());
+        IO.println("- host folder     : " + clientDir().getAbsolutePath());
+        IO.println("- board folder    : " + serverDir().getAbsolutePath());
+        IO.println("- temp folder     : " + tempDir().getAbsolutePath());
+
+        IO.print  ("- log level       : ");
         switch(loglevel) {
+        case LOG_QUIET   : IO.println("quiet");   break; // (;
         case LOG_INFO    : IO.println("info");    break;
         case LOG_VERBOSE : IO.println("verbose"); break;
         case LOG_DEBUG   : IO.println("debug");   break;
         default: // should never happen
         }
-        
-        IO.println("- MAC address      : " + unparseMAC(getMAC()));
-        IO.println("- IP address       : " + unparseIP( getIP()));
-        IO.println("- network mask     : " + unparseIP( getMask()));
-        IO.println("- standard gateway : " + unparseIP( getGW()));
-        IO.println("- used port        : " + getPort());
-        IO.println("- debug driver     : " + (debug() ? "yes" : "no"));
+       
+        if(parseonly)   IO.println("- parse only");
+        else if(dryrun) IO.println("- dryrun");
     }
 }

@@ -1,6 +1,6 @@
 specification MHS
 
-backend java {
+backend java { 
   package de.hopp.generator.parser
   import java.lang.String
   import java.lang.Integer
@@ -12,20 +12,24 @@ external Integer
 MHSFile   ( Attributes attributes, Blocks blocks )
 Block     ( String name, Attributes attributes )
 
-Attribute = BUS_INTERFACE( String name, String axis )
-          | PARAMETER( Assignments assignments )
-          | PORT( Assignments assignments )
+Attribute (Type type, Assignments assign)
+
+Type = OPTION ( )
+     | BUS_IF( )
+     | PARAMETER( )
+     | PORT( )
 
 Assignment ( String name, Expression expression )
 
 Expression = Value | AndExp
 
-Value = Ident | Number | MemAddr | Range
+Value = Ident | MemAddr | Number | Range | STR
 
 Ident   ( String val )
-Number  ( Integer val )
+STR     ( String val )
 MemAddr ( String val )
-Range   ( Integer l, Integer u )
+Number  ( Integer val )
+Range   ( Integer u, Integer l)
 
 Blocks      * Block
 Attributes  * Attribute

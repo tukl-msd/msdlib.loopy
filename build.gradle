@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
+sourceCompatibility = 1.7
+
 version = '0.0.1'
 description = 'some interesting description'
 
@@ -27,9 +29,9 @@ String model        = "$genLibDir/Model.jar"
 
 String cupParserFile = "BDLFileParser"
 String symbolFile    = "BDLFileSymbols"
-String cupParser     = "$parserGenDir/{$cupParserFile}"
-String flexScanner   = "$parserGenDir/Lexer"
-String symTab        = "$parserGenDir/{$symbolFile}"
+String flexScanner   = "$parserGenDir/BDLFileScanner.java"
+String cupParser     = "$parserGenDir/${cupParserFile}.java" 
+String symTab        = "$parserGenDir/${symbolFile}.java"
 
 repositories {
   mavenCentral()
@@ -37,6 +39,7 @@ repositories {
 
 dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
+  compile group: 'commons-io', name: 'commons-io', version: '2.4'
   // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
   compile files("$katjaCommon", "$bdl", "$mhs", "$model")
@@ -118,8 +121,8 @@ task buildModel {
 task runKatja
 
 task runJFlex {
-  inputs.files(flexSpec, flexLib)
-  outputs.file(flexScanner)
+  inputs.files("$flexSpec", "$flexLib")
+  outputs.file("$flexScanner")
   doLast {
     ant.taskdef name: 'jflex', classname: 'JFlex.anttask.JFlexTask', classpath: flexLib
     ant.jflex(file: flexSpec, outdir: parserGenDir)
@@ -127,8 +130,8 @@ task runJFlex {
 }
 
 task runCup {
-  inputs.files(cupSpec, cupLib)
-  outputs.files(cupParser, symTab)
+  inputs.files("$cupSpec", "$cupLib")
+  outputs.files("$cupParser", "$symTab")
   doLast {
     ant.taskdef name: 'jcup', classname: 'java_cup.anttask.CUPTask', classpath: cupLib
     ant.jcup(srcfile: cupSpec, destdir: genDir, parser: cupParserFile, symbols: symbolFile)

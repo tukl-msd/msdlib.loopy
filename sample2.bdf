@@ -1,15 +1,22 @@
-host cpp
-board virtex6ml605
-project mhs
+/*backend cpp {
+  dir "client"
+}
+backend virtex6 {
+  dir "server/sdk"
+  project xps14_2 "server/xps"
+}*/
 
+// call: java -jar <jarFile> -h cpp -b virtex6 -p xps14.2 --> generation of 14.2 mhs and call of xps?
+
+debug
 
 // gpio components
-gpio in button {:
+gpio in buttons {:
   send_gpio(gpo_buttons, read_buttons());
 :}
 
-gpio in switch
-gpio in led
+gpio in switches
+gpio in leds
 
 // queue sizes
 swqueue 25

@@ -1,68 +1,103 @@
-package de.hopp.generator.backends.server.virtex6;
+package de.hopp.generator.backends.server.virtex6.ise.sdk;
 
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
-import static de.hopp.generator.backends.BackendUtils.doxygen;
-import static de.hopp.generator.backends.BackendUtils.printMFile;
+import static de.hopp.generator.backends.server.virtex6.ise.ISE.sourceDir;
+import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.getPort;
-import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addLines;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import katja.common.NE;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.IOHandler;
-import de.hopp.generator.backends.Backend;
-import de.hopp.generator.backends.BackendUtils.UnparserType;
-import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
 
-public class Virtex6ML605 extends Visitor<NE> implements Backend {
-
-    private static String sourceDir = "deploy" + '/' + "server" + '/' + "virtex6ML605";
+/**
+ * Generates the board-specific, non-generic files of the
+ * Virtex 6 board-side driver.
+ * This includes the constant file and the components file.
+ * The files are represented by C file ASTs, which are generated
+ * by visiting each component of the BDL file describing board design.
+ * @author Thomas Fischer
+ */
+public class Virtex6BDLVisitor extends Visitor<NE> {
     
-    private ProjectBackend project;
+    private static File gpioSrc = new File(sourceDir, "gpio");
     
-    private Configuration config;
     private ErrorCollection errors;
-    private IOHandler IO;
-    private File serverSrc;
     
-    private boolean debug;
+    // target folders
+    private File targetDir;
+    private File targetSrc;
     
-    private MFile components;
-    private MFile constants;
+    // generic files to copy
+    protected Map<File, File> files;
     
+    // generated files
+    protected MFile components;
+    protected MFile constants;
+    
+    // parts of the generated files
     private MProcedure init;
     private MProcedure reset;
     private MProcedure axi_write;
     private MProcedure axi_read;
     
+    // counter variables
     private int axiStreamIdMaster = 0;
     private int axiStreamIdSlave  = 0;
     
     private int gpiCount = 0;
     private int gpoCount = 0;
     
-    public Virtex6ML605() {
+    public MFile getComponents() {
+        return components;
+    }
+    
+    public MFile getConstants() {
+        return constants;
+    }
+    
+    public Map<File, File> getFiles() {
+        return files;
+    }
+    
+    public Virtex6BDLVisitor(Configuration config, ErrorCollection errors) {
+        this.errors = errors;
         
-        // setup basic methods
+        // set directories
+        this.targetDir = sdkDir(config);
+        targetSrc = new File(targetDir, "src");
+        
+        // setup files and methods
+        files = new HashMap<File, File>();
+        setupFiles();
+        setupMethods();
+    }
+    
+    private void setupFiles() {
         components = MFile(MDocumentation(Strings(
                 "Contains component-specific initialisation and processing procedures."
-            )), "components", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+            )), "components", new File(targetSrc, "components").getPath(), MDefinitions(),
+            MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         constants  = MFile(MDocumentation(Strings(
                 "Defines several constants used by the server.",
                 "This includes medium-specific configuration."
-            )), "constants", MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+            )), "constants", targetSrc.getPath(), MDefinitions(),
+            MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+    }
+    
+    private void setupMethods() {
         init  = MProcedure(MDocumentation(Strings(
                 "Initialises all components on this board.",
                 "This includes gpio components and user-defined IPCores,",
@@ -97,59 +132,6 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
     }
     
-    public String getName() {
-        return "Virtex6ML605";
-    }
-    
-    public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-
-        this.config = config;
-        this.errors = errors;
-        this.IO     = config.IOHANDLER();
-        this.debug  = config.debug();
-        
-        serverSrc = new File(config.serverDir(), "src");
-        
-        // deploy board-independent files and directories
-        try { 
-            copy(sourceDir + '/' + "generic", config.serverDir(), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy generic sources due to:\n" + e.getMessage()));
-            return;
-        }
-        
-        // add gpio utils file, if gpio components are present
-        try {
-            if(!board.gpios().isEmpty()) {
-                File target = new File(new File(serverSrc, "components"), "gpio");
-                copy(sourceDir + '/' + "gpio" + '/' + "gpio.h", new File(target, "gpio.h"), IO);
-                copy(sourceDir + '/' + "gpio" + '/' + "gpio.c", new File(target, "gpio.c"), IO);
-            }
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy generic GPIO sources due to:\n" + e.getMessage()));
-            return;
-        }
-
-        // add the debug constant
-        addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
-        
-        // generate and deploy board-specific MFiles
-        visit(board);
-        
-        IO.println("  generate server-side api specification ... ");
-        doxygen(config.serverDir(), IO, errors);
-        
-        // TODO for now, no project generation!
-//        if(project == null) {
-//            errors.addError(new GenerationFailed("No project generation backend specified"));
-//            return;
-//        }
-//        
-//        // run the project generator
-//        project.generate(board, config, errors);
-        
-    }
-    
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos  term) { }
     public void visit(BackendsPos term) { }
@@ -158,17 +140,27 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     @Override
     public void visit(BDLFilePos term) {
         // add queue size constants
+        boolean debug = false;
         int queueSizeHW = defaultQueueSizeHW, queueSizeSW = defaultQueueSizeSW;
         for(Option o : term.opts().term()) {
            if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
            if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
+           if(o instanceof DEBUG)   debug = true;
         }
+        addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         addConst("HW_QUEUE_SIZE", String.valueOf(queueSizeHW), "Size of the queues implemented in hardware.");
         addConst("SW_QUEUE_SIZE", String.valueOf(queueSizeSW), "Size of the queues on the microblaze.");
         addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "Maximal number of shifts between mb and hw queues per schedule cycle");
         
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
+        
+        // add gpio utils file, if gpio components are present
+        if(!term.gpios().isEmpty()) {
+            File target = new File(new File(targetSrc, "components"), "gpio");
+            files.put(new File(gpioSrc, "gpio.h"), new File(target, "gpio.h"));
+            files.put(new File(gpioSrc, "gpio.c"), new File(target, "gpio.c"));
+        }
         
         // visit board components
         visit(term.medium());
@@ -204,36 +196,35 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         // add axi read and write procedures
         components = add(components, axi_write);
         components = add(components, axi_read);
-        
-        // unparse the generated MFiles
-        File compSrc   = new File(serverSrc,   "components");
-        printMFile(constants,  serverSrc, UnparserType.HEADER, errors);
-        printMFile(components,   compSrc, UnparserType.HEADER, errors);
-        printMFile(components,   compSrc, UnparserType.C,      errors);
     }
 
     
     @Override
     public void visit(ETHERNETPos term) {
-        // TODO Auto-generated method stub
         // deploy Ethernet medium files
-//        switch(term.name().term()) {
-//        case "ethernet": try {
-//                File target = new File(serverSrc, "medium");
-//                copy(sourceDir + '/' + "ethernet.c", new File(target, "medium.c"), IO);
-//            } catch(IOException e) {
-//                errors.addError(new GenerationFailed("Failed to copy ethernet sources due to:\n" + e.getMessage()));
-//            }
-//                
-//            // add Ethernet specific constants
-//            addIP("IP",   config.getIP(), "ip address");
-//            addIP("MASK", config.getMask(), "subnet mask");
-//            addIP("GW",   config.getGW(), "standard gateway");
-//            addMAC(config.getMAC());
-//            addConst("PORT", "8844", "The port for this boards TCP- connection.");
-//            break;
-//        default: errors.addError(new ParserError("unknown medium " + term.name().term(), "", -1));
-//        }
+        files.put(new File(sourceDir, "ethernet.c"), new File(new File(targetSrc, "medium"), "medium.c"));
+        
+        // add Ethernet-specific constants
+        for(MOptionPos opt : term.opts()) {
+            opt.Switch(new MOptionPos.Switch<String, NE>() {
+                public String CaseMACPos(MACPos term) {
+                    addMAC(term.val().term()); return null;
+                }
+                public String CaseIPPos(IPPos term) {
+                    addIP("IP", term.val().term(), "IP address"); return null;
+                }
+                public String CaseMASKPos(MASKPos term) {
+                    addIP("MASK", term.val().term(), "network mask"); return null;
+                }
+                public String CaseGATEPos(GATEPos term) {
+                    addIP("GW", term.val().term(), "standard gateway"); return null;
+                }
+                public String CasePORTIDPos(PORTIDPos term) {
+                    addConst("PORT", term.val().term().toString(), "The port for this boards TCP-connection.");
+                    return null;
+                }
+            });
+        }
     }
     
     public void visit(UARTPos term) {
@@ -250,7 +241,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
         case "leds":     addLEDs();     break;
         case "switches": addSwitches(); break;
         case "buttons":  addButtons();  break;
-        default: errors.addError(new ParserError("Unknown GPIO device " + term.name().term() + " for " + getName(), "", -1));
+        default: errors.addError(new ParserError("Unknown GPIO device " + term.name().term() + " for Virtex6", "", -1));
         }
     }
 
@@ -276,7 +267,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     
     private void addWriteStream() {
         if(axiStreamIdMaster>15) {
-            errors.addError(new ParserError("too many writing AXI stream interfaces for " + getName(), "", -1));
+            errors.addError(new ParserError("too many writing AXI stream interfaces for Virtex6", "", -1));
             return;
         }
         axi_write = addLines(axi_write, MCode(Strings(
@@ -288,7 +279,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
 
     private void addReadStream() {
         if(axiStreamIdSlave>15) {
-            errors.addError(new ParserError("too many reading AXI stream interfaces for " + getName(), "", -1));
+            errors.addError(new ParserError("too many reading AXI stream interfaces for Virtex6", "", -1));
             return;
         }
         axi_read  = addLines(axi_read,  MCode(Strings(
@@ -322,6 +313,7 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
+    public void visit(DEBUGPos    term) { }
     public void visit(POLLPos     term) { }
     
     // same goes for medium options
@@ -360,28 +352,20 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
     
     private void addLEDs() {
         // deploy LED files
-        try {
-            File target = new File(new File(serverSrc, "components"), "gpio");
-            copy(sourceDir + '/' + "gpio" + '/' + "led.h", new File(target, "led.h"), IO);
-            copy(sourceDir + '/' + "gpio" + '/' + "led.c", new File(target, "led.c"), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy LED GPIO sources due to:\n" + e.getMessage()));
-        }
-            
-        // add LED init to component init
+        File target = new File(new File(targetSrc, "components"), "gpio");
+        files.put(new File(gpioSrc, "led.h"), new File(target, "led.h"));
+        files.put(new File(gpioSrc, "led.c"), new File(target, "led.c"));
+
+            // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
                 MForwardDecl("int init_LED()")));
     }
 
     public void addSwitches() {
         // deploy switch files
-        try {
-            File target = new File(new File(serverSrc, "components"), "gpio");
-            copy(sourceDir + '/' + "gpio" + '/' + "switches.h", new File(target, "switches.h"), IO);
-            copy(sourceDir + '/' + "gpio" + '/' + "switches.c", new File(target, "switches.c"), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy switch GPIO sources due to:\n" + e.getMessage()));
-        }
+        File target = new File(new File(targetSrc, "components"), "gpio");
+        files.put(new File(gpioSrc, "switches.h"), new File(target, "switches.h"));
+        files.put(new File(gpioSrc, "switches.c"), new File(target, "switches.c"));
             
         // add switch init to component init
         init = addLines(init, MCode(Strings("init_switches();"),
@@ -408,13 +392,9 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
 
     private void addButtons() {
         // deploy button files
-        try {
-            File target = new File(new File(serverSrc, "components"), "gpio");
-            copy(sourceDir + '/' + "gpio" + '/' + "button.h", new File(target, "button.h"), IO);
-            copy(sourceDir + '/' + "gpio" + '/' + "button.c", new File(target, "button.c"), IO);
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed("Failed to copy button GPIO sources due to:\n" + e.getMessage()));
-        }
+        File target = new File(new File(targetSrc, "components"), "gpio");
+        files.put(new File(gpioSrc, "button.h"), new File(target, "button.h"));
+        files.put(new File(gpioSrc, "button.c"), new File(target, "button.c"));
             
         // add button init to component init
         init = addLines(init, MCode(Strings("init_buttons();"),
@@ -436,14 +416,16 @@ public class Virtex6ML605 extends Visitor<NE> implements Backend {
                 ), MQuoteInclude("xbasic_types.h"), MForwardDecl("u32 read_buttons()"))));
     }
     
-    private void addIP(String id, int[] ip, String doc) {
-        addConst(id + "_1", "" + ip[0], "The first  8 bits of the " + doc + " of this board.");
-        addConst(id + "_2", "" + ip[1], "The second 8 bits of the " + doc + " of this board.");
-        addConst(id + "_3", "" + ip[2], "The third  8 bits of the " + doc + " of this board.");
-        addConst(id + "_4", "" + ip[3], "The fourth 8 bits of the " + doc + " of this board.");
+    private void addIP(String id, String ipString, String doc) {
+        String[] ip = ipString.split("\\.");
+        addConst(id + "_1", ip[0], "The first  8 bits of the " + doc + " of this board.");
+        addConst(id + "_2", ip[1], "The second 8 bits of the " + doc + " of this board.");
+        addConst(id + "_3", ip[2], "The third  8 bits of the " + doc + " of this board.");
+        addConst(id + "_4", ip[3], "The fourth 8 bits of the " + doc + " of this board.");
     }
     
-    private void addMAC(String[] mac) {
+    private void addMAC(String macString) {
+        String[] mac = macString.split(":");
         addConst("MAC_1", "0x" + mac[0], "The first  8 bits of the MAC address of this board.");
         addConst("MAC_2", "0x" + mac[1], "The second 8 bits of the MAC address of this board.");
         addConst("MAC_3", "0x" + mac[2], "The third  8 bits of the MAC address of this board.");

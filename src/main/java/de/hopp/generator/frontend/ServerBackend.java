@@ -1,19 +1,19 @@
 package de.hopp.generator.frontend;
 
-import de.hopp.generator.backends.server.virtex6.Virtex6ML605;
+import de.hopp.generator.backends.server.virtex6.Virtex6;
 
 public enum ServerBackend {
-    VIRTEX6ML605(new Virtex6ML605());
+    VIRTEX6ML605(new Virtex6());
 //    VIRTEX6ML605_XPS_14_1(new Virtex6ML605(new XPS_14_1()));
     
     // one instance of the backend
-    private de.hopp.generator.backends.Backend instance;
+    private de.hopp.generator.backends.server.ServerBackend instance;
     
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param object one instance of the backend
      */
-    ServerBackend(de.hopp.generator.backends.Backend instance) {
+    ServerBackend(de.hopp.generator.backends.server.ServerBackend instance) {
         this.instance = instance;
     }
 
@@ -21,7 +21,7 @@ public enum ServerBackend {
      * Returns an instance of this backend
      * @return an instance of this backend
      */
-    public de.hopp.generator.backends.Backend getInstance() {
+    public de.hopp.generator.backends.server.ServerBackend getInstance() {
         return instance;
     }
 
@@ -34,7 +34,7 @@ public enum ServerBackend {
         for(ServerBackend backend : ServerBackend.values())
             if(backend.instance.getName().equals(name)) return backend;
 
-        throw new IllegalArgumentException("no server backend exists with given name");
+        throw new IllegalArgumentException("no board backend exists with given name");
     }
 
     /**

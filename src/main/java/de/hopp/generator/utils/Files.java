@@ -23,7 +23,7 @@ public class Files {
      * @param out output file, into which the resource should be copied (has to be a directory)
      * @throws IOException file operations cause IOExceptions, naturally...
      */
-    public static void copy(String resource, File out, IOHandler IO) throws IOException {
+    public static void copy(String resource, File targetFile, IOHandler IO) throws IOException {
         // get the URL of the provided resource
         IO.debug("    looking for resource " + resource);
         URL url = Thread.currentThread().getContextClassLoader().getResource(resource);
@@ -37,7 +37,7 @@ public class Files {
         
         if(in.exists()) {
             // if it exists, just copy it
-            copy(in, out, IO);
+            copy(in, targetFile, IO);
         } else {
             // if the file pointing to the resource doesn't exist, it probably is inside a jar file
             IO.debug("    resource seems to point inside a jar file");
@@ -56,22 +56,22 @@ public class Files {
                     // if it isn't a subpath of the given resource, skip this entry
                     if (! entry.getName().contains(resource)) continue; 
                     
-                    // skip directories
                     if(entry.isDirectory()) {
                         IO.debug("    found and ignored directory " + entry.getName());
                     } else {
-                        // TODO cut away everything above the "resource" in a more elegant way...
-                        String path = entry.getName().substring(entry.getName().indexOf(resource) + resource.length() + 1);
                         
-                        File targetFile = new File(out, path);
+                        // cut away the path part before <resource> (including <resource>)
+                        String path = entry.getName().substring(entry.getName().indexOf(resource) + resource.length());
+                        
+                        // prepend target directory
+                        path = new File(targetFile, path).getPath();
                         
                         // create parent directories
-                        targetFile.getParentFile().mkdirs();
+                        new File(path).mkdirs();
 
-                        IO.verbose("    copying file " + entry.getName() +
-                                " to " +  targetFile.getPath());
+                        IO.verbose("    copying file " + entry.getName() + " to " +  path);
                         // copy the resource from the jar file
-                        copyToStream(jarFile.getInputStream(entry), new FileOutputStream(targetFile));
+                        copyToStream(jarFile.getInputStream(entry), new FileOutputStream(path));
                     }
                 }
             } finally {
@@ -86,7 +86,7 @@ public class Files {
      * @param out the output file (has to be a directory)
      * @throws IOException file operations cause IOExceptions, naturally...
      */
-    public static void copy(File in, File out, IOHandler IO) throws IOException {
+    private static void copy(File in, File out, IOHandler IO) throws IOException {
         
         // if the input file doesn't exist, throw an exception
         if(! in.exists()) throw new IOException("Input path " + in.getPath() + " doesn't exist");

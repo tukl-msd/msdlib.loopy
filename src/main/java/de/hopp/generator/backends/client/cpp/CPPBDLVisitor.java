@@ -1,26 +1,18 @@
-package de.hopp.generator.backends.client;
+package de.hopp.generator.backends.client.cpp;
 
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
-import static de.hopp.generator.backends.BackendUtils.doxygen;
-import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.getPort;
-import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addDoc;
 import static de.hopp.generator.utils.Model.addInit;
 import static de.hopp.generator.utils.Model.addParam;
 
 import java.io.File;
-import java.io.IOException;
 
 import katja.common.NE;
 import de.hopp.generator.Configuration;
-import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.Backend;
-import de.hopp.generator.backends.BackendUtils.UnparserType;
-import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MClass;
@@ -30,18 +22,11 @@ import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MInitList;
 import de.hopp.generator.model.Strings;
 
-/**
- * Generation backend for a host-side C++ driver.
- * This visitor generates a C++ API for communication with an arbitrary board-side driver.
- * @author Thomas Fischer
- */
-public class CPP extends Visitor<NE> implements Backend {
+public class CPPBDLVisitor extends Visitor<NE> {
 
-    private Configuration   config;
-    private ErrorCollection errors;
-    
-    private MFile comps;
-    private MFile consts;
+    // generated files
+    MFile comps;
+    MFile consts;
     
     // temp variables for construction of local methods of VHDL components
     private MClass  comp;
@@ -49,74 +34,45 @@ public class CPP extends Visitor<NE> implements Backend {
     private MDestr  destructor;
     
     // MOAR integers...
-    private int      pi = 0,      po = 0;
-    private int     gpi = 0,     gpo = 0;
-//    private int core_pi = 0, core_po = 0;
+    private int  pi = 0,  po = 0;
+    private int gpi = 0, gpo = 0;
     
-    // local variables for global default methods
-//    private MMethod clean;
+  // local variables for global default methods
+//  private MMethod clean;
     
-    public CPP() {
-        comps = MFile(MDocumentation(Strings()), "components", MDefinitions(), MStructs(),
-                MEnums(), MAttributes(), MProcedures(), MClasses());
-        consts = MFile(MDocumentation(Strings()), "constants", MDefinitions(), MStructs(),
-                MEnums(), MAttributes(), MProcedures(), MClasses());
+    public CPPBDLVisitor(Configuration config) {
+        String clientSrc = new File(config.clientDir(), "src").getPath();
+        String clientApi = new File(clientSrc, "api").getPath();
+        
+        comps = MFile(MDocumentation(Strings()), "components", clientApi, MDefinitions(),
+                MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
+        consts = MFile(MDocumentation(Strings()), "constants", clientSrc, MDefinitions(),
+                MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         
         comps  = addDoc(comps,  "Describes user-defined IPCores and instantiates all cores present within this driver.");
         consts = addDoc(consts, "Defines several constants used by the client.");
     }
     
-    public String getName() {
-        return "C++";
-    }
-    
-    @Override
-    public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-        this.config = config;
-        this.errors = errors;
-        
-        // deploy generic client code
-        try {
-            copy("deploy/client/cpp", config.clientDir(), config.IOHANDLER());
-        } catch(IOException e) {
-            errors.addError(new GenerationFailed(""));
-            return;
-        }
-       
-        // generate  board-specific MFiles
-        visit(board);
-        
-        // unparse generated MFiles
-        File clientSrc = new File(config.clientDir(), "src");
-        File clientApi = new File(clientSrc, "api");
-        printMFile(comps, clientApi, UnparserType.HEADER, errors);
-        printMFile(comps, clientApi, UnparserType.CPP, errors);
-        
-        // print the constants file
-        printMFile(consts, clientSrc, UnparserType.HEADER, errors);
-        
-        // generate api specification
-        config.IOHANDLER().println("  generate client-side api specification ... ");
-        doxygen(config.clientDir(), config.IOHANDLER(), errors);
-    }
-
     @Override
     public void visit(BDLFilePos term) {
-        consts = add(consts, MDefinition(MDocumentation(Strings(
-                    "If set, enables additional console output for debugging purposes"
-                )), MModifiers(PUBLIC()), "DEBUG", config.debug() ? "1" : "0"));
-
+        
+        boolean debug = false;
         int queueSizeSW = defaultQueueSizeSW, queueSizeHW = defaultQueueSizeHW;
+
         for(Option o : term.opts().term()) {
             // duplicates and invalid parameters are already caught by sanity check
             if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
             if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
+            if(o instanceof DEBUG)   debug = true;
         }
-        
+
+        // add derived constants 
+        consts = add(consts, MDefinition(MDocumentation(Strings(
+                "If set, enables additional console output for debugging purposes"
+            )), MModifiers(PUBLIC()), "DEBUG", debug ? "1" : "0"));
         consts = add(consts, MDefinition(MDocumentation(Strings(
                 "Defines the default size of the boards hardware queues."
             )), MModifiers(PUBLIC()), "QUEUE_SIZE_HW", String.valueOf(queueSizeHW)));
-        
         consts = add(consts, MDefinition(MDocumentation(Strings(
                 "Defines the default size of the boards software queues.",
                 "This is equivalent with the maximal number of values, " +
@@ -182,7 +138,7 @@ public class CPP extends Visitor<NE> implements Backend {
             }
         }));
 
-        // TODO generate class? (currently has to be statically generated in gpio folder
+        // TODO generate gpio class into gpio file (currently treated as generic, containing all known devices)
         
         // add attribute for the GPIO component
         comps = add(comps, MAttribute(MDocumentation(Strings(
@@ -190,7 +146,6 @@ public class CPP extends Visitor<NE> implements Backend {
             )), MModifiers(PUBLIC()), MType("class " + term.name().term()), "gpio_"+term.name().term(), init));
         term.name();
         term.callback();
-        
     }
 
     @Override
@@ -325,6 +280,7 @@ public class CPP extends Visitor<NE> implements Backend {
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
+    public void visit(DEBUGPos    term) { }
     public void visit(POLLPos     term) { }
     
     // same goes for medium options
@@ -358,4 +314,5 @@ public class CPP extends Visitor<NE> implements Backend {
     public void visit(StringPos  term) { }
     public void visit(IntegerPos term) { }
 
+    
 }

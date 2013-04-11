@@ -22,7 +22,7 @@ import java_cup.runtime.*;
   }
 %}
 
-%states CODE, STRING
+%states CODE, STRING, BACKEND_START, BACKEND
 
 /* whitespaces */
 LineTerminator = \r|\n|\r\n
@@ -58,6 +58,17 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
   ":}" { }
 }
 
+<BACKEND_START> {
+  {Comment} { /* ignore comments */ }
+  "{" { yybegin(BACKEND); string.setLength(0); }
+}
+
+<BACKEND> {
+  {Comment} { /* ignore comments */ }
+  "}" { yybegin(YYINITIAL); return symbol(BDLFileSymbols.STRING_LITERAL, string.toString()); }
+   ({InputCharacter} | {WhiteSpace}) { string.append(yytext()); } // otherwise append
+}
+
 <CODE> {
   {Comment} {string.append(yytext()); } // append comments. They may also include :} symbols
   ":}"      { yybegin(YYINITIAL); return symbol(BDLFileSymbols.CEND, string.toString()); } // switch state back, if :} out of comment occurs
@@ -78,11 +89,10 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "import"        { return symbol(BDLFileSymbols.IMPORT); }
 
 /* selected backends */
-"host"          { return symbol(BDLFileSymbols.HOST); }
-"board"         { return symbol(BDLFileSymbols.BOARD); }
-"project"       { return symbol(BDLFileSymbols.PROJECT); }
+"backend"       { yybegin(BACKEND_START); }
 
 /* global options */
+"debug"         { return symbol(BDLFileSymbols.DEBUG);   }
 "swqueue"       { return symbol(BDLFileSymbols.SWQUEUE); }
 "hwqueue"       { return symbol(BDLFileSymbols.HWQUEUE); }
 

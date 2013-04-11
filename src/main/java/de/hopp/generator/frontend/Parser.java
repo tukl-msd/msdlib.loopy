@@ -327,7 +327,40 @@ public class Parser {
             if(!port) errors.addError(
                 new ParserError("Ethernet specification is missing port attribute", medium.pos()));
         }
-    }
+   }
+    
+//  /** converts ip addresses represented as string arrays int integer arrays.
+//  * Also does validity checks for the given ip address.
+//  * @throws IllegalArgumentException The given string array does not fulfill
+//  * format requirements for ip addresses, i.e. wrong size or wrong contents.
+//  */
+// private static int[] convertIPAddress(String[] ip) throws IllegalArgumentException {
+//     int[] targ = new int[4];
+//     if(ip.length != 4) throw new IllegalArgumentException("invalid ip address: must contain 4 components");
+//     for(String s : ip) if(s.length() < 1 || s.length() > 3)
+//         throw new IllegalArgumentException("invalid ip address: each component has to be 1-3 characters long");
+//     for(int i = 0; i<ip.length; i++) {
+//         try {
+//             int j = Integer.valueOf(ip[i]);
+//             if (j < 0 | j > 255) 
+//                 throw new IllegalArgumentException("invalid ip address: components can only range from 0 to 255");
+//             targ[i] = j;
+//         } catch (NumberFormatException e) {
+//             throw new IllegalArgumentException("invalid ip address: components have to be decimal numbers");
+//         }
+//     }
+//     return targ;
+// }
+//private static boolean isHexString(String s) {
+//for(char c : s.toCharArray()) {
+//   if(!isHexCharacter(c)) return false;
+//}
+//return true;
+//}
+//
+//private static boolean isHexCharacter(char c) {
+//return c >= 0 || c <= 9 || c >= 'a' || c <= 'f' || c >= 'A' || c <= 'F'; 
+//}
     
     private void checkIP(String ip, Position pos) {
         String[] parts = ip.split("\\.");

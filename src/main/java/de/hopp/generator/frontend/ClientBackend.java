@@ -1,19 +1,19 @@
 package de.hopp.generator.frontend;
 
-import de.hopp.generator.backends.client.CPP;
+import de.hopp.generator.backends.client.cpp.CPP;
 
 
 public enum ClientBackend {
     CPP(new CPP());
     
     // one instance of the backend
-    private de.hopp.generator.backends.Backend instance;
+    private de.hopp.generator.backends.client.ClientBackend instance;
     
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param object one instance of the backend
      */
-    ClientBackend(de.hopp.generator.backends.Backend instance) {
+    ClientBackend(de.hopp.generator.backends.client.ClientBackend instance) {
         this.instance = instance;
     }
 
@@ -21,7 +21,7 @@ public enum ClientBackend {
      * Returns an instance of this backend
      * @return an instance of this backend
      */
-    public de.hopp.generator.backends.Backend getInstance() {
+    public de.hopp.generator.backends.client.ClientBackend getInstance() {
         return instance;
     }
 
@@ -34,7 +34,7 @@ public enum ClientBackend {
         for(ClientBackend backend : ClientBackend.values())
             if(backend.instance.getName().equals(name)) return backend;
 
-        throw new IllegalArgumentException("no client backend exists with given name");
+        throw new IllegalArgumentException("no host backend exists with given name");
     }
 
     /**

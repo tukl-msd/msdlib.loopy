@@ -95,7 +95,7 @@ public class IOHandler {
     public void error(String line) {
 
         // print error
-        System.out.println("ERROR: " + line);
+        System.out.println("  ERROR: " + line);
     }
     
     /**
@@ -105,7 +105,7 @@ public class IOHandler {
     public void warning(String line) {
 
         // reuse of other method
-        println("WARNING: " + line);
+        println("  WARNING: " + line);
     }
     
     public void verbose(String line) {

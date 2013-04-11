@@ -1,12 +1,16 @@
 specification BDL
 
+// comments within backend bocks (esp. in the java backend block)
+// unterminated strings ("abc) - why does katja even need strings??
+// weird behaviour concerning cli parameter parses (cause unknowns are passed on and on and non-flags are always interpreted as additional files at the end;)
+
 backend java {
   package de.hopp.generator.frontend
   import java.lang.String
   import java.lang.Integer
 }
 
-root BDLFile Pos
+root BDLFile Pos 
 
 external String
 external Integer
@@ -18,7 +22,7 @@ Decl = Import | Backend | Option | Core | GPIO | Instance | Medium | Scheduler
 Import (String file, Position pos)
 
 // selected backends for generation
-Backend (String name, Position pos)
+Backend (String name, String content, Position pos)
 
 // Definition of a new ipcore
 Core (String name, String version, Position pos, Imports source, Ports ports)
@@ -44,6 +48,7 @@ Medium = NONE()
 Option = HWQUEUE (Position pos, Integer qsize)
        | SWQUEUE (Position pos, Integer qsize)
        | BITWIDTH(Position pos, Integer bit)
+       | DEBUG   (Position pos)
        | POLL    (Position pos)
 
 MOption = MAC    (Position pos, String val)

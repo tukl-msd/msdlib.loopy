@@ -1,14 +1,7 @@
 package de.hopp.generator.utils;
 
-import java.io.IOException;
-import java.util.Iterator;
-
-import katja.common.KatjaElement;
-import katja.common.KatjaSort;
 import katja.common.NE;
 import de.hopp.generator.frontend.*;
-import de.hopp.generator.frontend.MOption.Switch;
-import de.hopp.generator.frontend.medium.MediumParser;
 
 public class BoardUtils {
     
@@ -62,6 +55,7 @@ public class BoardUtils {
     
     public static String printBoard(BDLFile board) {
         String rslt = "parsed the following board";
+        rslt += "\n  -debug: " + (debug(board) ? "yes" : "no");
         rslt += "\n  -" + board.medium().Switch(new Medium.Switch<String, NE>() {
             public String CaseNONE(NONE term) {
                 return "no medium";
@@ -133,6 +127,12 @@ public class BoardUtils {
 //        return rslt;
 //    }
     
+    private static boolean debug(BDLFile board) {
+        boolean debug = false;
+        for(Option opt : board.opts()) if(opt instanceof DEBUG) debug = true;
+        return debug;
+    }
+
     /**
      * Returns the unique port with given port id and core id
      * @param file
