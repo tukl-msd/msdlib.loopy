@@ -23,14 +23,24 @@ import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
 
 /**
- * Generates the board-specific, non-generic files of the
- * Virtex 6 board-side driver.
- * This includes the constant file and the components file.
- * The files are represented by C file ASTs, which are generated
- * by visiting each component of the BDL file describing board design.
+ * Generation backend for Xilinx SDK.
+ * 
+ * This backend is responsible for board-dependent files required to 
+ * build up the .elf file.
+ * This includes generation of the non-generic, board-dependent sources
+ * (i.e. constants and components files) as well as a deployment list
+ * of several generic, board-dependent sources (e.g. GPIO devices).
+ * 
+ * 
+ * 
+ * Since there seem to be no fundamental changes in the SDK since 14.1,
+ * only one backend is provided here, which is assumed to be compatible with all
+ * generated bitfiles. If this proves not to be the case, rename the SDK accordingly
+ * and provide a structure similar to the XPS backends.
+ * 
  * @author Thomas Fischer
  */
-public class Virtex6BDLVisitor extends Visitor<NE> {
+public class SDK extends Visitor<NE> {
     
     private static File gpioSrc = new File(sourceDir, "gpio");
     
@@ -72,7 +82,7 @@ public class Virtex6BDLVisitor extends Visitor<NE> {
         return files;
     }
     
-    public Virtex6BDLVisitor(Configuration config, ErrorCollection errors) {
+    public SDK(Configuration config, ErrorCollection errors) {
         this.errors = errors;
         
         // set directories

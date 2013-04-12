@@ -17,16 +17,41 @@ import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ProjectBackendIF;
-import de.hopp.generator.backends.server.virtex6.ise.sdk.Virtex6BDLVisitor;
-import de.hopp.generator.backends.server.virtex6.ise.xps.XPSBDLVisitor;
+import de.hopp.generator.backends.server.virtex6.ise.sdk.SDK;
+import de.hopp.generator.backends.server.virtex6.ise.xps.XPS;
 import de.hopp.generator.backends.unparser.MHSUnparser;
 import de.hopp.generator.frontend.BDLFilePos;
 
+/**
+ * Abstract project backend for Xilinx ISE projects for the Virtex6 board.
+ * 
+ * This backend is responsible for the generation of .elf and .bit files.
+ * To that purpose, the ISE workflow is used.
+ * The workflow implies creation of an XPS project for .bit file generation
+ * and a subsequent SDK project for .elf file generation.
+ * Respective backends are used to generate the project files.
+ * Afterwards, the required parts of the Xilinx toolsuite are called.
+ *
+ * The abstract class describes the workflow. Steps of the workflow are
+ * required to be overridden in the implementations.
+ *
+ * 
+ * 
+ * This flow is assumed to cover all versions of ISE.
+ * If this proves not to be the case in some earlier or later, unsupported version,
+ * introduce a new ProjectBackendIF subclass with the adjusted flow and
+ * rename this flow accordingly to the earliest version number,
+ * this workflow is compatible with (e.g. ISE14).
+ *
+ * @author Thomas Fischer
+ */
 public abstract class ISE implements ProjectBackendIF {
 
-    protected XPSBDLVisitor visit;
-    
     public static File sourceDir = new File(new File("deploy", "server"), "virtex6");
+    
+    protected abstract XPS xps();
+    protected abstract SDK sdk();
+    
     
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
         // deploy the necessary sources
@@ -47,11 +72,11 @@ public abstract class ISE implements ProjectBackendIF {
     protected void deployBITSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
         IOHandler IO = config.IOHANDLER();
         
-        visit.visit(board);
-
+        xps().visit(board);
+        
         StringBuffer buffer  = new StringBuffer();
         MHSUnparser unparser = new MHSUnparser(buffer);
-        unparser.visit(visit.getMHSFile());
+        unparser.visit(xps().getMHSFile());
         
         if(errors.hasErrors()) return;
         
@@ -68,33 +93,33 @@ public abstract class ISE implements ProjectBackendIF {
         }
         
         // deploy core sources
-        for(File target : visit.getCoreSources().keySet()) {
+        for(File target : xps().getCoreSources().keySet()) {
             try {
-                IO.debug("copying " + visit.getCoreSources().get(target) + " to "+ target.getPath());
-                copyFile(new File(visit.getCoreSources().get(target)), target);
+                IO.debug("copying " + xps().getCoreSources().get(target) + " to "+ target.getPath());
+                copyFile(new File(xps().getCoreSources().get(target)), target);
             } catch(IOException e) {
                 errors.addError(new GenerationFailed(e.getMessage()));
             }
         }
         
         // deploy core pao files
-        for(File target : visit.getPAOFiles().keySet()) {
+        for(File target : xps().getPAOFiles().keySet()) {
             try {
                 IO.debug("deploying " + target);
-                write(target, visit.getPAOFiles().get(target));
+                write(target, xps().getPAOFiles().get(target));
             } catch(IOException e) {
                 errors.addError(new GenerationFailed(e.getMessage()));
             }
         }
         
         // deploy core mpd files
-        for(File target : visit.getMPDFiles().keySet()) {
+        for(File target : xps().getMPDFiles().keySet()) {
             try {
                 IO.debug("deploying " + target);
                 
                 buffer   = new StringBuffer();
                 unparser = new MHSUnparser(buffer);
-                unparser.visit(visit.getMPDFiles().get(target));
+                unparser.visit(xps().getMPDFiles().get(target));
                 
                 printBuffer(buffer, target);
             } catch(IOException e) {
@@ -115,8 +140,8 @@ public abstract class ISE implements ProjectBackendIF {
         IOHandler IO = config.IOHANDLER();
         
         // generate board-specific MFiles
-        Virtex6BDLVisitor visit = new Virtex6BDLVisitor(config, errors);
-        visit.visit(board);
+//        SDK visit = new SDK(config, errors);
+        sdk().visit(board);
         
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;
@@ -133,9 +158,9 @@ public abstract class ISE implements ProjectBackendIF {
         }
         
         // deploy board-dependent, generic files
-        for(File source : visit.getFiles().keySet()) {
+        for(File source : sdk().getFiles().keySet()) {
             try {
-                copy(source.getPath(), visit.getFiles().get(source), IO);
+                copy(source.getPath(), sdk().getFiles().get(source), IO);
             } catch (IOException e) {
                 errors.addError(new GenerationFailed("Failed to deploy generic source " +
                         source + " due to:\n" + e.getMessage()));
@@ -146,9 +171,9 @@ public abstract class ISE implements ProjectBackendIF {
         if(errors.hasErrors()) return;
     
         // unparse & deploy the generated MFiles (note, that several (semi-)generic files are already deployed)
-        printMFile(visit.getConstants(),  UnparserType.HEADER, errors);
-        printMFile(visit.getComponents(), UnparserType.HEADER, errors);
-        printMFile(visit.getComponents(), UnparserType.C,      errors);
+        printMFile(sdk().getConstants(),  UnparserType.HEADER, errors);
+        printMFile(sdk().getComponents(), UnparserType.HEADER, errors);
+        printMFile(sdk().getComponents(), UnparserType.C,      errors);
     
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;

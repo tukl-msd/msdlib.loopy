@@ -9,9 +9,9 @@ import de.hopp.generator.ErrorCollection;
  * components like parameterised queues and DeMUXes.
  * @author Thomas Fischer
  */
-public class XPS_14_4BDLVisitor extends XPS_14_1BDLVisitor {
+public class XPS_14_4 extends XPS_14_1 {
 
-    public XPS_14_4BDLVisitor(Configuration config, ErrorCollection errors) {
+    public XPS_14_4(Configuration config, ErrorCollection errors) {
         super(config, errors);
     }
 }

@@ -23,14 +23,14 @@ import de.hopp.generator.parser.Block;
  * components like parameterised queues and DeMUXes.
  * @author Thomas Fischer
  */
-public class XPS_14_1BDLVisitor extends XPSBDLVisitor {
+public class XPS_14_1 extends XPS {
 
     private File coresDir;
     
     // temporary variables used to build up the mhs file
     private Block curBlock;
     
-    public XPS_14_1BDLVisitor(Configuration config, ErrorCollection errors) {
+    public XPS_14_1(Configuration config, ErrorCollection errors) {
         this.errors = errors;
         
         coresDir = new File(ISEUtils.edkDir(config), "pcores");

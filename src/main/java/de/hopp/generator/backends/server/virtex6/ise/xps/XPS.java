@@ -18,7 +18,19 @@ import de.hopp.generator.frontend.Port;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.parser.*;
 
-public abstract class XPSBDLVisitor extends Visitor<NE> {
+/**
+ * Abstract XPS generation backend, providing some utility methods.
+ * Also defines basic constants, that have to be instantiated by all extending versions.
+ * @author Thomas Fischer
+ * 
+ * 
+ * The cores described here are assumed to be compatible with all versions of XPS.
+ * If this proves not to be the case in some earlier or later, unsupported version,
+ * introduce a new abstract visitor subclass with adjusted cores and
+ * rename this file accordingly to the earliest version number,
+ * the core description is compatible with (e.g. XPS14).
+ */
+public abstract class XPS extends Visitor<NE> {
     protected ErrorCollection errors;
     
     // the generated mhs file
@@ -34,7 +46,6 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
     // counter variables
     protected int axiStreamIdMaster;
     protected int axiStreamIdSlave;
-    
     
     protected String version;
     
@@ -58,7 +69,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
     protected String version_gpio_buttons;
     protected String version_gpio_switches;
     
-    public XPSBDLVisitor() {
+    public XPS() {
         // initiate variables  
         mhs = MHSFile(Attributes());
         
