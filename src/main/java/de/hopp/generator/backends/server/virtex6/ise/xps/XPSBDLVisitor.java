@@ -35,6 +35,29 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
     protected int axiStreamIdMaster;
     protected int axiStreamIdSlave;
     
+    
+    protected String version;
+    
+    protected String version_microblaze;
+    
+    protected String version_proc_sys_reset;
+    protected String version_axi_intc;
+    protected String version_lmb_v10;
+    protected String version_lmb_bram_if_cntlr;
+    protected String version_bram_block;
+    protected String version_mdm;
+    protected String version_clock_generator;
+    protected String version_axi_timer;
+    protected String version_axi_interconnect;
+    protected String version_axi_v6_ddrx;
+    
+    protected String version_axi_uartlite;
+    protected String version_axi_ethernetlite;
+    
+    protected String version_gpio_leds;
+    protected String version_gpio_buttons;
+    protected String version_gpio_switches;
+    
     public XPSBDLVisitor() {
         // initiate variables  
         mhs = MHSFile(Attributes());
@@ -82,7 +105,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
         return block.replaceAttributes(block.attributes().add(attr));
     }
     
-    // static helpers creating parts of the file
+    // (static) helpers creating parts of the file
     
     /**
      * Creates the mpd file of a core. The file has still to be added to the mpd list.
@@ -202,10 +225,10 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
      * Generates an LED core.
      * @return A Block representing the generated core.
      */
-    protected static Block createLEDs() {
+    protected Block createLEDs() {
         return Block("axi_gpio",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("LEDs_8Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.01.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_gpio_leds))),
             Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(8))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(0))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
@@ -223,10 +246,10 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
      * Generates a Pushbutton core.
      * @return A Block representing the generated core.
      */
-    protected static Block createButtons() {
+    protected Block createButtons() {
         return Block("axi_gpio",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Push_Buttons_5Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.01.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_gpio_buttons))),
             Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(5))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
@@ -244,10 +267,10 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
      * Generates a DIP Switch core.
      * @return A Block representing the generated core.
      */
-    protected static Block createSwitches() {
+    protected Block createSwitches() {
        return Block("axi_gpio",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DIP_Switches_8Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.01.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_gpio_switches))),
             Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(8))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
@@ -274,7 +297,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
     /** Adds all basic components to the design, that are independent from the board. */
     protected void addDefault() {
         Attributes attr = Attributes(
-          Attribute(PARAMETER(), Assignment("VERSION", Ident("2.1.0"))),
+          Attribute(PARAMETER(), Assignment("VERSION", Ident(version))),
           Attribute(PORT(), 
             Assignment("ddr_memory_we_n", Ident("ddr_memory_we_n")),
             Assignment("DIR", Ident("O"))
@@ -351,7 +374,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
         Blocks blocks = Blocks(
           Block("proc_sys_reset",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("proc_sys_reset_0"))), 
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("3.00.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_proc_sys_reset))),
             Attribute(PARAMETER(), Assignment("C_EXT_RESET_HIGH", Number(1))),
             Attribute(PORT(), Assignment("MB_Debug_Sys_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))), 
             Attribute(PORT(), Assignment("Dcm_locked", Ident("proc_sys_reset_0_Dcm_locked"))),
@@ -363,7 +386,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
             Attribute(PORT(), Assignment("Peripheral_aresetn", Ident("proc_sys_reset_0_Peripheral_aresetn")))
           ), Block("axi_intc",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.02.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_intc))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41200000"))),
             Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4120ffff"))),
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
@@ -372,36 +395,36 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
             Attribute(PORT(), Assignment("INTR", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
           ), Block("lmb_v10",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_ilmb"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("2.00.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_v10))),
             Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
             Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
           ), Block("lmb_bram_if_cntlr",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_i_bram_ctrl"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("3.00.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_bram_if_cntlr))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
             Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
             Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_ilmb"))),
             Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block")))
           ), Block("lmb_v10",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_dlmb"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("2.00.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_v10))),
             Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
             Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0"))) 
           ), Block("lmb_bram_if_cntlr",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_d_bram_ctrl"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("3.00.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_bram_if_cntlr))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
             Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
             Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_dlmb"))),
             Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
           ), Block("bram_block",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_bram_block"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_bram_block))),
             Attribute(BUS_IF(), Assignment("PORTA", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block"))),
             Attribute(BUS_IF(), Assignment("PORTB", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
           ), Block("mdm",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("debug_module"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("2.00.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_mdm))),
             Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
             Attribute(PARAMETER(), Assignment("C_USE_UART", Number(1))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41400000"))),
@@ -412,7 +435,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
             Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0")))
           ), Block("clock_generator",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("4.03.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_clock_generator))),
             Attribute(PARAMETER(), Assignment("C_CLKIN_FREQ", Number(200000000))),
             Attribute(PARAMETER(), Assignment("C_CLKOUT0_FREQ", Number(100000000))),
             Attribute(PARAMETER(), Assignment("C_CLKOUT0_GROUP", Ident("MMCM0"))),
@@ -437,7 +460,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
             Attribute(PORT(), Assignment("PSDONE", Ident("psdone")))
           ), Block("axi_timer",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi_timer_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.03.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_timer))),
             Attribute(PARAMETER(), Assignment("C_COUNT_WIDTH", Number(32))),
             Attribute(PARAMETER(), Assignment("C_ONE_TIMER_ONLY", Number(0))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41c00000"))),
@@ -447,18 +470,18 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
             Attribute(PORT(), Assignment("Interrupt", Ident("axi_timer_0_Interrupt")))
           ), Block("axi_interconnect",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4lite_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.06.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_interconnect))),
             Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(0))),
             Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
             Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident("clk_100_0000MHzMMCM0")))
           ), Block("axi_interconnect",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.06.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_interconnect))),
             Attribute(PORT(), Assignment("interconnect_aclk", Ident("clk_100_0000MHzMMCM0"))),
             Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn")))
           ), Block("axi_v6_ddrx",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DDR3_SDRAM"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.05.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_v6_ddrx))),
             Attribute(PARAMETER(), Assignment("C_MEM_PARTNO", Ident("MT41J64M16XX-15E"))),
             Attribute(PARAMETER(), Assignment("C_DM_WIDTH", Number(1))),
             Attribute(PARAMETER(), Assignment("C_DQS_WIDTH", Number(1))),
@@ -508,7 +531,7 @@ public abstract class XPSBDLVisitor extends Visitor<NE> {
     protected void addMicroblaze() {
         Block microblaze = Block("microblaze",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("8.30.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_microblaze))),
             Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
             Attribute(PARAMETER(), Assignment("C_USE_BARREL", Number(1))),
             Attribute(PARAMETER(), Assignment("C_USE_FPU", Number(0))),

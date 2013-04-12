@@ -35,6 +35,28 @@ public class XPS_14_1BDLVisitor extends XPSBDLVisitor {
         
         coresDir = new File(ISEUtils.edkDir(config), "pcores");
         
+        // version strings
+        version                   = "2.1.0";
+        
+        version_microblaze        = "8.30.a";
+        
+        version_proc_sys_reset    = "3.00.a";
+        version_axi_intc          = "1.02.a";
+        version_lmb_v10           = "2.00.b";
+        version_lmb_bram_if_cntlr = "3.00.b";
+        version_bram_block        = "1.00.a";
+        version_mdm               = "2.00.b";
+        version_clock_generator   = "4.03.a";
+        version_axi_timer         = "1.03.a";
+        version_axi_interconnect  = "1.06.a";
+        version_axi_v6_ddrx       = "1.05.a";
+        
+        version_axi_uartlite      = "1.02.a";
+        version_axi_ethernetlite  = "1.01.b";
+        
+        version_gpio_leds         = "1.01.b";
+        version_gpio_buttons      = "1.01.b";
+        version_gpio_switches     = "1.01.b";
     }
     
     @Override
@@ -106,10 +128,10 @@ public class XPS_14_1BDLVisitor extends XPSBDLVisitor {
         );
         
         mhs = add(mhs, attr);
-        
+
         mhs = add(mhs, Block("axi_ethernetlite",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Ethernet_Lite"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.01.b"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_ethernetlite))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40e00000"))),
             Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x40e0ffff"))),
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
@@ -140,7 +162,7 @@ public class XPS_14_1BDLVisitor extends XPSBDLVisitor {
         
         mhs = add(mhs, Block("axi_uartlite",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("RS232_Uart_1"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.02.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_uartlite))),
             Attribute(PARAMETER(), Assignment("C_BAUDRATE", Number(9600))),
             Attribute(PARAMETER(), Assignment("C_DATA_BITS", Number(8))),
             Attribute(PARAMETER(), Assignment("C_USE_PARITY", Number(0))),
@@ -165,23 +187,29 @@ public class XPS_14_1BDLVisitor extends XPSBDLVisitor {
     public void visit(GPIOPos term) {
         switch(term.name().term()){
         case "led":
-            mhs = add(mhs, Attribute(PORT(), Assignment("LEDs_8Bits_TRI_O", Ident("LEDs_8Bits_TRI_O")),
-                                Assignment("DIR", Ident("O")),
-                                Assignment("VEC", Range(7,0))));
+            mhs = add(mhs, Attribute(PORT(),
+                Assignment("LEDs_8Bits_TRI_O", Ident("LEDs_8Bits_TRI_O")),
+                Assignment("DIR", Ident("O")),
+                Assignment("VEC", Range(7,0))
+            ));
             addPortToInterruptController("LEDs_8Bits_IP2INTC_Irpt");
             mhs = add(mhs, createLEDs());
             break;
         case "button":
-            mhs = add(mhs, Attribute(PORT(), Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),
-                    Assignment("DIR", Ident("I")),
-                    Assignment("VEC", Range(4,0))));
+            mhs = add(mhs, Attribute(PORT(),
+                Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),
+                Assignment("DIR", Ident("I")),
+                Assignment("VEC", Range(4,0))
+            ));
             addPortToInterruptController("Push_Buttons_5Bits_IP2INTC_Irpt");
             mhs = add(mhs, createButtons());
             break;
         case "switch":
-            mhs = add(mhs, Attribute(PORT(), Assignment("DIP_Switches_8Bits_TRI_I", Ident("DIP_Switches_8Bits_TRI_I")),
-                    Assignment("DIR", Ident("O")),
-                    Assignment("VEC", Range(7,0))));
+            mhs = add(mhs, Attribute(PORT(),
+                Assignment("DIP_Switches_8Bits_TRI_I", Ident("DIP_Switches_8Bits_TRI_I")),
+                Assignment("DIR", Ident("O")),
+                Assignment("VEC", Range(7,0))
+            ));
             addPortToInterruptController("DIP_Switches_8Bits_IP2INTC_Irpt");
             mhs = add(mhs, createSwitches());
             break;
@@ -192,7 +220,7 @@ public class XPS_14_1BDLVisitor extends XPSBDLVisitor {
         // begin a new instance using the instances name
         curBlock = Block(term.name().term());
         
-        // reference core and version
+        // reference core and version TODO
         curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("INSTANCE", Ident(term.core().term()))));
 //        instance = add(instance, Attribute(Attribute(PARAMETER(), ), Assignment("HW_VER", Ident(term.core().version()))));
         

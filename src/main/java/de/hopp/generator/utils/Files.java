@@ -1,11 +1,10 @@
 package de.hopp.generator.utils;
 
+import static org.apache.commons.io.FileUtils.copyFile;
+import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
+
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.Enumeration;
@@ -14,13 +13,12 @@ import java.util.jar.JarFile;
 
 import de.hopp.generator.IOHandler;
 
-// this would be so much easier with Java 7 ...
 public class Files {
     
     /**
      * Copies a resource into another directory.
      * @param resource resource string (may point to a file or directory)
-     * @param out output file, into which the resource should be copied (has to be a directory)
+     * @param out output file, into which the resource should be copied
      * @throws IOException file operations cause IOExceptions, naturally...
      */
     public static void copy(String resource, File targetFile, IOHandler IO) throws IOException {
@@ -60,18 +58,18 @@ public class Files {
                         IO.debug("    found and ignored directory " + entry.getName());
                     } else {
                         
-                        // cut away the path part before <resource> (including <resource>)
+                        // cut away the path until <resource> (including <resource>)
                         String path = entry.getName().substring(entry.getName().indexOf(resource) + resource.length());
                         
                         // prepend target directory
-                        path = new File(targetFile, path).getPath();
+                        File target = new File(targetFile, path);
                         
                         // create parent directories
-                        new File(path).mkdirs();
+                        target.getParentFile().mkdirs();
 
-                        IO.verbose("    copying file " + entry.getName() + " to " +  path);
                         // copy the resource from the jar file
-                        copyToStream(jarFile.getInputStream(entry), new FileOutputStream(path));
+                        IO.verbose("    copying file " + entry.getName() + " to " +  target.getPath());
+                        copyInputStreamToFile(jarFile.getInputStream(entry), target);
                     }
                 }
             } finally {
@@ -82,8 +80,8 @@ public class Files {
     
     /**
      * Copies files and directories into another directory.
-     * @param in the input file (maybe a directory or file, but has to exist.)
-     * @param out the output file (has to be a directory)
+     * @param in the input file (maybe a directory or file)
+     * @param out the output file
      * @throws IOException file operations cause IOExceptions, naturally...
      */
     private static void copy(File in, File out, IOHandler IO) throws IOException {
@@ -107,44 +105,7 @@ public class Files {
         } else {
             IO.verbose("    copying file " + in.getPath() + " to " + out.getPath());
             
-            // otherwise just copy the file using streams
-            FileInputStream   fin = new FileInputStream(in);
-            FileOutputStream fout = new FileOutputStream(out);
-            
-            try {
-                copyToStream(new FileInputStream(in), new FileOutputStream(out));
-            } finally {
-                fin.close(); fout.close();
-            }
+            copyFile(in, out);
         }
-    }
-    
-    /**
-     * Copies data from one stream to another, till input stream is at an end.
-     * @param in the in stream.
-     * @param out the out stream.
-     * @throws java.io.IOException stream operations cause IOExceptions, naturally...
-     */
-    public static void copyToStream(final InputStream in, final OutputStream out) throws IOException {
-
-        // how many bytes have been read to our byte buffer
-        int bytesRead;
-        byte[] buffer = new byte[16384];
-
-        // read a first chunk
-        bytesRead = in.read(buffer);
-
-        // while there is some rest (read guarantees to deliver -1 only on end of data)
-        while(bytesRead != -1) {
-
-            // write chunk to other stream
-            out.write(buffer, 0, bytesRead);
-
-            // get a new chunk
-            bytesRead = in.read(buffer);
-        }
-
-        // flush the output stream, to be sure the data was written
-        out.flush();
     }
 }

@@ -22,7 +22,7 @@ public class Configuration {
     public final static String defaultServerDir = "server";
     public final static String defaultClientDir = "client";
     public final static String defaultTempDir   = "temp";
-            
+    
     private File serverDir = new File(defaultServerDir);
     private File clientDir = new File(defaultClientDir);
     private File tempDir   = new File(defaultTempDir);
@@ -134,7 +134,7 @@ public class Configuration {
         IO.println("- host folder     : " + clientDir().getAbsolutePath());
         IO.println("- board folder    : " + serverDir().getAbsolutePath());
         IO.println("- temp folder     : " + tempDir().getAbsolutePath());
-
+        
         IO.print  ("- log level       : ");
         switch(loglevel) {
         case LOG_QUIET   : IO.println("quiet");   break; // (;
@@ -143,7 +143,7 @@ public class Configuration {
         case LOG_DEBUG   : IO.println("debug");   break;
         default: // should never happen
         }
-       
+        
         if(parseonly)   IO.println("- parse only");
         else if(dryrun) IO.println("- dryrun");
     }

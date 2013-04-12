@@ -10,7 +10,7 @@ backend java {
   import java.lang.Integer
 }
 
-root BDLFile Pos 
+root BDLFile Pos
 
 external String
 external Integer

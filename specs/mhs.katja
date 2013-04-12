@@ -1,6 +1,6 @@
 specification MHS
 
-backend java { 
+backend java {
   package de.hopp.generator.parser
   import java.lang.String
   import java.lang.Integer
