@@ -47,11 +47,11 @@ import de.hopp.generator.frontend.BDLFilePos;
  */
 public abstract class ISE implements ProjectBackendIF {
 
-    public static File sourceDir = new File(new File("deploy", "server"), "virtex6");
+    public static File sdkSourceDir = new File(new File("deploy", "server"), "virtex6");
+    public static File edkSourceDir = new File(new File("deploy", "server"), "ISE");
     
     protected abstract XPS xps();
     protected abstract SDK sdk();
-    
     
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
         // deploy the necessary sources
@@ -82,6 +82,14 @@ public abstract class ISE implements ProjectBackendIF {
         
         // if this is only a dryrun, return
         if(config.dryrun()) return;
+        
+        // deploy board-independent files and directories
+        try { 
+            copy(edkSourceDir.getPath(), edkDir(config), IO);
+        } catch(IOException e) {
+            e.printStackTrace();
+            errors.addError(new GenerationFailed("Failed to deploy generic edk sources due to:\n" + e.getMessage()));
+        }
         
         try {
             // deploy generated .mhs file
@@ -151,10 +159,10 @@ public abstract class ISE implements ProjectBackendIF {
         
         // deploy board-independent files and directories
         try { 
-            copy(new File(sourceDir, "generic").getPath(), sdkDir(config), IO);
+            copy(new File(sdkSourceDir, "generic").getPath(), sdkDir(config), IO);
         } catch(IOException e) {
             e.printStackTrace();
-            errors.addError(new GenerationFailed("Failed to deploy generic sources due to:\n" + e.getMessage()));
+            errors.addError(new GenerationFailed("Failed to deploy generic sdk sources due to:\n" + e.getMessage()));
         }
         
         // deploy board-dependent, generic files

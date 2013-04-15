@@ -9,13 +9,9 @@ import java.util.Map;
 import katja.common.NE;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
-import de.hopp.generator.frontend.Core;
-import de.hopp.generator.frontend.DUAL;
-import de.hopp.generator.frontend.Direction;
-import de.hopp.generator.frontend.IN;
-import de.hopp.generator.frontend.OUT;
-import de.hopp.generator.frontend.Port;
+import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
+import de.hopp.generator.frontend.*;
 import de.hopp.generator.parser.*;
 
 /**
@@ -139,8 +135,10 @@ public abstract class XPS extends Visitor<NE> {
         block = add(block, Attribute(OPTION(), Assignment("LONG_DESC", STR(""))));
 
         for(final Port port : core.ports()) {
-            
-            int bitwidth = 32; // TODO use actual bitwidth (if available)
+            int bitwidth = 32;
+            for(Option opt : port.opts()) {
+                if(opt instanceof BITWIDTH) bitwidth = ((BITWIDTH)opt).bit();
+            }
             
             block = add(block, Attribute(BUS_IF(),
                 Assignment("BUS", Ident(port.name())),
@@ -296,6 +294,99 @@ public abstract class XPS extends Visitor<NE> {
     }
     
     // helper methods modifying the mhs file of this visitor
+    
+    protected Attribute createCPUAxisBinding(final CPUAxis axis, boolean d, int width, int queueSize) throws UsageError {
+        
+        String axisGroup   = d ? "M" + axiStreamIdMaster++ : "S" + axiStreamIdSlave++;
+        String currentAxis = axisGroup + "_AXIS";
+        
+        // add multiplexing, if required
+        currentAxis = addMux(axisGroup, d, width, currentAxis);
+        
+        // add queueing, if required
+        currentAxis = addQueue(axisGroup, d, width, queueSize, currentAxis);
+        
+        // connect the component to the last axis
+        return Attribute(BUS_IF(), Assignment(axis.port(), Ident(currentAxis)));
+    }
+    
+    private String addQueue(String axisGroup, boolean d, int width, int depth, String currentAxis) throws UsageError {
+        
+        if(depth == 0) return currentAxis;
+        if(depth < 0) throw new UsageError("negative queue size");
+        
+        String queueAxis = axisGroup + "_QUEUE_AXIS";
+        
+        // add a queue component in between the component and the microblaze
+        mhs = add(mhs, Block(axisGroup + "_QUEUE",
+               Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Queue"))),
+               Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
+               Attribute(PARAMETER(), Assignment("DEPTH", Number(depth))),
+               Attribute(PARAMETER(), Assignment("WIDTH", Number(width))),
+               Attribute(BUS_IF(), Assignment("IN", Ident(d ? currentAxis : queueAxis))),
+               Attribute(BUS_IF(), Assignment("OUT", Ident(d ? queueAxis : currentAxis))),
+               Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
+               Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+        ));
+        
+        // return the axis identifier of the queues port, that should be attached to the components port
+        return queueAxis;
+    }
+
+    private String addMux(String axisGroup, boolean d, int width, String currentAxis) throws UsageError {
+        
+        if(width == 32) return currentAxis;
+        if(width <= 0) throw new UsageError("encountered port with bitwidth of " + width);
+        
+        // add a mux component
+        if (width > 32) {
+            int mult = new Double(Math.floor(width / 32)).intValue();
+            
+            String muxAxis  = axisGroup + "_MUX_AXIS";
+            
+            // depending on the direction, we need an upsizer or downsizer
+            mhs = add(mhs, Block(axisGroup + "_MUX",
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(d ? "Upsizer" : "Downsizer"))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
+                Attribute(PARAMETER(), Assignment("WIDTH", Number(32))),
+                Attribute(PARAMETER(), Assignment("NUM_REG", Number(mult))),
+                Attribute(BUS_IF(), Assignment("TDATA", Ident(d ? currentAxis : muxAxis))),
+                Attribute(BUS_IF(), Assignment("TARRAY", Ident(d ? muxAxis : currentAxis))),
+                Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+            ));
+                    
+            currentAxis = muxAxis;
+        }
+        
+        
+        // add a drop component, if the width is not a multiple of 32 bit
+        if (width % 32 > 0) {
+            int pad = width % 32;
+            
+            String dropAxis = axisGroup + "_DROP_AXIS";
+
+            // TODO support it ;)
+            throw new UsageError("conversion to non-multiples of 32-bit is currently unsupported");
+            
+            // depending on the direction, drop or add
+//            mhs = add(mhs, Block(axisGroup + "_BITSTUFFER",
+//                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(d ? "BitRemover" : "BitStuffer"))),
+//                Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
+//                Attribute(PARAMETER(), Assignment("WIDTH", Number(width))),
+//                Attribute(PARAMETER(), Assignment("PADDING", Number(32 - (width % 32)))),
+//                Attribute(BUS_IF(), Assignment("TDATA", Ident(d ? currentAxis : dropAxis))),
+//                Attribute(BUS_IF(), Assignment("TARRAY", Ident(d ? dropAxis : currentAxis))),
+//                Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
+//                Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+//            ));
+//            
+//            currentAxis = dropAxis;
+        }
+        
+        return currentAxis;
+    }
+    
     /**
      * Adds a port descriptor to the interrupt controller port list.
      * This list is later used add the interrupt controller core.

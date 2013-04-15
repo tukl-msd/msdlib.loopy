@@ -13,6 +13,7 @@ import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ise.ISEUtils;
+import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.parser.Attributes;
 import de.hopp.generator.parser.Block;
@@ -24,16 +25,18 @@ import de.hopp.generator.parser.Block;
  * @author Thomas Fischer
  */
 public class XPS_14_1 extends XPS {
-
+    
     private File coresDir;
     
     // temporary variables used to build up the mhs file
-    private Block curBlock;
-    
+    protected Block curBlock;
+    protected int globalHWQueueSize;
+    protected int globalSWQueueSize;
+
     public XPS_14_1(Configuration config, ErrorCollection errors) {
-        this.errors = errors;
-        
         coresDir = new File(ISEUtils.edkDir(config), "pcores");
+        
+        this.errors = errors;
         
         // version strings
         version                   = "2.1.0";
@@ -61,6 +64,14 @@ public class XPS_14_1 extends XPS {
     
     @Override
     public void visit(BDLFilePos term) {
+        
+        for(OptionPos opt : term.opts()) {
+            if(opt instanceof HWQUEUEPos)
+                globalHWQueueSize = ((HWQUEUEPos)opt).qsize().term();
+            else if(opt instanceof SWQUEUEPos)
+                globalSWQueueSize = ((SWQUEUEPos)opt).qsize().term();
+        }
+        
         // visit boards components
         visit(term.insts());
         visit(term.gpios());
@@ -220,9 +231,9 @@ public class XPS_14_1 extends XPS {
         // begin a new instance using the instances name
         curBlock = Block(term.name().term());
         
-        // reference core and version TODO
+        // reference core and version
         curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("INSTANCE", Ident(term.core().term()))));
-//        instance = add(instance, Attribute(Attribute(PARAMETER(), ), Assignment("HW_VER", Ident(term.core().version()))));
+        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("HW_VER", Ident(term.version().term()))));
         
         // define bus interfaces
         visit(term.bind());
@@ -241,25 +252,29 @@ public class XPS_14_1 extends XPS {
         curBlock = add(curBlock, Attribute(BUS_IF(), Assignment(term.port().term(), Ident(term.axis().term()))));
     }
 
-    public void visit(final CPUAxisPos axis) {
-        // get the direction of the corresponding port
-        Direction direct = getPort(axis).direction().termDirection();
-        
-        // depending on the direction, add a different interface
-        curBlock = add(curBlock, Attribute(BUS_IF(), Assignment(axis.port().term(),
-            Ident(direct.Switch(new Direction.Switch<String, NE>() {
-                public String CaseIN(IN term) {
-                    return "M" + axiStreamIdMaster++ + "_AXIS";
-                }
-                public String CaseOUT(OUT term) {
-                    return "S" + axiStreamIdSlave++  + "_AXIS";
-                }
-                public String CaseDUAL(DUAL term) {
-                    // TODO throw error, try, catch, add to errors...
-                    throw new IllegalStateException();
-                }
-            }))
-        )));
+    public void visit(CPUAxisPos axis) {
+        try {
+            // direction of the port: true marks in-going port, false an out-going one
+            // bi-directional not possible due to sanity check
+            boolean direction = getPort(axis).direction().termDirection() instanceof IN;
+
+            // set the bitwidth parameter
+            int width = 32;
+            for(OptionPos opt : getPort(axis).opts())
+                if(opt instanceof BITWIDTHPos)
+                    width = ((BITWIDTHPos)opt).term().bit();
+            
+            // set the bitwidth parameter
+            int queueSize = globalHWQueueSize;
+            for(OptionPos opt : axis.opts())
+                if(opt instanceof HWQUEUEPos)
+                    queueSize = ((HWQUEUEPos)opt).term().qsize();
+            
+            // boolean direction, int width, int queueSize
+            curBlock = add(curBlock, createCPUAxisBinding(axis.term(), direction, width, queueSize));
+        } catch (UsageError e) {
+            errors.addError(e);
+        }
     }
     
     // imports and backends should be handled before this visitor

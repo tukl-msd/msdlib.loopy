@@ -317,9 +317,9 @@ direct ::=
   ;
 
 instance ::=
-     INSTANCE ID:core ID:id bind_block:b
+     INSTANCE ID:core version:ver ID:id bind_block:b
      {:
-         RESULT = BDL.Instance(id, core, pos(idleft), b);
+         RESULT = BDL.Instance(id, core, ver, pos(idleft), b);
      :}
   ;
 

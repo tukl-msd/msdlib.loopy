@@ -112,10 +112,10 @@ public class Parser {
                     GPIO("switches",  IN(),pos,DEFAULT()),
                     GPIO("buttons",   IN(),pos,DEFAULT())
                 ), Instances(
-                    Instance("rng_a",   "rng",   pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
-                    Instance("rng_b",   "rng",   pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
-                    Instance("adder_a", "adder", pos, CPUAxis("in1",pos), CPUAxis("out1",pos), CPUAxis("in2",pos)),
-                    Instance("fifo_a",  "fifo",  pos, CPUAxis("in1",pos), CPUAxis("out1",pos))
+                    Instance("rng_a",   "rng",   "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
+                    Instance("rng_b",   "rng",   "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
+                    Instance("adder_a", "adder", "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos), CPUAxis("in2",pos)),
+                    Instance("fifo_a",  "fifo",  "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos))
                 ), ETHERNET(pos,MAC(pos,"00:0a:35:00:01:02")), Scheduler(pos,DEFAULT()));
     }
     

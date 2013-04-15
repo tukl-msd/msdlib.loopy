@@ -2,7 +2,7 @@ package de.hopp.generator.backends.server.virtex6.ise.sdk;
 
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
-import static de.hopp.generator.backends.server.virtex6.ise.ISE.sourceDir;
+import static de.hopp.generator.backends.server.virtex6.ise.ISE.sdkSourceDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.getPort;
@@ -42,7 +42,7 @@ import de.hopp.generator.model.MProcedure;
  */
 public class SDK extends Visitor<NE> {
     
-    private static File gpioSrc = new File(sourceDir, "gpio");
+    private static File gpioSrc = new File(sdkSourceDir, "gpio");
     
     private ErrorCollection errors;
     
@@ -212,7 +212,7 @@ public class SDK extends Visitor<NE> {
     @Override
     public void visit(ETHERNETPos term) {
         // deploy Ethernet medium files
-        files.put(new File(sourceDir, "ethernet.c"), new File(new File(targetSrc, "medium"), "medium.c"));
+        files.put(new File(sdkSourceDir, "ethernet.c"), new File(new File(targetSrc, "medium"), "medium.c"));
         
         // add Ethernet-specific constants
         for(MOptionPos opt : term.opts()) {

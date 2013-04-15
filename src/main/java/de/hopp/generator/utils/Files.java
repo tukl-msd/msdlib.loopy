@@ -93,7 +93,7 @@ public class Files {
 //        IO.verbose("  copying: " + in.getPath());
         
         // create the parent folder, if it doesn't exist
-        if(! out.getParentFile().exists()) out.getParentFile().mkdirs();
+        if(out.getParentFile() != null && ! out.getParentFile().exists()) out.getParentFile().mkdirs();
         
         if(in.isDirectory()) {
             // if the file is a directory, create it ...

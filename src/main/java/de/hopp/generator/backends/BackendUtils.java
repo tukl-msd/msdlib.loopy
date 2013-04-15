@@ -128,24 +128,34 @@ public class BackendUtils {
         }
     }
     
+    public static CorePos getCore(InstancePos inst) {
+        String coreName = inst.core().term();
+        String coreVer  = inst.version().term();
+        
+        BDLFilePos file = inst.root();
+        
+        CorePos core = null;
+        for(CorePos c : file.cores()) {
+            if(c.name().term().equals(coreName) &&
+               c.version().term().equals(coreVer)) {
+                core = c;
+                break;
+            }
+        }
+        
+        if(core == null) throw new IllegalStateException();
+        
+        return core;
+    }
+    
     public static PortPos getPort(BindingPos bind) {
         String portName = bind.port().term();
 
         if(!(bind.parent().parent() instanceof InstancePos)) throw new IllegalStateException();
         InstancePos inst = ((InstancePos)bind.parent().parent());
         
-        String coreName = inst.core().term();
-        
-        BDLFilePos file = inst.root();
-        
-        CorePos core = null;
-        for(CorePos c : file.cores()) if(c.name().term().equals(coreName)) {
-            core = c;
-            break;
-        }
-        
-        if(core == null) throw new IllegalStateException();
-        
+        CorePos core = getCore(inst);
+       
         PortPos port = null;
         for(PortPos p : core.ports()) if(p.name().term().equals(portName)) {
             port = p;
