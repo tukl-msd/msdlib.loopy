@@ -109,6 +109,19 @@ public class CPPBDLVisitor extends Visitor<NE> {
 //          comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
 //          MPointerType(MType("interface")), "intrfc",
 //          MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
+        
+        for(MOption opt : term.opts().term()) {
+            if(opt instanceof IP) {
+                System.err.println("found ip!");
+                consts = add(consts, MDefinition(
+                    MDocumentation(Strings("IP for Ethernet communication")),
+                    MModifiers(PUBLIC()), "IP", "\"" + ((IP)opt).val() + "\"")); 
+            } else if(opt instanceof PORTID) {
+                consts = add(consts, MDefinition(
+                    MDocumentation(Strings("Data port for Ethernet communication")),
+                    MModifiers(PUBLIC()), "PORT", ((PORTID)opt).val().toString()));
+            }
+        }
     }
 
     public void visit(UARTPos term) { }

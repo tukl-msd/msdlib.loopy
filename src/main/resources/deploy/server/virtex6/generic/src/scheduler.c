@@ -40,9 +40,8 @@ void schedule() {
 				// remove the read value from the queue
 				take(inQueue[pid]);
 
-				// TODO individual sizes for each port
 				// if the queue was full beforehand, poll
-				if(inQueue[pid]->size == SW_QUEUE_SIZE - 1) send_poll(pid);
+				if(inQueue[pid]->size == inQueue[pid]->cap - 1) send_poll(pid);
 			}
 		}
 
@@ -51,7 +50,7 @@ void schedule() {
 		for(pid = 0; pid < OUT_STREAM_COUNT; pid++) {
 			for(i = 0; i < ITERATION_COUNT; i++) {
 				// break, if the sw queue is full
-				if(outQueueSize == SW_QUEUE_SIZE) {
+				if(outQueueSize == outQueueCap[pid]) {
 					xil_printf("queue full");
 					break;
 				}

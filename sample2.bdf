@@ -6,7 +6,7 @@ gpio in buttons {:
 :}
 
 gpio in switches
-gpio in leds
+gpio out leds
 
 // queue sizes
 swqueue 25
@@ -23,9 +23,7 @@ medium ethernet {
 core rng 1.00.a {
   source "sample2.bdf"
 
-  port in in1 {
-    width 64
-  }
+  port in in1
   port out out1
 } 
 

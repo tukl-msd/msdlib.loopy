@@ -15,10 +15,12 @@
 #include "queueUntyped.h"
 
 /** Microblaze input queues */
-Queue  *inQueue[ IN_STREAM_COUNT];
+Queue *inQueue[IN_STREAM_COUNT];
 /** Microblaze output queue */
 int outQueue[SW_QUEUE_SIZE];
-
+/** capacity of the output queues */
+int outQueueCap[OUT_STREAM_COUNT];
+/** current size of the output queue */
 extern int outQueueSize;
 
 /**

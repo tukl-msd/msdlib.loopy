@@ -39,20 +39,24 @@ int hasElems(struct Queue *queue) {
 	return queue->size > 0;
 }
 
-struct Queue* createQueue() {
+struct Queue* createQueue(int cap) {
 	// allocate a new IntQueue
 	struct Queue *q = malloc(sizeof(struct Queue));
 
 	// set pointers and size to defaults
-	q-> first = NULL;
-	q-> last  = NULL;
-	q-> size  = 0;
+	q->first = NULL;
+	q->last  = NULL;
+	q->size  = 0;
+	q->cap   = cap;
 
 	// return the pointer
 	return q;
 }
 
-void put(struct Queue *queue, int val) {
+int put(struct Queue *queue, int val) {
+	// if the queue has reached its capacity, abort
+	if(queue->size >= queue->cap) return 0;
+
 	// allocate a new QueueNode
 	struct QueueNode *elem = createElem(val);
 
@@ -64,6 +68,8 @@ void put(struct Queue *queue, int val) {
 	// set new last pointer and size
 	queue->last = elem;
 	queue->size++;
+
+	return 1;
 }
 
 int take(struct Queue *queue) {

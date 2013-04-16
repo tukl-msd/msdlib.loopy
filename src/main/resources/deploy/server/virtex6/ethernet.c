@@ -20,7 +20,7 @@
 #include <math.h>
 
 // attributes of Driver
-struct ip_addr ip, mask, gw, host;
+struct ip_addr ip, mask, gw;
 struct netif *netif, server_netif;
 struct tcp_pcb *pcb;
 struct tcp_pcb *data_pcb;
@@ -43,12 +43,12 @@ static void print_ip ( char *msg, struct ip_addr *ip ) {
  * @param mask The subnet mask.
  * @param gw The standard gateway.
  */
-static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw, struct ip_addr *host) {
+static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
 	print_ip("  Board IP : ", ip);
 	xil_printf(":%d", PORT);
 	print_ip("\n  Netmask  : ", mask);
 	print_ip("\n  Gateway  : ", gw);
-	print_ip("\n  Host IP  : ", host);
+//	print_ip("\n  Host IP  : ", host);
 	xil_printf(":%d\n", PORT);
 
 }
@@ -105,6 +105,7 @@ void medium_read() {
 void print(struct Message *m) {
 	xil_printf("\nsending message of size %d", m->headerSize + m->payloadSize);
 	xil_printf("\nheader int:  %d", m->header[0]);
+
 	xil_printf(" (Payload: ", m->payloadSize);
 	int i;
 	for(i = 0; i < m->payloadSize-1; i++) xil_printf("%d, ", m->payload[i]);
@@ -312,9 +313,9 @@ void init_medium() {
 	IP4_ADDR(&mask, MASK_1, MASK_2, MASK_3, MASK_4);
 	IP4_ADDR(&gw,   GW_1,   GW_2,   GW_3,   GW_4);
 
-	IP4_ADDR(&host, 192, 168, 1, 23);
+//	IP4_ADDR(&host, 192, 168, 1, 23);
 
-	if(DEBUG) print_ip_settings(&ip, &mask, &gw, &host);
+	if(DEBUG) print_ip_settings(&ip, &mask, &gw);
 
 	lwip_init();
 

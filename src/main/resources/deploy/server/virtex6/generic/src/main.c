@@ -46,9 +46,6 @@ int main() {
 	// initialise all components
 	init_components();
 
-	// initialise queues
-	init_queue();
-
 	// perform medium-specific startup operations (TODO merge with init?)
 	start_application();
 

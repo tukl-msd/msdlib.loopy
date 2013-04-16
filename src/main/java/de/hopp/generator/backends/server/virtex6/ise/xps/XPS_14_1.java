@@ -1,11 +1,11 @@
 package de.hopp.generator.backends.server.virtex6.ise.xps;
 
 import static de.hopp.generator.backends.BackendUtils.getPort;
+import static de.hopp.generator.backends.BackendUtils.getSWQueueSize;
+import static de.hopp.generator.backends.BackendUtils.getWidth;
 import static de.hopp.generator.parser.MHS.*;
 
 import java.io.File;
-
-import katja.common.NE;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -258,20 +258,9 @@ public class XPS_14_1 extends XPS {
             // bi-directional not possible due to sanity check
             boolean direction = getPort(axis).direction().termDirection() instanceof IN;
 
-            // set the bitwidth parameter
-            int width = 32;
-            for(OptionPos opt : getPort(axis).opts())
-                if(opt instanceof BITWIDTHPos)
-                    width = ((BITWIDTHPos)opt).term().bit();
-            
-            // set the bitwidth parameter
-            int queueSize = globalHWQueueSize;
-            for(OptionPos opt : axis.opts())
-                if(opt instanceof HWQUEUEPos)
-                    queueSize = ((HWQUEUEPos)opt).term().qsize();
-            
-            // boolean direction, int width, int queueSize
-            curBlock = add(curBlock, createCPUAxisBinding(axis.term(), direction, width, queueSize));
+            curBlock = add(curBlock, createCPUAxisBinding(
+                    axis.term(), direction, getWidth(axis), getSWQueueSize(axis)
+            ));
         } catch (UsageError e) {
             errors.addError(e);
         }

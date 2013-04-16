@@ -2,6 +2,7 @@ package de.hopp.generator.backends.server.virtex6.ise.sdk;
 
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
+import static de.hopp.generator.backends.BackendUtils.getSWQueueSize;
 import static de.hopp.generator.backends.server.virtex6.ise.ISE.sdkSourceDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.model.Model.*;
@@ -51,7 +52,7 @@ public class SDK extends Visitor<NE> {
     private File targetSrc;
     
     // generic files to copy
-    protected Map<File, File> files;
+    protected Map<File, File> deployFiles;
     
     // generated files
     protected MFile components;
@@ -79,7 +80,7 @@ public class SDK extends Visitor<NE> {
     }
     
     public Map<File, File> getFiles() {
-        return files;
+        return deployFiles;
     }
     
     public SDK(Configuration config, ErrorCollection errors) {
@@ -90,7 +91,7 @@ public class SDK extends Visitor<NE> {
         targetSrc = new File(targetDir, "src");
         
         // setup files and methods
-        files = new HashMap<File, File>();
+        deployFiles = new HashMap<File, File>();
         setupFiles();
         setupMethods();
     }
@@ -168,8 +169,8 @@ public class SDK extends Visitor<NE> {
         // add gpio utils file, if gpio components are present
         if(!term.gpios().isEmpty()) {
             File target = new File(new File(targetSrc, "components"), "gpio");
-            files.put(new File(gpioSrc, "gpio.h"), new File(target, "gpio.h"));
-            files.put(new File(gpioSrc, "gpio.c"), new File(target, "gpio.c"));
+            deployFiles.put(new File(gpioSrc, "gpio.h"), new File(target, "gpio.h"));
+            deployFiles.put(new File(gpioSrc, "gpio.c"), new File(target, "gpio.c"));
         }
         
         // visit board components
@@ -212,7 +213,7 @@ public class SDK extends Visitor<NE> {
     @Override
     public void visit(ETHERNETPos term) {
         // deploy Ethernet medium files
-        files.put(new File(sdkSourceDir, "ethernet.c"), new File(new File(targetSrc, "medium"), "medium.c"));
+        deployFiles.put(new File(sdkSourceDir, "ethernet.c"), new File(new File(targetSrc, "medium"), "medium.c"));
         
         // add Ethernet-specific constants
         for(MOptionPos opt : term.opts()) {
@@ -256,46 +257,52 @@ public class SDK extends Visitor<NE> {
     }
 
     @Override
-    public void visit(CPUAxisPos term) {
-        PortPos port = getPort(term.root(), ((InstancePos)term.parent().parent()).core().term(), term.port().term());
+    public void visit(final CPUAxisPos axis) {
+        PortPos port = getPort(axis.root(), ((InstancePos)axis.parent().parent()).core().term(), axis.port().term());
         port.direction().termDirection().Switch(new Direction.Switch<Boolean, NE>() {
             public Boolean CaseIN(IN term) {
-                addWriteStream();
-                return null;
+                addWriteStream(axis); return null;
             }
             public Boolean CaseOUT(OUT term) {
-                addReadStream();
-                return null;
+                addReadStream(axis); return null;
             }
             public Boolean CaseDUAL(DUAL term) {
-                addWriteStream();
-                addReadStream();
-                return null;
+                addWriteStream(axis); addReadStream(axis); return null;
             }
         });
     }
     
-    private void addWriteStream() {
+    private void addWriteStream(CPUAxisPos axis) {
         if(axiStreamIdMaster>15) {
             errors.addError(new ParserError("too many writing AXI stream interfaces for Virtex6", "", -1));
             return;
         }
         axi_write = addLines(axi_write, MCode(Strings(
-                "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
-                ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
-                )));
+            "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
+            ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
+        )));
+        
+        init = addLines(init, MCode(
+            Strings("inQueue[" + axiStreamIdMaster + "] = createQueue(" + getSWQueueSize(axis) + ");"),
+            MQuoteInclude("../io.h")
+        ));
         axiStreamIdMaster++;
     }
 
-    private void addReadStream() {
+    private void addReadStream(CPUAxisPos axis) {
         if(axiStreamIdSlave>15) {
             errors.addError(new ParserError("too many reading AXI stream interfaces for Virtex6", "", -1));
             return;
         }
         axi_read  = addLines(axi_read,  MCode(Strings(
-                "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
-                ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
-                )));
+            "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
+            ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
+        )));
+        
+        init = addLines(init, MCode(
+            Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize(axis) + ";"),
+            MQuoteInclude("../io.h")
+        ));
         axiStreamIdSlave++;
     }
     
@@ -306,7 +313,7 @@ public class SDK extends Visitor<NE> {
     public void visit(MOptionsPos  term) { for( MOptionPos opt  : term) visit(opt);  }
     
     // general (handled before this visitor)
-    public void visit(ImportPos term) { }
+    public void visit(ImportPos term)  { }
     public void visit(BackendPos term) { }
     
     // scheduler (irrelevant for host-side driver
@@ -363,8 +370,8 @@ public class SDK extends Visitor<NE> {
     private void addLEDs() {
         // deploy LED files
         File target = new File(new File(targetSrc, "components"), "gpio");
-        files.put(new File(gpioSrc, "led.h"), new File(target, "led.h"));
-        files.put(new File(gpioSrc, "led.c"), new File(target, "led.c"));
+        deployFiles.put(new File(gpioSrc, "led.h"), new File(target, "led.h"));
+        deployFiles.put(new File(gpioSrc, "led.c"), new File(target, "led.c"));
 
             // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
@@ -374,8 +381,8 @@ public class SDK extends Visitor<NE> {
     public void addSwitches() {
         // deploy switch files
         File target = new File(new File(targetSrc, "components"), "gpio");
-        files.put(new File(gpioSrc, "switches.h"), new File(target, "switches.h"));
-        files.put(new File(gpioSrc, "switches.c"), new File(target, "switches.c"));
+        deployFiles.put(new File(gpioSrc, "switches.h"), new File(target, "switches.h"));
+        deployFiles.put(new File(gpioSrc, "switches.c"), new File(target, "switches.c"));
             
         // add switch init to component init
         init = addLines(init, MCode(Strings("init_switches();"),
@@ -387,24 +394,28 @@ public class SDK extends Visitor<NE> {
         
         // add callback procedure to component file
         // TODO user-defined code and additional documentation
-        components = add(components, MProcedure(MDocumentation(Strings(
-                    "Callback procedure for the switch gpio component.",
-                    "This procedure is called, whenever the state of the switch component changes."
-                )), MModifiers(PRIVATE()), MVoid(), "callback_switches", MParameters(), MCode(Strings(
-                     "// Test application: set LED state to Switch state",
-                     "set_LED(read_switches());",
-                     "send_gpio(gpo_switches, read_switches());"
-                ), MQuoteInclude("xbasic_types.h"),
-                   MForwardDecl("u32 read_switch()"),
-                   MForwardDecl("void set_LED(u32 state)"),
-                   MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)"))));
+        components = add(components, MProcedure(
+            MDocumentation(Strings(
+                "Callback procedure for the switch gpio component.",
+                "This procedure is called, whenever the state of the switch component changes."
+            )), MModifiers(PRIVATE()), MVoid(), "callback_switches", MParameters(), MCode(
+                Strings(
+                    "// Test application: set LED state to Switch state",
+                    "set_LED(read_switches());",
+                    "send_gpio(gpo_switches, read_switches());"),
+                MQuoteInclude("xbasic_types.h"),
+                MForwardDecl("u32 read_switch()"),
+                MForwardDecl("void set_LED(u32 state)"),
+                MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)")
+            )
+        ));
     }
 
     private void addButtons() {
         // deploy button files
         File target = new File(new File(targetSrc, "components"), "gpio");
-        files.put(new File(gpioSrc, "button.h"), new File(target, "button.h"));
-        files.put(new File(gpioSrc, "button.c"), new File(target, "button.c"));
+        deployFiles.put(new File(gpioSrc, "button.h"), new File(target, "button.h"));
+        deployFiles.put(new File(gpioSrc, "button.c"), new File(target, "button.c"));
             
         // add button init to component init
         init = addLines(init, MCode(Strings("init_buttons();"),
@@ -416,14 +427,19 @@ public class SDK extends Visitor<NE> {
         
         // add callback procedure to component file
         // TODO user-defined code and additional documentation
-        components = add(components, MProcedure(MDocumentation(Strings(
-                    "Callback procedure for the pushbutton gpio component.",
-                    "This procedure is called, whenever the state of the pushbutton component changes."
-                )), MModifiers(PRIVATE()), MVoid(), "callback_buttons", MParameters(), MCode(Strings(
-                     "// Test application: print out some text",
-                     "xil_printf(\"\\nhey - stop pushing!! %d\", read_buttons());",
-                     "send_gpio(gpo_buttons, read_buttons());"
-                ), MQuoteInclude("xbasic_types.h"), MForwardDecl("u32 read_buttons()"))));
+        components = add(components, MProcedure(
+            MDocumentation(Strings(
+                "Callback procedure for the pushbutton gpio component.",
+                "This procedure is called, whenever the state of the pushbutton component changes."
+            )), MModifiers(PRIVATE()), MVoid(), "callback_buttons", MParameters(), MCode(
+                Strings(
+                    "// Test application: print out some text",
+                    "xil_printf(\"\\nhey - stop pushing!! %d\", read_buttons());",
+                    "send_gpio(gpo_buttons, read_buttons());"),
+                MQuoteInclude("xbasic_types.h"),
+                MForwardDecl("u32 read_buttons()")
+            )
+        ));
     }
     
     private void addIP(String id, String ipString, String doc) {

@@ -25,8 +25,8 @@ void message_payload(struct Message *m, int values[], int size) {
 }
 
 void message_header(struct Message *m, int header[], int size) {
-	// (re)allocate memory for the header
-	m->header = realloc(m->header, sizeof(int) * size);
+	// allocate memory for the header
+	m->header = malloc(sizeof(int) * size);
 
 	// assign single integer values
 	int i;
@@ -38,6 +38,6 @@ void message_header(struct Message *m, int header[], int size) {
 
 void message_free(struct Message *m) {
 	free(m->header);
-	free(m->payload);
+//	free(m->payload);
 	free(m);
 }

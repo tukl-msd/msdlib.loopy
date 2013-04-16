@@ -13,12 +13,6 @@
 
 int outQueueSize = 0;
 
-void init_queue() {
-	if(DEBUG) xil_printf("initialise queues ...\n");
-	int i;
-	for(i = 0; i <  IN_STREAM_COUNT; i++)  inQueue[i] = createQueue();
-}
-
 /**
  * Resets all software queues.
  * Note, that a hardware reset has to be performed as well.

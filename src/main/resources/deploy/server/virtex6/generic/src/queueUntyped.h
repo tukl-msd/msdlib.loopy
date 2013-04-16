@@ -31,23 +31,27 @@ typedef struct Queue {
 	struct QueueNode *first;
 	/** Pointer to the last node in the queue */
 	struct QueueNode *last;
-	/** Number of nodes stored in the queue */
+	/** Number of nodes currently stored in the queue */
 	unsigned int size;
+	/** Capacity of the queue (maximum number of nodes) */
+	unsigned int cap;
 } Queue;
 
 /**
  * Allocates memory for an empty queue and returns the pointer.
+ * @param cap Maximal capacity of the queue.
  * @return Pointer to a new, empty queue.
  */
-Queue* createQueue();
+Queue* createQueue(int cap);
 
 /**
  * Puts an element into a queue.
  * The element is appended at the back of the queue.
  * @param queue The queue, to which the element should be appended.
  * @param val The element to append.
+ * @return 1 if successful, 0 otherwise (i.e. capacity reached)
  */
-void put(struct Queue *queue, int val);
+int put(struct Queue *queue, int val);
 
 /**
  * Checks if a queue contains eny elements or is empty.
