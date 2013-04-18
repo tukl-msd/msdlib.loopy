@@ -9,25 +9,32 @@
  * @author Thomas Fischer
  * @since 26.02.2013
  */
-
 #ifndef STATE_H_
 #define STATE_H_
 
+#include <deque>
+#include <bitset>
+#include <math.h>
 #include <vector>
-#include <memory>
-#include "../linkedQueue.h"
+
+template <int width>
+class outPort;
 
 /**
  * Abstract representation of the state of an operation.
  * These are used as return values for non-blocking calls and
  * allow users to check the progress of the call.
  */
-class State {
+class state {
 protected:
-	/** Number of values to be written or read. */
+	/** Number of 32-bit values to be written or read. */
 	unsigned int size;
-	/** Number of already written or read values. */
+	/** Number of already written or read 32-bit values. */
+	unsigned int w;
+
 	unsigned int done;
+
+	unsigned int intPerValue;
 	/** Failed flag */
 	bool fail;
 	/** Message of an occurred exception. */
@@ -36,9 +43,16 @@ protected:
 	 * Internal constructor, initialising size and done values.
 	 * @param size Total number of values to be processed.
 	 */
-	State(int size) : size(size), done(0), fail(false), m("") { }
+	state(int size) : w(32), done(0), fail(false), m("") {
+		intPerValue = ceil((double) w / (sizeof(int) * 8));
+		this->size = size * intPerValue;
+	}
+	state(int size, int width) : w(width), done(0), fail(false), m("") {
+		intPerValue = ceil((double) w / (sizeof(int) * 8));
+		this->size = size * intPerValue;
+	}
 public:
-	virtual ~State() { };
+	virtual ~state() { };
 
 	/**
 	 * Checks, if a call has finished.
@@ -46,108 +60,144 @@ public:
 	 * equivalent with #size == #done.
 	 * @return true if the operation has been finished, false otherwise.
 	 */
-	bool finished();
-
-	/*
-	 * Checks, if a call has failed.
-	 * This indicates some sort error in the driver.
-	 * A description of what went wrong is available using message().
-	 * @return true if the operation failed, false otherwise.
-	 */
-//	bool failed();
-
-	/*
-	 * If failed() is true, a description of what went wrong is
-	 * available using this method.
-	 * @return A description of what went wrong,
-	 *         an empty string if operation has not failed.
-	 */
-//	std::string message();
+	bool finished() { return size == done; }
 
 	/**
 	 * Checks, how many values have already been processed.
 	 * @return The number of processed values.
 	 */
-	unsigned int processed();
+	unsigned int processed() {
+		return done / intPerValue;
+	}
 	/**
 	 * Checks, how many values have yet to be processed.
 	 * @return The number of values NOT processed so far.
 	 */
-	unsigned int remaining();
+	unsigned int remaining() {
+		return floor((size - done) / intPerValue);
+	}
 	/**
 	 * Checks, how many values have to be processed in total.
 	 * @return The total number of values to be processed.
 	 */
-	unsigned int total();
+	unsigned int total() {
+		return size / intPerValue;
+	}
 };
 
-/**
- * A more specialised state for write operations.
- * It should only be used internally and not be leaked to the user.
- * The write state contains a copy of the data to be written and
- * is used to buffer unwritten data.
- */
-class WriteState : public State {
-friend class in;
-friend class dual;
-friend class QueueElem;
+class abstractWriteState : public state {
 friend void scheduleWriter();
-friend void acknowledge_unsafe(unsigned char cid, unsigned int count);
-friend std::vector<int> take(std::shared_ptr<LinkedQueue<WriteState>> q, unsigned int count);
+friend std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsigned int count);
+friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
 private:
-	/** Pointer to values to be written. */
-	int *values;
+	virtual unsigned int peek(int val[], unsigned int count) = 0;
 public:
-	/**
-	 * Instantiates a write state with a single value.
-	 * @param val The value to be written.
-	 */
-	WriteState(int val);
-	/**
-	 * Instantiates a write state with a vector of values.
-	 * @param val The values to be written.
-	 */
-	WriteState(std::vector<int> val);
-	/**
-	 * Instantiates a write state with an array of values.
-	 * @param val The values to be written.
-	 * @param size The number of values to be written.
-	 */
-	WriteState(int val[], int size);
-	~WriteState();
+	abstractWriteState(int size, int width) : state(size, width) { }
+	virtual ~abstractWriteState() { }
 };
 
-/**
- * A more specialised state for read operations.
- * It should only be used internally and not be leaked to the user.
- * The read state contains a pointer to a memory area, to where a value
- * should be read and is used to buffer unfinished read tasks.
- */
-class ReadState : public State {
-friend class out;
+class abstractReadState : public state {
 friend void scheduleReader();
 friend void read_unsafe(unsigned char pid, int val);
 private:
-	/** Pointer to storage for read values. */
-	int *values;
+	virtual unsigned int store(int val[], unsigned int count) = 0;
 public:
-	/**
-	 * Instantiates a read state for a single value.
-	 * @param val Pointer to where the value should be read to.
-	 */
-	ReadState(int *val);
-	/**
-	 * Instantiates a read state for a vector of values.
-	 * @param val Pointer to where the values should be read to.
-	 */
-	ReadState(std::vector<int> *val);
-	/**
-	 * Instantiates a read state for an array of values.
-	 * @param val Pointer to where the values should be read to.
-	 * @param size Number of elements to be read.
-	 */
-	ReadState(int val[], int size);
-	~ReadState();
+	abstractReadState(int size, int width) : state(size, width) { }
+	virtual ~abstractReadState() { }
+};
+
+template <int width>
+class writeState : public abstractWriteState {
+private:
+	std::bitset<width> *vals;
+
+	// this is basically the exposed method for reading from the value queue!
+	unsigned int peek(int val[], unsigned int count) {
+		unsigned int read = 0;
+
+		while(read < count) {
+			if(read + done == size) break;
+			std::deque<int> currentValue = convert(vals[int(floor((read + done) / intPerValue))]);
+			val[read] = currentValue[(read + done) % intPerValue];
+			read++;
+		}
+
+		return read;
+	}
+
+	std::deque<int> convert (const std::bitset<width> val) {
+		std::deque<int> vals;
+		for(unsigned int i = 0; i < ceil((double)val.size() / (sizeof(int) * 8)); i++) {
+			int rslt = 0;
+			for(unsigned int j = 0; j < (sizeof(int) * 8); j++) {
+				if(i*(sizeof(int) * 8) + j == val.size()) break;
+				else rslt += val[i*(sizeof(int) * 8) + j] << j;
+			}
+			vals.push_front(rslt);
+		}
+		return vals;
+	}
+
+public:
+	writeState(std::bitset<width> vals[], unsigned int size) : abstractWriteState(size, width) {
+		this->vals = (std::bitset<width>*)malloc(this->size * sizeof(int));
+		for(unsigned int i = 0; i < size; i++) this->vals[i] = vals[i];
+	}
+
+	~writeState() { }
+};
+
+template <int width>
+class readState : public abstractReadState {
+friend class outPort<width>;
+private:
+	std::bitset<width> *vals;
+
+	unsigned int currentValueIndex;
+	std::bitset<width> currentValue;
+
+	// this is basically the exposed method
+	unsigned int store(int val[], unsigned int count) {
+		unsigned int put = 0;
+		// idea: put as many values into state as possible
+		//       return number of successfully put values
+		while(put < count) {
+			if(put + done == size) break;
+
+			printf("\nstoring value @ state: %d", val[put]);
+
+			// leftshift current value
+			currentValue = currentValue << (sizeof(int) * 8);
+
+			// append next integer values
+			// looks dangerous, but the shift above implies, there are no collisions here...
+			currentValue |= val[put];
+
+			// increase value index and check for completeness of value
+			if(++currentValueIndex == intPerValue) {
+				// if complete, assign value
+				vals[int(floor((put + done) / intPerValue))] = currentValue;
+				// reset value and index
+				currentValue = 0;
+				currentValueIndex = 0;
+			}
+
+			// increase put counter
+			put++;
+		}
+
+		// update done value
+		done = done + put;
+
+		// return number of put values
+		return put;
+	}
+
+public:
+	readState(std::bitset<width> vals[], unsigned int size) : abstractReadState(size, width), vals(vals) {
+		currentValueIndex = 0;
+	}
+	~readState() { }
 };
 
 #endif /* STATE_H_ */

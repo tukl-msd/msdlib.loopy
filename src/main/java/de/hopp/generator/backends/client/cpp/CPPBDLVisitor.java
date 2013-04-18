@@ -209,11 +209,11 @@ public class CPPBDLVisitor extends Visitor<NE> {
                 return null;
             }
             public Object CaseOUTPos(OUTPos term) {
-                addPort(axis.port().term(), "out", "An out-going AXI-Stream port.", true);
+                addPort(axis.port().term(), "outPort", "An out-going AXI-Stream port.", true);
                 return null;
             }
             public Object CaseINPos(INPos term) {
-                addPort(axis.port().term(), "in", "An in-going AXI-Stream port.", true);
+                addPort(axis.port().term(), "inPort", "An in-going AXI-Stream port.", true);
                 return null;
             }
         });
@@ -248,9 +248,14 @@ public class CPPBDLVisitor extends Visitor<NE> {
     
     private void addPort(String name, String type, String docPart, boolean single) {
         comp = add(comp, MAttribute(MDocumentation(Strings(
-                    docPart, "Communicate with the #" + comp.name() + " core through this port."
-                )), MModifiers(PUBLIC()), MType(type),
-                name, MCodeFragment("", MQuoteInclude("component.h"), MQuoteInclude("port.h"))));
+                docPart, "Communicate with the #" + comp.name() + " core through this port."
+            )), MModifiers(PUBLIC()), MType(type),
+            name, MCodeFragment("",
+                MQuoteInclude("component.h"),
+                MQuoteInclude("portIn.h"),
+                MQuoteInclude("portOut.h")
+            )
+        ));
         
         if(single) {
             constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().add(

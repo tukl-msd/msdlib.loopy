@@ -22,7 +22,8 @@
 
 #include "interface.h"
 //#include "state.h"
-#include "../api/port.h"
+#include "../api/portIn.h"
+#include "../api/portOut.h"
 #include "../api/gpio.h"
 //#include "../linkedQueue.h"
 
@@ -75,9 +76,9 @@ extern bool is_active;
 
 /********************* SHARED MEMORY *********************/
 /** Pointer array of all in-going ports. */
-extern in   *inPorts[];
+extern abstractInPort   *inPorts[];
 /** Pointer array of all out-going ports. */
-extern out *outPorts[];
+extern abstractOutPort *outPorts[];
 
 /** Pointers to the in-going gp queues */
 extern gpi *gpis[];

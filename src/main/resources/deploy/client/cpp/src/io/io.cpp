@@ -20,15 +20,15 @@
 // communication interface
 // TODO this is currently non-generic ): (the only part of this file)
 //      move it to... interface is guess?
-interface *intrfc = new ethernet(IP, PORT);
+interface *intrfc = new ethernet("192.168.2.10", 8844);
 
 // locks
 std::mutex writer_mutex;
 std::condition_variable can_write;
 
 // ports
-in   *inPorts[ IN_PORT_COUNT];
-out *outPorts[OUT_PORT_COUNT];
+abstractInPort   *inPorts[ IN_PORT_COUNT];
+abstractOutPort *outPorts[OUT_PORT_COUNT];
 
 // gpio queues
 gpi *gpis [GPI_COUNT];
@@ -36,23 +36,45 @@ gpo *gpos [GPO_COUNT];
 
 bool is_active = true;
 
-std::vector<int> take(std::shared_ptr<LinkedQueue<WriteState>> q, unsigned int count) {
+std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsigned int count) {
 	std::vector<int> rslt;
 
-	std::shared_ptr<WriteState> s = q->peek();
-	unsigned int p = 0, t = s->finished();
-	while(rslt.size() < count) {
-		if(t == s->remaining()) {
-			s = q->peek(++p);
-			if(s == NULL) break; // abort, if we reached the end of the queue
-			t = s->finished();
+	std::shared_ptr<abstractWriteState> s = q->peek();
+	unsigned int p = 0;
+
+	while(count > 0) {
+		// abort, if the state is null
+		if(s == NULL) break;
+
+		// peek the first <count> values of state s (might return a smaller number of values)
+		int array[count];
+		int valueCount = s->peek(array, count);
+
+		// store all values in the result vector
+		for(int i = 0; i < valueCount; i++) {
+			rslt.push_back(array[i]);
+			count--;
 		}
 
-		rslt.push_back(s->values[t]);
-		t++;
+		// get the next state
+		s = q->peek(++p);
 	}
 
 	return rslt;
+
+//	while(rslt.size() < count) {
+//		if(t == s->size - s->done) {
+//			s = q->peek(++p);
+//			if(s == NULL) break; // abort, if we reached the end of the queue
+//			t = s->finished();
+//		}
+//
+//
+//		rslt.push_back(s->values[t]);
+//		t++;
+//	}
+//
+//	return rslt;
 }
 
 void scheduleWriter() {
@@ -121,13 +143,13 @@ void scheduleWriter() {
 				intrfc->send(val);
 			} catch (mediumException &e) {
 				while(!inPorts[i]->writeTaskQueue->empty()) {
-					std::shared_ptr<WriteState> s = inPorts[i]->writeTaskQueue->take();
+					std::shared_ptr<abstractWriteState> s = inPorts[i]->writeTaskQueue->take();
 					s->fail = true;
 					s->m = std::string("could not write values to medium: ") + e.what();
 				}
 			} catch (protocolException &e) {
 				while(!inPorts[i]->writeTaskQueue->empty()) {
-					std::shared_ptr<WriteState> s = inPorts[i]->writeTaskQueue->take();
+					std::shared_ptr<abstractWriteState> s = inPorts[i]->writeTaskQueue->take();
 					s->fail = true;
 					s->m = std::string("protocol encoder reported an exception: ") + e.what();
 				}
@@ -188,9 +210,8 @@ void read_unsafe(unsigned char pid, int val) {
 		outPorts[pid]->readValueQueue->put(ptr);
 	} else {
 		// otherwise, add the value to the first task
-		std::shared_ptr<ReadState> s = outPorts[pid]->readTaskQueue->peek();
-		s->values[s->done] = val;
-		s->done++;
+		std::shared_ptr<abstractReadState> s = outPorts[pid]->readTaskQueue->peek();
+		s->store(&val, 1);
 
 		if(s->finished()) outPorts[pid]->readTaskQueue->take();
 	}
@@ -226,15 +247,15 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 		return;
 	}
 
-	// if all values of the first task got acknowledged...
-	if(count >= (inPorts[pid]->writeTaskQueue->peek()->remaining())) {
+	// if all values of the first task got acknowledged... (i.e. count >= remainder of the first task)
+	if(count >= (inPorts[pid]->writeTaskQueue->peek()->size - inPorts[pid]->writeTaskQueue->peek()->done)) {
 
 		// remove the state from the queue
-		std::shared_ptr<WriteState> s = inPorts[pid]->writeTaskQueue->take();
+		std::shared_ptr<abstractWriteState> s = inPorts[pid]->writeTaskQueue->take();
 
 		// update count, transit counter and state
-		                 count -= s->remaining();
-		*inPorts[pid]->transit -= s->remaining();
+		                 count -= (s->size - s->done);
+		*inPorts[pid]->transit -= (s->size - s->done);
 		               s->done  = s->size;
 
 		// acknowledge further values
