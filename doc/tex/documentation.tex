@@ -70,7 +70,7 @@
 
 \lstdefinelanguage{bdl}{
   keywords={import,medium,schedule,core,instance,gpio,source,port,bind,cpu,
-        swqueue,hwqueue,poll,width,in,out,dual,mac,ip,mask,gate},
+        debug,swqueue,hwqueue,poll,width,in,out,dual,mac,ip,mask,gate},
   comment=[l]{//},morecomment=[n]{/*}{*/}
 }
 
@@ -263,7 +263,7 @@ medium ethernet {
   mac  "00:0a:35:00:01:02"
   ip   "192.168.2.10"
   mask "255.255.255.0"
-  gate "192.168.1.1"
+  gate "192.168.2.1"
   port 8844
 }
 \end{lstlisting}
@@ -289,17 +289,20 @@ The declaration consists of the keyword \texttt{schedule} followed by a code blo
 Note, that no guarantees can be given for a user-defined scheduler. For a more detailed description of the default scheduler and actions required by a user-defined scheduler, check out the board-side control flow graphs in \Cref{sec:protocol:cfg}.
 
 \subsubsection{Options}
-Several global properties of the board are specified directly without using distinct blocks. At this time, this includes the global queue sizes (see \Cref{sec:arch:queue} for more details about the different queue types)
+Several global properties of the board are specified directly without using distinct blocks. At this time, this includes the debug flag and global queue sizes (see \Cref{sec:arch:queue} for more details about the different queue types).
 
 \begin{lstlisting}[language=bdl]
+debug
 swqueue 128
 hwqueue 32
 \end{lstlisting}
 
-If not specified otherwise, the default queue sizes are taken (1024 for the software queue, 64 for the hardware queue)
+The debug flag results in additional console output of the generated driver. Note, that this output is sent over UART and therefore significantly slows down the driver.
+
+If not specified otherwise, debugging is disabled and the queue sizes are set to default (1024 for the software queue, 64 for the hardware queue).
 
 \subsubsection{GPIO}
-The GPIO declaration is used to add GPIO devices to the board design. These devices are integrated deeper in the board design and require distinct treatment.
+The GPIO declaration is used to add GPIO devices to the board design. These devices are integrated deeper in the board design and require explicit treatment.
 
 \begin{lstlisting}[language=bdl]
 gpio in buttons {:
@@ -338,7 +341,7 @@ The second part of the core declaration block describes the interface of the cor
   }
 \end{lstlisting}
 
-An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The standard bitwidth of a port is 32-bit.
+An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The default bitwidth of a port is 32-bit.
 
 \subsubsection{Instance}
 The instance declaration instantiates a core on the board. This effectively creates a component on the board with the behaviour and interface specified by the core. The interface declaration itself connects this component with other components.
@@ -366,7 +369,7 @@ The \texttt{bind} keyword connects a port with an axis. An axis is basically a c
 The keyword \texttt{cpu} connects the specified port to the board-side driver. %keyword questionable...
 The host-side driver will provide methods for direct communication with these ports of the component. Another block is used for properties of these driver-attached ports.
 
-Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the default queue sizes of the board are used and forwarding is enabled.
+Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
 
 \section{Process}
 \label{sec:process}

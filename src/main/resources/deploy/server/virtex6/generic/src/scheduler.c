@@ -51,7 +51,7 @@ void schedule() {
 			for(i = 0; i < ITERATION_COUNT; i++) {
 				// break, if the sw queue is full
 				if(outQueueSize == outQueueCap[pid]) {
-					xil_printf("queue full");
+					if(DEBUG) xil_printf("queue full");
 					break;
 				}
 

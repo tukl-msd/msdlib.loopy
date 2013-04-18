@@ -13,6 +13,7 @@ import java.io.File;
 
 import katja.common.NE;
 import de.hopp.generator.Configuration;
+import de.hopp.generator.backends.BackendUtils;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MClass;
@@ -202,18 +203,19 @@ public class CPPBDLVisitor extends Visitor<NE> {
     }
 
     public void visit(final CPUAxisPos axis) {
-        PortPos port = getPort(axis.root(), ((InstancePos)axis.parent().parent()).core().term(), axis.port().term());
+        PortPos port = BackendUtils.getPort(axis);
+        final int width = BackendUtils.getWidth(axis);
         port.direction().Switch(new DirectionPos.Switch<Object, NE>() {
             public Object CaseDUALPos(DUALPos term) {
-                addPort(axis.port().term(), "dual", "A bi-directional AXI-Stream port.", false);
+                addPort(axis.port().term(), "dual<"+width+">", "A bi-directional AXI-Stream port.", false);
                 return null;
             }
             public Object CaseOUTPos(OUTPos term) {
-                addPort(axis.port().term(), "outPort", "An out-going AXI-Stream port.", true);
+                addPort(axis.port().term(), "outPort<"+width+">", "An out-going AXI-Stream port.", true);
                 return null;
             }
             public Object CaseINPos(INPos term) {
-                addPort(axis.port().term(), "inPort", "An in-going AXI-Stream port.", true);
+                addPort(axis.port().term(), "inPort<"+width+">", "An in-going AXI-Stream port.", true);
                 return null;
             }
         });

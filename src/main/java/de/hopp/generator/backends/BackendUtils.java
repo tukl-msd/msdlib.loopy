@@ -22,8 +22,8 @@ import de.hopp.generator.model.MFileInFile;
 
 public class BackendUtils {
 
-    public static final int defaultQueueSizeSW = 50;
-    public static final int defaultQueueSizeHW = 10;
+    public static final int defaultQueueSizeSW = 1024;
+    public static final int defaultQueueSizeHW = 64;
     public static final int defaultWidth = 32;
     
     public enum UnparserType { HEADER, C, CPP }
