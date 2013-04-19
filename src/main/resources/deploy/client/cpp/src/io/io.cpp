@@ -18,8 +18,6 @@
 #include "../exceptions.h"
 
 // communication interface
-// TODO this is currently non-generic ): (the only part of this file)
-//      move it to... interface is guess?
 interface *intrfc = new ethernet(IP, PORT);
 
 // locks
@@ -61,20 +59,6 @@ std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsign
 	}
 
 	return rslt;
-
-//	while(rslt.size() < count) {
-//		if(t == s->size - s->done) {
-//			s = q->peek(++p);
-//			if(s == NULL) break; // abort, if we reached the end of the queue
-//			t = s->finished();
-//		}
-//
-//
-//		rslt.push_back(s->values[t]);
-//		t++;
-//	}
-//
-//	return rslt;
 }
 
 void scheduleWriter() {

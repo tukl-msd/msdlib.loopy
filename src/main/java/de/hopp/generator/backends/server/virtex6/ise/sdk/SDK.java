@@ -20,6 +20,7 @@ import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
+import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
 
@@ -57,6 +58,7 @@ public class SDK extends Visitor<NE> {
     // generated files
     protected MFile components;
     protected MFile constants;
+    protected MFile scheduler;
     
     // parts of the generated files
     private MProcedure init;
@@ -77,6 +79,10 @@ public class SDK extends Visitor<NE> {
     
     public MFile getConstants() {
         return constants;
+    }
+    
+    public MFile getScheduler() {
+        return scheduler;
     }
     
     public Map<File, File> getFiles() {
@@ -317,7 +323,108 @@ public class SDK extends Visitor<NE> {
     public void visit(BackendPos term) { }
     
     // scheduler (irrelevant for host-side driver
-    public void visit(SchedulerPos term) { }
+    public void visit(SchedulerPos term) {
+        if(term.code() instanceof DEFAULTPos) {
+            scheduler = MFile(MDocumentation(Strings(
+                    "A primitive scheduler.",
+                    "Reads values from the medium, shifts values between Microblaze and VHDL components,",
+                    "and writes results back to the medium."
+                ), AUTHOR("Thomas Fischer"), SINCE("18.02.2013")
+                ), "scheduler", targetSrc.getPath(), MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(
+                    MProcedure(
+                        MDocumentation(Strings(
+                            "Starts the scheduling loop.",
+                            "The scheduling loop performs the following actions in each iteration:",
+                            " - read and process messages from the medium",
+                            " - write values from Microblaze input queue to hardware input queue for each input stream",
+                            " - write values from hardware output queue to the medium (caches several values before sending)"                        
+                        )), MModifiers(), MVoid(), "schedule", MParameters(), defaultScheduler()
+                    )
+                )
+             );
+        } else {
+            scheduler = MFile(MDocumentation(Strings()
+                ), "scheduler", targetSrc.getPath(), MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(
+                    MProcedure(
+                        MDocumentation(Strings()), MModifiers(), MVoid(), "schedule", MParameters(), MCode(
+                            Strings().addAll(((USER_DEFINED)term.code().term()).content()),
+                            MQuoteInclude("constants.h"), 
+                            MQuoteInclude("queueUntyped.h"),
+                            MQuoteInclude("io.h"),
+                            MForwardDecl("void medium_read()"), 
+                            MForwardDecl("int axi_write ( int val, int target )"), 
+                            MForwardDecl("int axi_read ( int *val, int target )")
+                        )
+                    )
+                )
+            );
+        }
+    }
+    
+    private MCode defaultScheduler() {
+        return MCode(
+            Strings(
+                "while(1) {",
+                "    unsigned int pid;",
+                "    unsigned int i;",
+                "    ",
+                "    // receive a package from the interface (or all?)",
+                "    // esp stores data packages in mb queue",
+                "    medium_read();",
+                "    ",
+                "    // write data from mb queue to hw queue (if possible)",
+                "    for(pid = 0; pid < IN_STREAM_COUNT; pid++) {",
+                "        for(i = 0; i < ITERATION_COUNT; i++) {",
+                "            // go to next port if the sw queue is empty",
+                "            if(inQueue[pid]->size == 0) break;",
+                "    ",
+                "            // try to write, skip if the hw queue is full",
+                "            if(axi_write(peek(inQueue[pid]), pid)) {",
+                "                if(DEBUG) xil_printf(\"\\nfailed to write to AXI stream\");",
+                "                break;",
+                "            }",
+                "    ",
+                "            // remove the read value from the queue",
+                "            take(inQueue[pid]);",
+                "    ",
+                "            // if the queue was full beforehand, poll",
+                "            if(inQueue[pid]->size == inQueue[pid]->cap - 1) send_poll(pid);",
+                "        }",
+                "    }",
+                "    ",
+                "    // read data from hw queue (if available) and cache in mb queue",
+                "    // flush sw queue, if it's full or the hw queue is empty",
+                "    for(pid = 0; pid < OUT_STREAM_COUNT; pid++) {",
+                "        for(i = 0; i < ITERATION_COUNT; i++) {",
+                "            // break, if the sw queue is full",
+                "            if(outQueueSize == outQueueCap[pid]) {",
+                "                if(DEBUG) xil_printf(\"queue full\");",
+                "                break;",
+                "            }",
+                "    ",
+                "            int val = 0;",
+                "    ",
+                "            // break, if there is no value",
+                "            if(axi_read(&val, pid)) break;",
+                "    ",
+                "            // otherwise store the value in the sw queue",
+                "            outQueue[outQueueSize] = val;",
+                "            outQueueSize++;",
+                "        }",
+                "        // flush sw queue",
+                "        flush_queue(pid);",
+                "        outQueueSize = 0;",
+                "    }",
+                "}"
+            ),
+            MQuoteInclude("constants.h"), 
+            MQuoteInclude("queueUntyped.h"),
+            MQuoteInclude("io.h"),
+            MForwardDecl("void medium_read()"), 
+            MForwardDecl("int axi_write ( int val, int target )"), 
+            MForwardDecl("int axi_read ( int *val, int target )")
+        );
+    }
     
     // code blocks (handled directly when occurring)
     public void visit(DEFAULTPos term)      { }

@@ -12,14 +12,12 @@ gpio out leds
 swqueue 25
 hwqueue 10
 
-// 00:0a:35:01:FB:E3
-// 127.16.13.145
-
 medium ethernet {
-  mac  "00:0a:35:00:01:02"
+  mac  "00:0a:35:01:FB:E3"
+//  ip   "127.16.13.145"
   ip   "192.168.2.10"
   mask "255.255.255.0"
-  gate "192.168.1.1"
+  gate "192.168.2.1"
   port 8844
 }
 
@@ -68,7 +66,3 @@ instance fifo 1.00.a fifo_a {
   cpu in1, out1
 }
 
-
-scheduler {:
-  //plain code... no analysis takes place here. Maybe print a warning, that no guarantees are given for this scheduler
-:}

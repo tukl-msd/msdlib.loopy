@@ -182,6 +182,8 @@ public abstract class ISE implements ProjectBackendIF {
         printMFile(sdk().getConstants(),  UnparserType.HEADER, errors);
         printMFile(sdk().getComponents(), UnparserType.HEADER, errors);
         printMFile(sdk().getComponents(), UnparserType.C,      errors);
+        printMFile(sdk().getScheduler(),  UnparserType.HEADER, errors);
+        printMFile(sdk().getScheduler(),  UnparserType.C,      errors);
     
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;
