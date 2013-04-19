@@ -20,7 +20,7 @@
 // communication interface
 // TODO this is currently non-generic ): (the only part of this file)
 //      move it to... interface is guess?
-interface *intrfc = new ethernet("192.168.2.10", 8844);
+interface *intrfc = new ethernet(IP, PORT);
 
 // locks
 std::mutex writer_mutex;
