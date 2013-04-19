@@ -117,7 +117,7 @@ public:
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
 	 */
-	void write(std::bitset<width> val) {
+	void write(const std::bitset<width> val) {
 		write(new writeState<width>(&val, 1));
 	}
 
@@ -135,7 +135,7 @@ public:
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
 	 */
-	void write(std::vector<std::bitset<width>> vals) {
+	void write(const std::vector<std::bitset<width>> vals) {
 		write(new writeState<width>(vals.data(), vals.size()));
 	}
 
@@ -154,7 +154,7 @@ public:
 	 *          until the microblaze has received the value, not until the component
 	 *          has received it. This will be fixed in a later version
 	 */
-	void write(std::bitset<width> vals[], unsigned int size) {
+	void write(const std::bitset<width> vals[], unsigned int size) {
 		write(new writeState<width>(vals, size));
 	}
 
@@ -165,7 +165,7 @@ public:
 	 * @param val The bit vector to be written.
 	 * @return A #State representing this write.
 	 */
-	std::shared_ptr<writeState<width>> nbwrite(std::bitset<width> val) {
+	std::shared_ptr<writeState<width>> nbwrite(const std::bitset<width> val) {
 		return nbwrite(new writeState<width>(&val, 1));
 	}
 
@@ -176,7 +176,7 @@ public:
      * @param vals The bit vectors to be written.
 	 * @return A #State representing this write.
 	 */
-	std::shared_ptr<writeState<width>> nbwrite(std::vector<std::bitset<width>> vals) {
+	std::shared_ptr<writeState<width>> nbwrite(const std::vector<std::bitset<width>> vals) {
 		return nbwrite(new writeState<width>(vals.data(), vals.size()));
 	}
 
@@ -188,7 +188,7 @@ public:
 	 * @param size The size of the bit vector array.
 	 * @return A #State representing this write.
 	 */
-	std::shared_ptr<writeState<width>> nbwrite(std::bitset<width> vals[], unsigned int size) {
+	std::shared_ptr<writeState<width>> nbwrite(const std::bitset<width> vals[], unsigned int size) {
 		return nbwrite(new writeState<width>(vals, size));
 	}
 

@@ -206,7 +206,7 @@ void read_unsafe(unsigned char pid, int val) {
 
 	if(outPorts[pid]->readTaskQueue->empty()) {
 		// if the task queue of the target port is empty, append to the value queue
-		std::shared_ptr<int> ptr(malloc(sizeof(int)));
+		std::shared_ptr<int> ptr((int*)malloc(sizeof(int)));
 		*ptr = val;
 		outPorts[pid]->readValueQueue->put(ptr);
 	} else {

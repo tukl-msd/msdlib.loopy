@@ -139,8 +139,10 @@ private:
 	}
 
 public:
-	writeState(std::bitset<width> vals[], unsigned int size) : abstractWriteState(size, width) {
-		this->vals = (std::bitset<width>*)malloc(this->size * sizeof(int));
+	writeState(const std::bitset<width> vals[], unsigned int size) : abstractWriteState(size, width) {
+		// allocate memory for the values
+		this->vals = (std::bitset<width>*)malloc(this->size * sizeof(std::bitset<width>));
+		// make a local copy of each value
 		for(unsigned int i = 0; i < size; i++) this->vals[i] = vals[i];
 	}
 
@@ -155,6 +157,25 @@ private:
 
 	unsigned int currentValueIndex;
 	std::bitset<width> currentValue;
+
+	void store(int val) {
+		// left shift current value
+		currentValue = currentValue << (sizeof(int) * 8);
+
+		// append next integer values
+		// looks dangerous, but the shift above implies, there are no collisions here...
+		currentValue |= val;
+
+		// increase value index and check for completeness of value
+		if(++currentValueIndex == intPerValue) {
+			// if complete, assign value
+			vals[int(floor(done / intPerValue))] = currentValue;
+			// reset value and index
+			currentValue = 0;
+			currentValueIndex = 0;
+		}
+		done++;
+	}
 
 	// this is basically the exposed method
 	unsigned int store(int val[], unsigned int count) {

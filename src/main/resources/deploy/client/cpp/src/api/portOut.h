@@ -70,9 +70,9 @@ s	 */
 				break;
 			}
 			// otherwise, take a value, update the state and do another iteration
-			int a = *readValueQueue->take();
+			std::shared_ptr<int> val = readValueQueue->take();
 
-			s->store(&a, 1);
+			s->store(*val);
 		}
 
 		task_empty.wait(lock);

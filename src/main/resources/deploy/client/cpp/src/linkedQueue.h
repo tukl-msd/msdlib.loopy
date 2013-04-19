@@ -206,7 +206,10 @@ std::shared_ptr<T> LinkedQueue<T>::take() {
 	delete(tmp);
 
 	/* notify condition variable, if the queue is empty now */
-	if(nodeCount == 0) is_empty.notify_all();
+	if(nodeCount == 0) {
+		last = NULL;
+		is_empty.notify_all();
+	}
 
 	/* return the pointer to the value */
 	return val;
