@@ -73,6 +73,7 @@ public class XPS_14_1 extends XPS {
         }
         
         // visit boards components
+        visit(term.cores());
         visit(term.insts());
         visit(term.gpios());
         visit(term.medium());
@@ -229,10 +230,10 @@ public class XPS_14_1 extends XPS {
 
     public void visit(InstancePos term) {
         // begin a new instance using the instances name
-        curBlock = Block(term.name().term());
+        curBlock = Block(term.core().term());
         
         // reference core and version
-        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("INSTANCE", Ident(term.core().term()))));
+        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("INSTANCE", Ident(term.name().term()))));
         curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("HW_VER", Ident(term.version().term()))));
         
         // define bus interfaces
@@ -282,10 +283,11 @@ public class XPS_14_1 extends XPS {
         // we need to get the name of the source, WITHOUT extension...
         
         // the name of the core, constructed by replacing . with _
-        String name = term.name() + "_" + term.version().term().replace('.', '_');
+        String name = term.name().term();
+        String fullName = name + "_v" + term.version().term().replace('.', '_');
         
         // create folders for the core
-        File coreDir     = new File(coresDir, name);
+        File coreDir     = new File(coresDir, fullName);
         File coreSrcDir  = new File(new File(coreDir, "hdl"), "vhdl");
         File coreDataDir = new File(coreDir, "data");
         
@@ -295,18 +297,18 @@ public class XPS_14_1 extends XPS {
             String src = FilenameUtils.getName(imp.file());
             
             // add the file to the .pao
-            pao += "\nlib " + name + " " + FilenameUtils.removeExtension(src) + " vhdl";
+            pao += "\nlib " + fullName + " " + FilenameUtils.removeExtension(src) + " vhdl";
             
             // add the file to the file list
             srcFiles.put(new File(coreSrcDir, src), imp.file());
         }
         
         // add the .pao file to the pao list
-        paoFiles.put(new File(coreDataDir, name + ".pao"), pao);
+        paoFiles.put(new File(coreDataDir, name + "_v2_1_0" + ".pao"), pao);
         
         // add the .mpd file to the mpd list
         try {
-            mpdFiles.put(new File(coreDataDir, name + ".mpd"), createCoreMPD(term.term()));
+            mpdFiles.put(new File(coreDataDir, name + "_v2_1_0" + ".mpd"), createCoreMPD(term.term()));
         } catch(GenerationFailed e) {
             errors.addError(e);
         }

@@ -40,13 +40,23 @@ public class MHSUnparser extends MHSFile.Visitor<NE> {
     public void visit(PORT term)      { buffer.append("\nPORT "); }
 
     // assignments
-    public void visit(Assignments term) { for(Assignment a : term) visit(a); }
+    public void visit(Assignments term) { 
+        for(Assignment a : term) {
+            if(a != term.get(0)) buffer.append(", "); 
+            visit(a);
+        }
+    }
     public void visit(Assignment term) {
         buffer.append(term.name() + " = "); visit(term.expression());
     }
 
     // value expressions
-    public void visit(AndExp term)  { for(Value v : term) visit(v); }
+    public void visit(AndExp term)  {
+        for(Value v : term) {
+            if(v != term.get(0)) buffer.append(" & ");
+            visit(v);
+        }
+    }
     public void visit(Ident term)   { visit(term.val()); }
     public void visit(STR term)     { 
         buffer.append('\"');
@@ -58,7 +68,7 @@ public class MHSUnparser extends MHSFile.Visitor<NE> {
     public void visit(Range term) {
         buffer.append('[');
         visit(term.u());
-        buffer.append(';');
+        buffer.append(':');
         visit(term.l());
         buffer.append(']');
     }

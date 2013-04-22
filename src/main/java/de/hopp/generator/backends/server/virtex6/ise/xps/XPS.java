@@ -131,8 +131,7 @@ public abstract class XPS extends Visitor<NE> {
         block = add(block, Attribute(OPTION(), Assignment("HDL", Ident("VHDL"))));
         block = add(block, Attribute(OPTION(), Assignment("STYLE", Ident("HDL"))));
 
-        block = add(block, Attribute(OPTION(), Assignment("DESC", STR("AXIS_FIFO"))));
-        block = add(block, Attribute(OPTION(), Assignment("LONG_DESC", STR(""))));
+        block = add(block, Attribute(OPTION(), Assignment("DESC", STR(core.name()))));
 
         for(final Port port : core.ports()) {
             int bitwidth = 32;
@@ -157,7 +156,7 @@ public abstract class XPS extends Visitor<NE> {
             ));
             
             block = add(block, Attribute(PARAMETER(),
-                    Assignment("C_S_AXIS_PROTOCOL", Ident("GENERIC")),
+                    Assignment("C_"+port.name()+"_PROTOCOL", Ident("GENERIC")),
                     Assignment("DT", Ident("string")),
                     Assignment("TYPE", Ident("NON_HDL")),
                     Assignment("ASSIGNMENT", Ident("CONSTANT")),
@@ -165,7 +164,7 @@ public abstract class XPS extends Visitor<NE> {
             ));
             
             block = add(block, Attribute(PARAMETER(),
-                    Assignment("C_S_AXIS_TDATA_WIDTH", Number(bitwidth)),
+                    Assignment("C_"+port.name()+"_TDATA_WIDTH", Number(bitwidth)),
                     Assignment("DT", Ident("integer")),
                     Assignment("TYPE", Ident("NON_HDL")),
                     Assignment("ASSIGNMENT", Ident("CONSTANT")),
@@ -215,16 +214,14 @@ public abstract class XPS extends Visitor<NE> {
                 Assignment("aclk", STR("ACLK")),
                 Assignment("DIR", Ident("I")),
                 Assignment("SIGIS", Ident("CLK")),
-                Assignment("ASSIGNMENT", Ident("REQUIRE")),
-                Assignment("BUS", Ident("I")) // TODO use correct bus identifier
+                Assignment("ASSIGNMENT", Ident("REQUIRE"))
         ));
         
         block = add(block, Attribute(PORT(),
                 Assignment("aresetn", STR("ARESETN")),
                 Assignment("DIR", Ident("I")),
                 Assignment("SIGIS", Ident("RST")),
-                Assignment("ASSIGNMENT", Ident("REQUIRE")),
-                Assignment("BUS", Ident("I")) // TODO use correct bus identifier
+                Assignment("ASSIGNMENT", Ident("REQUIRE"))
         ));
         
         return MHSFile(Attributes(), block);
@@ -318,13 +315,13 @@ public abstract class XPS extends Visitor<NE> {
         String queueAxis = axisGroup + "_QUEUE_AXIS";
         
         // add a queue component in between the component and the microblaze
-        mhs = add(mhs, Block(axisGroup + "_QUEUE",
-               Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Queue"))),
+        mhs = add(mhs, Block("Queue",
+               Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup + "_QUEUE"))),
                Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
-               Attribute(PARAMETER(), Assignment("DEPTH", Number(depth))),
-               Attribute(PARAMETER(), Assignment("WIDTH", Number(width))),
-               Attribute(BUS_IF(), Assignment("IN", Ident(d ? currentAxis : queueAxis))),
-               Attribute(BUS_IF(), Assignment("OUT", Ident(d ? queueAxis : currentAxis))),
+               Attribute(PARAMETER(), Assignment("G_DEPTH", Number(depth))),
+               Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
+               Attribute(BUS_IF(), Assignment("in", Ident(d ? currentAxis : queueAxis))),
+               Attribute(BUS_IF(), Assignment("out", Ident(d ? queueAxis : currentAxis))),
                Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
                Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
         ));
@@ -343,8 +340,8 @@ public abstract class XPS extends Visitor<NE> {
         String muxAxis  = axisGroup + "_MUX_AXIS";
         
         // depending on direction and bitwidth, we need an up- or downsizer
-        mhs = add(mhs, Block(axisGroup + "_MUX",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(up ? "Upsizer" : "Downsizer"))),
+        mhs = add(mhs, Block(up ? "Upsizer" : "Downsizer",
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup + "_MUX"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
             Attribute(PARAMETER(), Assignment("IN_WIDTH", Number(d ? 32 : width))),
             Attribute(PARAMETER(), Assignment("OUT_WIDTH", Number(d ? width : 32))),
@@ -632,10 +629,10 @@ public abstract class XPS extends Visitor<NE> {
         // add master and slave interfaces for user-attached cores
         for(int i = 0; i < axiStreamIdMaster; i++)
             microblaze = add(microblaze, Attribute(BUS_IF(),
-                    Assignment("M" + i + "_AXIS", Ident("microblaze_0_M" + i + "_AXIS"))));
+                    Assignment("M" + i + "_AXIS", Ident("M" + i + "_AXIS"))));
         for(int i = 0; i < axiStreamIdSlave; i++)
             microblaze = add(microblaze, Attribute(BUS_IF(),
-                    Assignment("S" + i + "_AXIS", Ident("microblaze_0_S" + i + "_AXIS"))));
+                    Assignment("S" + i + "_AXIS", Ident("S" + i + "_AXIS"))));
         
         // add reset and clock ports
         microblaze = add(microblaze, Attribute(PORT(), Assignment("MB_RESET", Ident("proc_sys_reset_0_MB_Reset"))));
