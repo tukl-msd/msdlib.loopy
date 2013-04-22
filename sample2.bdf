@@ -31,15 +31,9 @@ core rng 1.00.a {
 core adder 1.00.a {
   source "sample2.bdf"
 
-  port in in1 {
-    width 64
-  }
-  port in in2 {
-    width 16 
-  }
-  port out out1 {
-    width 10
-  }
+  port in in1
+  port in in2
+  port out out1
 } 
 
 core fifo 1.00.a {
@@ -56,7 +50,8 @@ instance rng 1.00.a rng_a {
     hwqueue  5
   }
   cpu out1 {
-    poll 12 
+    swqueue 5
+    poll 5
   }
 }
 
