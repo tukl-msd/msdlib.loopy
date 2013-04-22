@@ -207,13 +207,18 @@ option ::=
      {:
          RESULT = BDL.BITWIDTH(pos(keyleft),val);
      :}
+  |  POLL:key DEC:val
+     {:
+         RESULT = BDL.POLL(pos(keyleft), val);
+     :}
+
+  |  POLL:key
+     {:
+         RESULT = BDL.POLL(pos(keyleft), 0);
+     :}
   |  DEBUG:key
      {:
          RESULT = BDL.DEBUG(pos(keyleft));
-     :}
-  |  POLL:key
-     {:
-         RESULT = BDL.POLL(pos(keyleft));
      :}
   ;
 

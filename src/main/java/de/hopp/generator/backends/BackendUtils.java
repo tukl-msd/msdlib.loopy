@@ -153,6 +153,24 @@ public class BackendUtils {
         throw new IllegalStateException();
     }
     
+    public static boolean isPolling(CPUAxisPos axis) {
+        // check, if there is a poll option, return if found
+        for(Option opt : axis.opts().term())
+            if(opt instanceof POLL) return true;
+        
+        // otherwise, the port isn't polling
+        return false;
+    }
+    
+    public static int getPollingCount(CPUAxisPos axis) {
+        // check, if there is a poll option, return if found
+        for(Option opt : axis.opts().term())
+            if(opt instanceof POLL) return ((POLL)opt).count();
+        
+        // otherwise, the port isn't polling. Return 0
+        return 0;
+    }
+    
     public static int getSWQueueSize(CPUAxisPos axis) {
         // if there is a local definition, return that
         for(Option opt : axis.opts().term())

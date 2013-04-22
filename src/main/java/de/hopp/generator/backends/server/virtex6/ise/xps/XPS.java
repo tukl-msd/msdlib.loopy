@@ -337,54 +337,24 @@ public abstract class XPS extends Visitor<NE> {
         
         if(width == 32) return currentAxis;
         if(width <= 0) throw new UsageError("encountered port with bitwidth of " + width);
-        
-        // add a mux component
-        if (width > 32) {
-            int mult = new Double(Math.floor(width / 32)).intValue();
-            
-            String muxAxis  = axisGroup + "_MUX_AXIS";
-            
-            // depending on the direction, we need an upsizer or downsizer
-            mhs = add(mhs, Block(axisGroup + "_MUX",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(d ? "Upsizer" : "Downsizer"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
-                Attribute(PARAMETER(), Assignment("WIDTH", Number(32))),
-                Attribute(PARAMETER(), Assignment("NUM_REG", Number(mult))),
-                Attribute(BUS_IF(), Assignment("TDATA", Ident(d ? currentAxis : muxAxis))),
-                Attribute(BUS_IF(), Assignment("TARRAY", Ident(d ? muxAxis : currentAxis))),
-                Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
-            ));
-                    
-            currentAxis = muxAxis;
-        }
-        
-        
-        // add a drop component, if the width is not a multiple of 32 bit
-        if (width % 32 > 0) {
-            int pad = width % 32;
-            
-            String dropAxis = axisGroup + "_DROP_AXIS";
 
-            // TODO support it ;)
-            throw new UsageError("conversion to non-multiples of 32-bit is currently unsupported");
-            
-            // depending on the direction, drop or add
-//            mhs = add(mhs, Block(axisGroup + "_BITSTUFFER",
-//                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(d ? "BitRemover" : "BitStuffer"))),
-//                Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
-//                Attribute(PARAMETER(), Assignment("WIDTH", Number(width))),
-//                Attribute(PARAMETER(), Assignment("PADDING", Number(32 - (width % 32)))),
-//                Attribute(BUS_IF(), Assignment("TDATA", Ident(d ? currentAxis : dropAxis))),
-//                Attribute(BUS_IF(), Assignment("TARRAY", Ident(d ? dropAxis : currentAxis))),
-//                Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
-//                Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
-//            ));
-//            
-//            currentAxis = dropAxis;
-        }
+        boolean up = (width < 32 && !d) || (width > 32 && d);        
+
+        String muxAxis  = axisGroup + "_MUX_AXIS";
         
-        return currentAxis;
+        // depending on direction and bitwidth, we need an up- or downsizer
+        mhs = add(mhs, Block(axisGroup + "_MUX",
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(up ? "Upsizer" : "Downsizer"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
+            Attribute(PARAMETER(), Assignment("IN_WIDTH", Number(d ? 32 : width))),
+            Attribute(PARAMETER(), Assignment("OUT_WIDTH", Number(d ? width : 32))),
+            Attribute(BUS_IF(), Assignment("M_AXIS_TDATA", Ident(d ? currentAxis : muxAxis))),
+            Attribute(BUS_IF(), Assignment("S_AXIS_TDATA", Ident(d ? muxAxis : currentAxis))),
+            Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+        ));
+        
+        return muxAxis;
     }
     
     /**

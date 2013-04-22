@@ -2,7 +2,9 @@ package de.hopp.generator.backends.server.virtex6.ise.sdk;
 
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
+import static de.hopp.generator.backends.BackendUtils.getPollingCount;
 import static de.hopp.generator.backends.BackendUtils.getSWQueueSize;
+import static de.hopp.generator.backends.BackendUtils.isPolling;
 import static de.hopp.generator.backends.server.virtex6.ise.ISE.sdkSourceDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.model.Model.*;
@@ -309,6 +311,17 @@ public class SDK extends Visitor<NE> {
             Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize(axis) + ";"),
             MQuoteInclude("../io.h")
         ));
+
+        init = addLines(init, MCode(
+            Strings("isPolling[" + axiStreamIdSlave + "] = " + isPolling(axis) + ";"),
+            MQuoteInclude("../io.h")
+        ));
+        
+        init = addLines(init, MCode(
+            Strings("pollCount[" + axiStreamIdSlave + "] = " + getPollingCount(axis) + ";"),
+            MQuoteInclude("../io.h")
+        ));
+        
         axiStreamIdSlave++;
     }
     
@@ -337,7 +350,7 @@ public class SDK extends Visitor<NE> {
                             "The scheduling loop performs the following actions in each iteration:",
                             " - read and process messages from the medium",
                             " - write values from Microblaze input queue to hardware input queue for each input stream",
-                            " - write values from hardware output queue to the medium (caches several values before sending)"                        
+                            " - write values from hardware output queue to the medium (caches several values before sending)"
                         )), MModifiers(), MVoid(), "schedule", MParameters(), defaultScheduler()
                     )
                 )
@@ -348,11 +361,11 @@ public class SDK extends Visitor<NE> {
                     MProcedure(
                         MDocumentation(Strings()), MModifiers(), MVoid(), "schedule", MParameters(), MCode(
                             Strings().addAll(((USER_DEFINED)term.code().term()).content()),
-                            MQuoteInclude("constants.h"), 
+                            MQuoteInclude("constants.h"),
                             MQuoteInclude("queueUntyped.h"),
                             MQuoteInclude("io.h"),
-                            MForwardDecl("void medium_read()"), 
-                            MForwardDecl("int axi_write ( int val, int target )"), 
+                            MForwardDecl("void medium_read()"),
+                            MForwardDecl("int axi_write ( int val, int target )"),
                             MForwardDecl("int axi_read ( int *val, int target )")
                         )
                     )
@@ -395,12 +408,7 @@ public class SDK extends Visitor<NE> {
                 "    // read data from hw queue (if available) and cache in mb queue",
                 "    // flush sw queue, if it's full or the hw queue is empty",
                 "    for(pid = 0; pid < OUT_STREAM_COUNT; pid++) {",
-                "        for(i = 0; i < ITERATION_COUNT; i++) {",
-                "            // break, if the sw queue is full",
-                "            if(outQueueSize == outQueueCap[pid]) {",
-                "                if(DEBUG) xil_printf(\"queue full\");",
-                "                break;",
-                "            }",
+                "        for(i = 0; i < outQueueCap[pid] && (!isPolling[pid] || pollCount[pid] > 0); i++) {",
                 "    ",
                 "            int val = 0;",
                 "    ",
@@ -414,14 +422,17 @@ public class SDK extends Visitor<NE> {
                 "        // flush sw queue",
                 "        flush_queue(pid);",
                 "        outQueueSize = 0;",
+                "    ",
+                "        // decrement the poll counter (if the port was polling",
+                "        if(isPolling[pid]) pollCount[pid]--;",
                 "    }",
                 "}"
             ),
-            MQuoteInclude("constants.h"), 
+            MQuoteInclude("constants.h"),
             MQuoteInclude("queueUntyped.h"),
             MQuoteInclude("io.h"),
-            MForwardDecl("void medium_read()"), 
-            MForwardDecl("int axi_write ( int val, int target )"), 
+            MForwardDecl("void medium_read()"),
+            MForwardDecl("int axi_write ( int val, int target )"),
             MForwardDecl("int axi_read ( int *val, int target )")
         );
     }

@@ -31,9 +31,16 @@ core rng 1.00.a {
 core adder 1.00.a {
   source "sample2.bdf"
 
-  port in in1
-  port in in2
-  port out out1
+  port in in1 {
+    width 64
+  }
+  port in in2 {
+    width 16 
+  }
+  port out out1 {
+    width 10
+    poll 12 
+  }
 } 
 
 core fifo 1.00.a {
