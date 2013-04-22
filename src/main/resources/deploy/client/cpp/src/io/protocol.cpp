@@ -23,6 +23,14 @@ protocol *proto = new protocol_v1();
 
 protocol::protocol() {}
 
+// message types
+#define reset 0
+#define debug 7
+#define data  9
+#define poll 10
+#define gpio 14
+#define ack  15
+
 protocol_v1::protocol_v1() {}
 
 unsigned int protocol_v1::max_size() {
@@ -82,16 +90,13 @@ void protocol_v1::decode(int first) {
 	//  0110 poll          6
 	//  0111 ack           7
 	switch(type) {
-	case  0: // This is a soft reset.
+	case  reset: // This is a soft reset.
 			 // receiving a soft reset from the board indicates, that the board performed a successful reset.
 		     // signal the application (since reset() is a blocking call)
 		break;
-		// 1-6 are not assigned
-	case  7: // This is an error message. It should be stored in some error queue (throw it, if the call was synchronous?)
+	case  debug: // This is an error message. It should be stored in some error queue (throw it, if the call was synchronous?)
 		break;
-	case  8: // This is a non-blocking data package.
-		     // In this case we actually have to read the content of the message ;)
-	case  9: // This is a blocking data package.
+	case  data: // This is a blocking data package.
 		if(size == 0) break;
 		else {
 			// check if the pid is in range
@@ -135,20 +140,17 @@ void protocol_v1::decode(int first) {
 			read(id, payload, size);
 		}
 		break;
-	case 10: // This is a non-blocking poll.
+	case poll: // This is a non-blocking poll.
 		if(id > IN_PORT_COUNT-1) throw protocolException(std::string("pid value (") +
 				std::to_string(id) + ") of received poll message exceeded count of in-going ports (" +
 				std::to_string(IN_PORT_COUNT) + ")");
-		poll(id); break;
-	case 11: // This is a blocking poll.
-		break;
-		// 12&13 are not assigned
-	case 14: // This marks a GPIO message.
+		recv_poll(id); break;
+	case gpio: // This marks a GPIO message.
 		if(id > GPI_COUNT-1) throw protocolException(std::string("GPIO id value (") +
 				std::to_string(id) + ") of received GPIO message exceeded count of GPIO input devices (" +
 				std::to_string(GPI_COUNT) + ")");
 		recv_gpio(id, size); break;
-	case 15: // This is an acknowledgment.
+	case ack: // This is an acknowledgment.
 		if(id > IN_PORT_COUNT-1) throw protocolException(std::string("pid value (") +
 				std::to_string(id) + ") of received acknowledgment exceeded count of in-going ports (" +
 				std::to_string(IN_PORT_COUNT) + ")");
@@ -171,8 +173,23 @@ std::vector<int> protocol_v1::encode_data(unsigned char pid, std::vector<int> va
 			std::to_string(pid) + ") exceeded port range for in-going ports (" + std::to_string(IN_PORT_COUNT) + ")");
 
 	// append header and return
-	val.insert(val.begin(),construct_header(8, pid, val.size()));
+	val.insert(val.begin(),construct_header(data, pid, val.size()));
 	return val;
+}
+
+
+std::vector<int> protocol_v1::encode_poll(unsigned char pid, unsigned int count) {
+	// check value size
+	if(count > MAX_SIZE) throw protocolException(std::string("request count (") +
+			std::to_string(count) + ") exceeded message capacity (" + std::to_string(MAX_SIZE) + ")");
+	// check port id
+	if(pid > OUT_PORT_COUNT-1) throw protocolException(std::string("port id (") +
+			std::to_string(pid) + ") exceeded port range for out-going ports (" + std::to_string(OUT_PORT_COUNT) + ")");
+
+	// construct message and return
+	std::vector<int> v;
+	v.push_back(construct_header(poll, pid, count));
+	return v;
 }
 
 std::vector<int> protocol_v1::encode_gpio(unsigned char gid, unsigned char val) {
@@ -182,13 +199,13 @@ std::vector<int> protocol_v1::encode_gpio(unsigned char gid, unsigned char val) 
 
 	// construct message and return
 	std::vector<int> v;
-	v.push_back(construct_header(14, gid, val));
+	v.push_back(construct_header(gpio, gid, val));
 	return v;
 }
 
 std::vector<int> protocol_v1::encode_reset() {
 	std::vector<int> v;
-	v.push_back(construct_header(0, 0, 0));
+	v.push_back(construct_header(reset, 0, 0));
 	return v;
 }
 

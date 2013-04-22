@@ -32,6 +32,12 @@ void scheduleWriter();
 /** Scheduling loop for the reader thread */
 void scheduleReader();
 /**
+ * Requests several values for a polling port from the board.
+ * @param pid Port id of the requesting port.
+ * @param count Number of requested values.
+ */
+void send_poll(unsigned char pid, unsigned int count);
+/**
  * Processes a server acknowledgment.
  * Removes the number of acknowledged values from the queue and
  * updates states accordingly.
@@ -53,7 +59,7 @@ void read(unsigned char pid, int val[], int size);
  * Processes an incoming poll.
  * @param pid Target port id of the pol.
  */
-void poll(unsigned char pid);
+void recv_poll(unsigned char pid);
 
 /**
  * Process an incoming gpio value.

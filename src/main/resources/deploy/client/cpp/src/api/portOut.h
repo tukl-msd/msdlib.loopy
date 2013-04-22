@@ -15,19 +15,22 @@
 class abstractOutPort;
 extern abstractOutPort *outPorts[];
 
+void send_poll(unsigned char pid, unsigned int count);
+
 class abstractOutPort {
 friend void scheduleReader();
 friend void read_unsafe(unsigned char pid, int val);
 friend void read(unsigned char pid, int val[], int size);
 protected:
 	int pid;
+	bool polling;
 	std::shared_ptr<LinkedQueue<int>> readValueQueue;
 	std::shared_ptr<LinkedQueue<abstractReadState>> readTaskQueue;
 
 	std::mutex port_mutex;
 	std::condition_variable task_empty;
 public:
-	abstractOutPort(int pid) : pid(pid) {
+	abstractOutPort(int pid, bool polling) : pid(pid), polling(polling) {
 		outPorts[pid] = this;
 
 		readValueQueue = std::shared_ptr<LinkedQueue<int>>(new LinkedQueue<int>());
@@ -52,12 +55,16 @@ protected:
 	 * the semantics of a non-blocking read, the difference in runtime
 	 * should be negligible, even for larger read operations.
 	 * @param s #State of the read operation to be executed.
-s	 */
+	 */
 	void read(readState<width> *state) {
 		std::shared_ptr<readState<width>> s(state);
 
 		// acquire port lock
-		 std::unique_lock<std::mutex> lock(port_mutex);
+		std::unique_lock<std::mutex> lock(port_mutex);
+
+		// send a poll request for the read values to the board,
+		// either to fill the task or re-fill the queue
+		if(polling) send_poll(pid, s->total());
 
 		// if there are unfinished tasks in the read queue, append this one
 		if(! readTaskQueue->empty()) {
@@ -93,6 +100,10 @@ s	 */
 		// acquire port lock
 		std::unique_lock<std::mutex> lock(port_mutex);
 
+		// send a poll request for the read values to the board,
+		// either to fill the task or re-fill the queue
+		if(polling) send_poll(pid, s->total());
+
 		// if there are unfinished tasks in the read queue, just append this one
 		if(! readTaskQueue->empty()) {
 			readTaskQueue->put(s);
@@ -115,7 +126,7 @@ s	 */
 	}
 
 public:
-	outPort(int pid) : abstractOutPort(pid) { }
+	outPort(int pid, bool polling) : abstractOutPort(pid, polling) { }
 	~outPort() { }
 
 	/**

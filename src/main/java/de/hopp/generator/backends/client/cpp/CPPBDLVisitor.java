@@ -2,6 +2,7 @@ package de.hopp.generator.backends.client.cpp;
 
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
 import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
+import static de.hopp.generator.backends.BackendUtils.isPolling;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.getPort;
 import static de.hopp.generator.utils.Model.add;
@@ -184,8 +185,10 @@ public class CPPBDLVisitor extends Visitor<NE> {
         MInitList init = MInitList(Strings());
         // add ports
         for(BindingPos bind : term.bind()) {
+            if(! (bind instanceof CPUAxisPos)) continue; // skip non-cpu axis
             if(isMasterConnection(bind)) init = add(init, String.valueOf(pi++));
             if(isSlaveConnection(bind))  init = add(init, String.valueOf(po++));
+            if(isSlaveConnection(bind))  init = add(init, isPolling((CPUAxisPos)bind) ? "1" : "0");
         }
         
         // visit bindings to add ports to component
@@ -206,16 +209,16 @@ public class CPPBDLVisitor extends Visitor<NE> {
         PortPos port = BackendUtils.getPort(axis);
         final int width = BackendUtils.getWidth(axis);
         port.direction().Switch(new DirectionPos.Switch<Object, NE>() {
+            public Object CaseINPos(INPos term) {
+                addInPort(axis.port().term(), width);
+                return null;
+            }
             public Object CaseDUALPos(DUALPos term) {
-                addPort(axis.port().term(), "dual<"+width+">", "A bi-directional AXI-Stream port.", false);
+                addDualPort(axis.port().term(), width);
                 return null;
             }
             public Object CaseOUTPos(OUTPos term) {
-                addPort(axis.port().term(), "outPort<"+width+">", "An out-going AXI-Stream port.", true);
-                return null;
-            }
-            public Object CaseINPos(INPos term) {
-                addPort(axis.port().term(), "inPort<"+width+">", "An in-going AXI-Stream port.", true);
+                addOutPort(axis.port().term(), width);
                 return null;
             }
         });
@@ -248,32 +251,63 @@ public class CPPBDLVisitor extends Visitor<NE> {
         });
     }
     
-    private void addPort(String name, String type, String docPart, boolean single) {
+    private void addInPort(String name, int width) {
         comp = add(comp, MAttribute(MDocumentation(Strings(
-                docPart, "Communicate with the #" + comp.name() + " core through this port."
-            )), MModifiers(PUBLIC()), MType(type),
+                "An in-going AXI-Stream port.",
+                "Communicate with the #" + comp.name() + " core through this port."
+            )), MModifiers(PUBLIC()), MType("inPort<"+width+">"),
             name, MCodeFragment("",
                 MQuoteInclude("component.h"),
-                MQuoteInclude("portIn.h"),
+                MQuoteInclude("portIn.h")
+            )
+        ));
+        
+        constructor = constructor.replaceDoc(constructor.doc().replaceTags(
+            constructor.doc().tags().add(PARAM(name, "Id of the port"))
+        ));
+        constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name));
+        constructor = addInit(constructor, MMemberInit(name, name));
+    }
+    
+    private void addOutPort(String name, int width) {
+        comp = add(comp, MAttribute(MDocumentation(Strings(
+                "An out-going AXI-Stream port.",
+                "Communicate with the #" + comp.name() + " core through this port."
+            )), MModifiers(PUBLIC()), MType("outPort<"+width+">"),
+            name, MCodeFragment("",
+                MQuoteInclude("component.h"),
                 MQuoteInclude("portOut.h")
             )
         ));
         
-        if(single) {
-            constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().add(
-                        PARAM(name, "Id of the port")
-                    )));
-            constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name));
-            constructor = addInit(constructor, MMemberInit(name, name));
-        } else {
-            constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().addAll(MTags(
-                    PARAM(name + "_in",  "Id of the in-going part of the port"),
-                    PARAM(name + "_out", "Id of the out-going part of the port")
-                ))));
-            constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_in"));
-            constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_out"));
-            constructor = addInit(constructor, MMemberInit(name, name + "_in", name + "_out"));
-        }
+        constructor = constructor.replaceDoc(constructor.doc().replaceTags(
+            constructor.doc().tags().add(PARAM(name, "Id of the port"))
+        ));
+        constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name));
+        constructor = addParam(constructor, MParameter(VALUE(), MType("bool"), name + "_poll"));
+        constructor = addInit(constructor, MMemberInit(name, name, name + "_poll"));
+    }
+    
+    private void addDualPort(String name, int width) {
+        comp = add(comp, MAttribute(MDocumentation(Strings(
+                "An bi-directional AXI-Stream port.",
+                "Communicate with the #" + comp.name() + " core through this port."
+            )), MModifiers(PUBLIC()), MType("dualPort<"+width+">"),
+            name, MCodeFragment("",
+                MQuoteInclude("component.h"),
+                MQuoteInclude("portIn.h"), // TODO fix imports - superclass extending both...
+                MQuoteInclude("portOut.h")
+            )
+        ));
+        
+        constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().addAll(MTags(
+            PARAM(name + "_in",  "Id of the in-going part of the port"),
+            PARAM(name + "_out", "Id of the out-going part of the port")
+        ))));
+        constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_in"));
+        constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_out"));
+        constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_poll"));
+        constructor = addInit(constructor, MMemberInit(name, name + "_in", name + "_out", name + "_poll"));
     }
     
     // list types

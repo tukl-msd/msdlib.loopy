@@ -206,4 +206,18 @@ public class BackendUtils {
         return defaultWidth;
     }
     
+    public static int maxQueueSize(BDLFile file) {
+        int size = 0;
+        
+        for(Option opt : file.opts())
+            if(opt instanceof SWQUEUE) size = Math.max(size, ((SWQUEUE)opt).qsize());
+        
+        for(Instance inst : file.insts())
+            for(Binding bind : inst.bind())
+                for(Option opt : bind.opts())
+                    if(opt instanceof SWQUEUE) size = Math.max(size, ((SWQUEUE)opt).qsize());
+        
+        return size;
+    }
+    
 }

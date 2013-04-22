@@ -5,6 +5,7 @@ import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
 import static de.hopp.generator.backends.BackendUtils.getPollingCount;
 import static de.hopp.generator.backends.BackendUtils.getSWQueueSize;
 import static de.hopp.generator.backends.BackendUtils.isPolling;
+import static de.hopp.generator.backends.BackendUtils.maxQueueSize;
 import static de.hopp.generator.backends.server.virtex6.ise.ISE.sdkSourceDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.model.Model.*;
@@ -155,7 +156,7 @@ public class SDK extends Visitor<NE> {
     public void visit(ImportsPos  term) { }
     public void visit(BackendsPos term) { }
     public void visit(OptionsPos  term) { }
-
+    
     @Override
     public void visit(BDLFilePos term) {
         // add queue size constants
@@ -169,7 +170,8 @@ public class SDK extends Visitor<NE> {
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         addConst("HW_QUEUE_SIZE", String.valueOf(queueSizeHW), "Size of the queues implemented in hardware.");
         addConst("SW_QUEUE_SIZE", String.valueOf(queueSizeSW), "Size of the queues on the microblaze.");
-        addConst("ITERATION_COUNT", "SW_QUEUE_SIZE", "Maximal number of shifts between mb and hw queues per schedule cycle");
+        addConst("ITERATION_COUNT", String.valueOf(maxQueueSize(term.term())),
+                "Maximal number of shifts between mb and hw queues per schedule cycle");
         
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");

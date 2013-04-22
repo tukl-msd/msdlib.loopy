@@ -178,6 +178,15 @@ void scheduleReader() {
 	}
 }
 
+void send_poll(unsigned char pid, unsigned int count) {
+	std::vector<int> val = proto->encode_poll(pid, count);
+	try {
+		intrfc->send(val);
+		} catch (mediumException &e) {
+		} catch (protocolException &e) {
+		}
+}
+
 /**
  * store a read value at a port without locking or notifications.
  * @param pid Id of the target port.
@@ -279,7 +288,7 @@ void acknowledge(unsigned char pid, unsigned int count) {
 	else *inPorts[pid]->transit = -1;
 }
 
-void poll(unsigned char pid) {
+void recv_poll(unsigned char pid) {
 	// acquire port lock
 	std::unique_lock<std::mutex> port_lock(inPorts[pid]->port_mutex);
 

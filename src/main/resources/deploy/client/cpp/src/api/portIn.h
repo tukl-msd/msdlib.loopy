@@ -23,7 +23,7 @@ class abstractInPort {
 friend void scheduleWriter();
 friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
 friend void acknowledge(unsigned char pid, unsigned int count);
-friend void poll(unsigned char pid);
+friend void recv_poll(unsigned char pid);
 protected:
 	int pid;
 	std::shared_ptr<LinkedQueue<abstractWriteState>> writeTaskQueue;

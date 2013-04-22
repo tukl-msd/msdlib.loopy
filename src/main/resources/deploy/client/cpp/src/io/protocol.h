@@ -45,6 +45,14 @@ public:
 	 */
 	virtual std::vector<int> encode_data(unsigned char pid, std::vector<int> val) = 0;
 	/**
+	 * Encodes a data request.
+	 * This includes generating and appending a fitting header.
+	 * @param pid Target port id.
+	 * @param count Number of requested values.
+	 * @return The encoded package.
+	 */
+	virtual std::vector<int> encode_poll(unsigned char pid, unsigned int count) = 0;
+	/**
 	 * Encodes a gpio package.
 	 * This includes generating and appending a fitting header.
 	 * @param gid Target gpio device id.
@@ -71,7 +79,8 @@ public:
 	~protocol_v1() { };
 	unsigned int max_size();
 	void decode(int first);
-	std::vector<int> encode_data(unsigned char cid, std::vector<int> val);
+	std::vector<int> encode_data(unsigned char pid, std::vector<int> val);
+	std::vector<int> encode_poll(unsigned char pid, unsigned int count);
 	std::vector<int> encode_gpio(unsigned char gid, unsigned char val);
 	std::vector<int> encode_reset();
 };

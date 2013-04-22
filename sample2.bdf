@@ -39,7 +39,6 @@ core adder 1.00.a {
   }
   port out out1 {
     width 10
-    poll 12 
   }
 } 
 
@@ -57,7 +56,7 @@ instance rng 1.00.a rng_a {
     hwqueue  5
   }
   cpu out1 {
-    poll
+    poll 12 
   }
 }
 
