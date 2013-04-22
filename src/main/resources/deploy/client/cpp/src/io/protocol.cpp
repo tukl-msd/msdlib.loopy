@@ -180,14 +180,20 @@ std::vector<int> protocol_v1::encode_data(unsigned char pid, std::vector<int> va
 
 std::vector<int> protocol_v1::encode_poll(unsigned char pid, unsigned int count) {
 	// check value size
-	if(count > MAX_SIZE) throw protocolException(std::string("request count (") +
-			std::to_string(count) + ") exceeded message capacity (" + std::to_string(MAX_SIZE) + ")");
+//	if(count > MAX_SIZE) throw protocolException(std::string("request count (") +
+//			std::to_string(count) + ") exceeded message capacity (" + std::to_string(MAX_SIZE) + ")");
 	// check port id
 	if(pid > OUT_PORT_COUNT-1) throw protocolException(std::string("port id (") +
 			std::to_string(pid) + ") exceeded port range for out-going ports (" + std::to_string(OUT_PORT_COUNT) + ")");
 
 	// construct message and return
 	std::vector<int> v;
+
+	while(count > MAX_SIZE) {
+		v.push_back(construct_header(poll, pid, MAX_SIZE));
+		count -= MAX_SIZE;
+	}
+
 	v.push_back(construct_header(poll, pid, count));
 	return v;
 }
