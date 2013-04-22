@@ -322,8 +322,8 @@ public abstract class XPS extends Visitor<NE> {
                Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
                Attribute(BUS_IF(), Assignment("in", Ident(d ? currentAxis : queueAxis))),
                Attribute(BUS_IF(), Assignment("out", Ident(d ? queueAxis : currentAxis))),
-               Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
-               Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+               Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
+               Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_aresetn")))
         ));
         
         // return the axis identifier of the queues port, that should be attached to the components port

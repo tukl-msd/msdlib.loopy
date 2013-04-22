@@ -29,27 +29,25 @@ use ieee.numeric_std.all;
 entity queue is
 	generic
 	(
-		G_EN_ACTIVE  : std_ulogic := '1';                              --! Enable signal sensitivity
-		G_RST_ACTIVE : std_ulogic := '0';                              --! Reset signal sensitivity
+		G_EN_ACTIVE  : std_logic := '1';                              --! Enable signal sensitivity
+		G_RST_ACTIVE : std_logic := '0';                              --! Reset signal sensitivity
 		G_BW : natural := 32;                                          --! Bitwidth of the Queue Elements
 		G_DEPTH : natural;                                             --! Queue Length
 		G_MODE : integer := 1                                          --! 1: FIFO / 0: LIFO
 	);
 	port 
 	(                                                                 
-		clk : in std_ulogic;                                           --! clock signal
-		rst : in std_ulogic;                                           --! synchrounous reset signal
-		en : in std_ulogic;  -- enable signal (for clock gating)       --! enable signal (for clock gating)
+		clk : in std_logic;                                           --! clock signal
+		rst : in std_logic;                                           --! synchrounous reset signal
+		in_TReady : out std_logic;                                    --! input-AXIS-port TReady signal
+		in_TValid : in std_logic;                                     --! input-AXIS-port TValid signal
+		in_TData  : in std_logic_vector(G_BW-1 downto 0);             --! input-AXIS-port TData signal
+		in_TLast : in std_logic;                                      --! input-AXIS-port TLast signal
 		
-		in_TReady : out std_ulogic;                                    --! input-AXIS-port TReady signal
-		in_TValid : in std_ulogic;                                     --! input-AXIS-port TValid signal
-		in_TData  : in std_ulogic_vector(G_BW-1 downto 0);             --! input-AXIS-port TData signal
-		in_TLast : in std_ulogic;                                      --! input-AXIS-port TLast signal
-		
-		out_TReady : in std_ulogic;                                    --! output-AXIS-port TReady signal
-		out_TValid : out std_ulogic;                                   --! output-AXIS-port TValid signal
-		out_TData : out std_ulogic_vector(G_BW-1 downto 0);            --! output-AXIS-port TData signal
-		out_TLast : out std_ulogic                                     --! output-AXIS-port TLast signal
+		out_TReady : in std_logic;                                    --! output-AXIS-port TReady signal
+		out_TValid : out std_logic;                                   --! output-AXIS-port TValid signal
+		out_TData : out std_logic_vector(G_BW-1 downto 0);            --! output-AXIS-port TData signal
+		out_TLast : out std_logic                                     --! output-AXIS-port TLast signal
 
 	);                                                             
 end queue;
@@ -62,7 +60,7 @@ architecture rtl of queue is
 	-- Types
 	----------------------------------------------------------------------------
 	
-	type data_array_type is array (0 to G_DEPTH-1) of std_ulogic_vector(G_BW-1 downto 0);
+	type data_array_type is array (0 to G_DEPTH-1) of std_logic_vector(G_BW-1 downto 0);
 	
 
 	----------------------------------------------------------------------------
@@ -79,9 +77,9 @@ architecture rtl of queue is
 	-- pointer for LIFO mode
 	signal ptr : natural range 0 to G_DEPTH-1 := 0;
 	
-
+        signal en : std_logic;
 begin
-
+        en <= '1';
 
 	----------------------------------------------------------------------------
 	-- Generate FIFO
