@@ -30,7 +30,7 @@ entity queue is
 	generic
 	(
 		G_EN_ACTIVE  : std_logic := '1';                              --! Enable signal sensitivity
-		G_RST_ACTIVE : std_logic := '0';                              --! Reset signal sensitivity
+		G_RST_ACTIVE : std_logic := '1';                              --! Reset signal sensitivity
 		G_BW : natural := 32;                                          --! Bitwidth of the Queue Elements
 		G_DEPTH : natural;                                             --! Queue Length
 		G_MODE : integer := 1                                          --! 1: FIFO / 0: LIFO
