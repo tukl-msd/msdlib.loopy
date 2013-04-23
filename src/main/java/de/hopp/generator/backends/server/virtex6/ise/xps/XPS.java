@@ -350,8 +350,8 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("OUT_WIDTH", Number(d ? width : 32))),
             Attribute(BUS_IF(), Assignment("M_AXIS_TDATA", Ident(d ? currentAxis : muxAxis))),
             Attribute(BUS_IF(), Assignment("S_AXIS_TDATA", Ident(d ? muxAxis : currentAxis))),
-            Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+            Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_aresetn")))
         ));
         
         return muxAxis;
