@@ -12,6 +12,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.commons.io.FilenameUtils.getName;
+import static org.apache.commons.io.FilenameUtils.getBaseName;
+
 import java_cup.runtime.Symbol;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.exceptions.ParserError;
@@ -142,18 +145,29 @@ public class Parser {
         // this cannot be specified with the current katja file... 
         // --> be more liberal in bdl.katja or more restrictive in bdl.cup?
         
-        // check existence of referenced core sources
+        Map<String, Core> cores = new HashMap<String, Core>();
+        // iterate over all cores...
         for(Core core : bdf.cores()) {
+            Set<String> sources = new HashSet<String>();
             for(Import source : core.source()) {
+                // check existence of referenced core sources
                 File sourcefile = new File(source.file());
                 if(!sourcefile.exists() || !sourcefile.isFile())
                     errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", source.pos()));
+            
+                // check for duplicate filenames
+                if(!sources.add(getBaseName(source.file()).toLowerCase())) {
+                    errors.addError(new ParserError("name of sourcefile " + source.file() +
+                        " clashes (case-insensitive) with other sourcefile", source.pos()));
+                }
             }
-        }
-        
-        // check for duplicate core identifiers
-        Map<String, Core> cores = new HashMap<String, Core>();
-        for(Core core : bdf.cores()) {
+            
+            // check for existence of a source named after the core
+            if(! sources.contains(core.name().toLowerCase())) errors.addError(new ParserError(
+                "core " + core.name() + " does not contain a top level source file named after the core.", core.pos()
+            ));
+            
+            // check for duplicate core identifiers
             if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name(), core.pos()));
             else cores.put(core.name(), core);
             

@@ -171,41 +171,30 @@ public abstract class XPS extends Visitor<NE> {
                     Assignment("BUS", Ident(port.name()))
             ));
             
-            Direction.Switch<String, GenerationFailed> dSwitch =
-                new Direction.Switch<String, GenerationFailed>() {
-                    public String CaseIN(IN term) throws GenerationFailed {
-                        return "I";
-                    }
-                    public String CaseOUT(OUT term) throws GenerationFailed {
-                        return "O";
-                    }
-                    public String CaseDUAL(DUAL term) throws GenerationFailed {
-                        throw new GenerationFailed("invalid direction for virtex6");
-                    }
-                };
+            boolean direct = direction(port.direction());
+            
+            block = add(block, Attribute(PORT(),
+                    Assignment(port.name() + "_tready", Ident("TREADY")),
+                    Assignment("DIR", Ident(direct ? "O" : "T")),
+                    Assignment("BUS", Ident(port.name()))
+            ));
             
             block = add(block, Attribute(PORT(),
                     Assignment(port.name() + "_tvalid", Ident("TVALID")),
-                    Assignment("DIR", Ident(port.direction().Switch(dSwitch))),
+                    Assignment("DIR", Ident(direct ? "I" : "O")),
                     Assignment("BUS", Ident(port.name()))
             ));
             
             block = add(block, Attribute(PORT(),
                     Assignment(port.name() + "_tdata", Ident("TDATA")),
-                    Assignment("DIR", Ident(port.direction().Switch(dSwitch))),
+                    Assignment("DIR", Ident(direct ? "I" : "O")),
                     Assignment("VEC", Range(bitwidth-1, 0)),
                     Assignment("BUS", Ident(port.name()))
             ));
             
             block = add(block, Attribute(PORT(),
                     Assignment(port.name() + "_tlast", Ident("TLAST")),
-                    Assignment("DIR", Ident(port.direction().Switch(dSwitch))),
-                    Assignment("BUS", Ident(port.name()))
-            ));
-            
-            block = add(block, Attribute(PORT(),
-                    Assignment(port.name() + "_tready", Ident("TREADY")),
-                    Assignment("DIR", Ident(port.direction().Switch(dSwitch))),
+                    Assignment("DIR", Ident(direct ? "I" : "O")),
                     Assignment("BUS", Ident(port.name()))
             ));
         }
@@ -225,6 +214,20 @@ public abstract class XPS extends Visitor<NE> {
         ));
         
         return MHSFile(Attributes(), block);
+    }
+    
+    private static boolean direction(Direction direction) throws GenerationFailed {
+        return direction.Switch(new Direction.Switch<Boolean, GenerationFailed>() {
+            public Boolean CaseIN(IN term) throws GenerationFailed {
+                return true;
+            }
+            public Boolean CaseOUT(OUT term) throws GenerationFailed {
+                return false;
+            }
+            public Boolean CaseDUAL(DUAL term) throws GenerationFailed {
+                throw new GenerationFailed("invalid direction for virtex6");
+            }
+        });
     }
     
     /** 
