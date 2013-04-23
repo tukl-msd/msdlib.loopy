@@ -416,12 +416,12 @@ code_block ::=
 medium ::= // TODO
      MEDIUM ID:id medium_option_list:mol
      {:
-         switch(id) {
-           case "ethernet": RESULT = BDL.ETHERNET(pos(idleft),mol); break;
-           case "uart"    : RESULT = BDL.UART(pos(idleft),mol); break;
-           case "pcie"    : RESULT = BDL.PCIE(pos(idleft),mol); break;
-           default        : error("unknown medium " + id, idleft, idright);
-                            RESULT = BDL.NONE();
+         if(id.equals("ethernet"))  BDL.ETHERNET(pos(idleft),mol);
+         else if(id.equals("uart")) BDL.UART(pos(idleft),mol);
+         else if(id.equals("pcie")) BDL.PCIE(pos(idleft),mol);
+         else {
+            error("unknown medium " + id, idleft, idright);
+            RESULT = BDL.NONE();
          }
      :}
   ;

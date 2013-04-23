@@ -258,12 +258,11 @@ public class SDK extends Visitor<NE> {
 
     @Override
     public void visit(GPIOPos term) {
-        switch(term.name().term()) {
-        case "leds":     addLEDs();     break;
-        case "switches": addSwitches(); break;
-        case "buttons":  addButtons();  break;
-        default: errors.addError(new ParserError("Unknown GPIO device " + term.name().term() + " for Virtex6", "", -1));
-        }
+        String name = term.name().term();
+        if(name.equals("leds")) addLEDs();
+        else if(name.equals("switches")) addSwitches();
+        else if(name.equals("buttons")) addButtons();
+        else errors.addError(new ParserError("Unknown GPIO device " + name + " for Virtex6", "", -1));
     }
 
     @Override

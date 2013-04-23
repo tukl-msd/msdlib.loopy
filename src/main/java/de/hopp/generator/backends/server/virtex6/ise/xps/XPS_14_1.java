@@ -197,8 +197,8 @@ public class XPS_14_1 extends XPS {
     }
 
     public void visit(GPIOPos term) {
-        switch(term.name().term()){
-        case "led":
+        String name = term.name().term();
+        if(name.equals("led")) {
             mhs = add(mhs, Attribute(PORT(),
                 Assignment("LEDs_8Bits_TRI_O", Ident("LEDs_8Bits_TRI_O")),
                 Assignment("DIR", Ident("O")),
@@ -206,8 +206,7 @@ public class XPS_14_1 extends XPS {
             ));
             addPortToInterruptController("LEDs_8Bits_IP2INTC_Irpt");
             mhs = add(mhs, createLEDs());
-            break;
-        case "button":
+        } else if(name.equals("button")) {
             mhs = add(mhs, Attribute(PORT(),
                 Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),
                 Assignment("DIR", Ident("I")),
@@ -215,8 +214,7 @@ public class XPS_14_1 extends XPS {
             ));
             addPortToInterruptController("Push_Buttons_5Bits_IP2INTC_Irpt");
             mhs = add(mhs, createButtons());
-            break;
-        case "switch":
+        } else if(name.equals("switch")) {
             mhs = add(mhs, Attribute(PORT(),
                 Assignment("DIP_Switches_8Bits_TRI_I", Ident("DIP_Switches_8Bits_TRI_I")),
                 Assignment("DIR", Ident("O")),
@@ -224,7 +222,6 @@ public class XPS_14_1 extends XPS {
             ));
             addPortToInterruptController("DIP_Switches_8Bits_IP2INTC_Irpt");
             mhs = add(mhs, createSwitches());
-            break;
         }
     }
 

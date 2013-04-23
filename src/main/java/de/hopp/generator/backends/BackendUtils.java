@@ -115,7 +115,10 @@ public class BackendUtils {
             while ((line = input.readLine()) != null)
                IO.verbose("      " + line);
             
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            errors.addWarning(new Warning("failed to generate api specification at " + 
+                    dir.getPath() + "due to: " + e.getMessage()));
+        } catch (InterruptedException e) {
             errors.addWarning(new Warning("failed to generate api specification at " + 
                     dir.getPath() + "due to: " + e.getMessage()));
         } finally {
