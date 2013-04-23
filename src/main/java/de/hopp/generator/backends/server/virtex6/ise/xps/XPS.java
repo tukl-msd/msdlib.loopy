@@ -175,7 +175,7 @@ public abstract class XPS extends Visitor<NE> {
             
             block = add(block, Attribute(PORT(),
                     Assignment(port.name() + "_tready", Ident("TREADY")),
-                    Assignment("DIR", Ident(direct ? "O" : "T")),
+                    Assignment("DIR", Ident(direct ? "O" : "I")),
                     Assignment("BUS", Ident(port.name()))
             ));
             
