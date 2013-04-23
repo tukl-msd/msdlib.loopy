@@ -618,7 +618,7 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("C_USE_DCACHE", Number(1))),
             Attribute(PARAMETER(), Assignment("C_DCACHE_BYTE_SIZE", Number(65536))),
             Attribute(PARAMETER(), Assignment("C_DCACHE_ALWAYS_USED", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_FSL_LINKS", Number(1))),
+
             Attribute(PARAMETER(), Assignment("C_STREAM_INTERCONNECT", Number(1))),
             Attribute(BUS_IF(), Assignment("M_AXI_DP", Ident("axi4lite_0"))),
             Attribute(BUS_IF(), Assignment("M_AXI_DC", Ident("axi4_0"))),
@@ -630,6 +630,10 @@ public abstract class XPS extends Visitor<NE> {
         );
         
         // add master and slave interfaces for user-attached cores
+        microblaze = add(microblaze, Attribute(PARAMETER(),
+                Assignment("C_FSL_LINKS", Number(Math.max(axiStreamIdMaster, axiStreamIdSlave)))
+        ));
+        
         for(int i = 0; i < axiStreamIdMaster; i++)
             microblaze = add(microblaze, Attribute(BUS_IF(),
                     Assignment("M" + i + "_AXIS", Ident("M" + i + "_AXIS"))));
