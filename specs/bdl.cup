@@ -81,22 +81,23 @@ non terminal Option option;
 non terminal MOption medium_option;
 non terminal Core core;
 non terminal String version;
-non terminal Import source;
-non terminal Port port;
+non terminal Ports port;
 non terminal Instance instance;
 non terminal GPIO gpio;
 non terminal Bindings bind;
 non terminal Scheduler scheduler;
 
+
 non terminal Decl decl;
 non terminal Decls decl_list;
-non terminal Imports source_list;
+non terminal Imports source_list, source;
 non terminal Ports port_list;
 non terminal Bindings bind_block, bind_list_part, cpu_bind_list_part;
 non terminal Code code_block;
 non terminal Options option_list, option_list_part;
 non terminal MOptions medium_option_list, medium_option_list_part;
 non terminal Direction direct;
+non terminal Strings id_list, id_list_part, string_list;
 
 
 /* grammar */
@@ -251,18 +252,30 @@ version ::=
 source_list ::=
      source:s source_list:l
      {:
-         RESULT = l.appFront(s);
+         RESULT = s.addAll(l);
      :}
   |  source:s
      {:
-         RESULT = BDL.Imports(s);
+         RESULT = s;
+     :}
+  ;
+
+string_list ::=
+     STRING_LITERAL:s COMMA string_list:sl
+     {:
+          RESULT = sl.appFront(s);
+     :}
+  |  STRING_LITERAL:s
+     {:
+          RESULT = BDL.Strings(s);
      :}
   ;
 
 source ::=
-     SOURCE STRING_LITERAL:path
+     SOURCE:s string_list:path
      {:
-         RESULT = BDL.Import(path, pos(pathleft));
+         RESULT = BDL.Imports();
+         for(String imp : path) RESULT = RESULT.add(BDL.Import(imp, pos(sleft)));
      :}
   |  SOURCE:s error
      {:
@@ -273,7 +286,7 @@ source ::=
 port_list ::=
      port:p port_list:l
      {:
-         RESULT = l.appFront(p);
+         RESULT = p.addAll(l);
      :}
   |
      {:
@@ -281,10 +294,29 @@ port_list ::=
      :}
   ;
 
+id_list ::=
+     ID:id id_list_part:l
+     {:
+         RESULT = l.appFront(id);
+     :}
+  ;
+  
+id_list_part ::=
+     COMMA ID:id id_list_part:l
+     {:
+         RESULT = l.appFront(id);
+     :}
+  |
+     {:
+         RESULT = BDL.Strings();
+     :}
+  ;
+
 port   ::=
-     PORT direct:d ID:id option_list:opts
+     PORT:p direct:d id_list:il option_list:opts
      {: 
-         RESULT = BDL.Port(id, d, pos(idleft), opts);
+         RESULT = BDL.Ports();
+         for(String id : il) RESULT = RESULT.add(BDL.Port(id, d, pos(pleft), opts));
      :}
   |  PORT:p ID option_list
      {:

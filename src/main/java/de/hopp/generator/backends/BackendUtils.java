@@ -150,8 +150,8 @@ public class BackendUtils {
 
         // return the port, if it exists
         for(PortPos p : getCore(inst).ports())
-            if(p.name().term().equals(portName)) return p;    
-        
+            if(p.name().term().equals(portName)) return p;
+
         // otherwise, throw an exception (should never happen due to sanity checks)
         throw new IllegalStateException();
     }
