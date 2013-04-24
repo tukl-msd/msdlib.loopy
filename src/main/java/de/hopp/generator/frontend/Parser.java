@@ -163,9 +163,9 @@ public class Parser {
             }
             
             // check for existence of a source named after the core
-            if(! sources.contains(core.name().toLowerCase())) errors.addError(new ParserError(
-                "core " + core.name() + " does not contain a top level source file named after the core.", core.pos()
-            ));
+//            if(! sources.contains(core.name().toLowerCase())) errors.addError(new ParserError(
+//                "core " + core.name() + " does not contain a top level source file named after the core.", core.pos()
+//            ));
             
             // check for duplicate core identifiers
             if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name(), core.pos()));
