@@ -223,6 +223,7 @@ In order to generate an \texttt{.elf} file that can is used to program the FPGA,
 \textcolor{red}{It is furthermore desirable to skip user-interfaction with the EDK completely. This would require generation of the board support package and external call of Xilinx' compiler.}
 
 \section{Board Description Language}
+\label{sec:bdl}
 In this section, the \textit{board description language} (abbreviated: \textit{bdl}) is introduced. The language is used to specify a board, for which a driver and project files should be generated. 
 
 A board specification file consists of several \textit{declarations}, that may appear in arbitrary order. For improved readability of the board description file, it is advisable, to provide declarations in the same order as they are explained in this document.
@@ -230,8 +231,12 @@ A board specification file consists of several \textit{declarations}, that may a
 In the declarations, the terms of \textit{blocks} and \textit{code blocks} are used. A block is used to wrap properties of a specific declaration in the file. It is surrounded with curly brackets \texttt{\{\}}.
 A code block is a block that directly be induced in the driver, i.e., contains code in the target language of the driver. The code is surrounded by curly brackets and colons \texttt{\{::\}}.
 
+A board description is considered to be \textit{correct}, iff all all required declarations are made, all referenced declarations occur and match, no duplicates are encountered, and, naturally, the syntax is met. The following explanations of BDL declarations contain further information of what properties have to hold in order for the board description to be correct. Naturally, syntax errors will also result in an incorrect board description.
+
+Please note, that the code contained within code blocks is not analysed and therefore not used for the determination of correctness. A board description is considered to be correct, even if the code block contains errors. It is therefore advisable, to use code blocks cautiously.
+
 \subsubsection{Import}
-Import declarations reference additional board description files, that also should be used to generate the driver. The driver generator will collect all imported files recursively and compile one large driver out of all these files.
+Import declarations reference additional board description files, that also should be used to generate the driver. The driver generator will collect all imported files recursively and compile one large driver out of all these files. As a result, a file is considered to contain no imports but all declarations of the imported files. Circular imports are ignored. Correctness analysis is only performed on the complete, composed board model, not on imported files. 
 
 \begin{lstlisting}[language=bdl]
 import "some/samplefile.bdf"
@@ -239,15 +244,8 @@ import "some/samplefile.bdf"
 
 The declaration consists of the keyword \texttt{import} followed by a string containing the path of the file to be imported.
 
-\subsubsection{Backend}
-A backend declaration tells the driver generator, for which target platforms the driver should be generated.
-
-%As of now, it is a bit unclear, how this will look like, i.e. which keywords, how many, what parameters, ...
-
-Not all features that can be described using the bdl are necessarily supported by all backends. Check documentation of the backend implementations for details. Documentation of the prototype implementations for teh C++ host-side backend and the Virtex6ML605 board-side backend can be found in \Cref{sec:impl}
-
 \subsubsection{Medium}
-The medium declaration describes over which medium board and host should communicate with each other.
+The medium declaration describes over which medium board and host should communicate with each other. There has to be exactly one medium definition in a complete board description.
 
 \begin{lstlisting}[language=bdl]
 medium ethernet { ... }
@@ -268,7 +266,7 @@ medium ethernet {
 }
 \end{lstlisting}
 
-All theses properties are specified in a rather intuitive way.
+All theses properties are specified in a rather intuitive way. Missing any of these properties marks an error, since there are no default values defined.
 
 \paragraph{USB/UART}
 Connection over USB/UART is done with the keyword \texttt{uart}. No property block is provided for this communication medium as no further configuration is required.
@@ -289,7 +287,7 @@ The declaration consists of the keyword \texttt{schedule} followed by a code blo
 Note, that no guarantees can be given for a user-defined scheduler. For a more detailed description of the default scheduler and actions required by a user-defined scheduler, check out the board-side control flow graphs in \Cref{sec:protocol:cfg}.
 
 \subsubsection{Options}
-Several global properties of the board are specified directly without using distinct blocks. At this time, this includes the debug flag and global queue sizes (see \Cref{sec:arch:queue} for more details about the different queue types).
+Several global properties of the board are specified directly without using distinct blocks. At this time, this includes the debug flag and global queue sizes (see \Cref{sec:arch:queue} for more details about the different queue types). Queue sizes have to be positive, but may be 0.
 
 \begin{lstlisting}[language=bdl]
 debug
@@ -324,13 +322,15 @@ core adder 1.00.a  {
 }
 \end{lstlisting}
 
-A core is declared by the keyword \texttt{core} followed by the name of the core and a version string. Properties of the core are described within a following declaration block. This block consists of two parts. First is a list of sources, that describe the implementation of the core.
+A core is declared by the keyword \texttt{core} followed by the name of the core and a version string. These two values are used as unique identifier of the core and the combination of both may occur at most once within a board description. Properties of the core are described within a following declaration block. This block consists of two parts. First is a list of sources, that describe the implementation of the core.
 
 \begin{lstlisting}[language=bdl]
   source "cores/adder_1_00_a.vhd"
 \end{lstlisting}
 
 Source references are very similar to import declarations and only differ in the used keyword and allowed occurrences within the bdl file.
+
+\textbf{Important note}: The ISE backend of the driver generator requires the top model source file to contain a VHDL entity with the same name as the specified core. It is recommended to use the same name for the source file itself. As a result the core, sourcefile and entity share the same name.
 
 The second part of the core declaration block describes the interface of the core.
 
@@ -341,18 +341,20 @@ The second part of the core declaration block describes the interface of the cor
   }
 \end{lstlisting}
 
-An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The default bitwidth of a port is 32-bit.
+An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. Identifiers have to be locally unique and may therefore occur only once within a core. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The default bitwidth of a port is 32-bit.
 
 \subsubsection{Instance}
 The instance declaration instantiates a core on the board. This effectively creates a component on the board with the behaviour and interface specified by the core. The interface declaration itself connects this component with other components.
 
 \begin{lstlisting}[language=bdl]
-instance adder adder1 {
+instance adder 1.00.a adder1 {
   ...
 }
 \end{lstlisting}
 
-An instance declaration begins with the keyword \texttt{instance}, followed by a reference to the used core and the identifier of the instance itself. A property block is used to make connections between the ports of the core instance with other core instances.
+An instance declaration begins with the keyword \texttt{instance}, followed by a reference to the used core and the identifier of the instance itself. The referenced cores are required to be declared within this board description, and used instance identifiers may occur at most once.
+
+A property block is used to make connections between the ports of the core instance with other core instances.
 
 \begin{lstlisting}[language=bdl]
   bind in1 myAxis
@@ -365,11 +367,12 @@ An instance declaration begins with the keyword \texttt{instance}, followed by a
   }
 \end{lstlisting}
 
-The \texttt{bind} keyword connects a port with an axis. An axis is basically a connection between exactly two ports.
+The \texttt{bind} keyword connects a port with an axis. An axis is basically a connection between exactly two ports. Using the same axis identifier for more than two ports is illegal.
 The keyword \texttt{cpu} connects the specified port to the board-side driver. %keyword questionable...
-The host-side driver will provide methods for direct communication with these ports of the component. Another block is used for properties of these driver-attached ports.
+The host-side driver will provide methods for direct communication with these ports of the component.
+Again, a block is used for properties of these driver-attached ports. Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
 
-Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
+For both bindings, the referenced port has to exist within the core declaration. 
 
 \section{Process}
 \label{sec:process}
@@ -1415,7 +1418,7 @@ Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as t
 
 
 \chapter{Generator}
-This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator. \textcolor{red}{A reference to the third Katja report might be useful.}
+This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator, \textbf{not} for mere users (you are welcome to read it anyway, if you're interested, but it will not provide you with additional usage information)
 
 \section{Used Libraries}
 This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction. Still, as the generator code depends on them, they are introduced here for future developers.
@@ -1468,10 +1471,100 @@ Currently, the only available backends are the C++ host backend and the Virtex 6
 \label{fig:genprocess}
 \end{figure}
 
-\section{CModel}
+\section{Models}
+The driver generator defines several models, which are used to define input and output artefacts. All models are generated from Katja grammars. These grammars will be used in the following sections, to explain the models.
+
+\subsection{Board Model}
+The board model is the model underlying the board description language. It is generate from a .bdl file using a JFlex scanner and CUP parser. The board model is the only input available to the driver generator and is translated by backends into other models. If the used board description is not correct, the frontend will abort and provide the cause in an error message. The required properties for correctness are described in \Cref{sec:bdl}.
+
+\begin{lstlisting}[language=java, breaklines=true]
+BDLFile (Imports imports, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
+
+Position (String filename, Integer line)
+\end{lstlisting}
+
+The board model is comparably flat, containing most elements already on top level. Most of the components of the BDL model are augmented with a position, storing the occurring document and line within the document, to provide nod only the reason for an error, but also the position within a .bdl file.
+
+\begin{lstlisting}[language=java, breaklines=true]
+Imports * Import
+Import (String file, Position pos)
+
+Options * Option
+Option = HWQUEUE (Position pos, Integer qsize)
+       | SWQUEUE (Position pos, Integer qsize)
+       | BITWIDTH(Position pos, Integer bit)
+       | POLL    (Position pos, Integer count)
+       | DEBUG   (Position pos)
+\end{lstlisting}
+
+Imports reference another file by a string. These files are concatenated to a single, big file before processing. Caching of file names resolves circular imports. Note, that files do not necessarily have to be "complete" on their own but may miss several required parts and be only complete when regarding import in another file.
+
+Options specify several parameters to configure either the the drivers both board- and client-side. The queue options \texttt{HWQUEUE} and \texttt{SWQUEUE} specify the size of hardware- or software queues. The \texttt{POLL} parameter marks a polling port. An integer parameter can be used to specify the size of a client-side queue for caching of a few values. See \Cref{sec:arch:queue} for an introduction to the different queue types.
+\texttt{BITWIDTH} specifies the width of a port, \texttt{DEBUG} enables debug mode for the generated driver.
+
+The queue and debug options are available on top level, others can be used later on in the document.
+
+\begin{lstlisting}[language=java, breaklines=true]
+Cores * Core
+Core (String name, String version, Position pos, Imports source, Ports ports)
+
+Ports * Port
+Port (String name, Direction direction, Position pos, Options opts)
+Direction = IN() | OUT() | DUAL()
+\end{lstlisting}
+
+A core is identified by a name and version String. It marks a template for components on the board and therefore has to specify its VHDL sources and its port interface. The interface is already described in the VHDL sources and could also be deduced in a later driver generator version by parsing these sources instead of only copying them.
+
+Ports within a core are identified with only a name. A port has a direction, which is either in-going, out-going or both. Note, that bi-directional ports are not supported by the AXI-Stream interface this driver is designed for, and are just in the frontend for completeness. However, no backend currently supports those ports.
+Ports can be configured further with options, though the only currently meaningful option in context of a port is the bitwidht option. \textcolor{red}{Queue options might make sense here as a more general declaration compared to instance bindings. All bindings to this port get the size automatically... Same applies to poll. }
+
+\begin{lstlisting}[language=java, breaklines=true]
+Instances * Instance
+Instance(String name, String core, String version, Position pos, Bindings bind)
+
+Bindings * Binding
+Binding = Axis(String port, String axis, Position pos, Options opts)
+        | CPUAxis(String port, Position pos, Options opts)
+\end{lstlisting}
+
+The instance marks the instantiation of a core as component on the board. It also has a name and position, and references the core by string and version id. Existence of the core is checked in the frontend. \texttt{BINDINGS} are used to connect ports of instantiated cores to each other. The normal \texttt{AXIS} is used to connect instances of user-defined cores. The axis identifier marks the name of a direct connection between two AXI stream ports. An axis identifier may occur at most once, though it is allowed to leave a connection open or not connect the port at all (however, this will result in a warning from the frontend). The bitwidths of ports connected this way are required to be identical.
+A \texttt{CPUAxis} marks the connection of a port directly to the processor on the board. If an axis is connected that way, it can be written to or read from by the driver and methods are generated in the host-side API. Additional options can be used for cpu connections. This includes the queue options as well as the poll switch. These values are preferred as queue size for the connection, if specified. Otherwise, more global values are used. Also, bitwidth translation for a cpu connected port is performed automatically.
+
+Note, that for both bindings, the referenced port has to exist. If it doesn't, the frontend will stop and return an error. % this is to much semantic! Only describe the concrete model here. The reader should know all this from chapter 2 ...
+
+\begin{lstlisting}[language=java, breaklines=true]
+GPIOs * GPIO
+GPIO (String name, Direction direction, Position pos, Code callback)
+
+Scheduler (Position pos, Code code)
+
+Code = DEFAULT() | USER_DEFINED(Strings content)
+\end{lstlisting}
+
+GPIO declarations specify, if a certain GPIO device is available on the board design. They are somewhat similar to instances, but do not require a core declaration (this is provided by the board design company) and can only be instantiated once. They also have a direction specifier. Per default, out-going GPIO components can be written to from the host-side API, while the state of an in-going GPIO is transmitted to the host, whenever it changes. It is however possible, to override the behaviour in case of a state change by supplying the GPIO declaration with user-defined callback code. % this is to much semantic! Only describe the concrete model here. The reader should know all this from chapter 2 ...
+
+Similar to the callback method, the default scheduler behaviour can be overriden.
+
+\begin{lstlisting}[language=java, breaklines=true]
+Medium = NONE()
+       | ETHERNET(Position pos, MOptions opts)
+       | UART    (Position pos, MOptions opts)
+       | PCIE    (Position pos, MOptions opts)
+
+MOptions * MOption
+MOption = MAC    (Position pos, String val)
+        | IP     (Position pos, String val)
+        | MASK   (Position pos, String val)
+        | GATE   (Position pos, String val)
+        | PORTID (Position pos, Integer val)
+\end{lstlisting}
+
+The \texttt{Medium} describes how the board-side and host-side drivers are connected to each other. This can be done via Ethernet, UART or PCIE. Medium options specify several medium-specific properties. Note, that it is required to specify a medium (i.e., leaving the medium unspecified will result in an error) and there are no default values for a concrete medium, i.e. corresponding medium options are required as well.
+
+\subsection{C Model}
 \label{sec:cmodel}
 %TODO completely outdated, but don't want to update this part before all changes are finalised...
-The \texttt{C} model provides data types representing a \texttt{C/C++} program. Note, that the model is neither complete nor always valid, i.e. not all \texttt{C} programs can be described using this model and it is possible to specify a model not translating into valid \texttt{C}. Still, the model simplifies the process of code generation. The model is used for generating \texttt{C} as well as \texttt{C++} code.
+The \texttt{C} model provides data types representing a \texttt{C/C++} program. Note, that the model is neither complete nor always valid, i.e. not all \texttt{C} programs can be described using this model and it is possible to specify a model not translating into valid \texttt{C}. Still, the model simplifies the process of code generation. The model is used for generating \texttt{C} as well as \texttt{C++} code. \texttt{C} model files are generated by the \texttt{C++} host backend as well as the ISE project backend.
 
 \begin{lstlisting}[language=java, breaklines=true]
 MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
@@ -1536,7 +1629,8 @@ MTag = PARAM      ( String name, Strings details )
 
 For generation of the API, Javadoc style documentation has to be added to the model. A \texttt{MDocumentation} element contains documentation for the following block as well as possibly several tags. Tags can be parameter or return value descriptions of a method/procedure, descriptions for exception behaviour, deprecation descriptions or references to other elements of the code. The \texttt{JAVADOC\_AUTOBRIEF} option is set in the generated doxygen config files, resulting in the first sentence (concluded by a dot and following space or newline) will be used as short description for the documented program part. Since neither the driver generator nor doxygen perform sanity checks, we rely on the user to only introduce meaningful tags for a documentation element. Note further, that the order of tags influences the order of elements in the generated API description.
 
-\section{Unparser}
+\subsubsection{Unparser}
+\label{sec:gen:unparser}
 Different unparsers are used, to translate the \texttt{C} model in actual code. For each instance of the model, a header file and a corresponding source file, either \texttt{C} or \texttt{C++}, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain \texttt{C}, files intended for the client side can also be \texttt{C++} files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
 
 \paragraph{Header Unparser}
@@ -1549,6 +1643,115 @@ Since plain \texttt{C} doesn't have any concept of classes, using a model with c
 
 \paragraph{\texttt{C++} Unparser}
 For the \texttt{C++} unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
+
+\subsection{MHS Model}
+The MHS model encapsulates several project files required by the Xilinx ISE workflow, namely .mpd files describing ip cores, the .mhs file describing the overall board design and the .mss file describing the contents of a board support package in Xilinx SDK.
+The model is comparably simple and, similar to the C model, does not guarantee correctness of files created using the model. However, the model is sufficient for the purpose of this driver generator.
+
+\begin{lstlisting}
+MHSFile ( Attributes attributes, Blocks blocks )
+Block ( String name, Attributes attributes )
+Attributes * Attribute
+Blocks * Block
+\end{lstlisting}
+
+An .mhs file consists of a list of attributes and blocks. A block in turn has a name and contains attributes of the block.
+
+\begin{lstlisting}
+Attribute ( Type type, Assignments assign )
+Type = OPTION( ) | BUS_IF( ) | PARAMETER( ) | PORT( )
+Assignments * Assignment
+\end{lstlisting}
+
+An attribute consists of a attribute type and a list of assignments. Available types are options, bus interfaces, parameters and ports.
+
+\begin{lstlisting}
+Assignment ( String name, Expression exp )
+Expression = Value | AndExp
+AndExp * Value
+\end{lstlisting}
+
+An assignment assigns an expression to a name. Such an expression is either directly a value, or a list of values concatenated using \&. %which means? logical and??
+
+\begin{lstlisting}
+Value = Ident ( String val )
+     | STR ( String val )
+     | MemAddr ( String val )
+     | Number ( Integer Val )
+     | Range ( Integer u, Integer l )
+\end{lstlisting}
+
+A value can be one of the above types. Idents are used to reference other elements of the file. Strings are put in quotation marks. A range usually describe a bit vector.
+The is no real programmatic difference between idents, memory addresses, and numbers. These types are only used to make model generation more clear. Strings and ranges result in different behaviour of the unparser.
+
+\section{Extensions}
+So far, the driver generator can only generate \texttt{C++} host APIs and only works with a virtex 6 board. To support more languages on the host side or different boards, extensions are necessary. The driver generator is designed with such extensibility in mind. Steps necessary for generation of a specific driver (be it host or board side) are wrapped inside a \textit{backend}. These backends usually incorporate translation of the board model into some output model and unparsing of said output model. An example for such a backend ist the \texttt{C++} host backend. This section describes the steps necessary to extend the driver generator with additional backends and introduces some utility classes that can make this task easier. 
+
+There are three kinds of backends in the driver generator: host backends, board backends and project backends.
+Host backends, like the \texttt{C++} host backend, generates a host-side driver, which only depends on the interface of the board, but not the architecture. Additional host backends can provide a different user API, which can also be written in another language.
+Board backends are responsible for generation of the .bit file, with which the FPGA is programmed. An example is the Virtex6 board backend. This backend is restricted to creating files for a Virtex 6 board. To support other architectures, new board backends have to be defined.
+The third group of backends, i.e. project backends, support board backends in their generation process. Generation of .bit files is not done by the driver generator itself, but an external tool, which is referenced by the project backend. The Virtex 6 board backend for example contains the project backends for ISE 14.1 or 14.4.
+
+
+\subsection{Adding Backends}
+To add a host backend to the generator, the backend class is required to implement the respective interface (\texttt{de.hopp.generator.client.ClientBackend}). The interface declares all methods necessary for project generation and clean integration of the backend. The recommended way to do this is extending the \texttt{AbstractClientBackend}, which describes a backend without parameters. If additional parameters are required, the provided methods can be overridden.
+
+\texttt{getName()} simply should return the name of the backend. This name will be used as identifier for backend selection in the command line interface of the generator. \texttt{printUsage} is used for printing cli parameters which are used to configure the backend. \texttt{parseParameters} is called by the generator during parameter parsing and can take away parameters from the list. Remaining parameters have to be stored in the configuration before returning it. This is done in the abstract client backend. Finally, \texttt{generate} transforms the model and generates files. It is recommended, to split transformation and generation into separate classes.
+
+\begin{lstlisting}[language=java]
+public class Java extends AbstractClientBackend {
+  public String getName() {
+    return "java";
+  }
+
+  public void generate(...) {
+    ...
+  }
+}
+\end{lstlisting}
+
+The above code fragment describes a possible Java client backend. For actual implementation of model translation and file generation, refer to the code of the provided backends.
+
+After defining the backend, it has to be added to the list of backends known to the generator. This is done by adding an instance of the backend to the client backend enum (\texttt{de.hopp.generator.frontend.ClientBackend}).
+
+\begin{lstlisting}[language=java]
+public enum ClientBackend {
+    CPP(new CPP()),
+    Java(new Java());
+
+  // the rest of the fileremains unchanged
+   ...
+}
+\end{lstlisting}
+
+The above code adds the defined Java backend to the enum.
+
+Addition of other backend types is very similar to host backends. The plugin interfaces and enums differ, and are described in
+\Cref{tab:gen:hook}. Note that project backends are specific for a board backend and addition of new board backends also requires implementation of project backends for these (if multiple workflows are to be supported).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ c | c | c }
+Backend & Type & Class \\ \hline\hline
+Host & Interface & de.hopp.generator.backends.client.ClientBackend \\
+& Enum & de.hopp.generator.frontend.ClientBackend\\ \hline
+Board & Interface & de.hopp.generator.backends.server.ServerBackend\\
+& Enum & de.hopp.generator.frontend.ServerBackend\\ \hline
+Project & Interface & de.hopp.generator.backends.server.virtex6.ProjectBackendIF\\
+& Enum & de.hopp.generator.backends.server.virtex6.ProjectBackend\\
+\end{tabular}
+\caption{Overview of Classes and Enums required for Backend Extension}
+\label{tab:gen:hook}
+\end{table}
+
+%Add a picture about the backend hierarchy
+
+\subsection{Utility Classes}
+There are several utility classes which supply basic methods for file generation and model translation.
+
+The class \texttt{de.hopp.generator.utils.BoardUtils} contains utility methods for model analysis. This contains getters for referenced elements (e.g. getting the port referenced by a binding) or specific attributes, that are not necessarily declared at the component (e.g. the size of the queue of a binding).
+
+Methods for printing of several model file types, i.e. \texttt{C} and MHS models, is provided in the utility class \texttt{de.hopp.generator.backends.BackendUtils}. These methods make use of the unparsers described in \ref{sec:gen:unparser}.
 
 \addtocontents{toc}{\protect\vspace*{\fill}}
 

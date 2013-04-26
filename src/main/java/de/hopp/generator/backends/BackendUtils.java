@@ -16,16 +16,11 @@ import de.hopp.generator.backends.unparser.CppUnparser;
 import de.hopp.generator.backends.unparser.HUnparser;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.Warning;
-import de.hopp.generator.frontend.*;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MFileInFile;
 
 public class BackendUtils {
 
-    public static final int defaultQueueSizeSW = 1024;
-    public static final int defaultQueueSizeHW = 64;
-    public static final int defaultWidth = 32;
-    
     public enum UnparserType { HEADER, C, CPP }
     
     public static MFileInFile.Visitor<InvalidConstruct> createUnparser(UnparserType type, StringBuffer buf, String name) {
@@ -127,100 +122,4 @@ public class BackendUtils {
             } catch(IOException e) { /* well... memory leak... */ }
         }
     }
-    
-    public static CorePos getCore(InstancePos inst) {
-        String coreName = inst.core().term();
-        String coreVer  = inst.version().term();
-        
-        // return the core, if it exists
-        for(CorePos c : inst.root().cores())
-            if(c.name().term().equals(coreName) && c.version().term().equals(coreVer))
-                return c;
-        
-        // otherwise, throw an exception (should never happen due to sanity checks)
-        throw new IllegalStateException();
-    }
-    
-    public static PortPos getPort(BindingPos bind) {
-        String portName = bind.port().term();
-
-        // throw an exception, if the parent is not a core instance
-        if(!(bind.parent().parent() instanceof InstancePos)) throw new IllegalStateException();
-        InstancePos inst = ((InstancePos)bind.parent().parent());
-
-        // return the port, if it exists
-        for(PortPos p : getCore(inst).ports())
-            if(p.name().term().equals(portName)) return p;
-
-        // otherwise, throw an exception (should never happen due to sanity checks)
-        throw new IllegalStateException();
-    }
-    
-    public static boolean isPolling(CPUAxisPos axis) {
-        // check, if there is a poll option, return if found
-        for(Option opt : axis.opts().term())
-            if(opt instanceof POLL) return true;
-        
-        // otherwise, the port isn't polling
-        return false;
-    }
-    
-    public static int getPollingCount(CPUAxisPos axis) {
-        // check, if there is a poll option, return if found
-        for(Option opt : axis.opts().term())
-            if(opt instanceof POLL) return ((POLL)opt).count();
-        
-        // otherwise, the port isn't polling. Return 0
-        return 0;
-    }
-    
-    public static int getSWQueueSize(CPUAxisPos axis) {
-        // if there is a local definition, return that
-        for(Option opt : axis.opts().term())
-            if(opt instanceof SWQUEUE) return ((SWQUEUE)opt).qsize();
-        
-        // if there is no local definition but a global one, return that
-        for(Option opt : axis.root().opts().term())
-            if(opt instanceof SWQUEUE) return ((SWQUEUE)opt).qsize();
-        
-        // otherwise, return the default queue size
-        return defaultQueueSizeSW;
-    }
-    
-    public static int getHWQueueSize(CPUAxisPos axis) {
-        // if there is a local definition, return that
-        for(Option opt : axis.opts().term())
-            if(opt instanceof HWQUEUE) return ((HWQUEUE)opt).qsize();
-        
-        // if there is no local definition but a global one, return that
-        for(Option opt : axis.root().opts().term())
-            if(opt instanceof HWQUEUE) return ((HWQUEUE)opt).qsize();
-        
-        // otherwise, return the default queu size
-        return defaultQueueSizeHW;
-    }
-    
-    public static int getWidth(CPUAxisPos axis) {
-        // the bitwidth option has to be set at the port definition
-        for(Option opt : getPort(axis).opts().term())
-            if(opt instanceof BITWIDTH) return ((BITWIDTH)opt).bit();
-            
-        // if it is not set, return the default width
-        return defaultWidth;
-    }
-    
-    public static int maxQueueSize(BDLFile file) {
-        int size = 0;
-        
-        for(Option opt : file.opts())
-            if(opt instanceof SWQUEUE) size = Math.max(size, ((SWQUEUE)opt).qsize());
-        
-        for(Instance inst : file.insts())
-            for(Binding bind : inst.bind())
-                for(Option opt : bind.opts())
-                    if(opt instanceof SWQUEUE) size = Math.max(size, ((SWQUEUE)opt).qsize());
-        
-        return size;
-    }
-    
 }

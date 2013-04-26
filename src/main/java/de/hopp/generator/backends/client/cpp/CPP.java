@@ -4,7 +4,6 @@ import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.utils.Files.copy;
 
-import java.io.File;
 import java.io.IOException;
 
 import de.hopp.generator.Configuration;
@@ -12,7 +11,7 @@ import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
-import de.hopp.generator.backends.client.ClientBackend;
+import de.hopp.generator.backends.client.AbstractClientBackend;
 import de.hopp.generator.frontend.BDLFilePos;
 
 /**
@@ -20,7 +19,7 @@ import de.hopp.generator.frontend.BDLFilePos;
  * This visitor generates a C++ API for communication with an arbitrary board-side driver.
  * @author Thomas Fischer
  */
-public class CPP implements ClientBackend {
+public class CPP extends AbstractClientBackend {
 
     public CPP() {
 
@@ -30,17 +29,6 @@ public class CPP implements ClientBackend {
         return "c++";
     }
     
-    public void printUsage(IOHandler IO) {
-        IO.println(" no parameters");
-    }
-    
-    public Configuration parseParameters(Configuration config, String[] args) {
-        // parse backend specific parameters...
-        // basically everything, that was not handled by the system...
-        config.setUnusued(args);
-        return config;
-    }
-
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
         
         IOHandler IO = config.IOHANDLER();

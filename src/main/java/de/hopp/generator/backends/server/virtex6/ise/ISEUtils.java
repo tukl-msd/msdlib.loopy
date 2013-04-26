@@ -9,6 +9,9 @@ public class ISEUtils {
     public static File sdkDir(Configuration config) {
         return new File(config.tempDir(), "sdk");
     }
+    public static File sdkAppDir(Configuration config) {
+        return new File(sdkDir(config), "app");
+    }
     public static File edkDir(Configuration config) {
         return new File(config.tempDir(), "edk");
     }

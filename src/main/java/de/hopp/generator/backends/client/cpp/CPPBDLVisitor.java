@@ -1,10 +1,11 @@
 package de.hopp.generator.backends.client.cpp;
 
-import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
-import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
-import static de.hopp.generator.backends.BackendUtils.isPolling;
 import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.utils.BoardUtils.defaultQueueSizeHW;
+import static de.hopp.generator.utils.BoardUtils.defaultQueueSizeSW;
 import static de.hopp.generator.utils.BoardUtils.getPort;
+import static de.hopp.generator.utils.BoardUtils.getWidth;
+import static de.hopp.generator.utils.BoardUtils.isPolling;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addDoc;
 import static de.hopp.generator.utils.Model.addInit;
@@ -14,7 +15,6 @@ import java.io.File;
 
 import katja.common.NE;
 import de.hopp.generator.Configuration;
-import de.hopp.generator.backends.BackendUtils;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MClass;
@@ -206,8 +206,8 @@ public class CPPBDLVisitor extends Visitor<NE> {
     }
 
     public void visit(final CPUAxisPos axis) {
-        PortPos port = BackendUtils.getPort(axis);
-        final int width = BackendUtils.getWidth(axis);
+        PortPos port = getPort(axis);
+        final int width = getWidth(axis);
         port.direction().Switch(new DirectionPos.Switch<Object, NE>() {
             public Object CaseINPos(INPos term) {
                 addInPort(axis.port().term(), width);
@@ -235,7 +235,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     }
     
     private static boolean isMasterConnection(BindingPos term) {
-        PortPos port = getPort(term.root(), ((InstancePos)term.parent().parent()).core().term(), term.port().term());
+        PortPos port = getPort(term);
         return port.direction().Switch(new DirectionPos.Switch<Boolean, NE>() {
             public Boolean CaseDUALPos(DUALPos term) { return true;  }
             public Boolean CaseOUTPos(OUTPos term)   { return false; }
@@ -243,7 +243,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
         });
     }
     private static boolean isSlaveConnection(BindingPos term) {
-        PortPos port = getPort(term.root(), ((InstancePos)term.parent().parent()).core().term(), term.port().term());
+        PortPos port = getPort(term);
         return port.direction().Switch(new DirectionPos.Switch<Boolean, NE>() {
             public Boolean CaseDUALPos(DUALPos term) { return true;  }
             public Boolean CaseOUTPos(OUTPos term)   { return true; }

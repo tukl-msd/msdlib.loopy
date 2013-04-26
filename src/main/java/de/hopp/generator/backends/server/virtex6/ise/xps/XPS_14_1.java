@@ -1,9 +1,9 @@
 package de.hopp.generator.backends.server.virtex6.ise.xps;
 
-import static de.hopp.generator.backends.BackendUtils.getPort;
-import static de.hopp.generator.backends.BackendUtils.getSWQueueSize;
-import static de.hopp.generator.backends.BackendUtils.getWidth;
 import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.utils.BoardUtils.getPort;
+import static de.hopp.generator.utils.BoardUtils.getSWQueueSize;
+import static de.hopp.generator.utils.BoardUtils.getWidth;
 
 import java.io.File;
 

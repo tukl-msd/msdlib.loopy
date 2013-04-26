@@ -1,15 +1,9 @@
 package de.hopp.generator.backends.server.virtex6.ise.sdk;
 
-import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeHW;
-import static de.hopp.generator.backends.BackendUtils.defaultQueueSizeSW;
-import static de.hopp.generator.backends.BackendUtils.getPollingCount;
-import static de.hopp.generator.backends.BackendUtils.getSWQueueSize;
-import static de.hopp.generator.backends.BackendUtils.isPolling;
-import static de.hopp.generator.backends.BackendUtils.maxQueueSize;
 import static de.hopp.generator.backends.server.virtex6.ise.ISE.sdkSourceDir;
-import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
+import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.model.Model.*;
-import static de.hopp.generator.utils.BoardUtils.getPort;
+import static de.hopp.generator.utils.BoardUtils.*;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addLines;
 
@@ -26,6 +20,8 @@ import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
+import de.hopp.generator.parser.MHS;
+import de.hopp.generator.parser.MHSFile;
 
 /**
  * Generation backend for Xilinx SDK.
@@ -62,6 +58,7 @@ public class SDK extends Visitor<NE> {
     protected MFile components;
     protected MFile constants;
     protected MFile scheduler;
+    protected MHSFile mssFile;
     
     // parts of the generated files
     private MProcedure init;
@@ -96,7 +93,7 @@ public class SDK extends Visitor<NE> {
         this.errors = errors;
         
         // set directories
-        this.targetDir = sdkDir(config);
+        this.targetDir = sdkAppDir(config);
         targetSrc = new File(targetDir, "src");
         
         // setup files and methods
@@ -150,6 +147,103 @@ public class SDK extends Visitor<NE> {
                 "if(DEBUG) xil_printf(\"\\nreading from out-going port %d ...\", target);",
                 "switch(target) {"
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
+    }
+    
+    private void setupMSS() {
+        mssFile = MHS.MHSFile(
+            MHS.Attributes(
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("VERSION", MHS.STR("2.2.0")))
+            ), MHS.Block("OS",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_NAME", MHS.STR("standalone"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.STR("3.08.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.STR("microblaze_0"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.STR("debug_module"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.STR("debug_module")))
+            ), MHS.Block("PROCESSOR",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("cpu"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("1.14.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("tmrctr"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.04.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("axi_timer_0")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("v6_ddrx"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.00.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("ddr3_sdram")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("3.01.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_d_bram_ctrl")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("3.01.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("mikcroblaze_0_i_bram_ctrl")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("intc"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.05.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_intc")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("uartlite"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.00.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("debug_module")))
+            )
+        );
+        // non-generic parts ): gpio and ethernet parts can be deduced from bdl.
+        // queues and resizers are more complicated... (though still doable)
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = generic
+//        PARAMETER DRIVER_VER = 1.00.a
+//        PARAMETER HW_INSTANCE = m0_queue
+//       END
+//
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = generic
+//        PARAMETER DRIVER_VER = 1.00.a
+//        PARAMETER HW_INSTANCE = m1_downsizer
+//       END
+//
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = generic
+//        PARAMETER DRIVER_VER = 1.00.a
+//        PARAMETER HW_INSTANCE = m1_upsizer
+//       END
+//
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = generic
+//        PARAMETER DRIVER_VER = 1.00.a
+//        PARAMETER HW_INSTANCE = s0_queue
+//       END
+//
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = gpio
+//        PARAMETER DRIVER_VER = 3.00.a
+//        PARAMETER HW_INSTANCE = dip_switches_8bits
+//       END
+//      
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = gpio
+//        PARAMETER DRIVER_VER = 3.00.a
+//        PARAMETER HW_INSTANCE = leds_8bits
+//       END
+//       
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = gpio
+//        PARAMETER DRIVER_VER = 3.00.a
+//        PARAMETER HW_INSTANCE = push_buttons_5bits
+//       END
+//       
+//       BEGIN DRIVER
+//        PARAMETER DRIVER_NAME = emaclite
+//        PARAMETER DRIVER_VER = 3.03.a
+//        PARAMETER HW_INSTANCE = ethernet_lite
+//       END
+//      
+//       BEGIN LIBRARY
+//        PARAMETER LIBRARY_NAME = lwip140
+//        PARAMETER LIBRARY_VER = 1.03.a
+//        PARAMETER PROC_INSTANCE = microblaze_0
+//       END
     }
     
     // We assume all imports to be accumulated at the parser
@@ -267,7 +361,7 @@ public class SDK extends Visitor<NE> {
 
     @Override
     public void visit(final CPUAxisPos axis) {
-        PortPos port = getPort(axis.root(), ((InstancePos)axis.parent().parent()).core().term(), axis.port().term());
+        PortPos port = getPort(axis);
         port.direction().termDirection().Switch(new Direction.Switch<Boolean, NE>() {
             public Boolean CaseIN(IN term) {
                 addWriteStream(axis); return null;
