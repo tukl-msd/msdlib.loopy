@@ -20,6 +20,7 @@ import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MProcedure;
+import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHS;
 import de.hopp.generator.parser.MHSFile;
 
@@ -73,6 +74,29 @@ public class SDK extends Visitor<NE> {
     private int gpiCount = 0;
     private int gpoCount = 0;
     
+    // version strings
+    protected String version;
+    
+    protected String version_os;
+    protected String version_cpu;
+    
+    protected String version_intc;
+    protected String version_v6_ddrx;
+    protected String version_bram_block;
+    protected String version_timer_controller;
+    
+    protected String version_uartlite;
+    protected String version_ethernetlite;
+    protected String version_lwip_lib_name;
+    protected String version_lwip_lib;
+    
+    protected String version_gpio_leds;
+    protected String version_gpio_buttons;
+    protected String version_gpio_switches;
+    
+    protected String version_queue;
+    protected String version_resizer;
+    
     public MFile getComponents() {
         return components;
     }
@@ -100,6 +124,30 @@ public class SDK extends Visitor<NE> {
         deployFiles = new HashMap<File, File>();
         setupFiles();
         setupMethods();
+        
+        // initialise version strings
+        version                   = "2.2.0";
+        
+        version_os                = "3.08.a";
+        version_cpu               = "1.14.a";
+        
+        version_bram_block        = "3.01.a";
+        version_intc              = "2.05.a";
+        version_timer_controller  = "2.04.a";
+        version_v6_ddrx           = "2.00.a";
+        
+        version_uartlite          = "2.00.a";
+        version_ethernetlite      = "3.03.a";
+        
+        version_lwip_lib_name     = "lwip140";
+        version_lwip_lib          = "1.03.a";
+        
+        version_gpio_leds         = "3.00.a";
+        version_gpio_buttons      = "3.00.a";
+        version_gpio_switches     = "3.00.a";
+        
+        version_queue             = "1.00.a";
+        version_resizer           = "1.00.a";
     }
     
     private void setupFiles() {
@@ -152,40 +200,40 @@ public class SDK extends Visitor<NE> {
     private void setupMSS() {
         mssFile = MHS.MHSFile(
             MHS.Attributes(
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("VERSION", MHS.STR("2.2.0")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("VERSION", MHS.STR(version)))
             ), MHS.Block("OS",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_NAME", MHS.STR("standalone"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.STR("3.08.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.STR(version_os))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.STR("microblaze_0"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.STR("debug_module"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.STR("debug_module")))
             ), MHS.Block("PROCESSOR",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("cpu"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("1.14.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_cpu))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("tmrctr"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.04.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_timer_controller))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("axi_timer_0")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("v6_ddrx"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.00.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_v6_ddrx))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("ddr3_sdram")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("3.01.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_bram_block))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_d_bram_ctrl")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("3.01.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_bram_block))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("mikcroblaze_0_i_bram_ctrl")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("intc"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.05.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_intc))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_intc")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("uartlite"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR("2.00.a"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_uartlite))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("debug_module")))
             )
         );
@@ -215,35 +263,7 @@ public class SDK extends Visitor<NE> {
 //        PARAMETER HW_INSTANCE = s0_queue
 //       END
 //
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = gpio
-//        PARAMETER DRIVER_VER = 3.00.a
-//        PARAMETER HW_INSTANCE = dip_switches_8bits
-//       END
-//      
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = gpio
-//        PARAMETER DRIVER_VER = 3.00.a
-//        PARAMETER HW_INSTANCE = leds_8bits
-//       END
-//       
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = gpio
-//        PARAMETER DRIVER_VER = 3.00.a
-//        PARAMETER HW_INSTANCE = push_buttons_5bits
-//       END
-//       
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = emaclite
-//        PARAMETER DRIVER_VER = 3.03.a
-//        PARAMETER HW_INSTANCE = ethernet_lite
-//       END
-//      
-//       BEGIN LIBRARY
-//        PARAMETER LIBRARY_NAME = lwip140
-//        PARAMETER LIBRARY_VER = 1.03.a
-//        PARAMETER PROC_INSTANCE = microblaze_0
-//       END
+
     }
     
     // We assume all imports to be accumulated at the parser
@@ -340,6 +360,19 @@ public class SDK extends Visitor<NE> {
                 }
             });
         }
+        
+        // add Ethernet driver and lwip library to bsp
+        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("emaclite"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_ethernetlite))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("ethernet_lite")))
+        ));
+        
+        mssFile = addBlock(mssFile, MHS.Block("LIBRARY",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_NAME", MHS.Ident(version_lwip_lib_name))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_VER", MHS.Ident(version_lwip_lib))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0")))
+        ));
     }
     
     public void visit(UARTPos term) {
@@ -589,8 +622,14 @@ public class SDK extends Visitor<NE> {
             // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
                 MForwardDecl("int init_LED()")));
+    
+        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_leds))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("leds_8bits")))
+        ));
     }
-
+    
     public void addSwitches() {
         // deploy switch files
         File target = new File(new File(targetSrc, "components"), "gpio");
@@ -621,6 +660,13 @@ public class SDK extends Visitor<NE> {
                 MForwardDecl("void set_LED(u32 state)"),
                 MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)")
             )
+        ));
+        
+        // add the driver block to the mss file
+        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_buttons))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("push_buttons_5bits")))
         ));
     }
 
@@ -653,6 +699,13 @@ public class SDK extends Visitor<NE> {
                 MForwardDecl("u32 read_buttons()")
             )
         ));
+        
+        // add the driver block to the mss file
+        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_switches))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("dip_switches_8bits")))
+        ));
     }
     
     private void addIP(String id, String ipString, String doc) {
@@ -675,5 +728,9 @@ public class SDK extends Visitor<NE> {
     
     private void addConst(String id, String val, String doc) {
         constants = add(constants, MDefinition(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val));
+    }
+    
+    private MHSFile addBlock(MHSFile file, Block block) {
+        return file.replaceBlocks(file.blocks().add(block));
     }
 }
