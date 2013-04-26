@@ -1,7 +1,7 @@
 package de.hopp.generator.backends.client.cpp;
 
 import static de.hopp.generator.backends.BackendUtils.doxygen;
-import static de.hopp.generator.backends.BackendUtils.printMFile;
+import static de.hopp.generator.backends.BackendUtils.printFile;
 import static de.hopp.generator.utils.Files.copy;
 
 import java.io.IOException;
@@ -55,9 +55,9 @@ public class CPP extends AbstractClientBackend {
         if(errors.hasErrors()) return;
 
         // unparse & deploy the generated MFiles (note, that several (semi-)generic files are already deployed)
-        printMFile(visit.consts, UnparserType.HEADER, errors);
-        printMFile(visit.comps,  UnparserType.HEADER, errors);
-        printMFile(visit.comps,  UnparserType.CPP, errors);
+        printFile(visit.consts, UnparserType.HEADER, errors);
+        printFile(visit.comps,  UnparserType.HEADER, errors);
+        printFile(visit.comps,  UnparserType.CPP, errors);
         
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;

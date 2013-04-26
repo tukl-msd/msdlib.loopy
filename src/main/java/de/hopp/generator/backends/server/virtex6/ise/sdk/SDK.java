@@ -109,6 +109,10 @@ public class SDK extends Visitor<NE> {
         return scheduler;
     }
     
+    public MHSFile getMSS() {
+        return mssFile;
+    }
+    
     public Map<File, File> getFiles() {
         return deployFiles;
     }

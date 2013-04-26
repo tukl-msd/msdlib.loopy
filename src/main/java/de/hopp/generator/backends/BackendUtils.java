@@ -14,10 +14,12 @@ import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.unparser.CUnparser;
 import de.hopp.generator.backends.unparser.CppUnparser;
 import de.hopp.generator.backends.unparser.HUnparser;
+import de.hopp.generator.backends.unparser.MHSUnparser;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.Warning;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MFileInFile;
+import de.hopp.generator.parser.MHSFile;
 
 public class BackendUtils {
 
@@ -57,6 +59,25 @@ public class BackendUtils {
         default     : throw new IllegalStateException("invalid unparser");
         }
         
+        // print buffer contents to file
+        try {
+            printBuffer(buf, target);
+        } catch(IOException e) {
+            errors.addError(new GenerationFailed(e.getMessage()));
+        }
+    }
+    
+    public static void printMFile(MHSFile mfile, File target, ErrorCollection errors) {
+        
+        // setup buffer
+        StringBuffer buf = new StringBuffer(16384);
+        
+        // get unparser instance
+        MHSUnparser visitor = new MHSUnparser(buf);
+        
+        // unparse to buffer
+        visitor.visit(mfile);
+               
         // print buffer contents to file
         try {
             printBuffer(buf, target);

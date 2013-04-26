@@ -3,7 +3,9 @@ package de.hopp.generator.backends.server.virtex6.ise;
 import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printBuffer;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
-import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.*;
+import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.edkDir;
+import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkBSPDir;
+import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.utils.Files.copy;
 import static org.apache.commons.io.FileUtils.copyFile;
 import static org.apache.commons.io.FileUtils.write;
@@ -185,6 +187,8 @@ public abstract class ISE implements ProjectBackendIF {
         printMFile(sdk().getScheduler(),  UnparserType.HEADER, errors);
         printMFile(sdk().getScheduler(),  UnparserType.C,      errors);
     
+        printMFile(sdk().getMSS(), new File(sdkBSPDir(config), "system.mss"), errors);
+        
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;
         
