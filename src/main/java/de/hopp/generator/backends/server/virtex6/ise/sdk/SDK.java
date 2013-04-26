@@ -120,16 +120,6 @@ public class SDK extends Visitor<NE> {
     public SDK(Configuration config, ErrorCollection errors) {
         this.errors = errors;
         
-        // set directories
-        this.targetDir = sdkAppDir(config);
-        targetSrc = new File(targetDir, "src");
-        
-        // setup files and methods
-        deployFiles = new HashMap<File, File>();
-        setupFiles();
-        setupMethods();
-        setupMSS();
-        
         // initialise version strings
         version                   = "2.2.0";
         
@@ -153,6 +143,16 @@ public class SDK extends Visitor<NE> {
         
         version_queue             = "1.00.a";
         version_resizer           = "1.00.a";
+        
+        // set directories
+        this.targetDir = sdkAppDir(config);
+        targetSrc = new File(targetDir, "src");
+        
+        // setup files and methods
+        deployFiles = new HashMap<File, File>();
+        setupFiles();
+        setupMethods();
+        setupMSS();
     }
     
     private void setupFiles() {

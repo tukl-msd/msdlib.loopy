@@ -4,6 +4,7 @@ import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printBuffer;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.edkDir;
+import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkBSPDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.utils.Files.copy;
@@ -194,7 +195,7 @@ public abstract class ISE implements ProjectBackendIF {
         
         // generate api-specification
         IO.println("  generate server-side api specification ... ");
-        doxygen(sdkDir(config), IO, errors);
+        doxygen(sdkAppDir(config), IO, errors);
     }
     
     /** Starts whatever external tool is responsible for generation of the ELF file */
