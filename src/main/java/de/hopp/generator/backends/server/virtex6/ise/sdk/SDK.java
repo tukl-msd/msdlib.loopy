@@ -124,6 +124,7 @@ public class SDK extends Visitor<NE> {
         deployFiles = new HashMap<File, File>();
         setupFiles();
         setupMethods();
+        setupMSS();
         
         // initialise version strings
         version                   = "2.2.0";
@@ -237,33 +238,6 @@ public class SDK extends Visitor<NE> {
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("debug_module")))
             )
         );
-        // non-generic parts ): gpio and ethernet parts can be deduced from bdl.
-        // queues and resizers are more complicated... (though still doable)
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = generic
-//        PARAMETER DRIVER_VER = 1.00.a
-//        PARAMETER HW_INSTANCE = m0_queue
-//       END
-//
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = generic
-//        PARAMETER DRIVER_VER = 1.00.a
-//        PARAMETER HW_INSTANCE = m1_downsizer
-//       END
-//
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = generic
-//        PARAMETER DRIVER_VER = 1.00.a
-//        PARAMETER HW_INSTANCE = m1_upsizer
-//       END
-//
-//       BEGIN DRIVER
-//        PARAMETER DRIVER_NAME = generic
-//        PARAMETER DRIVER_VER = 1.00.a
-//        PARAMETER HW_INSTANCE = s0_queue
-//       END
-//
-
     }
     
     // We assume all imports to be accumulated at the parser
@@ -395,6 +369,37 @@ public class SDK extends Visitor<NE> {
     @Override
     public void visit(final CPUAxisPos axis) {
         PortPos port = getPort(axis);
+
+        int width = getWidth(axis);
+        boolean d = port.direction() instanceof INPos;
+        boolean up = (width < 32 && !d) || (width > 32 && d);
+
+        String axisGroup   = d ? "m" + axiStreamIdMaster : "s" + axiStreamIdSlave;
+        
+        if(getHWQueueSize(axis) > 0) {
+            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_queue))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_queue")))
+            ));
+        }
+        
+        if(width < 32) {
+            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup +
+                        (up ? "upsizer" : "downsizer"))))
+            ));
+        } else if(width > 32) {
+            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup +
+                        (up ? "upsizer" : "downsizer"))))
+            ));
+        }
+        
         port.direction().termDirection().Switch(new Direction.Switch<Boolean, NE>() {
             public Boolean CaseIN(IN term) {
                 addWriteStream(axis); return null;

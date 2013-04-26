@@ -130,7 +130,6 @@ public abstract class XPS extends Visitor<NE> {
         block = add(block, Attribute(OPTION(), Assignment("IP_GROUP", Ident("USER"))));
         block = add(block, Attribute(OPTION(), Assignment("HDL", Ident("VHDL"))));
         block = add(block, Attribute(OPTION(), Assignment("STYLE", Ident("HDL"))));
-
         block = add(block, Attribute(OPTION(), Assignment("DESC", STR(core.name()))));
 
         for(final Port port : core.ports()) {
@@ -338,7 +337,7 @@ public abstract class XPS extends Visitor<NE> {
         if(width == 32) return currentAxis;
         if(width <= 0) throw new UsageError("encountered port with bitwidth of " + width);
 
-        boolean up = (width < 32 && !d) || (width > 32 && d);        
+        boolean up = (width < 32 && !d) || (width > 32 && d);
 
         String muxAxis  = axisGroup + "_MUX_AXIS";
         
