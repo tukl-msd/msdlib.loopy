@@ -114,7 +114,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
         
         for(MOption opt : term.opts().term()) {
             if(opt instanceof IP) {
-                System.err.println("found ip!");
                 consts = add(consts, MDefinition(
                     MDocumentation(Strings("IP for Ethernet communication")),
                     MModifiers(PUBLIC()), "IP", "\"" + ((IP)opt).val() + "\"")); 

@@ -202,8 +202,6 @@ public class Main {
             IO.println();
             IO.println("starting up " + config.client().getName() + " host backend ...");
         
-            System.err.println(config.clientDir());
-            
             config.client().generate(board, config, errors);
             
             // abort if any errors occurred
