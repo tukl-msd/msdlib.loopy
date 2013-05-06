@@ -1,4 +1,6 @@
-/*
+/**
+ * Describes out-going (reading) ports.
+ * @file
  * @author Thomas Fischer
  * @since 09.01.2013
  */
@@ -17,19 +19,34 @@ extern abstractOutPort *outPorts[];
 
 void send_poll(unsigned char pid, unsigned int count);
 
+/**
+ * Abstract, unparameterised representation of an out-going port without specified width.
+ * It is to be only used by the I/O threads which are independent of the actual bitwidth of a port.
+ */
 class abstractOutPort {
 friend void scheduleReader();
 friend void read_unsafe(unsigned char pid, int val);
 friend void read(unsigned char pid, int val[], int size);
 protected:
+	/** ID of the port. */
 	int pid;
+	/** Flag for polling ports. If true, port is set to polling mode (cf. documentation for more details). */
 	bool polling;
-	std::shared_ptr<LinkedQueue<int>> readValueQueue;
+	/** The queue of read tasks to be performed by the port. */
 	std::shared_ptr<LinkedQueue<abstractReadState>> readTaskQueue;
+	/** The queue of values that have been forwarded, but not yet read. */
+	std::shared_ptr<LinkedQueue<int>> readValueQueue;
 
+	/** Port mutex, which has to be acquired before modifying the task or value queue. */
 	std::mutex port_mutex;
+	/** Condition variable, waiting for the task queue to get empty. */
 	std::condition_variable task_empty;
 public:
+	/**
+	 * Constructor for unparameterised out-going ports, initialising all queues and parameters.
+	 * @param pid ID of the port.
+	 * @param polling Flag for polling ports. If true, port is set to polling mode (cf. documentation for more details).
+	 */
 	abstractOutPort(int pid, bool polling) : pid(pid), polling(polling) {
 		outPorts[pid] = this;
 
@@ -54,7 +71,7 @@ protected:
 	 * no more values are available. While this does not exactly mirror
 	 * the semantics of a non-blocking read, the difference in runtime
 	 * should be negligible, even for larger read operations.
-	 * @param s #State of the read operation to be executed.
+	 * @param state #state of the read operation to be executed.
 	 */
 	void read(readState<width> *state) {
 		std::shared_ptr<readState<width>> s(state);
@@ -91,8 +108,8 @@ protected:
 	 * no more values are available. While this does not exactly mirror
 	 * the semantics of a non-blocking read, the difference in runtime
 	 * should be negligible, even for larger read operations.
-	 * @param s #State of the read operation to be executed.
-	 * @return Shared pointer to the state
+	 * @param state #state of the read operation to be executed.
+	 * @return Shared pointer to the #state
 	 */
 	std::shared_ptr<readState<width>> nbread(readState<width> &state) {
 		std::shared_ptr<readState<width>> s(state);
@@ -126,6 +143,11 @@ protected:
 	}
 
 public:
+	/**
+	 * Constructor for out-going ports, initialising all queues and parameters.
+	 * @param pid ID of the port.
+	 * @param polling Flag for polling ports. If true, port is set to polling mode (cf. documentation for more details).
+	 */
 	outPort(int pid, bool polling) : abstractOutPort(pid, polling) { }
 	~outPort() { }
 
@@ -154,7 +176,7 @@ public:
 	/**
 	 * Reads several values from this port into a vector.
 	 * This is a blocking read, meaning that the reading program will wait until a value is returned.
-	 * @param val The vector, into which the values are stored.
+	 * @param vals The vector, into which the values are stored.
 	 * @throws readException if the read failed.
 	 */
 	void read(std::vector<std::bitset<width>> &vals) {
@@ -164,7 +186,7 @@ public:
 	/**
 	 * Reads several values from this port into an array.
 	 * This is a blocking read, meaning that the reading program will wait until a value is returned.
-	 * @param val The array, into which the values are stored.
+	 * @param vals The array, into which the values are stored.
 	 * @param size The number of values that should be read and the size of the array.
 	 * @throws readException if the read failed.
 	 */
@@ -176,7 +198,7 @@ public:
 	 * Reads a single value from this port.
 	 * This is a non-blocking read, meaning that the reading program does not wait for a value to be read.
 	 * @param val Variable, where the read value should be stored
-	 * @return A #State representing this read.
+	 * @return A #state representing this read.
 	 */
 	std::shared_ptr<readState<width>> nbread(std::bitset<width> &val) {
 		return nbread(new readState<width>(&val, 1));
@@ -185,8 +207,8 @@ public:
 	/**
 	 * Reads several values from this port into a vector.
 	 * This is a non-blocking read, meaning that the reading program does not wait for a value to be read.
-	 * @param val The vector, into which the values are stored.
-	 * @return A #State representing this read.
+	 * @param vals The vector, into which the values are stored.
+	 * @return A #state representing this read.
 	 */
 	std::shared_ptr<readState<width>> nbread(std::vector<std::bitset<width>> vals) {
 		return nbread(new readState<width>(vals.data(), vals.size()));
@@ -195,9 +217,9 @@ public:
 	/**
 	 * Reads several values from this port into an array.
 	 * This is a non-blocking read, meaning that the reading program does not wait for a value to be read.
-	 * @param val The array, into which the values are stored.
+	 * @param vals The array, into which the values are stored.
 	 * @param size The number of values that should be read and the size of the array.
-	 * @return A #State representing this read.
+	 * @return A #state representing this read.
 	 */
 	std::shared_ptr<readState<width>> nbread(std::bitset<width> vals[], unsigned int size) {
 		return nbread(new readState<width>(vals, size));
@@ -220,12 +242,12 @@ public:
 	 * Reads a vector of values from a port.
 	 * This is a blocking read, meaning that the reading program will wait until a value is returned.
 	 * @param o Port, where the values should be read from.
-	 * @param val The vector, where the read values should be stored.
+	 * @param vals The vector, where the read values should be stored.
 	 * @return The port, the values have been read from.
 	 *         Returning the port allows concatenating stream operations.
 	 * @throws readException if the read failed.
 	 */
-	friend outPort& operator >>(outPort &o, std::vector<std::bitset<width>> &val) {
+	friend outPort& operator >>(outPort &o, std::vector<std::bitset<width>> &vals) {
 		o.read(val);
 		return o;
 	}

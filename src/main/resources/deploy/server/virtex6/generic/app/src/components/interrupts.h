@@ -35,7 +35,10 @@
  /** Reference to the interrupt handler instance */
 #endif /* XPAR_INTC_0_DEVICE_ID */
 
-/** Get the instance of the interrupt controller */
+/**
+ * Get the instance of the interrupt controller
+ * @return Interrupt controller instance of this board
+ */
 INTC* getIntc();
 
 #endif /* INTERRUPTS_H_ */

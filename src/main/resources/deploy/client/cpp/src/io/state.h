@@ -30,10 +30,10 @@ protected:
 	/** Number of 32-bit values to be written or read. */
 	unsigned int size;
 	/** Number of already written or read 32-bit values. */
-	unsigned int w;
-
 	unsigned int done;
-
+	/** Actual bitwidth of of values within this state */
+	unsigned int w;
+	/** Number of 32-bit values representing a value in the actual bitwidth of the state */
 	unsigned int intPerValue;
 	/** Failed flag */
 	bool fail;
@@ -47,6 +47,11 @@ protected:
 		intPerValue = ceil((double) w / (sizeof(int) * 8));
 		this->size = size * intPerValue;
 	}
+	/**
+	 * Internal constructor, initialising size and done values.
+	 * @param size Total number of values to be processed.
+	 * @param width Actual bitwidth of the state
+	 */
 	state(int size, int width) : w(width), done(0), fail(false), m("") {
 		intPerValue = ceil((double) w / (sizeof(int) * 8));
 		this->size = size * intPerValue;
@@ -85,30 +90,72 @@ public:
 	}
 };
 
+/**
+ * Abstract, unparameterised supertype of a read state read state without specified width.
+ * It is to be only used by the I/O threads which are independent of the actual bitwidth of a port.
+ */
 class abstractWriteState : public state {
 friend void scheduleWriter();
 friend std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsigned int count);
 friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
 private:
+	/**
+	 * Peeks at the first #count values of the state and stores them into the provided array.
+	 * If less values are available, less values are read.
+	 * @param val Array where to store peeked values
+	 * @param count Number of values to be peeked at
+	 * @return Actual number of values stored (<= #count)
+	 */
 	virtual unsigned int peek(int val[], unsigned int count) = 0;
 public:
+	/**
+	 * Constructor of the abstract write state. While a width parameter is provided,
+	 * it is only stored internally but does not influence write-specific behaviour here.
+	 * @param size Total number of values to be processed.
+	 * @param width Actual bitwidth of the state
+	 */
 	abstractWriteState(int size, int width) : state(size, width) { }
 	virtual ~abstractWriteState() { }
 };
 
+/**
+ * Abstract, unparameterised supertype of a read state read state without specified width.
+ * It is to be only used by the I/O threads which are independent of the actual bitwidth of a port.
+ */
 class abstractReadState : public state {
 friend void scheduleReader();
 friend void read_unsafe(unsigned char pid, int val);
 private:
+	/**
+	 * Tries to store #count values in the read state.
+	 * If the state cannot receive all values, less values are stored.
+	 * @param val Array of values to be stored
+	 * @param count Size of the array (i.e. number of values to be stored)
+	 * @return Number of values that could fit into this state (<= #count)
+	 */
 	virtual unsigned int store(int val[], unsigned int count) = 0;
 public:
+	/**
+	 * Constructor of the abstract read state. While a width parameter is provided,
+	 * it is only stored internally but does not influence read-specific behaviour here.
+	 * @param size Total number of values to be processed.
+	 * @param width Actual bitwidth of the state
+	 */
 	abstractReadState(int size, int width) : state(size, width) { }
 	virtual ~abstractReadState() { }
 };
 
+
+
+/**
+ * Abstract representation of the state of a write operation.
+ * These are used as return values for non-blocking calls and
+ * allow users to check the progress of the call.
+ */
 template <int width>
 class writeState : public abstractWriteState {
 private:
+	/** The values (in the states bitwidth) to be written. */
 	std::bitset<width> *vals;
 
 	// this is basically the exposed method for reading from the value queue!
@@ -125,6 +172,11 @@ private:
 		return read;
 	}
 
+	/**
+	 * Transforms a value of the states width to a deque of integer values for transmission.
+	 * @param val The value represented by a bitset
+	 * @return A deque of integer values representing the value
+	 */
 	std::deque<int> convert (const std::bitset<width> val) {
 		std::deque<int> vals;
 		for(unsigned int i = 0; i < ceil((double)val.size() / (sizeof(int) * 8)); i++) {
@@ -139,6 +191,11 @@ private:
 	}
 
 public:
+	/**
+	 * Constructor of the write state.
+	 * @param vals Array of values to be written.
+	 * @param size Number of values to be written (i.e. size of the array).
+	 */
 	writeState(const std::bitset<width> vals[], unsigned int size) : abstractWriteState(size, width) {
 		// allocate memory for the values
 		this->vals = (std::bitset<width>*)malloc(this->size * sizeof(std::bitset<width>));
@@ -149,15 +206,33 @@ public:
 	~writeState() { }
 };
 
+/**
+ * Abstract representation of the state of a write operation.
+ * These are used as return values for non-blocking calls and
+ * allow users to check the progress of the call.
+ */
 template <int width>
 class readState : public abstractReadState {
 friend class outPort<width>;
 private:
+	/** Memory, where read values (in the states bitwidth) should be stored. */
 	std::bitset<width> *vals;
 
-	unsigned int currentValueIndex;
+	/**
+	 * The value in the states bitwidth, that is currently being read.
+	 * Additional 32-bit values can be added by shifting this value beforehand.
+	 */
 	std::bitset<width> currentValue;
+	/** Index, how many 32-bit values have been read into the current value. */
+	unsigned int currentValueIndex;
 
+	/**
+	 * Stores a single integer value to the read state.
+	 * This includes shifting the current value by 32-bit, adding the new integer,
+	 * and - if the current value is finished - adding the current value to the
+	 * value array and resetting it.
+	 * @param val 32-bit value to be stored.
+	 */
 	void store(int val) {
 		// left shift current value
 		currentValue = currentValue << (sizeof(int) * 8);
@@ -215,6 +290,11 @@ private:
 	}
 
 public:
+	/**
+	 * Constructor of the read state.
+	 * @param vals Memory reserved for values to be read.
+	 * @param size Number of values to be read (i.e. size of the array).
+	 */
 	readState(std::bitset<width> vals[], unsigned int size) : abstractReadState(size, width), vals(vals) {
 		currentValueIndex = 0;
 	}

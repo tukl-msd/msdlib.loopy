@@ -269,9 +269,9 @@ public class CPPBDLVisitor extends Visitor<NE> {
             )
         ));
         
-        constructor = constructor.replaceDoc(constructor.doc().replaceTags(
-            constructor.doc().tags().add(PARAM(name, "Id of the port"))
-        ));
+        constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().addAll(MTags(
+            PARAM(name, "Id of the port"), PARAM(name + "_poll", "Poll flag of the port")
+        ))));
         constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name));
         constructor = addParam(constructor, MParameter(VALUE(), MType("bool"), name + "_poll"));
         constructor = addInit(constructor, MMemberInit(name, name, name + "_poll"));
@@ -291,7 +291,8 @@ public class CPPBDLVisitor extends Visitor<NE> {
         
         constructor = constructor.replaceDoc(constructor.doc().replaceTags(constructor.doc().tags().addAll(MTags(
             PARAM(name + "_in",  "Id of the in-going part of the port"),
-            PARAM(name + "_out", "Id of the out-going part of the port")
+            PARAM(name + "_out", "Id of the out-going part of the port"),
+            PARAM(name + "_poll", "Poll flag of the port")
         ))));
         constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_in"));
         constructor = addParam(constructor, MParameter(VALUE(), MType("unsigned char"), name + "_out"));

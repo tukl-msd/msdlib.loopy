@@ -1,4 +1,6 @@
-/*
+/**
+ * Describes in-going (writing) ports.
+ * @file
  * @author Thomas Fischer
  * @since 09.01.2013
  */
@@ -19,19 +21,32 @@ extern abstractInPort *inPorts[];
 extern std::mutex writer_mutex;
 extern std::condition_variable can_write;
 
+/**
+ * Abstract, unparameterised representation of an in-going port without specified width.
+ * It is to be only used by the I/O threads which are independent of the actual bitwidth of a port.
+ */
 class abstractInPort {
 friend void scheduleWriter();
 friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
 friend void acknowledge(unsigned char pid, unsigned int count);
 friend void recv_poll(unsigned char pid);
 protected:
+	/** ID of the port. */
 	int pid;
+	/** The queue of write tasks to be performed by the port. */
 	std::shared_ptr<LinkedQueue<abstractWriteState>> writeTaskQueue;
+	/** Counter of values currently in transit. -1 marks a blocked port. */
 	std::shared_ptr<int> transit;
 
+	/** Port mutex, which has to be acquired before modifying the task queue. */
 	std::mutex port_mutex;
+	/** Condition variable, waiting for the task queue to get empty. */
 	std::condition_variable_any task_empty;
 public:
+	/**
+	 * Constructor for unparameterised in-going ports, initialising all queues and parameters.
+	 * @param pid ID of the port.
+	 */
 	abstractInPort(int pid) : pid(pid), transit(new int(0)){
 		inPorts[pid] = this;
 
@@ -40,6 +55,11 @@ public:
 	virtual ~abstractInPort() { }
 };
 
+/**
+ * An abstract representation of an in-going AXI-Stream port.
+ * Instances of this class represent in-going ports of IPCores.
+ * Communication with a core should be handled through these ports.
+ */
 template <int width>
 class inPort : public abstractInPort {
 protected:
@@ -48,8 +68,8 @@ protected:
 	 * Underlying read operation, called by more usable read methods.
 	 * This operation does actually block until the read is finished or
 	 * no more values are available.
-	 * @param s #State of the read operation to be executed.
-	 * @return updated #State
+	 * @param state #state of the read operation to be executed.
+	 * @return updated #state
 	 */
 	void write(writeState<width> *state) {
 		std::shared_ptr<writeState<width>> s(state);
@@ -77,8 +97,8 @@ protected:
 	 * Underlying read operation, called by more usable read methods.
 	 * This operation does not block until the value is written.
 	 * Still, it waits for locks and may therefore take some time to finish.
-	 * @param s #State of the read operation to be executed.
-	 * @return updated #State
+	 * @param state #state of the read operation to be executed.
+	 * @return updated #state
 	 */
 	std::shared_ptr<writeState<width>> nbwrite(writeState<width> *state) {
 		std::shared_ptr<writeState<width>> s(state);
@@ -100,6 +120,10 @@ protected:
 	}
 
 public:
+	/**
+	 * Constructor for in-going ports, initialising all queues and parameters.
+	 * @param pid ID of the port.
+	 */
 	inPort(int pid) : abstractInPort(pid) { }
 	~inPort() { }
 
@@ -163,7 +187,7 @@ public:
 	 * This still implies, that the value has not been received by the board (or not even
      * been sent to the board) yet.
 	 * @param val The bit vector to be written.
-	 * @return A #State representing this write.
+	 * @return A #state representing this write.
 	 */
 	std::shared_ptr<writeState<width>> nbwrite(const std::bitset<width> val) {
 		return nbwrite(new writeState<width>(&val, 1));
@@ -174,7 +198,7 @@ public:
 	 * This still implies, that the value has not been received by the board (or not even
      * been sent to the board) yet.
      * @param vals The bit vectors to be written.
-	 * @return A #State representing this write.
+	 * @return A #state representing this write.
 	 */
 	std::shared_ptr<writeState<width>> nbwrite(const std::vector<std::bitset<width>> vals) {
 		return nbwrite(new writeState<width>(vals.data(), vals.size()));
@@ -186,7 +210,7 @@ public:
      * been sent to the board) yet.
 	 * @param vals The bit vector array to be written.
 	 * @param size The size of the bit vector array.
-	 * @return A #State representing this write.
+	 * @return A #state representing this write.
 	 */
 	std::shared_ptr<writeState<width>> nbwrite(const std::bitset<width> vals[], unsigned int size) {
 		return nbwrite(new writeState<width>(vals, size));
