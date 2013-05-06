@@ -372,7 +372,7 @@ A property block is used to make connections between the ports of the core insta
 The \texttt{bind} keyword connects a port with an axis. An axis is basically a connection between exactly two ports. Using the same axis identifier for more than two ports is illegal.
 The keyword \texttt{cpu} connects the specified port to the board-side driver. %keyword questionable...
 The host-side driver will provide methods for direct communication with these ports of the component.
-Again, a block is used for properties of these driver-attached ports. Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
+Again, a block is used for properties of these driver-attached ports. Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this is explained in more detail in \Cref{sec:arch:fwd}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
 
 For both bindings, the referenced port has to exist within the core declaration.
 
@@ -555,10 +555,6 @@ Since such components only hold a single state and perform no processing, commun
  A port marks an AXI stream interface used to send data to or receive data from components. A port is always assigned to a single component, but a component can have multiple ports. Ports can be sending (\textit{in-going}), receiving (\textit{out-going}) or bi-directional (\textit{dual}). These designations seem counter-intuitive at first, since they do not describe the ports on the host-side, but the ports of the driver itself. The user should work with the driver, as if it were the actual board. Consequently, data is sent to an in-going port an received from an out-going port. Values sent to or received from a port have an arbitrary, but fixed bitwidth. Ports are the only way to communicate with components or the board in general (beside aforementioned GPIO components). 
 
 Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. Instead, a \textit{task} is scheduled for the operation, which will be performed asynchronously. While the order between tasks and therefore values to a single port is maintained, the order between tasks executed at different ports may differ from the order they were scheduled in.
-
-Ports are generally \textit{forwarding}, meaning that values are send automatically from host to board and vice versa as soon as available. Out-going ports can be switched into \textit{polling} mode explicitly, resulting in values being not forwarded but only send if requested by the user. The interface of these ports looks identical and the difference is only visible in performance. A polling port is useful in cases, where the attached component generates values periodically without additional input, e.g., a random number generator or a status port.
-
-Details about the implementation of ports can be found in \Cref{sec:impl:cpp}.
 
 \subsection{State}
 \label{sec:api:state}
