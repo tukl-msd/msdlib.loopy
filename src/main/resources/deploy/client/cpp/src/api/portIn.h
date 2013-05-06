@@ -17,8 +17,11 @@
 
 
 class abstractInPort;
+/** List of all in-going ports of this driver. */
 extern abstractInPort *inPorts[];
+/** The writer mutex, which is required for notification of the writer. */
 extern std::mutex writer_mutex;
+/** Condition variable of the writer, which is notified, if a new value is written to an idling port. */
 extern std::condition_variable can_write;
 
 /**

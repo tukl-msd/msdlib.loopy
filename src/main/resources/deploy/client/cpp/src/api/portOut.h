@@ -15,8 +15,13 @@
 #include "../io/state.h"
 
 class abstractOutPort;
+/** List of all out-going ports of this driver. */
 extern abstractOutPort *outPorts[];
 
+/** Sends a data request to the specified port.
+ * @param pid ID of the port, for which data is requested.
+ * @param count Number of values requested.
+ */
 void send_poll(unsigned char pid, unsigned int count);
 
 /**
