@@ -11,8 +11,7 @@ import static de.hopp.generator.utils.Files.copy;
 import static org.apache.commons.io.FileUtils.copyFile;
 import static org.apache.commons.io.FileUtils.write;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
@@ -23,6 +22,7 @@ import de.hopp.generator.backends.server.virtex6.ProjectBackendIF;
 import de.hopp.generator.backends.server.virtex6.ise.sdk.SDK;
 import de.hopp.generator.backends.server.virtex6.ise.xps.XPS;
 import de.hopp.generator.backends.unparser.MHSUnparser;
+import de.hopp.generator.exceptions.Warning;
 import de.hopp.generator.frontend.BDLFilePos;
 
 /**
@@ -65,7 +65,7 @@ public abstract class ISE implements ProjectBackendIF {
         if(config.dryrun()) return;
         
         // generate .bit and .elf files
-        generateBITFile();
+        generateBITFile(config, errors);
         generateELFFile();
     }
 
@@ -140,8 +140,48 @@ public abstract class ISE implements ProjectBackendIF {
     }
 
     /** Starts whatever external tool is responsible for generation of the BIT file */
-    protected void generateBITFile() {
+    protected void generateBITFile(Configuration config, ErrorCollection errors) {
+        BufferedReader input = null;
         
+        System.err.println("running!");
+        try {
+            String line;
+            Process p = new ProcessBuilder("xps", "-nw")
+                .directory(edkDir(config)).redirectErrorStream(true).start();
+            input     = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+            PrintWriter pWriter = new PrintWriter(p.getOutputStream());
+            
+            pWriter.println("xload new system.xmp virtex6 xc6vlx240t ff1156 -1");
+            pWriter.println("save proj");
+            pWriter.println("xset parallel_synthesis yes");
+            pWriter.println("xset sdk_export_dir " + sdkDir(config).getCanonicalPath());
+            pWriter.println("run bits");
+            pWriter.println("run exporttosdk");
+            pWriter.println("exit");
+            pWriter.close();
+            
+            // wait for the process to terminate and store the result
+            int rslt = p.waitFor();
+            
+            // if something went wrong, print a warning
+            if(rslt != 0) {
+                errors.addWarning(new Warning("failed to generate .bit file."));
+                if(! config.VERBOSE()) return; // this line is just for performance, but bloats method signature :(
+            }
+            
+            // if verbose, echo the output of doxygen
+            while ((line = input.readLine()) != null)
+               config.IOHANDLER().verbose("      " + line);
+        } catch (IOException e) {
+            errors.addWarning(new Warning(e.getMessage()));
+        } catch (InterruptedException e) {
+            errors.addWarning(new Warning(e.getMessage()));
+        } finally {
+            try { 
+                if(input != null) input.close();
+            } catch(IOException e) { /* well... memory leak... */ }
+        }
     }
 
     /** 
@@ -200,6 +240,6 @@ public abstract class ISE implements ProjectBackendIF {
     
     /** Starts whatever external tool is responsible for generation of the ELF file */
     protected void generateELFFile() {
-        
+
     }
 }

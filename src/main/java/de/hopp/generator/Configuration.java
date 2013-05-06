@@ -6,12 +6,13 @@ import de.hopp.generator.backends.client.ClientBackend;
 import de.hopp.generator.backends.server.ServerBackend;
 
 /**
- * Configuration of the generator run itself, not of the board.
+ * Configuration of the generator run itself.
+ * This includes used backends, target directories and several debugging flags.
  * @author Thomas Fischer
- *
  */
 public class Configuration {
 
+    private IOHandler IO;
     private String[] args;
     
     // backends
@@ -35,15 +36,9 @@ public class Configuration {
 
     private int loglevel = LOG_INFO;
 
-    private IOHandler IO;
-    
-    // debug flag (for generated driver)
-    private boolean debug   = false;
-    
     // progress flags
-    private boolean dryrun    = false;
     private boolean parseonly = false;
-    
+    private boolean dryrun    = false;
     
 //    /** setup an empty driver generator configuration */
     public Configuration() { 
@@ -112,11 +107,11 @@ public class Configuration {
     public File clientDir()  { return clientDir; }
     /** get the directory, into which temporary files should be generated */
     public File tempDir()    { return tempDir; }
-    /** get the debug flag indicating additional console print outs of the generated driver */
-    public boolean debug()   { return debug; }
-    
-    public boolean dryrun() { return dryrun; }
+
+    /** check if the parseonly flag is set, meaning that only the frontend should be executed */
     public boolean parseonly() { return parseonly; }
+    /** check if this is only a dryrun, meaning that code deployment is skipped */
+    public boolean dryrun()    { return dryrun; }
     
     /** check if the generator is set to produce no console output */
     public boolean QUIET()   { return loglevel == LOG_QUIET; }

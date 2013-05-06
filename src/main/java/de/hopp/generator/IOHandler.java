@@ -19,6 +19,9 @@
 package de.hopp.generator;
 
 /**
+ * IOHandler of the generator.
+ * The handler is identical to the IOHandler used by Katja.
+ * @author Thomas Fischer
  * User: jmg
  * Date: 01.12.2004
  * Time: 09:05:07

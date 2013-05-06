@@ -18,7 +18,7 @@ public class Files {
     /**
      * Copies a resource into another directory.
      * @param resource resource string (may point to a file or directory)
-     * @param out output file, into which the resource should be copied
+     * @param targetFile output file, into which the resource should be copied
      * @throws IOException file operations cause IOExceptions, naturally...
      */
     public static void copy(String resource, File targetFile, IOHandler IO) throws IOException {

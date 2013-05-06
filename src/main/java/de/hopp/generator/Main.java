@@ -13,6 +13,12 @@ import de.hopp.generator.frontend.ClientBackend;
 import de.hopp.generator.frontend.Parser;
 import de.hopp.generator.frontend.ServerBackend;
 
+/**
+ * Main class of the generator.
+ * Marks the entry point for all calls.
+ * Responsible for parameter parsing, top level console output and running frontend and backends.
+ * @author Thomas Fischer
+ */
 public class Main {
     
     public final static String version = "0.0.1";
