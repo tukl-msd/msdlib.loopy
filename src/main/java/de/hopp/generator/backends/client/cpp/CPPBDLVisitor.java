@@ -108,10 +108,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     @Override
     public void visit(ETHERNETPos term) {
-//          comps = add(comps, MAttribute(MDocumentation(Strings()), MModifiers(PRIVATE()),
-//          MPointerType(MType("interface")), "intrfc",
-//          MCodeFragment("new ethernet(\"192.168.1.10\", 8844)", MQuoteInclude("interface.h"))));
-        
         for(MOption opt : term.opts().term()) {
             if(opt instanceof IP) {
                 consts = add(consts, MDefinition(
@@ -134,12 +130,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
         // construct init block according to GPIO direction
         MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude("gpio.h")));
         
-//        switch(term.name().term()) {
-//        case "led": init.replaceParams(Strings(String.valueOf(gpo++))); break;
-//        case "buttons": init.replaceParams(Strings(String.valueOf(gpi++))); break;
-//        case "switch": init.replaceParams(Strings(String.valueOf(gpi++))); break;
-//        default: errors.addError(new UsageError("abc"));
-//        }
         init = init.replaceParams(term.direction().Switch(new DirectionPos.Switch<Strings, NE>() {
             public Strings CaseINPos(INPos term) {
                 return Strings(String.valueOf(gpi++));

@@ -185,16 +185,15 @@ This section explains the terminology used in this document and the project in g
 The complete software product is called the \textit{driver}. It enables programmatic, \textcolor{red}{software-side} communication with the hardware platform.
 
 \paragraph{Board / board-side}
-The driver is split in two parts, one of which has to be uploaded and executed to the hardware platform itself. This part of the driver is referred to as board-side driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead.
+The driver is split in two parts, one of which has to be uploaded and executed to the hardware platform itself. This part of the driver is referred to as \textit{board-side} driver. Sometimes, the terms \textit{server} and \textit{server-side} might be used instead, since this driver acts similar to a server.
 
 \paragraph{Host / host-side}
-In contrast to the board-side driver, the host-side driver is the part of the driver which is located on the communicating computer. This part contains the actual API, embedded developers will work with. Sometimes, the terms \textit{client} and \textit{client-side} might be used instead.
-
+In contrast to the board-side driver, the \textit{host-side} driver is located on the communicating computer. This part contains the actual API, embedded developers will work with. Sometimes, the terms \textit{client} and \textit{client-side} might be used instead, since this driver part acts more like a client.
 
 
 \chapter{Getting Started}
 \label{sec:start}
-The purpose of this chapter is to explain how to properly build and use the generator. This part contains all steps required in order to run the generator and acquire drivers for the specified board.
+The purpose of this chapter is to explain how to properly build and use the generator. This includes generation of board-side and host-sided drivers for the specified board.
 
 \section{Setup}
 \label{sec:setup}
@@ -207,36 +206,36 @@ The generator is implemented in Java due to tool support and the environment of 
 Gradle\footnote{available at \url{http://www.gradle.org/}} is a build tool, similar to \textit{Maven} or \textit{Ant} (like \textit{Make}, but - for the most part - easier to manage within larger projects). It supports the dependency management from Maven while retaining the flexibility of Ant. Plugins required by the build process are automatically downloaded by Gradle.
 
 \paragraph{Mercurial}
-Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distributed versioning tool, comparable with \textit{GIT}, \textit{Bazar} or (to some degree) \textit{Subversion}. The sources of the driver generator are located in a mercurial repository. If you acquired the sources (and this document) through other means mercurial is not required.
+Mercurial\footnote{available at \url{http://mercurial.selenic.com/}} is a distributed versioning tool, comparable with \textit{GIT}, \textit{Bazar}, or (to some degree) \textit{Subversion}. The sources of the driver generator are located in a mercurial repository. If you acquired the sources (and this document) through other means mercurial is not required.
 
 \paragraph{Doxygen}
 Doxygen\footnote{available at \url{http://www.doxygen.org/}} is used for generation of a Java API-like html description of the driver API. While this generation is not required for the driver, it is highly recommended for easier integration of the generated driver.
 
-\paragraph{\texttt{C/C++} Compiler}
-Since the host side driver is written in \texttt{C++}, it is also required to have a \texttt{C/C++} compiler present.
-
 \paragraph{Xilinx Toolsuite}
-In order to generate an \texttt{.elf} file that can is used to program the FPGA, the Xilinx toolsuite is required. This includes ISE for generating IPCores out of VHDL files, XPS for composing these and EDK for actually generating the file for the defined hardware platform.
+In order to generate a \texttt{.bit} and an \texttt{.elf} file that can is used to program the FPGA, the Xilinx toolsuite is required. This includes ISE for generating IPCores out of VHDL files, XPS for composing these and synthesising the \texttt{.bit} file, and SDK for generation of the \texttt{.elf} file.
 
- \textcolor{red}{We try to avoid to require the user to actually design anything in the Xilinx suite, but only use it for synthesising the board hard- and software. Both, \texttt{.mhs} file and all source files for the EDK, are created by the driver generator.}
+Interaction with these tools is reduced to a minimum by using the command line interface provided by Xilinx whenever possible. This in turn also implies, that the tools can not be used for the actual board design, but only for the synthesis process.
 
-\textcolor{red}{It is furthermore desirable to skip user-interfaction with the EDK completely. This would require generation of the board support package and external call of Xilinx' compiler.}
+ \textcolor{red}{Currently, the user is still required to execute these cli commands manually (or do it with the gui again...).}
+
+\paragraph{\texttt{C/C++11} Compiler}
+The currently provided host-side driver is written in \texttt{C++11}. Hence, a \texttt{C/C++11} compiler is required as well.
 
 \section{Board Description Language}
 \label{sec:bdl}
 In this section, the \textit{board description language} (abbreviated: \textit{bdl}) is introduced. The language is used to specify a board, for which a driver and project files should be generated. 
 
-A board specification file consists of several \textit{declarations}, that may appear in arbitrary order. For improved readability of the board description file, it is advisable, to provide declarations in the same order as they are explained in this document.
+A board specification file consists of several \textit{declarations}, that may appear in arbitrary order. For improved readability of the board description file, it is advisable to provide declarations in the same order as they are explained in this document.
 
-In the declarations, the terms of \textit{blocks} and \textit{code blocks} are used. A block is used to wrap properties of a specific declaration in the file. It is surrounded with curly brackets \texttt{\{\}}.
-A code block is a block that directly be induced in the driver, i.e., contains code in the target language of the driver. The code is surrounded by curly brackets and colons \texttt{\{::\}}.
+In these declarations \textit{blocks} and \textit{code blocks} are used. A block wraps additional properties of a specific declaration. It is surrounded with curly brackets \texttt{\{\}}.
+A code block is a block that directly be induced in the driver, i.e., it contains code in the target language of the driver. The code is surrounded by curly brackets and colons \texttt{\{::\}}.
 
-A board description is considered to be \textit{correct}, iff all all required declarations are made, all referenced declarations occur and match, no duplicates are encountered, and, naturally, the syntax is met. The following explanations of BDL declarations contain further information of what properties have to hold in order for the board description to be correct. Naturally, syntax errors will also result in an incorrect board description.
+A board description is considered to be \textit{correct}, iff all all required declarations are made, all referenced declarations occur and match, and no duplicates are encountered. The following explanations of BDL declarations contain further information of what properties have to hold in order for the board description to be correct. Naturally, syntax errors will also result in an incorrect board description.
 
-Please note, that the code contained within code blocks is not analysed and therefore not used for the determination of correctness. A board description is considered to be correct, even if the code block contains errors. It is therefore advisable, to use code blocks cautiously.
+Please note, that code within code blocks is not analysed and therefore not used for the determination of correctness. A board description is considered to be correct, even if the code block contains errors. It is therefore advisable, to use code blocks cautiously.
 
 \subsubsection{Import}
-Import declarations reference additional board description files, that also should be used to generate the driver. The driver generator will collect all imported files recursively and compile one large driver out of all these files. As a result, a file is considered to contain no imports but all declarations of the imported files. Circular imports are ignored. Correctness analysis is only performed on the complete, composed board model, not on imported files. 
+Import declarations reference additional board description files, that also should be used to generate the driver. The driver generator will collect all imported files recursively and compile one large driver out of all these files. As a result, a file is considered to contain no imports but all declarations of the imported files. Circular imports are ignored. Correctness analysis is only performed on the complete, composed board model, not on individual files. 
 
 \begin{lstlisting}[language=bdl]
 import "some/samplefile.bdf"
@@ -285,6 +284,7 @@ schedule {: ... :}
 The declaration consists of the keyword \texttt{schedule} followed by a code block containing the code of the user-defined scheduler.
 
 Note, that no guarantees can be given for a user-defined scheduler. For a more detailed description of the default scheduler and actions required by a user-defined scheduler, check out the board-side control flow graphs in \Cref{sec:protocol:cfg}.
+%TODO provide code for default scheduler somewhere!
 
 \subsubsection{Options}
 Several global properties of the board are specified directly without using distinct blocks. At this time, this includes the debug flag and global queue sizes (see \Cref{sec:arch:queue} for more details about the different queue types). Queue sizes have to be positive, but may be 0.
@@ -330,7 +330,7 @@ A core is declared by the keyword \texttt{core} followed by the name of the core
 
 Source references are very similar to import declarations and only differ in the used keyword and allowed occurrences within the bdl file.
 
-\textbf{Important note}: The ISE backend of the driver generator requires the top model source file to contain a VHDL entity with the same name as the specified core. It is recommended to use the same name for the source file itself. As a result the core, sourcefile and entity share the same name.
+\textbf{Important note}: The ISE backend of the driver generator requires the top model source file to contain a VHDL entity with the same name as the specified core. It is further recommended to use the same name for the source file itself. As a result the core, sourcefile and entity share the same name. This property is not checked by the driver generator, since it does require analysis of the provided VHDL code, and may cause the synthesis process to fail. \textcolor{red}{VHDL analysis will be a feature of a later version.}
 
 The second part of the core declaration block describes the interface of the core.
 
@@ -342,6 +342,8 @@ The second part of the core declaration block describes the interface of the cor
 \end{lstlisting}
 
 An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. Identifiers have to be locally unique and may therefore occur only once within a core. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The default bitwidth of a port is 32-bit.
+
+\textcolor{red}{VHDL analysis can also be used to simplify the specification of the core interface, since it already is fully specified in the VHDL file.}
 
 \subsubsection{Instance}
 The instance declaration instantiates a core on the board. This effectively creates a component on the board with the behaviour and interface specified by the core. The interface declaration itself connects this component with other components.
@@ -363,7 +365,7 @@ A property block is used to make connections between the ports of the core insta
     hwqueue 5
   }
   cpu out1 {
-    poll
+    poll 2
   }
 \end{lstlisting}
 
@@ -372,7 +374,7 @@ The keyword \texttt{cpu} connects the specified port to the board-side driver. %
 The host-side driver will provide methods for direct communication with these ports of the component.
 Again, a block is used for properties of these driver-attached ports. Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this will be explained in more detail in \Cref{sec:api:port}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
 
-For both bindings, the referenced port has to exist within the core declaration. 
+For both bindings, the referenced port has to exist within the core declaration.
 
 \section{Process}
 \label{sec:process}
@@ -413,58 +415,43 @@ If the tools described in \Cref{sec:setup} are correctly installed, the followin
 \subsection{Building the Generator}
 First of all, the project has to be checked out. As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.}
 
-After checking out the project, all sources have to be compiled and packaged. This can be done using the gradle build tool. The command to build a jar package is \texttt{gradle jar}. Simply type it in a shell in the project root repository, where the file \texttt{build.gradle} is located. Running the build file will generate an executable jar package under the path \texttt{<project>/build/libs}. Navigate there and try running it using the command \texttt{java -jar <name of the jar package>}.\footnote{This should result in the usage help and an error, since no .mhs file has been specified.} 
+After checking out the project, all sources have to be compiled and packaged. This can be done using the gradle build tool. The command to build a jar package is \texttt{gradle jar}. Simply type it in a shell in the project root repository, where the file \texttt{build.gradle} is located. Running the build file will generate an executable jar package under the path \texttt{<project>/build/libs}. Navigate there and try running it using the command \texttt{java -jar <name of the jar package>}.\footnote{This should result in the usage help and an error, since no \texttt{.bdl} file has been specified.}
 
 \subsection{Running the Generator}
-The HOPP Driver Generator can be called using the command line interface (CLI). The CLI offers several parameters to further configure the run of the generator, listed in \Cref{tab:cliParams}.
+The HOPP Driver Generator can be called using a command line interface (CLI). The CLI offers several parameters to further configure the run of the generator, listed in \Cref{tab:cliParams}. Note, that individual backends may provide additional parameters, that are not listed in this table. The CLI parameters are exclusively used to modify the behaviour of the driver generator. The behaviour of the driver itself is only influenced by the provided \texttt{.bdl} file.
 
 \begin{table}
 \centering
-\begin{tabular}{ ll | p{9cm} } 
+\begin{tabular}{ l p{2cm} | p{9cm} }
 \hline
 %\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
-\verb!-s! & \verb!--server! & Specifies the server backend. This specifies, for which target platform the driver should be generated. The default setting is a Virtex 6 ML 605 FPGA (currently, no other options are present).\\
-& \verb!--serverDir! & Specifies the destination of the server directory. All files for the server (i.e. files used to generate the board side driver) will be generated into the specified directory. If none is specified, a directory "server" will be generated inside the current working directory.\\ \hline
-\verb!-c! & \verb!--client! & Specifies the client backend. This specifies, in which language the client software should be generated. The default setting is a C++ frontend (currently, no other options are present).\\
-& \verb!--clientDir! & Specifies the destination of the client directory. All client for the server will be generated into the specified directory. If none is specified, a directory "client" will be generated inside the current working directory.\\ \hline
-\verb!-v! & \verb!--verbose! & The driver generator will print out additional console output. This makes it easier to track errors in the driver generator or the used source file.\\
-\verb!-d! & \verb!--debug! & The driver will be generated with additional debug console output. This makes it easier to track errors in larger test cases.\\
+\verb!-s! & \verb!--server! \verb!--board! & Select the board backend. The board backend is responsible for generation of the board-side driver and is dependent on the target platform.\\
+\verb!-S! & \verb!--serverDir! \verb!--boardDir! & Specifies the destination of the server directory. All files for the server (i.e. files used to generate the board side driver) will be generated into the specified directory. If none is specified, a directory "server" will be generated inside the current working directory.\\ \hline
+\verb!-c! & \verb!--client! \verb!--host! & Select the host backend. The host backend is responsible for generation of the host-side driver. Usually, a single backend is provided per target language.\\
+\verb!-C! & \verb!--clientDir! \verb!--hostDir! & Specifies the destination of the client directory. All client for the server will be generated into the specified directory. If none is specified, a directory "client" will be generated inside the current working directory.\\ \hline
+\verb!-q! & \verb!--quiet! & Sets the log level to quiet. In this mode, the generator will not provide any console output, except for exceptions preventing generation.\\
+\verb!-v! & \verb!--verbose! & Sets the log level to verbose. The driver generator will print out additional console output, that can be used to track errors in \texttt{.bdl} files and (potentially) the generator.\\
+\verb!-d! & \verb!--debug! & Sets the log level to debug. The driver generator will print even more console output, that is used solely for debugging the driver generator.\\ \hline
+\verb!-p! & \verb!--parseonly! & Only executes the frontend of the generator, checking for simple parser errors in the provided \texttt{.bdl} files. Can be used to debug the board description.\\
+\verb!-n! & \verb!--dryrun! & Also performs analysis steps of the backends, but does not generate the actual drivers. Also does not run Xilinx toolsuite. Can be used to further debug the board description.\\
 \verb!-h! & \verb!--help! & Lists all CLI parameters and a short explanation. The generator will abort after parsing this parameter and not generate anything.\\ \hline
-& \verb!--mac! & used to set the mac address of a possible Ethernet interface of the board. Notation: XX:XX:XX:XX:XX:XX, where each X marks a hexadecimal number (allowing lower as well as upper cases).\\
-& \verb!--ip! & used to set the ip address of a possible Ethernet interface of the board. Notation: X.X.X.X, where each X marks a decimal number ranging from 0 to 255. The same notation is required for the following two parameters.\\
-& \verb!--mask! & used to set the network mask of a possible Ethernet interface of the board.\\
-& \verb!--gw! & used to set the standard gateway of a possible Ethernet interface of the board.\\
-& \verb!--port! & used to set the communication port of a possible Ethernet interface of the board. \color{red}{Note that these five parameters are only contemporary and will be replaced by the new board description language (I hope - together with the debug parameter. It may be used for actually debugging the generator then ...).}\\ \hline
-
 \end{tabular}
-\caption{Summary of currently possible CLI parameters}
+\caption{Summary of current, global CLI parameters}
 \label{tab:cliParams}
 \end{table}
 
-%\begin{table}
-%\centering
-%\begin{tabular}{ ll | p{9cm} } 
-%\hline
-%\verb!-d! & \verb!--dest! & Specifies the destination directory. All files will be generated into the specified directory. If none is specified, the current working directory will be used instead.\\ \hline
-%\verb!-p! & \verb!--project! & Specifies the project backend. This specifies, in which tool the hardware design should take place. Currently, only XPS in version 14.1 can be selected.\\
-%\hline
-%\end{tabular}
-%\caption{Summary of currently possible options for the Virtex6 server backend}
-%\label{tab:cppParams}
-%\end{table}
+Additionally, a board description file is required by the generator. So a complete call looks like the following line:\\
 
-Additionally, the \texttt{.mhs} file of the system is required by the generator. So a complete call looks like the following line:\\
-
-\texttt{java -jar driverGenerator.jar [OPTIONS] <.mhs file>}.\\
+\texttt{java -jar driverGenerator.jar [OPTIONS] <bdl file>}.\\
 
 The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
 
 In addition to the required sources, documentation for both host- and board-side sources is generated, using doxygen.
 
 \subsection{Executing your Application}
-Now the regular design process from Xilinx can be continued. The next step would be writing a host application that uses the generated host-side driver and API. After programming your FPGA with the \texttt{.elf} file generated using the board-side driver, your program should be able to communicate with VHDL components on the FPGA through this API.
+Now the regular design process from Xilinx can be continued. The next step would be writing a host application that uses the generated host-side driver and API (see \Cref{sec:api} for a overview over this API). The board-side driver is represented by the \texttt{.bit} \textcolor{red}{and \texttt{.elf}} file resulting from the command line calls preformed by the driver generator. After the FPGA has been programmed using these files, your program should be able to communicate with VHDL components on the FPGA through the API provided by the host-side driver.
 
-Note, that it is required to call the setup method before actually sending data over the driver. It is also recommended, to shut the driver threads down properly by using the provided shutdown method. Both these methods are \textcolor{red}{/will be} contained within the components file.
+Note, that it is required to call the startup method before actually sending data over the driver. It is also recommended, to shut the driver threads down properly by using the provided shutdown method. Both these methods are contained within \texttt{api/setup.h}.
 
 \chapter{Driver Description}
 This section should provide a conceptual overview of the driver parts. For pure users of the driver generator, only parts of the client side are really relevant. Developers might also be interested in the server part.
@@ -545,7 +532,7 @@ This section describes, how the host-side API, the hardware designer programs hi
 \label{fig:api:host}
 \end{figure}
 
-The exposed architecture of the host software is depicted in \Cref{fig:api:host}. A board is described using multiple \textit{components}. A component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or from the component.
+The exposed architecture of the host-side driver is depicted in \Cref{fig:api:host}. A board is described using multiple \textit{components}. A component is a designed hardware unit, which can have several \textit{ports}, over which data can be sent to or from the component.
 
 \subsection{Component}
 \label{sec:api:component}
@@ -569,7 +556,7 @@ Since such components only hold a single state and perform no processing, commun
 
 Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. Instead, a \textit{task} is scheduled for the operation, which will be performed asynchronously. While the order between tasks and therefore values to a single port is maintained, the order between tasks executed at different ports may differ from the order they were scheduled in.
 
-Ports are generally \textit{forwarding}, meaning that values are send automatically from host to board and vice versa as soon as available. Out-going ports can be switched into \textit{polling} mode explicitly, resulting in values being not forwarded but only send if requested by the user. The interface of these ports looks identical and the difference is only visible in performance. A polling port is useful in cases, where the attached component generates values periodically without additional input, e.g., a random number generator.
+Ports are generally \textit{forwarding}, meaning that values are send automatically from host to board and vice versa as soon as available. Out-going ports can be switched into \textit{polling} mode explicitly, resulting in values being not forwarded but only send if requested by the user. The interface of these ports looks identical and the difference is only visible in performance. A polling port is useful in cases, where the attached component generates values periodically without additional input, e.g., a random number generator or a status port.
 
 Details about the implementation of ports can be found in \Cref{sec:impl:cpp}.
 
@@ -682,22 +669,41 @@ Due to restricted resources on the board and desired parallelism between the dif
 The first and most important queue is the client-side \textit{write queue}. Such a queue is introduced for each in-going port. Writing to a port does not directly result in a message sent to the board, since the board has restricted resources and may not be able to process or even store the value. The client queue provides a first mechanism of \textit{flow control}. Values are queued up at the client, when the board buffers have been filled and no more values can be received, until the board signals that it can receive more values now.
 Additionally, the client buffer offers \textit{congestion avoidance} to a small degree, since several small values can be packaged together in one message. This results in a smaller amount of messages being sent over the medium.
 
-The client also contains \textit{read queues} for each out-going port. These queues cache values received by the board for read operations performed by the application. Values are pushed from the board into theses queues automatically. These queues lead to smaller resource consumption on the board, since only a small number of out-going values have to be cached. Read cycles are faster, since no polling messages have to be sent but available values can directly be consumed. On the downside, client-side read queues lead to some possibly unnecessary traffic on the medium, since values are send without being requested at the board. 
-
-To counter above disadvantage, \textit{polling ports} are introduced. These are special out-going ports, to which data is not actively forwarded. Instead, the port requests values, as soon as a read operation is performed on the port. While this results generally in longer response cycles compared to forwarding ports, the medium traffic is reduced as values are only sent if needed. This is especially useful in a scenario, where a component constantly generates values, for example a random number generator. These ports do not require a read queue on the host. Instead, the number of unserviced polls is stored in a \textit{poll counter} at the board-side port. Note, that this has no effect on the host-side API. Only the response times and memory behaviour of the driver may change.
+The client also contains \textit{read queues} for each out-going port. These queues cache values received by the board for read operations performed by the application. These queues lead to smaller resource consumption on the board, since only a small number of out-going values have to be cached. Read queues are assumed to be infinitely long. Values are \textit{forwarded} from the board into theses queues automatically (cf. \Cref{sec:arch:fwd}). Read cycles are faster, since no polling messages have to be sent but available values can directly be consumed.
 
 With only client-queues, the board-side driver would only be capable of receiving and processing a single value at a time, which has to be directly written to a component, resulting in an increase of messages and therefore communication overhead. In order to enable reception of multiple values at once, a \textit{board-side queue} (or \textit{software queue}) is introduced for each in-going port on the board as well. Received values are stored in these queues first and forwarded to the target component later on, if the component can process further values. In contrast to the client-side queues, are size-restricted and can only hold a certain number of values, specified in the board description file.
 Similar queues are introduced for out-going ports, to reduce traffic caused by values being sent back to the host-side driver. These queues cache results from components which are then send in one message.
 
-Since the FPGA usually only has a single processor and is not capable of multi-threading, only a single board-side queue can be read at a time, and only a single component can receive values. In order to feed all components with faster with values, a queue is implemented in hardware and placed in between the component and the stream interface of the processor. These \textit{hardware queues} provide the component with values as soon as it requires a new value and therefore remove the idle time between the end of a computation of a component and the board-side driver thread serving the component new values. Since these queues are actually less efficient in terms of resource consumptions on the board than the software queues, they are even smaller in size. Again, similar queues on out-going ports cache results, so the component does not have to wait for the driver thread to read the value from the port before starting the next computation.
+Since the FPGA usually only has a single processor and is not capable of multi-threading, the board-side driver can only perform a single operation at a time. If a component finished processing and requires a new value to continue, it has to wait until the driver serves the corresponding in-going port. To reduce this downtime and increase overall throughput, a queue is implemented in hardware and placed in between the component and the stream interface of the processor. These \textit{hardware queues} provide the component with a new value as soon as required. Re-filling of the hardware queue may take several cycles, but values can then be written en block without regarding the computation speed of the attached component. Since hardware queues are actually less efficient in terms of resource consumptions on the board than the software queues, they should be even smaller in size. Again, similar queues on out-going ports cache results, so the component does not have to wait for the driver thread to read the value from the port before the next computation.
+
+\subsection{Forwarding}
+\label{sec:arch:fwd}
+Values generated on out-going ports on the board are usually automatically forwarded to the read queues of the host-side driver. This leads to shorter read cycles, since values are usually available at the host-side driver and no polling cycle has to be performed. 
+
+However, forwarding also leads to several problems:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item ports generating a constant, infinite stream of values will never stop sending values
+\item considering status ports, a read operation should return the current status, not some stored value
+\item forwarding in general can lead to unnecessary traffic, since values are sent without being required and as soon as available
+\end{itemize}
+
+To counter these problems, \textit{polling ports} are introduced. These are basically ports without value forwarding. Instead, the host-side driver explicitly requests values, as soon as a read operation is performed on such a port. While this results generally in longer response cycles compared to forwarding ports, values are only sent if required. This obviously is imperative for status ports or ports generating an infinite amount of values. In other scenarios, polling ports may reduce medium traffic in certain cases, but also results in poll messages being sent by the host-side driver, increasing traffic in other cases. Therefore, switching of such a port into polling mode should be considered carefully.
+
+While it does not always make sense (e.g. in the case of status ports), polling ports may still have a read queue. This is especially useful in the scenario of a random number generator, where values are endlessly generated without additional input and not constantly required, but are still be processed en block. Compared to forwarding ports, the read queue of a polling port is limited. The driver will automatically keep the read queue filled. 
+
+In contradiction to the usual propagation of queue size parameters, all queue sizes of polling ports (including board-side queues) are set to 0. If other queue sizes are desired, they have to be explicitly declared in the port instance definition. This is done to prevent user errors due to incorrect board-side queue sizes and convenience, since the most common application of polling ports are status ports.
+
+Note, that forwarding and polling has no effect on the host-side API. Only the response times and memory behaviour of the driver may change.
 
 \subsection{I/O Threads}
 \label{sec:arch:threads}
-As stated in \Cref{sec:api:port}, %where else
-the driver should support asynchronous writes and reads. The order of messages to the same port has to be maintained, while the order of messages to different ports can be changed. The processing of operations at ports is independent from other ports. In particular, a synchronous operation on a port should not influence an asynchronous operation on another port.\\
-Consider the following example to understand why asynchronous operations should still be processed during a synchronous operation. A board specification contains an adder component with two in-going ports and an out-going port. If a values are written at both ports, they will be consumed and a result will be returned at the out-going port. Consider further, that a value is currently stored at port A. The user now writes another value to port A asynchronously, followed by writing three values to port B synchronously. The value for port A cannot be written directly, since port A is still blocked with a value. However, the first value for port B can be written, and both values are consumed. Now the second value for port B can be written, blocking the port for the third value. This third value cannot be written, until the second value is consumed, which requires another value at port A. If write operations are performed asynchronously, the asynchronous write to port A will never reach this port, since the application is still blocked from the write to port B. Allowing asynchronous writes to be processed in parallel resolves this situation. The value for port A can be written in between the writes to port B or at any point afterwards.\\
+As stated in \Cref{sec:api:port}, the driver does support asynchronous writes and reads. The order of messages to the same port has to be maintained, while the order of messages to different ports can be changed. The processing of operations at ports is independent from other ports. In particular, a synchronous operation on a port should not influence an asynchronous operation on another port.
 
-Asynchronous operations can be realised by dedicated I/O threads, handling communication between host-side and board-side driver. These threads modify the client-side queues described above in \Cref{sec:arch:queue}. In general, a single thread, that covers the complete communication is be sufficient. For better separation between writing and reading operations, two threads can be introduced for, one for each of these operations. This solution if preferable, since reading from the medium usually involves longer periods of listening for messages, which would unnecessarily delay write operations. A third solution, implementing the independence of operations on different ports, is introduction of a single thread for each port. This, however, results in a possibly large number of threads. Depending on the host platform, a smaller number is preferable.
+Consider the following example to understand why earlier, asynchronous operations should still be processed during a synchronous operation. A board specification contains an adder component with two in-going ports and an out-going port. If a values are written at both ports, they will be consumed and a result will be returned at the out-going port. Consider further, that a value is currently stored at port A. The user now writes another value to port A asynchronously, followed by writing three values to port B synchronously. The value for port A cannot be written directly, since port A is still blocked with a value. However, the first value for port B can be written, and both values are consumed. Now the second value for port B can be written, blocking the port for the third value. This third value cannot be written, until the second value is consumed, which requires another value at port A. If write operations to different ports are performed sequentially, the asynchronous write to port A will never reach this port, since the application is still blocked from the write to port B. Allowing asynchronous writes to be processed in parallel resolves this situation. The value for port A can be written in between the writes to port B or at any point afterwards.\\
+
+Parallel, independent processing of operations can be realised by dedicated I/O threads, handling communication between host-side and board-side driver. These threads modify the client-side queues described above in \Cref{sec:arch:queue}.
+
+The most simple solution to enable independent processing of requests on ports is the introduction of a single thread for each port. However, this results in a possibly large number of threads. Depending on the host platform, a smaller number of threads might be preferable. It is not required to parallelise all ports, but only continue reading and writing of values while the API is blocked by a synchronous operation. This can be achieved using a single, dedicated I/O thread, that handles all communication between host-side and board-side driver. Since reading from the medium involves longer periods of listening for messages, which would unnecessarily delay write operations, it is preferable to introduce separate threads for writing and reading. Consequently, three threads are running on the host: the application thread itself calling the API, and the two I/O threads handling communication between the host-side and board-side driver.
 
 The threads have to be started with a special method \texttt{startup()} before using the API and should be shut down afterwards with another method \texttt{shutdown()}.
 
