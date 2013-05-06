@@ -5,13 +5,15 @@
 \usepackage[english,german]{babel}
 \usepackage[pdftex, pdfborder={0 0 0}]{hyperref}
 \usepackage[nameinlink]{cleveref}
+\usepackage{multirow}
 %\usepackage{alltt}
-%\usepackage{multirow}
 %\usepackage{rotating}
 \usepackage{listings}
 \usepackage{setspace}
 \usepackage{mathpartir}
 \usepackage{bytefield}
+
+
 
 %\usepackage{fancyhdr}
 %\setlength{\headheight}{15.2pt}
@@ -1426,15 +1428,14 @@ This chapter is used to explain the code generator itself. This information is i
 This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction. Still, as the generator code depends on them, they are introduced here for future developers.
 
 \subsection{JFlex \& CUP}
-\textcolor{red}{This can be kept short with a reference to the JFlex/Cup documentation}
-Flex is a scanner generator, CUP a parser generator. Both together are currently used to parse \texttt{.mhs} files into abstract syntax trees. \textcolor{red}{In future versions, they will be used to parse the DSL of the driver generator.}
+Flex is a scanner generator, CUP a parser generator. Both together with a few wrapping Java classes make up the frontend of the generator and are used to parse \texttt{.bdl} files into abstract syntax trees.
 
 \subsection{Katja}
-The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as a model of the \texttt{C/C++} language described in detail in \Cref{sec:cmodel}.
+The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as several models used by the generation backends described in detail in \Cref{sec:gen:models}.
 
 \section{Generation Process}
-\label{sec:genprocess}
-The overall process of the driver generator is described by \Cref{fig:genprocess}. The source \texttt{.mhs} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs models of all required header- and source files. These models are translated into files by the \texttt{C/C++} unparser.
+\label{sec:gen:process}
+The overall process of the driver generator is described by \Cref{fig:gen:process}. The source \texttt{.bdl} file describing the system board design is first translated into an internal representation of the board, i.e. an abstract syntax tree. This AST is used as input for the generator, which in turn outputs models of all source files. These models are translated into files by the respective unparsers.
 
 Several backends exist to create different types of models. Host backends generate models for source code running on a host machine, board backends generate models for source code running on a board respectively. These backends implement a \texttt{Visitor}, which visits all components of the board, and manipulate the source model accordingly.
 Currently, the only available backends are the C++ host backend and the Virtex 6 ML 605 board backend.
@@ -1447,7 +1448,7 @@ Currently, the only available backends are the C++ host backend and the Virtex 6
 
 \node[file, above=1cm] (ast) at (gen) {Board AST};
 \node[tool, above=1cm] (parser) at (ast) {Scanner/Parser};
-\node[file, above=1cm] (mhs) at (parser) {.mhs file};
+\node[file, above=1cm] (bdl) at (parser) {.bdl file};
 
 %TODO there is probably a better way to draw this with tikz - but there always is a better way ;)
 \node[file, below left = 1.5cm and 0cm of gen] (board3) {};
@@ -1461,7 +1462,7 @@ Currently, the only available backends are the C++ host backend and the Virtex 6
 \node[group, fit=(board1) (board2) (board3), label={95:board side}] (board) {};
 \node[group, fit=(host1) (host2) (host3), label={75:host side}] (host) {};
 
-\draw[arr] (mhs) to node[auto] {input} (parser);
+\draw[arr] (bdl) to node[auto] {input} (parser);
 \draw[arr] (parser) to node[auto] {generates} (ast);
 \draw[arr] (ast) to node[auto] {input} (gen);
 \draw[arr] (gen) to node[left] {generates} (board);
@@ -1470,10 +1471,11 @@ Currently, the only available backends are the C++ host backend and the Virtex 6
 \draw[arr, <->] (board) to node[below] {communicate} (host);
 \end{tikzpicture}
 \caption{A rough sketch of the translation process so far}
-\label{fig:genprocess}
+\label{fig:gen:process}
 \end{figure}
 
 \section{Models}
+\label{sec:gen:models}
 The driver generator defines several models, which are used to define input and output artefacts. All models are generated from Katja grammars. These grammars will be used in the following sections, to explain the models.
 
 \subsection{Board Model}
@@ -1721,7 +1723,7 @@ public enum ClientBackend {
     CPP(new CPP()),
     Java(new Java());
 
-  // the rest of the fileremains unchanged
+  // the rest of the file remains unchanged
    ...
 }
 \end{lstlisting}
@@ -1735,25 +1737,27 @@ Addition of other backend types is very similar to host backends. The plugin int
 \centering
 \begin{tabular}{ c | c | c }
 Backend & Type & Class \\ \hline\hline
-Host & Interface & de.hopp.generator.backends.client.ClientBackend \\
+\multirow{2}{*}{Host} & Interface & de.hopp.generator.backends.client.ClientBackend \\
 & Enum & de.hopp.generator.frontend.ClientBackend\\ \hline
-Board & Interface & de.hopp.generator.backends.server.ServerBackend\\
+\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.server.ServerBackend\\
 & Enum & de.hopp.generator.frontend.ServerBackend\\ \hline
-Project & Interface & de.hopp.generator.backends.server.virtex6.ProjectBackendIF\\
-& Enum & de.hopp.generator.backends.server.virtex6.ProjectBackend\\
+\multirow{2}{*}{Project} & Interface & ...backends.server.virtex6.ProjectBackendIF\\
+& Enum & ...backends.server.virtex6.ProjectBackend\\
 \end{tabular}
 \caption{Overview of Classes and Enums required for Backend Extension}
 \label{tab:gen:hook}
 \end{table}
 
-%Add a picture about the backend hierarchy
+%Add a picture about the backend hierarchy?
 
 \subsection{Utility Classes}
 There are several utility classes which supply basic methods for file generation and model translation.
 
 The class \texttt{de.hopp.generator.utils.BoardUtils} contains utility methods for model analysis. This contains getters for referenced elements (e.g. getting the port referenced by a binding) or specific attributes, that are not necessarily declared at the component (e.g. the size of the queue of a binding).
 
-Methods for printing of several model file types, i.e. \texttt{C} and MHS models, is provided in the utility class \texttt{de.hopp.generator.backends.BackendUtils}. These methods make use of the unparsers described in \ref{sec:gen:unparser}.
+Methods for printing of several model file types, i.e. \texttt{C/C++} and MHS models, are provided in the utility class \texttt{de.hopp.generator.backends.BackendUtils}. These methods make use of the unparsers described in \ref{sec:gen:unparser}.
+
+%Utility methods are currently rather randomly spread around in the code. This should be reduced to either where they are required (i.e. backend utils @ backend package) or a central util package. NOT both.
 
 \addtocontents{toc}{\protect\vspace*{\fill}}
 
