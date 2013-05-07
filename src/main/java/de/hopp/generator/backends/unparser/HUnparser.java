@@ -33,11 +33,11 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         this.name = name;
     }
     
-    protected MDefinitionsInFile filter(MDefinitionsInFile definitions, MModifier modifier) {
-        MDefinitionsInFile rslt = definitions;
-        for(MDefinitionInFile definition : definitions)
-            if(!definition.modifiers().term().contains(modifier))
-                rslt = rslt.remove(definition.term());
+    protected MPreProcDirsInFile filter(MPreProcDirsInFile directives, MModifier modifier) {
+        MPreProcDirsInFile rslt = directives;
+        for(MPreProcDirInFile directive : directives)
+            if(!directive.modifiers().term().contains(modifier))
+                rslt = rslt.remove(directive.termMPreProcDir());
         
         return rslt;
     }
@@ -184,7 +184,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         }
         
         // unparse components
-        visit(file.defs());
+        visit(file.dirs());
         visit(file.structs());
         visit(file.enums());
         visit(file.classes());
@@ -197,14 +197,14 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     }
 
     @Override
-    public void visit(MDefinitionsInFile defs) throws InvalidConstruct {
-        defs = filter(defs, PUBLIC());
-        if(defs.size() > 0) {
+    public void visit(MPreProcDirsInFile dirs) throws InvalidConstruct {
+        dirs = filter(dirs, PUBLIC());
+        if(dirs.size() > 0) {
             // append comment
             buffer.append("\n// definitions of " + name + "");
             
             // unparse the contained structs
-            for(MDefinitionInFile def : defs) visit(def);
+            for(MPreProcDirInFile dir : dirs) visit(dir);
             buffer.append('\n');
         }
     }
@@ -352,10 +352,28 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 //    }
     
     @Override
-    public void visit(MDefinitionInFile term) throws InvalidConstruct {
+    public void visit(MDefInFile term) throws InvalidConstruct {
         buffer.append('\n');
         visit(term.doc());
         buffer.append("#define " + term.name().term() + " " + term.value().term());
+    }
+    
+    @Override
+    public void visit(MPreIFInFile term) throws InvalidConstruct {
+        buffer.append('\n');
+        buffer.append("#if " + term.cond().term());
+        visit(term.thenDir());
+        buffer.append("#endif /* " + term.cond().term() + " */");
+    }
+    
+    @Override
+    public void visit(MPreITEInFile term) throws InvalidConstruct {
+        buffer.append('\n');
+        buffer.append("#if " + term.cond().term());
+        visit(term.thenDir());
+        buffer.append("#else");
+        visit(term.elseDir());
+        buffer.append("#endif /* " + term.cond().term() + " */");
     }
     
     @Override

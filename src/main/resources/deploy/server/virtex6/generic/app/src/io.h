@@ -63,4 +63,11 @@ void send_gpio(unsigned char gid, unsigned char val);
  */
 void flush_queue(unsigned char pid);
 
+/**
+ * Sends a debug message to the host-side driver.
+ * @param type Debug type of the message.
+ * @param format Format string of the message.
+ */
+void send_debug(unsigned char type, const char *format, ...);
+
 #endif /* IO_H_ */

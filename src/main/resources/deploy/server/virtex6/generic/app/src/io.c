@@ -84,8 +84,6 @@ void send_gpio(unsigned char gid, unsigned char val) {
 //	for(i = 0; i < m->payloadSize; i++) UartSendInt(m->payload[i]);
 //}
 
-
-
 void flush_queue(unsigned char pid) {
 	if(DEBUG) xil_printf("\nflushing %d ...", pid);
 
@@ -108,4 +106,26 @@ void flush_queue(unsigned char pid) {
 
 	message_free(m);
 	outQueueSize = 0;
+}
+
+void send_debug(unsigned char type, const char *format, ...) {
+
+	// make a run over the vararg parameter to determine the size
+	va_list args;
+	va_start(args, format);
+	int size = vsnprintf(NULL, 0, format, args) + 1;
+	va_end(args);
+
+	// TODO check, that the size is smaller than the maxsize of the protocol!
+
+	// allocate memory and store the formatted string
+	char *c = malloc(sizeof(char) * size);
+	va_start(args, format);
+	vsnprintf(c, size, format, args);
+	va_end(args);
+
+	// encode and send a message
+	struct Message *m = encode_debug(type, size);
+	message_payload(m, (int*)c, size);
+	medium_send(m);
 }

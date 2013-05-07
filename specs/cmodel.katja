@@ -32,7 +32,7 @@ external Integer
 
 
 // file and class model
-MFile ( MDocumentation doc, String name, String directory, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures procedures, MClasses classes )
+MFile ( MDocumentation doc, String name, String directory, MPreProcDirs dirs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures procedures, MClasses classes )
 MClass ( MDocumentation doc, MModifiers modifiers, String name, MExtends extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
 MModifier = MVisibility | CONSTANT() | STATIC() | INLINE() // don't know if more are required
@@ -40,9 +40,12 @@ MModifier = MVisibility | CONSTANT() | STATIC() | INLINE() // don't know if more
 MVisibility = PUBLIC() | PROTECTED() | PRIVATE()
 MExtend( MVisibility visibility, MType type )
 
+// preprocessing directives
+MPreProcDir = MDef    ( MDocumentation doc, MModifiers modifiers, String name, String value )
+            | MPreIF  ( MModifiers modifiers, String cond, MPreProcDir thenDir)
+            | MPreITE ( MModifiers modifiers, String cond, MPreProcDir thenDir, MPreProcDir elseDir)
 
 // struct and enum model
-MDefinition ( MDocumentation doc, MModifiers modifiers, String name, String value )
 MStruct     ( MDocumentation doc, MModifiers modifiers, String name, MAttributes attributes )
 MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
                                                               // --> MValue(String name, String value), MValues * MValue
@@ -102,7 +105,7 @@ Strings             * String
 MFiles              * MFile
 MClasses            * MClass
 MModifiers          * MModifier
-MDefinitions        * MDefinition
+MPreProcDirs        * MPreProcDir
 MStructs            * MStruct
 MEnums              * MEnum
 MAttributes         * MAttribute

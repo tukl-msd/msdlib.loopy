@@ -751,6 +751,14 @@ Messages are exchanged between the application and the client-side driver, as we
   \item \textbf{poll} A request message for additional data.
 \end{itemize}
 
+% TODO: restructure this section
+% Currently: Split after deployment location, i.e. host-side and board-side CFGs
+% New: Split after port type, i.e. in-going and out-going.
+%     in-going describes both, host-side and board-side
+%     out-going also references polling ports
+%     these look very similar to in-going ports (probably identical)
+%     only difference at first glance: queues are of limited size --> cannot always store
+
 \subsubsection{Host-Side Driver}
 Since values can be written asynchronously, each port maintains its own state and can perform transitions independent of the other ports. The state of the host-side driver is constructed from the individual states of all ports.
 
@@ -942,7 +950,7 @@ The acknowledgement confirms reception of a number of values by a specific compo
 \paragraph{Data Request (Poll)}
 A data request is used to inform the host, that additional values can now be received. This is necessary if the queue was full beforehand, i.e. a partial acknowledgement was (most likely) sent. This poll does require neither a payload nor a size, but only the identifier of the component, that can now receive values.
 
-The data request is also used at polling ports. Here, it notifies the board, the the host requires values from the port. The Size field is used to specify how many values are requested.
+The data request is also used at polling ports. Here, it notifies the board, the the host requires values from the port. The size field is used to specify how many values are requested.
 
 As with data messages, the direction of the poll message determines if an in-going or out-going port is addressed. However, the translation is inverse to the data message. A poll from the host is addressed at an out-going port, a poll from the board at an in-going port.
 

@@ -33,8 +33,8 @@ struct tcp_pcb *con;
  * @ip The ip address to be printed.
  */
 static void print_ip ( char *msg, struct ip_addr *ip ) {
-    xil_printf(msg);
-    xil_printf("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
+    print(msg);
+    print("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
 
 /**
@@ -45,16 +45,19 @@ static void print_ip ( char *msg, struct ip_addr *ip ) {
  */
 static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
 	print_ip("  Board IP : ", ip);
-	xil_printf(":%d", PORT);
+	print(":%d", PORT);
 	print_ip("\n  Netmask  : ", mask);
 	print_ip("\n  Gateway  : ", gw);
 //	print_ip("\n  Host IP  : ", host);
-	xil_printf(":%d\n", PORT);
+	print(":%d\n", PORT);
 
 }
 //32506054
 static void set_unaligned ( int *target, int *data ) {
-	if(DEBUG) xil_printf("\nunaligning value: %d", *data);
+	#if DEBUG
+		print("\nunaligning value: %d", *data);
+	#endif /* DEBUG */
+
     int offset, i;
     char *byte, *res;
 
@@ -64,7 +67,10 @@ static void set_unaligned ( int *target, int *data ) {
         res = (void*)target;
         for (i=0; i<4; i++) *(res++) = ((*(byte++)) & 0xFF);
     } else *target = *data;
-    if(DEBUG) xil_printf(" to %d", *target);
+
+	#if DEBUG
+		print(" to %d", *target);
+	#endif /* DEBUG */
 }
 
 static int get_unaligned ( int *data ) {
@@ -102,15 +108,15 @@ void medium_read() {
 	xemacif_input(netif);
 }
 
-void print(struct Message *m) {
-	xil_printf("\nsending message of size %d", m->headerSize + m->payloadSize);
-	xil_printf("\nheader int:  %d", m->header[0]);
+static void print_message(struct Message *m) {
+	print("\nsending message of size %d", m->headerSize + m->payloadSize);
+	print("\nheader int:  %d", m->header[0]);
 
-	xil_printf(" (Payload: ", m->payloadSize);
+	print(" (Payload: ", m->payloadSize);
 	int i;
-	for(i = 0; i < m->payloadSize-1; i++) xil_printf("%d, ", m->payload[i]);
-	xil_printf("%d", m->payload[m->payloadSize-1]);
-	xil_printf(" )");
+	for(i = 0; i < m->payloadSize-1; i++) print("%d, ", m->payload[i]);
+	print("%d", m->payload[m->payloadSize-1]);
+	print(" )");
 }
 
 void medium_send(struct Message *m) {
@@ -119,7 +125,9 @@ void medium_send(struct Message *m) {
 //		} else
 //			print("no space in tcp_sndbuf\n\r");
 	// I have no idea what I'm doing!
-	if(DEBUG) print(m);
+	#if DEBUG
+		print_message(m);
+	#endif /* DEBUG */
 
 	// allocate transport buffer for the message
 	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, sizeof(int) * (m->headerSize + m->payloadSize), PBUF_POOL);
@@ -139,7 +147,7 @@ void medium_send(struct Message *m) {
 		((int*)p->payload)[i+m->headerSize] = m->payload[i];
 
 //	for(i = 0; i < m->headerSize + m->payloadSize; i++) {
-//		xil_printf("\nval: %d", ((int*)p->payload)[i]);
+//		print("\nval: %d", ((int*)p->payload)[i]);
 //	}
 //
 //	// write header data in buffer
@@ -160,33 +168,33 @@ void medium_send(struct Message *m) {
 
 	// setup a connection to the host data port
 //	err = tcp_connect(data_pcb, &host, 8848, test);
-//	if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+//	if (err != ERR_OK) print("Err: %d\r\n", err);
 
 	if (tcp_sndbuf(con) > p->len) {
 		// write the package (doesn't send automatically!)
 		err = tcp_write(con, p->payload, p->len, TCP_WRITE_FLAG_COPY);
 
 		#ifdef DEBUG
-			if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+			if (err != ERR_OK) print("Err: %d\r\n", err);
 		#endif
 
 		// send the package?
 		err = tcp_output(con);
 
 		#ifdef DEBUG
-			if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+			if (err != ERR_OK) print("Err: %d\r\n", err);
 		#endif
 	} else {
-		xil_printf("No space in tcp_sndbuf\n\r");
+		print("No space in tcp_sndbuf\n\r");
 	}
 
 //	tcp_sent(data_pcb, test2);
-//	xil_printf("\nclosing connection");
+//	print("\nclosing connection");
 
 	// close the connection
 //	err = tcp_close(data_pcb);
 //#ifdef DEBUG
-//		if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+//		if (err != ERR_OK) print("Err: %d\r\n", err);
 //	#endif
 
 	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
@@ -256,20 +264,23 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 int start_application() {
 
-	if(DEBUG) xil_printf("Starting server application ...");
+	#if DEBUG
+		print("Starting server application ...");
+	#endif /* DEBUG */
+
 	err_t err;
 
 	// create new TCP PCB structure
 	pcb = tcp_new();
 	if (!pcb) {
-		xil_printf("Error creating PCB. Out of Memory\n\r");
+		print("Error creating PCB. Out of Memory\n\r");
 		return -1;
 	}
 
 	// bind to specified @port
 	err = tcp_bind(pcb, IP_ADDR_ANY, PORT);
 	if (err != ERR_OK) {
-		xil_printf("Unable to bind to port %d: err = %d\n\r", PORT, err);
+		print("Unable to bind to port %d: err = %d\n\r", PORT, err);
 		return -2;
 	}
 
@@ -279,7 +290,7 @@ int start_application() {
 	// listen for connections
 	pcb = tcp_listen(pcb);
 	if (!pcb) {
-		xil_printf("Out of memory while tcp_listen\n\r");
+		print("Out of memory while tcp_listen\n\r");
 		return -3;
 	}
 
@@ -289,7 +300,9 @@ int start_application() {
 	// init the data pcb...
 	data_pcb = tcp_new();
 
-	if(DEBUG) xil_printf(" done\n");
+	#if DEBUG
+		print(" done\n");
+	#endif /* DEBUG */
 
 
 	// receive and process packets
@@ -301,7 +314,9 @@ int start_application() {
 }
 
 void init_medium() {
-	if(DEBUG) xil_printf("\nSetting up Ethernet interface ...\n");
+	#if DEBUG
+		print("\nSetting up Ethernet interface ...\n");
+	#endif /*D EBUG */
 
 	// the mac address of the board. this should be unique per board
 	unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
@@ -315,7 +330,9 @@ void init_medium() {
 
 //	IP4_ADDR(&host, 192, 168, 1, 23);
 
-	if(DEBUG) print_ip_settings(&ip, &mask, &gw);
+	#if DEBUG
+		print_ip_settings(&ip, &mask, &gw);
+	#endif /* DEBUG */
 
 	lwip_init();
 
@@ -323,7 +340,7 @@ void init_medium() {
 	// Reason? Somewhere in here is the link speed auto-negotiation
   	// Add network interface to the netif_list, and set it as default
 	if (!xemac_add(netif, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
-		xil_printf("Error adding N/W interface\n\r");
+		print("Error adding N/W interface\n\r");
 //		return -1;
 		return;
 	}
@@ -338,9 +355,9 @@ void init_medium() {
 	// enable interrupts
 	// TODO This is basically a platform-dependent call... (we're on a microblaze, but there is also an implementation for ppc and zynq, maybe more)
 	// TODO This should already be handled by init_platform. We do not require the medium to set up interrupts again...
-//	xil_printf("\nenable platform interrupts ...");
+//	print("\nenable platform interrupts ...");
 //	platform_enable_interrupts();
-//	xil_printf("done");
+//	print("done");
 
 	// specify that the network if is up
 	netif_set_up(netif);

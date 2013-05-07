@@ -19,4 +19,6 @@ struct Message* encode_poll_v2(unsigned char pid);
 
 struct Message* encode_data_v2(unsigned char pid, unsigned int size);
 
+struct Message* encode_debug_v2(unsigned char type, unsigned int size);
+
 #endif /* PROTOCOL_V2_H_ */

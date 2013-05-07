@@ -47,6 +47,14 @@ struct Message* encode_poll(unsigned char pid);
 struct Message* encode_gpio(unsigned char gid, unsigned char val);
 
 /**
+ * Delegates calls to the respective protocol encode for the protocol version the debug message should be encoded with.
+ * @param type Debug type of the message.
+ * @param size Size of the debug message.
+ * @return Pointer to an empty message with the generated header.
+ */
+struct Message* encode_debug(unsigned char type, unsigned int size);
+
+/**
  * Delegates calls to the respective protocol encoder for the protocol version the data message should be encoded with.
  * @param pid Id of the port, from which the message is originated.
  * @param size Size of the message in 4-byte blocks (i.e. count of integer values).

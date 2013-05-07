@@ -25,3 +25,8 @@ struct Message* encode_data_v2(unsigned char pid, unsigned int size) {
 	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
 	return -1;
 }
+
+struct Message* encode_debug_v2(unsigned char type, unsigned int size) {
+	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
+	return -1;
+}

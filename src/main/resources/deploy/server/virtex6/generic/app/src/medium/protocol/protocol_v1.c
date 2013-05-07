@@ -150,3 +150,9 @@ struct Message* encode_data_v1(unsigned char pid, unsigned int size) {
 	return m;
 }
 
+struct Message* encode_debug_v1(unsigned char type, unsigned int size) {
+	struct Message *m = message_new();
+	int header = (version << 24) + (debug << 20) + (type << 16) + size;
+	message_header(m, &header, 1);
+	return m;
+}

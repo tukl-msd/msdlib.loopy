@@ -46,9 +46,9 @@ public class CPPBDLVisitor extends Visitor<NE> {
         String clientSrc = new File(config.clientDir(), "src").getPath();
         String clientApi = new File(clientSrc, "api").getPath();
         
-        comps = MFile(MDocumentation(Strings()), "components", clientApi, MDefinitions(),
+        comps = MFile(MDocumentation(Strings()), "components", clientApi, MPreProcDirs(),
                 MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
-        consts = MFile(MDocumentation(Strings()), "constants", clientSrc, MDefinitions(),
+        consts = MFile(MDocumentation(Strings()), "constants", clientSrc, MPreProcDirs(),
                 MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         
         comps  = addDoc(comps,  "Describes user-defined IPCores and instantiates all cores present within this driver.");
@@ -69,13 +69,13 @@ public class CPPBDLVisitor extends Visitor<NE> {
         }
 
         // add derived constants 
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "If set, enables additional console output for debugging purposes"
             )), MModifiers(PUBLIC()), "DEBUG", debug ? "1" : "0"));
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "Defines the default size of the boards hardware queues."
             )), MModifiers(PUBLIC()), "QUEUE_SIZE_HW", String.valueOf(queueSizeHW)));
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "Defines the default size of the boards software queues.",
                 "This is equivalent with the maximal number of values, " +
                 "that should be send in one message"
@@ -87,16 +87,16 @@ public class CPPBDLVisitor extends Visitor<NE> {
         visit(term.cores());
         visit(term.insts());
         
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "The number of in-going component ports"
             )), MModifiers(PUBLIC()),  "IN_PORT_COUNT", String.valueOf(pi)));
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "The number of out-going component ports"
             )), MModifiers(PUBLIC()), "OUT_PORT_COUNT", String.valueOf(po)));
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "The number of gpi components"
             )), MModifiers(PUBLIC()), "GPI_COUNT", String.valueOf(gpi)));
-        consts = add(consts, MDefinition(MDocumentation(Strings(
+        consts = add(consts, MDef(MDocumentation(Strings(
                 "The number of gpo components"
             )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo)));
     }
@@ -110,11 +110,11 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(ETHERNETPos term) {
         for(MOption opt : term.opts().term()) {
             if(opt instanceof IP) {
-                consts = add(consts, MDefinition(
+                consts = add(consts, MDef(
                     MDocumentation(Strings("IP for Ethernet communication")),
                     MModifiers(PUBLIC()), "IP", "\"" + ((IP)opt).val() + "\"")); 
             } else if(opt instanceof PORTID) {
-                consts = add(consts, MDefinition(
+                consts = add(consts, MDef(
                     MDocumentation(Strings("Data port for Ethernet communication")),
                     MModifiers(PUBLIC()), "PORT", ((PORTID)opt).val().toString()));
             }

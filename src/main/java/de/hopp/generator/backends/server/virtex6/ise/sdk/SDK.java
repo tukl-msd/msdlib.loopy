@@ -19,6 +19,7 @@ import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
+import de.hopp.generator.model.MPreProcDir;
 import de.hopp.generator.model.MProcedure;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHS;
@@ -158,12 +159,12 @@ public class SDK extends Visitor<NE> {
     private void setupFiles() {
         components = MFile(MDocumentation(Strings(
                 "Contains component-specific initialisation and processing procedures."
-            )), "components", new File(targetSrc, "components").getPath(), MDefinitions(),
+            )), "components", new File(targetSrc, "components").getPath(), MPreProcDirs(),
             MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
         constants  = MFile(MDocumentation(Strings(
                 "Defines several constants used by the server.",
                 "This includes medium-specific configuration."
-            )), "constants", targetSrc.getPath(), MDefinitions(),
+            )), "constants", targetSrc.getPath(), MPreProcDirs(),
             MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
     }
     
@@ -251,7 +252,8 @@ public class SDK extends Visitor<NE> {
     
     @Override
     public void visit(BDLFilePos term) {
-        // add queue size constants
+        
+        // determine top level options
         boolean debug = false;
         int queueSizeHW = defaultQueueSizeHW, queueSizeSW = defaultQueueSizeSW;
         for(Option o : term.opts().term()) {
@@ -259,7 +261,17 @@ public class SDK extends Visitor<NE> {
            if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
            if(o instanceof DEBUG)   debug = true;
         }
+        
+        // add debug constants
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
+        if(debug) addConst("print(...)", "xil_printf(__VA_ARGS__)",
+            "With the chosen debug level, debug output will be sent over the JTAG cable."
+        );
+        else addConst("print(...)", "",
+            "With disabled debugging, calls to the print method are simply removed."
+        );
+
+        // add queue size constants
         addConst("HW_QUEUE_SIZE", String.valueOf(queueSizeHW), "Size of the queues implemented in hardware.");
         addConst("SW_QUEUE_SIZE", String.valueOf(queueSizeSW), "Size of the queues on the microblaze.");
         addConst("ITERATION_COUNT", String.valueOf(maxQueueSize(term.term())),
@@ -480,7 +492,7 @@ public class SDK extends Visitor<NE> {
                     "Reads values from the medium, shifts values between Microblaze and VHDL components,",
                     "and writes results back to the medium."
                 ), AUTHOR("Thomas Fischer"), SINCE("18.02.2013")
-                ), "scheduler", targetSrc.getPath(), MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(
+                ), "scheduler", targetSrc.getPath(), MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures(
                     MProcedure(
                         MDocumentation(Strings(
                             "Starts the scheduling loop.",
@@ -494,7 +506,7 @@ public class SDK extends Visitor<NE> {
              );
         } else {
             scheduler = MFile(MDocumentation(Strings()
-                ), "scheduler", targetSrc.getPath(), MDefinitions(), MStructs(), MEnums(), MAttributes(), MProcedures(
+                ), "scheduler", targetSrc.getPath(), MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures(
                     MProcedure(
                         MDocumentation(Strings()), MModifiers(), MVoid(), "schedule", MParameters(), MCode(
                             Strings().addAll(((USER_DEFINED)term.code().term()).content()),
@@ -649,7 +661,7 @@ public class SDK extends Visitor<NE> {
         init = addLines(init, MCode(Strings("init_switches();"),
                 MForwardDecl("int init_switches()")));
 
-        components = add(components, MDefinition(MDocumentation(Strings(
+        components = add(components, MDef(MDocumentation(Strings(
                 "Identifier of the switch component"
                 )), MModifiers(PRIVATE()), "gpo_switches", String.valueOf(gpoCount++)));
         
@@ -689,7 +701,7 @@ public class SDK extends Visitor<NE> {
         init = addLines(init, MCode(Strings("init_buttons();"),
                 MForwardDecl("int init_buttons()")));
         
-        components = add(components, MDefinition(MDocumentation(Strings(
+        components = add(components, MDef(MDocumentation(Strings(
                 "Identifier of the button component"
                 )), MModifiers(PRIVATE()), "gpo_buttons", String.valueOf(gpoCount++)));
         
@@ -734,9 +746,13 @@ public class SDK extends Visitor<NE> {
         addConst("MAC_5", "0x" + mac[4], "The fifth  8 bits of the MAC address of this board.");
         addConst("MAC_6", "0x" + mac[5], "The sixth  8 bits of the MAC address of this board.");
     }
+
+    private void addConst(MPreProcDir dir) {
+        constants = add(constants, dir);
+    }
     
     private void addConst(String id, String val, String doc) {
-        constants = add(constants, MDefinition(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val));
+        constants = add(constants, MDef(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val));
     }
     
     private MHSFile addBlock(MHSFile file, Block block) {

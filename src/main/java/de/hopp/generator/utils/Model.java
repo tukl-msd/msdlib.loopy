@@ -10,8 +10,8 @@ public class Model {
     public static MFile add(MFile file, MAttribute a) {
         return file.replaceAttributes(file.attributes().add(a));
     }
-    public static MFile add(MFile file, MDefinition d) {
-        return file.replaceDefs(file.defs().add(d));
+    public static MFile add(MFile file, MPreProcDir dir) {
+        return file.replaceDirs(file.dirs().add(dir));
     }
     public static MFile add(MFile file, MProcedure p) {
         return file.replaceProcedures(file.procedures().add(p));

@@ -65,7 +65,7 @@ public class CUnparser extends HUnparser {
         }
         
         // unparse components
-        visit(file.defs());
+        visit(file.dirs());
         visit(file.structs());
         visit(file.enums());
         visit(file.attributes());
@@ -74,14 +74,14 @@ public class CUnparser extends HUnparser {
     }
 
     @Override
-    public void visit(MDefinitionsInFile defs) throws InvalidConstruct {
-        defs = filter(defs, PRIVATE());
-        if(defs.size() > 0) {
+    public void visit(MPreProcDirsInFile dirs) throws InvalidConstruct {
+        dirs= filter(dirs, PRIVATE());
+        if(dirs.size() > 0) {
             // append comment
             buffer.append("\n// definitions of " + name + "");
             
             // unparse the contained structs
-            for(MDefinitionInFile def : defs) visit(def);
+            for(MPreProcDirInFile dir : dirs) visit(dir);
             buffer.append('\n');
         }
     }

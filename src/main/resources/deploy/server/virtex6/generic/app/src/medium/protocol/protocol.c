@@ -79,3 +79,13 @@ struct Message* encode_data(unsigned char pid, unsigned int size) {
 		return encode_data_v1(pid, size);
 	}
 }
+
+struct Message* encode_debug(unsigned char type, unsigned int size) {
+	switch(PROTO_VERSION) {
+	case 1: return encode_debug_v1(type, size);
+	case 2: return encode_debug_v2(type, size);
+	default:
+		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+		return encode_debug_v1(type, size);
+	}
+}

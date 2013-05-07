@@ -51,4 +51,12 @@ struct Message* encode_gpio_v1(unsigned char gid, unsigned char val);
  */
 struct Message* encode_data_v1(unsigned char pid, unsigned int size);
 
+/**
+ * Generates the header for a debug message with protocol version 1.
+ * @param type Debug type of the message.
+ * @param size Size of the debug message in 4-byte blocks.
+ * @return Pointer to an empty message with the generated header.
+ */
+struct Message* encode_debug_v1(unsigned char type, unsigned int size);
+
 #endif /* PROTOCOL_V1_H_ */
