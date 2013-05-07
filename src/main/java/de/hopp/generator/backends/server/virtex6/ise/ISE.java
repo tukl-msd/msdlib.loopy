@@ -139,11 +139,12 @@ public abstract class ISE implements ProjectBackendIF {
         }
     }
 
-    /** Starts whatever external tool is responsible for generation of the BIT file */
+    /**
+     * Starts whatever external tool is responsible for generation of the BIT file
+     */
     protected void generateBITFile(Configuration config, ErrorCollection errors) {
         BufferedReader input = null;
         
-        System.err.println("running!");
         try {
             String line;
             Process p = new ProcessBuilder("xps", "-nw")
@@ -174,9 +175,9 @@ public abstract class ISE implements ProjectBackendIF {
             while ((line = input.readLine()) != null)
                config.IOHANDLER().verbose("      " + line);
         } catch (IOException e) {
-            errors.addWarning(new Warning(e.getMessage()));
+            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
         } catch (InterruptedException e) {
-            errors.addWarning(new Warning(e.getMessage()));
+            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
         } finally {
             try { 
                 if(input != null) input.close();

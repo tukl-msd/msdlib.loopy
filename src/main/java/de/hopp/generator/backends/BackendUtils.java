@@ -35,8 +35,15 @@ public class BackendUtils {
     }
     
     public static void printMFile(MFile mfile, UnparserType type, ErrorCollection errors) {
-        
-        File target = new File (mfile.directory());
+
+        // setup target file
+        File target;
+        switch(type) {
+        case HEADER : target = new File(mfile.directory(), mfile.name() +   ".h"); break;
+        case C      : target = new File(mfile.directory(), mfile.name() +   ".c"); break;
+        case CPP    : target = new File(mfile.directory(), mfile.name() + ".cpp"); break;
+        default     : throw new IllegalStateException("invalid unparser");
+        }
         
         // setup buffer
         StringBuffer buf = new StringBuffer(16384);
@@ -50,15 +57,7 @@ public class BackendUtils {
         } catch (InvalidConstruct e) {
             errors.addError(new GenerationFailed(e.getMessage()));
         }
-               
-        // append model name and file extension according to used unparser
-        switch(type) {
-        case HEADER : target = new File(target, mfile.name() +   ".h"); break;
-        case C      : target = new File(target, mfile.name() +   ".c"); break;
-        case CPP    : target = new File(target, mfile.name() + ".cpp"); break;
-        default     : throw new IllegalStateException("invalid unparser");
-        }
-        
+
         // print buffer contents to file
         try {
             printBuffer(buf, target);
@@ -94,7 +93,7 @@ public class BackendUtils {
      * @throws IOException error during file creation or the print
      */
     public static void printBuffer(StringBuffer buf, File target) throws IOException {
-        // create the files and parent directories if they don't exist
+        // create the file and parent directories if they don't exist
         if(target.getParentFile() != null && ! target.getParentFile().exists())
             target.getParentFile().mkdirs();
         if(! target.exists())
@@ -124,7 +123,7 @@ public class BackendUtils {
             if(rslt != 0) {
                 errors.addWarning(new Warning("failed to generate api specification at " +
                         dir.getPath() + ".run in verbose mode for more information"));
-//                if(! config.VERBOSE()) return; // this line is just for performance, but bloats method signature :(
+                if(! IO.config.VERBOSE()) return;
             }
             
             // if verbose, echo the output of doxygen

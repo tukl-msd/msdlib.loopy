@@ -1,6 +1,6 @@
 package de.hopp.generator.frontend;
 
-import static de.hopp.generator.frontend.BDL.*;
+import static org.apache.commons.io.FilenameUtils.getBaseName;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,9 +11,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-
-import static org.apache.commons.io.FilenameUtils.getName;
-import static org.apache.commons.io.FilenameUtils.getBaseName;
 
 import java_cup.runtime.Symbol;
 import de.hopp.generator.ErrorCollection;
@@ -101,27 +98,6 @@ public class Parser {
         return file1;
     }
         
-    private BDLFile testfile() {
-        Position pos = Position("",0);
-        Imports imp = Imports(Import("sample2.bdf", pos));
-        
-        return BDLFile(Imports(), Backends(), Options(), 
-                Cores(
-                   Core("adder", "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos), Port("in2",IN(),pos)),
-                   Core("fifo",  "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos)),
-                   Core("rng",   "1.00.a", pos,imp, Port("in1",IN(),pos), Port("out1",OUT(),pos))
-                ), GPIOs(
-                    GPIO("leds",     OUT(),pos,DEFAULT()),
-                    GPIO("switches",  IN(),pos,DEFAULT()),
-                    GPIO("buttons",   IN(),pos,DEFAULT())
-                ), Instances(
-                    Instance("rng_a",   "rng",   "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
-                    Instance("rng_b",   "rng",   "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos)),
-                    Instance("adder_a", "adder", "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos), CPUAxis("in2",pos)),
-                    Instance("fifo_a",  "fifo",  "1.00.a", pos, CPUAxis("in1",pos), CPUAxis("out1",pos))
-                ), ETHERNET(pos,MAC(pos,"00:0a:35:00:01:02")), Scheduler(pos,DEFAULT()));
-    }
-    
     /**
      * Checks several conditions, which are assumed to hold for the model.
      * Adds errors to the error collection of the parser, if conditions

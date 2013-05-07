@@ -19,7 +19,6 @@ import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MPreProcDir;
 import de.hopp.generator.model.MProcedure;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHS;
@@ -747,10 +746,6 @@ public class SDK extends Visitor<NE> {
         addConst("MAC_6", "0x" + mac[5], "The sixth  8 bits of the MAC address of this board.");
     }
 
-    private void addConst(MPreProcDir dir) {
-        constants = add(constants, dir);
-    }
-    
     private void addConst(String id, String val, String doc) {
         constants = add(constants, MDef(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val));
     }
