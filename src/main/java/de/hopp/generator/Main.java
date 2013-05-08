@@ -97,7 +97,7 @@ public class Main {
 //        IO.println("                       console output.");
         IO.println();
         IO.println(" ---------- miscellaneous ----------");
-        IO.println(" -p --parseonly        check only for parser errors");
+        IO.println(" -o --parseonly        check only for parser errors");
         IO.println(" -n --dryrun           don't execute the generator phase of");
         IO.println("                       the backends, i.e. analyze only");
         IO.println("    --config <file>    supplies the generator with a config file containing");
@@ -362,7 +362,7 @@ public class Main {
                 config.enableQuiet();
                 
             // PROGRESS flags
-            } else if(args[i].equals("--parseonly")) {
+            } else if(args[i].equals("-o") || args[i].equals("--parseonly")) {
                 config.enableParseonly();
             } else if(args[i].equals("-n") || args[i].equals("--dryrun")) {
                 config.enableDryrun();

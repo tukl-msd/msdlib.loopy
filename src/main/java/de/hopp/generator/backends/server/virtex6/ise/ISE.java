@@ -143,16 +143,26 @@ public abstract class ISE implements ProjectBackendIF {
      * Starts whatever external tool is responsible for generation of the BIT file
      */
     protected void generateBITFile(Configuration config, ErrorCollection errors) {
-        BufferedReader input = null;
+        config.IOHANDLER().println("running xps synthesis (this may take some time) ...");
         
-        try {
-            String line;
-            Process p = new ProcessBuilder("xps", "-nw")
-                .directory(edkDir(config)).redirectErrorStream(true).start();
-            input     = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+        BufferedReader input = null;
 
-            PrintWriter pWriter = new PrintWriter(p.getOutputStream());
+        try {
+            // setup process builder (all of this would be soooo much easier with Java 7 ;)
+            ProcessBuilder pb = new ProcessBuilder("xps", "-nw").directory(edkDir(config));
+            if(config.VERBOSE()) pb = pb.redirectErrorStream(true);
             
+            // start the process
+            Process p = pb.start();
+
+            // get output stream of the process (which is an input stream for this program)
+            if(config.VERBOSE())
+                input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            else
+                input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+            // feed the required commands to the spawned process
+            PrintWriter pWriter = new PrintWriter(p.getOutputStream());
             pWriter.println("xload new system.xmp virtex6 xc6vlx240t ff1156 -1");
             pWriter.println("save proj");
             pWriter.println("xset parallel_synthesis yes");
@@ -162,18 +172,16 @@ public abstract class ISE implements ProjectBackendIF {
             pWriter.println("exit");
             pWriter.close();
             
+            // print the output stream of the process
+            String line;
+            while((line = input.readLine()) != null)
+                config.IOHANDLER().println(line);
+            
             // wait for the process to terminate and store the result
             int rslt = p.waitFor();
             
             // if something went wrong, print a warning
-            if(rslt != 0) {
-                errors.addWarning(new Warning("failed to generate .bit file."));
-                if(! config.VERBOSE()) return; // this line is just for performance, but bloats method signature :(
-            }
-            
-            // if verbose, echo the output of doxygen
-            while ((line = input.readLine()) != null)
-               config.IOHANDLER().verbose("      " + line);
+            if(rslt != 0) errors.addWarning(new Warning("failed to correctly terminate xps process"));
         } catch (IOException e) {
             errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
         } catch (InterruptedException e) {
