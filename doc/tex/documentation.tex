@@ -665,12 +665,17 @@ In our case, the components are attached with AXI stream interfaces, but using o
 \label{sec:arch:queue}
 Due to restricted resources on the board and desired parallelism between the different components and ports, queueing is an important aspect of the driver and different kinds of queues are introduced.
 
-The first and most important queue is the client-side \textit{write queue}. Such a queue is introduced for each in-going port. Writing to a port does not directly result in a message sent to the board, since the board has restricted resources and may not be able to process or even store the value. The client queue provides a first mechanism of \textit{flow control}. Values are queued up at the client, when the board buffers have been filled and no more values can be received, until the board signals that it can receive more values now.
-Additionally, the client buffer offers \textit{congestion avoidance} to a small degree, since several small values can be packaged together in one message. This results in a smaller amount of messages being sent over the medium.
+The first and most important type of queues are the host-side \textit{task queues}. Such a queue is introduced for each port and stores operations performed by the user. A write operation does not immediately result in a message sent to the board.
 
-The client also contains \textit{read queues} for each out-going port. These queues cache values received by the board for read operations performed by the application. These queues lead to smaller resource consumption on the board, since only a small number of out-going values have to be cached. Read queues are assumed to be infinitely long. Values are \textit{forwarded} from the board into theses queues automatically (cf. \Cref{sec:arch:fwd}). Read cycles are faster, since no polling messages have to be sent but available values can directly be consumed.
+An asynchronous write returns without its values being sent to the board. Even worse, the board may not be able to receive (all) values at this time and require the host to (re)transmit values at a later time. 
+To enable delayed transmission or retransmission of value without stalling the application, queueing of these values is necessary. This is done within the so-called \textit{task queues}. For in-going ports, theses queues store write operations, all their values, and the number values, that have already been acknowledged by the board. Out-going ports also have a task queue, storing the number of already read values and a memory area, to where they have been read.
 
-With only client-queues, the board-side driver would only be capable of receiving and processing a single value at a time, which has to be directly written to a component, resulting in an increase of messages and therefore communication overhead. In order to enable reception of multiple values at once, a \textit{board-side queue} (or \textit{software queue}) is introduced for each in-going port on the board as well. Received values are stored in these queues first and forwarded to the target component later on, if the component can process further values. In contrast to the client-side queues, are size-restricted and can only hold a certain number of values, specified in the board description file.
+The write task queues provide a first mechanism of \textit{flow control}. Values are queued up at the host, when the board buffers have been filled and no more values can be received, until the board signals that it can receive more values now.
+Additionally, they offer \textit{congestion avoidance} to a small degree, since several small write operations can be packaged together in one message. This reduces the overall number of messages being sent and in accordance the communication overhead produced.
+
+Host-side out-going ports define a second queue, the \textit{value queue}. These queues cache values received by the board. Host-side caching of values reduces read cycles by the application, since values are readily available when a read operation is performed. Resource consumption on the board can be lowered, since only a small number of values have to be cached board-side. Read queues are usually assumed to be infinitely long and values are \textit{forwarded} from the board into theses queues automatically (cf. \Cref{sec:arch:fwd}).
+
+With only host-side queues, the board-side driver would only be capable of receiving and processing single values at a time, which have to be directly written to a component. Naturally, sending each value individually results in an increase of messages and therefore communication overhead. To enable reception of multiple values at once, a \textit{board-side queue} (or \textit{software queue}) is introduced for each in-going port on the board. Received values are stored in these queues first and forwarded to the target component later on, if the component can process further values. In contrast to the client-side queues, are size-restricted and can only hold a certain number of values, specified in the board description file.
 Similar queues are introduced for out-going ports, to reduce traffic caused by values being sent back to the host-side driver. These queues cache results from components which are then send in one message.
 
 Since the FPGA usually only has a single processor and is not capable of multi-threading, the board-side driver can only perform a single operation at a time. If a component finished processing and requires a new value to continue, it has to wait until the driver serves the corresponding in-going port. To reduce this downtime and increase overall throughput, a queue is implemented in hardware and placed in between the component and the stream interface of the processor. These \textit{hardware queues} provide the component with a new value as soon as required. Re-filling of the hardware queue may take several cycles, but values can then be written en block without regarding the computation speed of the attached component. Since hardware queues are actually less efficient in terms of resource consumptions on the board than the software queues, they should be even smaller in size. Again, similar queues on out-going ports cache results, so the component does not have to wait for the driver thread to read the value from the port before the next computation.
@@ -708,11 +713,11 @@ The threads have to be started with a special method \texttt{startup()} before u
 
 \subsection{Bitwidth Translation}
 \label{sec:arch:bitwidth}
-As described in \Cref{sec:api:port}, ports allow arbitrary bitwidth. As the size of the AXI stream interface directly connected to the FPGAs processor is usually fixed, translation to this fixed size has to occur somewhere in between. Performing this translation on-board consumes limited board resources. Doing the translation on the client however increases communication overhead. Depending on the application, both solutions can make sense.
+As described in \Cref{sec:api:port}, ports allow arbitrary bitwidth. As the size of the AXI stream interface directly connected to the FPGAs processor is usually fixed, width translation has to occur somewhere in between. Performing this translation on-board consumes limited board resources. Doing the translation on the client however increases communication overhead, since padding bits have to be sent for non-32-bit-aligned values. Depending on the application, both solutions can make sense.
 
-A board-side translation requires send messages to be augmented with the bit-size of each value. Values can than be padded and/or split, according to the required and the actual bitwidth. This translation is individual for each port.
+Generally, the translation is performed by splitting and padding of values. If the value is smaller than a multiple of the target bitwidth, it is padded with leading zeroes. The value is then split into fragments with the target bitwidth. Reassembly of the value always has to occur in hardware after the values have been sent over the FPGA processors AXI stream interface. To increase memory efficiency of the hardware queues, reassembly is performed before these queues. % oh my... if this takes longer than storing a value, we might run into scheduling problems here... The scheduler will only write a single value and the return only for the next iteration ): --> computation speed vs memory efficiency... always the same problem (;
 
-A client-side translation does not require the bit-size to be transmitted. Padding and translation in this case is done immediately before transmission. This reduces the required memory for client-side queueing compared to direct padding before the client-side queue. Re-translation to the actual bitwidth has to be done directly after the AXI stream interface of the processor.
+Since bitwidth sizes are expected to mostly fit multiples of the processors interface (32-bit in the case of a virtex6 microblaze), we chose the approach of host-side translation. In this case, the bitwidth is hidden from the I/O threads and the write and read states provide a view in 32-bit as well as a view in their actual bitwidth.
 
 \section{Protocol}
 \label{sec:protocol}
@@ -751,18 +756,12 @@ Messages are exchanged between the application and the client-side driver, as we
   \item \textbf{poll} A request message for additional data.
 \end{itemize}
 
-% TODO: restructure this section
-% Currently: Split after deployment location, i.e. host-side and board-side CFGs
-% New: Split after port type, i.e. in-going and out-going.
-%     in-going describes both, host-side and board-side
-%     out-going also references polling ports
-%     these look very similar to in-going ports (probably identical)
-%     only difference at first glance: queues are of limited size --> cannot always store
+The communication between host-side and board-side driver usually happens in the context of a port. Since messages sent to or from ports are independent from each other, each port maintains its own state and can perform transitions independent of the other ports. The following paragraphs describe the control flow of these ports. Note, that the host-side and board-side state of the same port directly interact with each other, i.e., exchange messages with each other.
 
-\subsubsection{Host-Side Driver}
-Since values can be written asynchronously, each port maintains its own state and can perform transitions independent of the other ports. The state of the host-side driver is constructed from the individual states of all ports.
+The state of a bi-directional port is represented by the concatenation of the corresponding states for in-going and out-going ports. The overall state of the host-side, or board-side driver respectively, is constructed by concatenation of the individual states of all ports.
 
-The state of an in-going port is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of an in-going port is provided in \Cref{fig:cfg:hostIn}. Each state represents a combination of these variables. Changes to these variables are not explicitly denoted in the diagram.
+\subsubsection{In-going Ports}
+On the host, the state of an in-going port is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the task queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of an in-going port is provided in \Cref{fig:cfg:hostIn}. Each state represents a combination of these variables. Changes to these variables are not explicitly denoted in the diagram, but should be intuitive considering above method description.
 
 \begin{figure}[h]
 \centering
@@ -790,11 +789,41 @@ The state of an in-going port is physically represented by two variables \texttt
 \caption{Host-side control flow graph of an in-going port}
 \end{figure}
 
-Several loops have been left out in order to simplify the graph. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored. An application write in any state will result in the values to be appended to \texttt{q}.
+If a write from the application occurs (typically triggered by the user performing a write operation), the write operation and its values are stored in the task queue. if the task queue is not empty, the writer will take a peek at the first \texttt{n} values and send them to the board-side driver, also setting the transit counter correctly. It then waits for an acknowledgement of these values. Acknowledged values get removed from the task queue. If all values got acknowledged, the writer continues with the next set. Otherwise, it waits for a board-side poll request. Once the task queue has been cleared, the application is notified, in case the last performed write operation was a blocking one.
 
-The state of an out-going port is represented by two variables \texttt{q} and \texttt{r}. \texttt{q} is a queue of memory addresses, where values should be read to, \texttt{r} is a queue of values read from the medium but not from the application so far.
+Several loops have been left out in order to simplify the graph. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored. Other application writes in any state will result in the values to be appended to \texttt{q}.\\
 
-Values are automatically pushed forward from the board and stored in \texttt{r}. If the application requests a \texttt{read}, values are shifted from \texttt{r} into \texttt{q}. The application is notified, once all read requests have been served.
+
+On the board, an in-going ports state The state of a port on the board is represented by the corresponding software queue \texttt{q} and the corresponding hardware queue \texttt{r}.
+
+Since only a single thread can run on the FPGA, a scheduler determines which port can make a step. The default scheduler switches to a different port, once the current port cannot perform any more steps or has already performed a certain number of steps (i.e. a round robin like scheduler). It is possible for the user to define a scheduler better matching his application, if so desired.
+
+An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for received data packages and stores received values. If it has received values and can write to the hardware queue at some point, it switches to consuming received messages. Messages are then shifted from the software queue to the hardware queue, until either the hardware queue is filled or the software queue is emptied. If the software queue was full before shifting the first message, a poll is sent in addition. After shifting all values possible, the port switches back to listening for more values. 
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\coordinate(center);
+
+\node[state] (listen) at (0,0) {Listen};
+\node[above left = 2em and 4em] (anchor) at (listen){};
+\node[state, below=10em] (read) at (listen) {Consume};
+
+\draw[extend, black] (anchor) to node[auto] {} (listen);
+\draw[arr, black, out=330,in=30,looseness=6] (listen) to node[midway, right=0.5em] {$\inferrule{data(v)}{ack(store(q,v))}$} (listen);
+\draw[arr, black, bend right=20] (listen) to node[midway, left=0.2em] {$\inferrule{[!empty(q) ~\wedge~ !full(r)]}{ }$} (read);
+\draw[arr, black, bend right=20] (read) to node[midway, right=0.2em] {$\inferrule{ [empty(q) \vee full(r)]}{ }$} (listen);
+\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.2em] {$\inferrule{[full(q) ~ \wedge ~ !full(r)]}{store(r, take(q)) ~~ poll}$} (read);
+\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!full(q) ~ \wedge ~ !empty(q) ~\wedge~ !full(r)]}{store(r,take(q))}$} (read);
+\end{tikzpicture}
+\label{fig:cfg:boardIn}
+\caption{Board-side control flow graph of an in-going port}
+\end{figure}
+
+\subsubsection{Out-going Ports}
+The state of an out-going port on the host is represented by two queues \texttt{q} and \texttt{r}. \texttt{q} is the read task queue, which contains memory addresses, where values should be read to. \texttt{r} is the value queue, which stores values read from the medium but not requested from the application so far.
+
+For forwarding ports (see \Cref{fig:cfg:hostOut}), values are automatically pushed forward from the board and stored in th evalue queue. Similar, \texttt{read} requests from the application are stored in the task queue. While both are not empty, values are shifted from \texttt{r} into \texttt{q}. The application is notified, once all read requests have been served.
 
 \begin{figure}[h]
 \centering
@@ -819,39 +848,10 @@ Values are automatically pushed forward from the board and stored in \texttt{r}.
 
 \end{tikzpicture}
 \label{fig:cfg:hostOut}
-\caption{Host-side control flow graph of an out-going port}
+\caption{Host-side control flow graph of a forwarding, out-going port}
 \end{figure}
 
-
-\subsubsection{Board-side Driver}
-The state of the board-side driver is also represented as concatenation of the states of all ports. The state of a port on the board is represented by the corresponding software queue \texttt{q} and the corresponding hardware queue \texttt{r}.
-
-Since only a single thread can run on the FPGA, a scheduler determines which port can make a step. The default scheduler switches to a different port, once the current port cannot perform any more steps. It is possible for the user to define a more elaborate scheduler, if so desired.
-
-An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for received data packages and stores received values. If it has received values and can write to the hardware queue at some point, it switches to consuming received messages. Messages are then shifted from the software queue to the hardware queue, until either the hardware queue is filled or the software queue is emptied. If the software queue was full before shifting the first message, a poll is sent in addition. After shifting all values possible, the port switches back to listening for more values. 
-
-\begin{figure}[h]
-\centering
-\begin{tikzpicture}
-\coordinate(center);
-
-\node[state] (listen) at (0,0) {Listen};
-\node[above left = 2em and 4em] (anchor) at (listen){};
-\node[state, below=10em] (read) at (listen) {Consume};
-
-\draw[extend, black] (anchor) to node[auto] {} (listen);
-\draw[arr, black, out=330,in=30,looseness=6] (listen) to node[midway, right=0.5em] {$\inferrule{data(v)}{ack(store(q,v))}$} (listen);
-\draw[arr, black, bend right=20] (listen) to node[midway, left=0.2em] {$\inferrule{[!empty(q) ~\wedge~ !full(r)]}{ }$} (read);
-\draw[arr, black, bend right=20] (read) to node[midway, right=0.2em] {$\inferrule{ [empty(q) \vee full(r)]}{ }$} (listen);
-\draw[arr, black, out=330, in=30, looseness=6] (read) to node[midway, right=0.2em] {$\inferrule{[full(q) ~ \wedge ~ !full(r)]}{store(r, take(q)) ~~ poll}$} (read);
-\draw[arr, black, out=210, in=150, looseness=6] (read) to node[midway, left=0.2em] {$\inferrule{[!full(q) ~ \wedge ~ !empty(q) ~\wedge~ !full(r)]}{store(r,take(q))}$} (read);
-\end{tikzpicture}
-\label{fig:cfg:boardIn}
-\caption{Board-side control flow graph of an in-going port}
-\end{figure}
-
-\newpage
-The out-going port is even simpler (see \Cref{fig:cfg:boardOut}). It shifts values from the hardware queue to the software queue as long as possible. Then it sends a data message with all values contained in the software queue.
+On the board, out-going ports are also represented by their software and hardware queues \texttt{q} and \texttt{r}. The board representation is comparably simple (\Cref{fig:cfg:boardOut}), since no incoming messages have to be processed. Instead, values are simply shifted to the software queue as long as possible, i.e., until either the hardware queue is emptied or the software queue is filled. All collected values are then transmitted to the host-side driver.
 
 \begin{figure}[h]
 \centering
@@ -866,10 +866,15 @@ The out-going port is even simpler (see \Cref{fig:cfg:boardOut}). It shifts valu
 \draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=0.5em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q,n))}$} (listen);
 \end{tikzpicture}
 \label{fig:cfg:boardOut}
-\caption{Board-side control flow graph of an out-going port}
+\caption{Board-side control flow graph of a forwarding, out-going port}
 \end{figure}
 
-A polling port is slightly more complex, since it can only send, it values are requested. Once a poll arrives, the ports poll counter \texttt{s} is incremented by the number of requested values. If the poll counter is greater than zero, the port may start sending values. The port is only allowed to send as many messages as requested, but is also restricted by the software queue size \texttt{n}. Consequently, it can only send \texttt{max(s,n)} values per step.
+\subsubsection{Polling Ports}
+Polling ports mark a more complex out-going port, that does not automatically forward, but explicitly request values. Consequently, a \texttt{poll} message is introduced.
+
+The change for a host-side port is negligible. A \texttt{poll} is sent to the board-side driver, whenever a read request is dispatched from the application. This also happens once initially, in order to fill the value queue (if it has a size > 0).
+
+The board-side graph gets slightly more complex, since it now also has to process incoming messages. The state of the port gets augmented with a \textit{poll counter} \texttt{s}, storing the number of requested, yet unserviced values. Poll requests are simply added to the counter. If the poll counter is greater than zero, the port may start sending values. The port is only allowed to send as many messages as requested, but is also restricted by the software queue size \texttt{n}. Consequently, it can only send \texttt{max(s,n)} values per step.
 
 \begin{figure}[h]
 \centering
@@ -894,7 +899,7 @@ A polling port is slightly more complex, since it can only send, it values are r
 %\draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=0.5em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q,n))}$} (listen);
 \end{tikzpicture}
 \label{fig:cfg:boardOut}
-\caption{Board-side control flow graph of an out-going port}
+\caption{Board-side control flow graph of a polling, out-going port}
 \end{figure}
 
 \subsection{Message Encoding}
@@ -983,6 +988,8 @@ While it is possible to provide debug output over the JTag cable, the FPGA is pr
 
 \subsection{Sequence charts}
 \label{sec:protocol:sequence}
+
+\textcolor{red}{ignore this section in the current form and all sequence diagrams occurring within this document... It will be rewritten using a dedicated tool for sequence diagrams (also with updated sequence diagrams)}
 
 The following sequence charts describe typical interaction patterns and offer a different view than the control flow graphs in \Cref{sec:protocol:cfg}. They use the same methods and messages as declared earlier, but may introduce additional ones. The intended functionality of these methods should be obvious from the name and parameters.,
 
@@ -1361,7 +1368,7 @@ The current implementations include a \texttt{C++} host-side driver and a board-
 
 \subsection{C++ Host-Side Driver}
 \label{sec:impl:cpp}
-The following sections will highlight selected, important aspects of the \texttt{C++} implementation of the host-side driver.
+The following sections will highlight selected, important aspects of the \texttt{C++} implementation of the host-side driver. For a more detailed description of individual classes and methods, please refer to to the API specification generated by doxygen (remove the \texttt{EXCLUDE\_SYMBOLS} parameter in \texttt{doxygen.cfg} and re-run doxygen to get documentation for all classes) and code level documentation.
 
 \subsubsection{Structure}
 The host side driver is structured roughly into three groups of files and classes, located in different folders. The folder \textit{api} contains everything, the application should have access to, i.e., components and ports. The folder \textit{io} contains files handling communication between host-side driver and the medium. These files are not required directly by an application. The third group of files contains utility classes used by both io and api. These files are simply located in the root folder of the driver.
@@ -1370,7 +1377,7 @@ The api files used by the application have been described in some detail in \Cre
 
 \subsubsection{I/O Handler}
 The driver implements two separate threads for write and read operations, which has been presented as preferred solution in \Cref{sec:arch:threads}.
-The reading thread utilizes the \texttt{select} method defined in TCP, which waits for incoming messages without consuming CPU resources. The writing thread iterates over all in-going ports, until an iteration writes no values. If this happens, it starts waiting for new data, an acknowledgement or a poll.
+The reading thread utilizes the \texttt{select} method defined in TCP, which waits for incoming messages without consuming CPU resources. The writing thread iterates over all in-going ports and sleeps afterwards. A global writer lock ensures, that the writer is indeed notified correctly if new data, an acknowledgement or a poll arrive.
 
 \subsubsection{Communication medium}
 The communication medium is part of the I/O handler of the driver and wraps lower-level communication (essentially transport layer and below) between host and board driver. The communication medium abstracts from the actually used technology and provides a homogeneous api for the I/O threads. Network interface specific initialisation is generated as well and is not required by the user (other than annotating configuration details in the board description).
@@ -1397,7 +1404,7 @@ While communication over USB/UART is rather slow, it provides a more simple meth
 
 
 \subsection{Virtex 6 ML 605 Board-Side Driver}
-The following sections will highlight selected, important aspects of the implementation of the Virtex-6 ML605 board-side driver.
+The following sections will highlight selected, important aspects of the implementation of the Virtex-6 ML605 board-side driver. For a more detailed description of individual classes and methods, please refer to to the API specification generated by doxygen and code level documentation.
 
 \subsubsection{Structure}
 The board-side driver is structured similarly to the host-side driver. There are three groups of files, located in dedicated folders. 
@@ -1413,21 +1420,71 @@ The main method for the board-side driver thread is located in the \texttt{main.
 \subsubsection{Scheduler}
 The default scheduling loop performs the following operations:
 
-First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going microblaze queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
+\begin{lstlisting}[language=c, breaklines=true]
+unsigned int pid;
+unsigned int i;
 
-The loop also shifts messages from in-going microblaze queues to in-going hardware queues and vice versa from out-going hardware queues to the out-going microblaze queue. Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium. 
+while(1) {
+  // receive a package from the interface
+  // stores data packages in sw queue
+  medium_read();
+\end{lstlisting}
+
+First, it checks for incoming messages and process their contents. Most of the time, this includes storing values in the in-going software queue and acknowledging them. More details about message handling can be found in \Cref{sec:protocol}.
+
+\begin{lstlisting}[language=c, breaklines=true]
+  // write data from sw queue to hw queue (if possible)
+  for(pid = 0; pid < IN_STREAM_COUNT; pid++) {
+    for(i = 0; i < inQueue[pid]->cap; i++) {
+      // go to next port if the sw queue is empty
+      if(inQueue[pid]->size == 0) break;
+        
+      // try to write the first value, skip if the hw queue is full
+      if(axi_write(peek(inQueue[pid]), pid)) break;
+        
+      // remove the read value from the queue
+      take(inQueue[pid]);
+  
+      // if the queue was full beforehand, poll
+      if(inQueue[pid]->size == inQueue[pid]->cap-1) send_poll(pid);
+    }
+  }
+\end{lstlisting}
+
+The loop also shifts messages from in-going software queues to in-going hardware queues and vice versa from out-going hardware queues to the out-going software queue.
+
+\begin{lstlisting}[language=c, breaklines=true]
+  // read data from hw queue (if available) and cache in sw queue
+  // flush sw queue afterwards
+  for(pid = 0; pid < OUT_STREAM_COUNT; pid++) {
+    for(i = 0; i < outQueueCap[pid] && ((!isPolling[pid]) || pollCount[pid] > 0); i++) {
+      // try to read, break, if it fails
+      if(axi_read(&outQueue[outQueueSize], pid)) break;
+      
+      // otherwise increment size counter
+      outQueueSize++;
+      
+      // decrement the poll counter, if the port was polling
+      if(isPolling[pid]) pollCount[pid]--;
+    }
+    
+    // flush sw queue
+    flush_queue(pid);
+    outQueueSize = 0;
+  }
+}
+\end{lstlisting}
+
+Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium.
 
 The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
 
-\subsubsection{Restrictions}
-This section covers restrictions of the Virtex 6 board and (if available) implemented workarounds.
-
-\paragraph{Port Count}
-The microblaze on the Virtex 6 only allows 16 AXI master interfaces and 16 AXI slave interfaces. As a result, only 16 in- and out-going ports can be specified when generating a Virtex 6 board driver. Circumventing this restriction is possible by implementation of a multiplexer which delegates values to one of several components, but this is left to the user.
-
-\paragraph{Bitwidth Translation}
+\subsubsection{Bitwidth Translation}
 As explained in \Cref{sec:arch} and \Cref{sec:protocol}, transmitted values are padded to a multiple of 32-bit for transmission and have to be re-translated at the board-side driver.
-Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the ARM) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values, in order to save some board resources.
+Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the ARM) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values.
+
+\subsubsection{Port Count}
+The microblaze on the Virtex 6 only allows 16 AXI master interfaces and 16 AXI slave interfaces. As a result, only 16 in- and out-going ports can be specified when generating a Virtex 6 board driver. Circumventing this restriction is possible by implementation of a multiplexer which delegates values to one of several components, but this is left to the user.
 
 
 \chapter{Generator}
