@@ -174,8 +174,8 @@ public class BoardUtils {
         return false;
     }
     
-    public static int getPollingCount(CPUAxisPos axis) {
-        // check, if there is a poll option, return if found
+    private static int getPollingCount32(CPUAxisPos axis) {
+     // check, if there is a poll option, return if found
         for(Option opt : axis.opts().term())
             if(opt instanceof POLL) return ((POLL)opt).count();
         
@@ -183,8 +183,25 @@ public class BoardUtils {
         return 0;
     }
     
-    public static int getSWQueueSize(CPUAxisPos axis) {
-        // if there is a local definition, return that
+    /**
+     * Get the defined value queue size parameter for this cpu axis.
+     * 
+     * The queue size is assumed to be specified in the actual bitwidth of connected the port.
+     * However, this method returns the corresponding size for queue with bitwidth of 32-bit.
+     * @param axis
+     * @return The size of a 32-bit queue required to hold the number of values requested by the user.
+     */
+    public static int getPollingCount(CPUAxisPos axis) {
+        return getPollingCount32(axis) * (int)Math.ceil(getWidth(axis) / 32.0); 
+    }
+
+    /**
+     * Get the defined software queue size parameter for this cpu axis.
+     * @param axis
+     * @return The queue size for the bound port specified by the user.
+     */
+    private static int getSWQueueSize32(CPUAxisPos axis) {
+     // if there is a local definition, return that
         for(Option opt : axis.opts().term())
             if(opt instanceof SWQUEUE) return ((SWQUEUE)opt).qsize();
         
@@ -196,6 +213,20 @@ public class BoardUtils {
         return defaultQueueSizeSW;
     }
     
+    /**
+     * Get the defined software queue size parameter for this cpu axis.
+     * 
+     * The queue size is assumed to be specified in the actual bitwidth of connected the port.
+     * However, this method returns the corresponding size for queue with bitwidth of 32-bit.
+     * This is required for calculating the size of value queues of polling ports and board-side
+     * software queues in general.
+     * @param axis
+     * @return The size of a 32-bit queue required to hold the number of values requested by the user.
+     */
+    public static int getSWQueueSize(CPUAxisPos axis) {
+        return getSWQueueSize32(axis) * (int)Math.ceil(getWidth(axis) / 32.0);
+    }
+    
     public static int getHWQueueSize(CPUAxisPos axis) {
         // if there is a local definition, return that
         for(Option opt : axis.opts().term())
@@ -205,7 +236,7 @@ public class BoardUtils {
         for(Option opt : axis.root().opts().term())
             if(opt instanceof HWQUEUE) return ((HWQUEUE)opt).qsize();
         
-        // otherwise, return the default queu size
+        // otherwise, return the default queue size
         return defaultQueueSizeHW;
     }
     

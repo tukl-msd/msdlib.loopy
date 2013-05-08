@@ -651,7 +651,7 @@ public class SDK extends Visitor<NE> {
         ));
     }
     
-    public void addSwitches() {
+    private void addSwitches() {
         // deploy switch files
         File target = new File(new File(targetSrc, "components"), "gpio");
         deployFiles.put(new File(gpioSrc, "switches.h"), new File(target, "switches.h"));
