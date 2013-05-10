@@ -179,7 +179,7 @@ public class Main {
         showStatus(false);
         
         // print the board (verbose only)
-        IO.verbose(printBoard(board.term()) + "\n");
+        IO.verbose(printBoard(board) + "\n");
         
         // print the raw board term (debug only)
         IO.debug(board.term().toString() + "\n");

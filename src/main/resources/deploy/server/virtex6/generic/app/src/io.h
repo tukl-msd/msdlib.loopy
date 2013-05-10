@@ -17,7 +17,7 @@
 /** Microblaze input queues */
 Queue *inQueue[IN_STREAM_COUNT];
 /** Microblaze output queue */
-int outQueue[SW_QUEUE_SIZE];
+int outQueue[MAX_OUT_SW_QUEUE_SIZE];
 /** capacity of the output queues */
 int outQueueCap[OUT_STREAM_COUNT];
 /** stores if the port is a polling port */

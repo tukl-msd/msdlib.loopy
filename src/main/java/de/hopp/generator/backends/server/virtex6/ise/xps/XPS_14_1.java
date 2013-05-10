@@ -2,7 +2,7 @@ package de.hopp.generator.backends.server.virtex6.ise.xps;
 
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getPort;
-import static de.hopp.generator.utils.BoardUtils.getSWQueueSize;
+import static de.hopp.generator.utils.BoardUtils.getSWQueueSize32;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 
 import java.io.File;
@@ -257,7 +257,7 @@ public class XPS_14_1 extends XPS {
             boolean direction = getPort(axis).direction().termDirection() instanceof IN;
 
             curBlock = add(curBlock, createCPUAxisBinding(
-                    axis.term(), direction, getWidth(axis), getSWQueueSize(axis)
+                    axis.term(), direction, getWidth(axis), getSWQueueSize32(axis)
             ));
         } catch (UsageError e) {
             errors.addError(e);

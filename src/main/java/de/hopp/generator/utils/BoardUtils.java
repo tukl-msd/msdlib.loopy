@@ -40,7 +40,7 @@ public class BoardUtils {
 //        }
 //        return false;
 //    }
-    
+//    
 //    public static boolean hasGpiComponent(Board board) {
 //        for(Component comp : board.components()) {
 //            if(comp.Switch(new Component.Switch<Boolean, NE>() {
@@ -57,10 +57,15 @@ public class BoardUtils {
 //        return false;
 //    }
     
-    public static String printBoard(BDLFile board) {
+    /**
+     * Generates a String representing the provided board description file.
+     * @param board The board description to be printed.
+     * @return A string representing the provided board description.
+     */
+    public static String printBoard(BDLFilePos board) {
         String rslt = "parsed the following board";
-        rslt += "\n  -debug: " + (debug(board) ? "yes" : "no");
-        rslt += "\n  -" + board.medium().Switch(new Medium.Switch<String, NE>() {
+        rslt += "\n  -debug: " + (isDebug(board) ? "yes" : "no");
+        rslt += "\n  -" + board.medium().termMedium().Switch(new Medium.Switch<String, NE>() {
             public String CaseNONE(NONE term) {
                 return "no medium";
             }
@@ -87,56 +92,31 @@ public class BoardUtils {
                 return rslt;
             }
         });
-        // TODO medium parameters
-        for(de.hopp.generator.frontend.GPIO gpio : board.gpios())
+        for(de.hopp.generator.frontend.GPIO gpio : board.gpios().term())
             rslt += "\n  -GPIO component " + gpio.name();
-        for(Instance inst : board.insts())
+        for(Instance inst : board.insts().term())
             rslt += "\n  -VHDL Component " + inst.name() + " (" + inst.core() + ")";
         return rslt;
     }
     
-//    public static String printBoard(Board board) {
-//        String rslt = "board has the following components";
-//        for(Component comp : board.components()) {
-//            rslt += comp.Switch(new Component.Switch<String, NE>(){
-//                public String CaseUART(UART term) {
-//                    return "\n    -uart";
-//                }
-//                public String CaseETHERNET_LITE(ETHERNET_LITE term) {
-//                    return "\n    -ethernet lite";
-//                }
-//                public String CaseETHERNET(ETHERNET term) {
-//                    return "\n    -ethernet";
-//                }
-//                public String CasePCIE(PCIE term) {
-//                    return "\n    -pcie";
-//                }
-//                public String CaseLEDS(LEDS term) {
-//                    return "\n    -leds";
-//                }
-//                public String CaseSWITCHES(SWITCHES term) {
-//                    return "\n    -switches";
-//                }
-//                public String CaseBUTTONS(BUTTONS term) {
-//                    return "\n    -buttons";
-//                }
-//                public String CaseVHDL(VHDL term) {
-//                    String s = "";
-//                    for(String instance: term.instances())
-//                        s += "\n    -VHDL Component: " + instance + " (" + term.core().file() + ")";
-//                    return s;
-//                }
-//            });
-//        }
-//        return rslt;
-//    }
-    
-    private static boolean debug(BDLFile board) {
+    /**
+     * Checks if the debug flag has been set in a board description file.
+     * @param board The board description to be checked.
+     * @return true, if the debug flag has been set, false otherwise.
+     */
+    public static boolean isDebug(BDLFilePos board) {
         boolean debug = false;
-        for(Option opt : board.opts()) if(opt instanceof DEBUG) debug = true;
+        for(OptionPos opt : board.opts()) if(opt instanceof DEBUGPos) debug = true;
         return debug;
     }
-
+    
+    /**
+     * Get the core referenced by a specific instance.
+     * @param inst The instance.
+     * @return The core referenced by the instance.
+     * @throws IllegalStateException If no core with the given core identifier exists.
+     * The existence of such a core has to be guaranteed by the frontend.
+     */
     public static CorePos getCore(InstancePos inst) {
         String coreName = inst.core().term();
         String coreVer  = inst.version().term();
@@ -150,6 +130,14 @@ public class BoardUtils {
         throw new IllegalStateException();
     }
     
+    /**
+     * Get the port declaration referenced by a specific port binding.
+     * @param bind The port binding.
+     * @return The port declaration referenced by the port binding.
+     * @throws IllegalStateException If no port declaration with the given port identifier
+     * exists within the parent core declaration. The existence of such a port declaration
+     * has to be guaranteed by the frontend.
+     */
     public static PortPos getPort(BindingPos bind) {
         String portName = bind.port().term();
 
@@ -165,6 +153,11 @@ public class BoardUtils {
         throw new IllegalStateException();
     }
     
+    /**
+     * Checks if a cpu port binding is polling or forwarding.
+     * @param axis The cpu binding of the port.
+     * @return true, if the port is polling, false otherwise.
+     */
     public static boolean isPolling(CPUAxisPos axis) {
         // check, if there is a poll option, return if found
         for(Option opt : axis.opts().term())
@@ -174,8 +167,16 @@ public class BoardUtils {
         return false;
     }
     
-    private static int getPollingCount32(CPUAxisPos axis) {
-     // check, if there is a poll option, return if found
+    /**
+     * Get the defined value queue size parameter for this cpu axis.
+     * 
+     * This method returns the user-defined value queue size in the actual
+     * bitwidth of the corresponding port.
+     * @param axis
+     * @return The value queue size for the bound port specified by the user.
+     */
+    private static int getPollingCount(CPUAxisPos axis) {
+        // check, if there is a poll option, return if found
         for(Option opt : axis.opts().term())
             if(opt instanceof POLL) return ((POLL)opt).count();
         
@@ -191,17 +192,20 @@ public class BoardUtils {
      * @param axis
      * @return The size of a 32-bit queue required to hold the number of values requested by the user.
      */
-    public static int getPollingCount(CPUAxisPos axis) {
-        return getPollingCount32(axis) * (int)Math.ceil(getWidth(axis) / 32.0); 
+    public static int getPollingCount32(CPUAxisPos axis) {
+        return getPollingCount(axis) * (int)Math.ceil(getWidth(axis) / 32.0); 
     }
-
+    
     /**
      * Get the defined software queue size parameter for this cpu axis.
+     * 
+     * This method returns the user-defined queue size in the actual bitwidth
+     * of the corresponding port.
      * @param axis
      * @return The queue size for the bound port specified by the user.
      */
-    private static int getSWQueueSize32(CPUAxisPos axis) {
-     // if there is a local definition, return that
+    private static int getSWQueueSize(CPUAxisPos axis) {
+        // if there is a local definition, return that
         for(Option opt : axis.opts().term())
             if(opt instanceof SWQUEUE) return ((SWQUEUE)opt).qsize();
         
@@ -223,8 +227,8 @@ public class BoardUtils {
      * @param axis
      * @return The size of a 32-bit queue required to hold the number of values requested by the user.
      */
-    public static int getSWQueueSize(CPUAxisPos axis) {
-        return getSWQueueSize32(axis) * (int)Math.ceil(getWidth(axis) / 32.0);
+    public static int getSWQueueSize32(CPUAxisPos axis) {
+        return getSWQueueSize(axis) * (int)Math.ceil(getWidth(axis) / 32.0);
     }
     
     public static int getHWQueueSize(CPUAxisPos axis) {
@@ -240,6 +244,15 @@ public class BoardUtils {
         return defaultQueueSizeHW;
     }
     
+    /**
+     * Get the bitwidth of a cpu port binding.
+     * 
+     * The width is specified at the port declaration inside the core declaration.
+     * If the width is not explicitly defined, the standard width of 32-bit is assumed.
+     * 
+     * @param axis The cpu port binding.
+     * @return The bitwidth of the referenced port declaration.
+     */
     public static int getWidth(CPUAxisPos axis) {
         // the bitwidth option has to be set at the port definition
         for(Option opt : getPort(axis).opts().term())
@@ -249,16 +262,23 @@ public class BoardUtils {
         return defaultWidth;
     }
     
-    public static int maxQueueSize(BDLFile file) {
+    /**
+     * Calculates the greatest used software queue size.
+     * 
+     * This is required for memory allocation on the board-side driver,
+     * since only a single out-going software queue will be allocated,
+     * which has to capable of holding all these elements.
+     * @param file The complete board description.
+     * @return The maximal used queue size.
+     */
+    public static int maxQueueSize(BDLFilePos file) {
         int size = 0;
         
-        for(Option opt : file.opts())
-            if(opt instanceof SWQUEUE) size = Math.max(size, ((SWQUEUE)opt).qsize());
-        
-        for(Instance inst : file.insts())
-            for(Binding bind : inst.bind())
-                for(Option opt : bind.opts())
-                    if(opt instanceof SWQUEUE) size = Math.max(size, ((SWQUEUE)opt).qsize());
+        for(InstancePos inst : file.insts())
+            for(BindingPos bind : inst.bind())
+                if(bind instanceof CPUAxisPos)
+                    if(getPort(bind).direction() instanceof OUTPos)
+                        size = Math.max(size, getSWQueueSize((CPUAxisPos)bind));
         
         return size;
     }

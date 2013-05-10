@@ -250,18 +250,10 @@ public class SDK extends Visitor<NE> {
     public void visit(OptionsPos  term) { }
     
     @Override
-    public void visit(BDLFilePos term) {
-        
-        // determine top level options
-        boolean debug = false;
-        int queueSizeHW = defaultQueueSizeHW, queueSizeSW = defaultQueueSizeSW;
-        for(Option o : term.opts().term()) {
-           if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
-           if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
-           if(o instanceof DEBUG)   debug = true;
-        }
+    public void visit(BDLFilePos board) {
         
         // add debug constants
+        boolean debug = isDebug(board);
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         if(debug) addConst("print(...)", "xil_printf(__VA_ARGS__)",
             "With the chosen debug level, debug output will be sent over the JTAG cable."
@@ -270,29 +262,28 @@ public class SDK extends Visitor<NE> {
             "With disabled debugging, calls to the print method are simply removed."
         );
 
-        // add queue size constants
-        addConst("HW_QUEUE_SIZE", String.valueOf(queueSizeHW), "Size of the queues implemented in hardware.");
-        addConst("SW_QUEUE_SIZE", String.valueOf(queueSizeSW), "Size of the queues on the microblaze.");
-        addConst("ITERATION_COUNT", String.valueOf(maxQueueSize(term.term())),
-                "Maximal number of shifts between mb and hw queues per schedule cycle");
+        // add queue size constant
+        addConst("MAX_OUT_SW_QUEUE_SIZE", String.valueOf(maxQueueSize(board)),
+                "Maximal size of out-going software queues.");
         
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
         
         // add gpio utils file, if gpio components are present
-        if(!term.gpios().isEmpty()) {
+        if(!board.gpios().isEmpty()) {
             File target = new File(new File(targetSrc, "components"), "gpio");
             deployFiles.put(new File(gpioSrc, "gpio.h"), new File(target, "gpio.h"));
             deployFiles.put(new File(gpioSrc, "gpio.c"), new File(target, "gpio.c"));
         }
         
         // visit board components
-        visit(term.medium());
-        visit(term.scheduler());
-        visit(term.gpios());
-        visit(term.cores());
-        visit(term.insts());
+        visit(board.medium());
+        visit(board.scheduler());
+        visit(board.gpios());
+        visit(board.cores());
+        visit(board.insts());
 
+        // add stream count constants
         addConst("IN_STREAM_COUNT", String.valueOf(axiStreamIdMaster), "Number of in-going stream interfaces.");
         addConst("OUT_STREAM_COUNT", String.valueOf(axiStreamIdSlave), "Number of out-going stream interfaces.");
         
@@ -322,7 +313,6 @@ public class SDK extends Visitor<NE> {
         components = add(components, axi_read);
     }
 
-    
     @Override
     public void visit(ETHERNETPos term) {
         // deploy Ethernet medium files
@@ -439,7 +429,7 @@ public class SDK extends Visitor<NE> {
         )));
         
         init = addLines(init, MCode(
-            Strings("inQueue[" + axiStreamIdMaster + "] = createQueue(" + getSWQueueSize(axis) + ");"),
+            Strings("inQueue[" + axiStreamIdMaster + "] = createQueue(" + getSWQueueSize32(axis) + ");"),
             MQuoteInclude("../io.h")
         ));
         axiStreamIdMaster++;
@@ -456,7 +446,7 @@ public class SDK extends Visitor<NE> {
         )));
         
         init = addLines(init, MCode(
-            Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize(axis) + ";"),
+            Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize32(axis) + ";"),
             MQuoteInclude("../io.h")
         ));
 
@@ -466,7 +456,7 @@ public class SDK extends Visitor<NE> {
         ));
         
         init = addLines(init, MCode(
-            Strings("pollCount[" + axiStreamIdSlave + "] = " + getPollingCount(axis) + ";"),
+            Strings("pollCount[" + axiStreamIdSlave + "] = " + getPollingCount32(axis) + ";"),
             MQuoteInclude("../io.h")
         ));
         
