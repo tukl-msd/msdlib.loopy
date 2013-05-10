@@ -71,7 +71,7 @@
 %\lstdefinelanguage{java}{backgroundcolor=\color{light-green}}
 
 \lstdefinelanguage{bdl}{
-  keywords={import,medium,schedule,core,instance,gpio,source,port,bind,cpu,
+  keywords={import,medium,schedule,core,instance,gpio,source,port,clk,rst,bind,cpu,
         debug,swqueue,hwqueue,poll,width,in,out,dual,mac,ip,mask,gate},
   comment=[l]{//},morecomment=[n]{/*}{*/}
 }
@@ -346,6 +346,15 @@ The second part of the core declaration block describes the interface of the cor
 An interface description consists of several port declarations. A port is either in-going, out-going or dual. The port specification looks somewhat similar to the gpio declaration. The keyword \texttt{port} is followed by a direction specifier and an identifier. Identifiers have to be locally unique and may therefore occur only once within a core. It is possible, to provide several, comma separated identifiers to declare several ports sharing the same properties. These properties are described in another block following the port declaration. This currently only includes the bitwidth of the port. The block can be omitted, resulting in standard values to be used. The default bitwidth of a port is 32-bit.
 
 \textcolor{red}{VHDL analysis can also be used to simplify the specification of the core interface, since it already is fully specified in the VHDL file.}
+
+Finally, the core requires bindings for the implicit clock and reset ports. These may be interleaved with the "normal" AXI stream ports.
+
+\begin{lstlisting}[language=bdl]
+  clk aclk 100
+  rst aresetn 0
+\end{lstlisting}
+
+The keywords \texttt{clk} and \texttt{rst} begin these bindings. Following the keyword is the identifier of the port in the VHDL component. For the clock port, the frequency (in MHz) can be specified afterwards. The reset port requires a polarity flag, indicating on which signal the component is reset.
 
 \subsubsection{Instance}
 The instance declaration instantiates a core on the board. This effectively creates a component on the board with the behaviour and interface specified by the core. The interface declaration itself connects this component with other components.
@@ -1579,14 +1588,18 @@ Cores * Core
 Core (String name, String version, Position pos, Imports source, Ports ports)
 
 Ports * Port
-Port (String name, Direction direction, Position pos, Options opts)
+Port = CLK(String name, Position pos, Integer frequency)
+     | RST(String name, Position pos, Boolean polarity)
+     | AXI(String name, Position pos, Direction direction, Options opts)
+
 Direction = IN() | OUT() | DUAL()
 \end{lstlisting}
 
 A core is identified by a name and version String. It marks a template for components on the board and therefore has to specify its VHDL sources and its port interface. The interface is already described in the VHDL sources and could also be deduced in a later driver generator version by parsing these sources instead of only copying them.
 
-Ports within a core are identified with only a name. A port has a direction, which is either in-going, out-going or both. Note, that bi-directional ports are not supported by the AXI-Stream interface this driver is designed for, and are just in the frontend for completeness. However, no backend currently supports those ports.
-Ports can be configured further with options, though the only currently meaningful option in context of a port is the bitwidht option. \textcolor{red}{Queue options might make sense here as a more general declaration compared to instance bindings. All bindings to this port get the size automatically... Same applies to poll. }
+A port is either a clock port, a reset port, or an AXI stream port. The first two declare how the respective ports in the VHDL sources are named and provide additional parameters for these ports. Both clock and reset port are used by the board-side driver for control flow and never visible from the host-side API.
+AXI stream ports use the name as identifier. Such a port has a direction, which is either in-going, out-going or both. Note, that bi-directional ports are not supported by the AXI-Stream interface this driver is designed for, and are just in the frontend for completeness. However, no backend currently supports those ports.
+Ports can be configured further with options, though currently the only meaningful option in context of a port is the bitwidth option. \textcolor{red}{Queue options might make sense here as a more general declaration compared to instance bindings but more specific than the global ones. All bindings to this port get the size automatically... Same applies to poll (i.e., might be useful to flag the port HERE as polling resulting in ALL port instances to be polling).}
 
 \begin{lstlisting}[language=java, breaklines=true]
 Instances * Instance
