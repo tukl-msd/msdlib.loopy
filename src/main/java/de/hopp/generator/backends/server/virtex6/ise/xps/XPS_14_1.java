@@ -1,7 +1,10 @@
 package de.hopp.generator.backends.server.virtex6.ise.xps;
 
 import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.utils.BoardUtils.getClockPort;
+import static de.hopp.generator.utils.BoardUtils.getCore;
 import static de.hopp.generator.utils.BoardUtils.getPort;
+import static de.hopp.generator.utils.BoardUtils.getResetPort;
 import static de.hopp.generator.utils.BoardUtils.getSWQueueSize32;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 
@@ -80,6 +83,7 @@ public class XPS_14_1 extends XPS {
         
         // add the default stuff...
         addDefault();
+        addTimer(term);
         addMicroblaze();
     }
     
@@ -236,9 +240,13 @@ public class XPS_14_1 extends XPS {
         // define bus interfaces
         visit(term.bind());
         
-        // append default clock and reset ports
-        curBlock = add(curBlock, Attribute(PORT(), Assignment("ACLK", Ident("clk_100_0000MHzMMCM0"))));
-        curBlock = add(curBlock, Attribute(PORT(), Assignment("ARESETN", Ident("proc_sys_reset_0_Peripheral_aresetn"))));
+        // append clock and reset ports
+        CLK clk = getClockPort(getCore(term));
+        curBlock = add(curBlock, Attribute(PORT(), Assignment(
+                clk.name(), Ident("clk_" + clk.frequency() + "_0000MHzMMCM0"))));
+        RST rst = getResetPort(getCore(term));
+        curBlock = add(curBlock, Attribute(PORT(), Assignment(
+                rst.name(), Ident("proc_sys_reset_0_Peripheral_" + (rst.polarity() ? "reset": "aresetn")))));
         
         // add the block to the file
         mhs = add(mhs, curBlock);
@@ -338,10 +346,13 @@ public class XPS_14_1 extends XPS {
     public void visit(MASKPos term)     { }
     public void visit(GATEPos term)     { }
     public void visit(PORTIDPos term)   { }
-    public void visit(PortPos term)     { }
+    public void visit(AXIPos term)      { }
+    public void visit(CLKPos term)      { }
+    public void visit(RSTPos term)      { }
 
     // literals
     public void visit(IntegerPos term) { }
+    public void visit(BooleanPos term) { }
     public void visit(StringsPos term) { }
     public void visit(StringPos term)  { }
 }

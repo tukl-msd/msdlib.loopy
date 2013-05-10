@@ -224,9 +224,22 @@ public class Parser {
         boolean poll, width;
         // invalid options for port specifications
         for(Core core : bdf.cores()) {
+            boolean clk = false, rst = false;
             for(Port port : core.ports()) {
+                if(port instanceof CLK) {
+                    if(clk) errors.addError(new ParserError("Duplicate clk port binding for core", port.pos()));
+                    else clk = true;
+                    continue;
+                    // TODO some sort of counter for non-default clock values?
+                }
+                if(port instanceof RST) {
+                    if(rst) errors.addError(new ParserError("Duplicate rst port binding for core", port.pos()));
+                    else rst = true;
+                    continue;
+                }
+                
                 sw = false; hw = false; poll = false; width = false;
-                for(Option o : port.opts()) {
+                for(Option o : ((AXI)port).opts()) {
                     if(o instanceof POLL)
                         // poll is not allowed to occur at in-going ports
                         if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port", port.pos())); 
@@ -246,6 +259,9 @@ public class Parser {
                         else hw = true;
                 }
             }
+            
+            if(!clk) errors.addError(new ParserError("core declaration is missing clock port", core.pos()));
+            if(!rst) errors.addError(new ParserError("core declaration is missing reset port", core.pos()));
         }
         
         // check, if the scheduler or gpio callbacks have been overridden and add appropriate warning

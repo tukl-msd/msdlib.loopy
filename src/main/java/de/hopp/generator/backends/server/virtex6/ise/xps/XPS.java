@@ -1,17 +1,20 @@
 package de.hopp.generator.backends.server.virtex6.ise.xps;
 
 import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.utils.BoardUtils.getClockPort;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import katja.common.NE;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.frontend.*;
+import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.parser.*;
 
 /**
@@ -133,85 +136,88 @@ public abstract class XPS extends Visitor<NE> {
         block = add(block, Attribute(OPTION(), Assignment("DESC", STR(core.name()))));
 
         for(final Port port : core.ports()) {
-            int bitwidth = 32;
-            for(Option opt : port.opts()) {
-                if(opt instanceof BITWIDTH) bitwidth = ((BITWIDTH)opt).bit();
+            
+            if(port instanceof AXI) {
+            
+                int bitwidth = 32;
+                for(Option opt : ((AXI)port).opts()) {
+                    if(opt instanceof BITWIDTH) bitwidth = ((BITWIDTH)opt).bit();
+                }
+                
+                block = add(block, Attribute(BUS_IF(),
+                    Assignment("BUS", Ident(port.name())),
+                    Assignment("BUS_STD", Ident("AXIS")),
+                    ((AXI)port).direction().Switch(new Direction.Switch<Assignment, GenerationFailed>() {
+                        public Assignment CaseIN(IN term)   {
+                            return Assignment("BUS_TYPE", Ident("TARGET"));
+                        }
+                        public Assignment CaseOUT(OUT term) {
+                            return Assignment("BUS_TYPE", Ident("INITIATOR"));
+                        }
+                        public Assignment CaseDUAL(DUAL term) throws GenerationFailed {
+                            throw new GenerationFailed("invalid direction for virtex 6");
+                        }
+                    })
+                ));
+                
+                block = add(block, Attribute(PARAMETER(),
+                        Assignment("C_"+port.name()+"_PROTOCOL", Ident("GENERIC")),
+                        Assignment("DT", Ident("string")),
+                        Assignment("TYPE", Ident("NON_HDL")),
+                        Assignment("ASSIGNMENT", Ident("CONSTANT")),
+                        Assignment("BUS", Ident(port.name()))
+                ));
+                
+                block = add(block, Attribute(PARAMETER(),
+                        Assignment("C_"+port.name()+"_TDATA_WIDTH", Number(bitwidth)),
+                        Assignment("DT", Ident("integer")),
+                        Assignment("TYPE", Ident("NON_HDL")),
+                        Assignment("ASSIGNMENT", Ident("CONSTANT")),
+                        Assignment("BUS", Ident(port.name()))
+                ));
+                
+                boolean direct = direction(((AXI)port).direction());
+                
+                block = add(block, Attribute(PORT(),
+                        Assignment(port.name() + "_tready", Ident("TREADY")),
+                        Assignment("DIR", Ident(direct ? "O" : "I")),
+                        Assignment("BUS", Ident(port.name()))
+                ));
+                
+                block = add(block, Attribute(PORT(),
+                        Assignment(port.name() + "_tvalid", Ident("TVALID")),
+                        Assignment("DIR", Ident(direct ? "I" : "O")),
+                        Assignment("BUS", Ident(port.name()))
+                ));
+                
+                block = add(block, Attribute(PORT(),
+                        Assignment(port.name() + "_tdata", Ident("TDATA")),
+                        Assignment("DIR", Ident(direct ? "I" : "O")),
+                        Assignment("VEC", Range(bitwidth-1, 0)),
+                        Assignment("BUS", Ident(port.name()))
+                ));
+                
+                block = add(block, Attribute(PORT(),
+                        Assignment(port.name() + "_tlast", Ident("TLAST")),
+                        Assignment("DIR", Ident(direct ? "I" : "O")),
+                        Assignment("BUS", Ident(port.name()))
+                ));
+            } else if (port instanceof CLK) {
+                block = add(block, Attribute(PORT(),
+                        Assignment(port.name(), STR("")),
+                        Assignment("DIR", Ident("I")),
+                        Assignment("SIGIS", Ident("CLK")),
+                        Assignment("ASSIGNMENT", Ident("REQUIRE"))
+                ));
+            } else if(port instanceof RST) {
+                block = add(block, Attribute(PORT(),
+                        Assignment(port.name(), STR("")),
+                        Assignment("DIR", Ident("I")),
+                        Assignment("SIGIS", Ident("RST")),
+                        Assignment("ASSIGNMENT", Ident("REQUIRE"))
+                ));
             }
-            
-            block = add(block, Attribute(BUS_IF(),
-                Assignment("BUS", Ident(port.name())),
-                Assignment("BUS_STD", Ident("AXIS")),
-                port.direction().Switch(new Direction.Switch<Assignment, GenerationFailed>() {
-                    public Assignment CaseIN(IN term)   {
-                        return Assignment("BUS_TYPE", Ident("TARGET"));
-                    }
-                    public Assignment CaseOUT(OUT term) {
-                        return Assignment("BUS_TYPE", Ident("INITIATOR"));
-                    }
-                    public Assignment CaseDUAL(DUAL term) throws GenerationFailed {
-                        throw new GenerationFailed("invalid direction for virtex 6");
-                    }
-                })
-            ));
-            
-            block = add(block, Attribute(PARAMETER(),
-                    Assignment("C_"+port.name()+"_PROTOCOL", Ident("GENERIC")),
-                    Assignment("DT", Ident("string")),
-                    Assignment("TYPE", Ident("NON_HDL")),
-                    Assignment("ASSIGNMENT", Ident("CONSTANT")),
-                    Assignment("BUS", Ident(port.name()))
-            ));
-            
-            block = add(block, Attribute(PARAMETER(),
-                    Assignment("C_"+port.name()+"_TDATA_WIDTH", Number(bitwidth)),
-                    Assignment("DT", Ident("integer")),
-                    Assignment("TYPE", Ident("NON_HDL")),
-                    Assignment("ASSIGNMENT", Ident("CONSTANT")),
-                    Assignment("BUS", Ident(port.name()))
-            ));
-            
-            boolean direct = direction(port.direction());
-            
-            block = add(block, Attribute(PORT(),
-                    Assignment(port.name() + "_tready", Ident("TREADY")),
-                    Assignment("DIR", Ident(direct ? "O" : "I")),
-                    Assignment("BUS", Ident(port.name()))
-            ));
-            
-            block = add(block, Attribute(PORT(),
-                    Assignment(port.name() + "_tvalid", Ident("TVALID")),
-                    Assignment("DIR", Ident(direct ? "I" : "O")),
-                    Assignment("BUS", Ident(port.name()))
-            ));
-            
-            block = add(block, Attribute(PORT(),
-                    Assignment(port.name() + "_tdata", Ident("TDATA")),
-                    Assignment("DIR", Ident(direct ? "I" : "O")),
-                    Assignment("VEC", Range(bitwidth-1, 0)),
-                    Assignment("BUS", Ident(port.name()))
-            ));
-            
-            block = add(block, Attribute(PORT(),
-                    Assignment(port.name() + "_tlast", Ident("TLAST")),
-                    Assignment("DIR", Ident(direct ? "I" : "O")),
-                    Assignment("BUS", Ident(port.name()))
-            ));
         }
-        
-        block = add(block, Attribute(PORT(),
-                Assignment("aclk", STR("ACLK")),
-                Assignment("DIR", Ident("I")),
-                Assignment("SIGIS", Ident("CLK")),
-                Assignment("ASSIGNMENT", Ident("REQUIRE"))
-        ));
-        
-        block = add(block, Attribute(PORT(),
-                Assignment("aresetn", STR("ARESETN")),
-                Assignment("DIR", Ident("I")),
-                Assignment("SIGIS", Ident("RST")),
-                Assignment("ASSIGNMENT", Ident("REQUIRE"))
-        ));
-        
         return MHSFile(Attributes(), block);
     }
     
@@ -325,7 +331,7 @@ public abstract class XPS extends Visitor<NE> {
                Attribute(BUS_IF(), Assignment("in", Ident(d ? currentAxis : queueAxis))),
                Attribute(BUS_IF(), Assignment("out", Ident(d ? queueAxis : currentAxis))),
                Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
-               Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+               Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_reset")))
         ));
         
         // return the axis identifier of the queues port, that should be attached to the components port
@@ -350,7 +356,7 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(BUS_IF(), Assignment("M_AXIS_TDATA", Ident(d ? currentAxis : muxAxis))),
             Attribute(BUS_IF(), Assignment("S_AXIS_TDATA", Ident(d ? muxAxis : currentAxis))),
             Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+            Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_reset")))
         ));
         
         return muxAxis;
@@ -504,31 +510,6 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(BUS_IF(), Assignment("MBDEBUG_0", Ident("microblaze_0_debug"))),
             Attribute(PORT(), Assignment("Debug_SYS_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))),
             Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0")))
-          ), Block("clock_generator",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_clock_generator))),
-            Attribute(PARAMETER(), Assignment("C_CLKIN_FREQ", Number(200000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT0_FREQ", Number(100000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT0_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT1_FREQ", Number(200000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT1_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT2_FREQ", Number(400000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT2_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_FREQ", Number(400000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_BUF", Ident("FALSE"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_VARIABLE_PHASE", Ident("TRUE"))),
-            Attribute(PORT(), Assignment("LOCKED", Ident("proc_sys_reset_0_Dcm_locked"))),
-            Attribute(PORT(), Assignment("CLKOUT0", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("RST", Ident("RESET"))),
-            Attribute(PORT(), Assignment("CLKOUT3", Ident("clk_400_0000MHzMMCM0_nobuf_varphase"))),
-            Attribute(PORT(), Assignment("CLKOUT2", Ident("clk_400_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT1", Ident("clk_200_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKIN", Ident("CLK"))),
-            Attribute(PORT(), Assignment("PSCLK", Ident("clk_200_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("PSEN", Ident("psen"))),
-            Attribute(PORT(), Assignment("PSINCDEC", Ident("psincdec"))),
-            Attribute(PORT(), Assignment("PSDONE", Ident("psdone")))
           ), Block("axi_timer",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi_timer_0"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_timer))),
@@ -596,6 +577,62 @@ public abstract class XPS extends Visitor<NE> {
         
         mhs = add(mhs, attr);
         mhs = add(mhs, blocks);
+    }
+    
+    protected void addTimer(BDLFilePos file) {
+        Block timer = Block("clock_generator",
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_clock_generator))),
+            Attribute(PARAMETER(), Assignment("C_CLKIN_FREQ", Number(200000000))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT0_FREQ", Number(100000000))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT0_GROUP", Ident("MMCM0"))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT1_FREQ", Number(200000000))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT1_GROUP", Ident("MMCM0"))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT2_FREQ", Number(400000000))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT2_GROUP", Ident("MMCM0"))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT3_FREQ", Number(400000000))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT3_GROUP", Ident("MMCM0"))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT3_BUF", Ident("FALSE"))),
+            Attribute(PARAMETER(), Assignment("C_CLKOUT3_VARIABLE_PHASE", Ident("TRUE")))
+         );
+        
+        Attributes ports = Attributes(
+            Attribute(PORT(), Assignment("LOCKED", Ident("proc_sys_reset_0_Dcm_locked"))),
+            Attribute(PORT(), Assignment("CLKIN", Ident("CLK"))),
+            Attribute(PORT(), Assignment("PSCLK", Ident("clk_200_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("PSEN", Ident("psen"))),
+            Attribute(PORT(), Assignment("PSINCDEC", Ident("psincdec"))),
+            Attribute(PORT(), Assignment("PSDONE", Ident("psdone"))),
+            Attribute(PORT(), Assignment("RST", Ident("RESET"))),
+            Attribute(PORT(), Assignment("CLKOUT0", Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("CLKOUT1", Ident("clk_200_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("CLKOUT2", Ident("clk_400_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("CLKOUT3", Ident("clk_400_0000MHzMMCM0_nobuf_varphase")))
+        );
+        
+        Set<Integer> frequencies = new HashSet<Integer>();
+        frequencies.add(100);
+        frequencies.add(200);
+        frequencies.add(400);
+        
+        int freqCounter = 4;
+        
+        for(CorePos core : file.cores()) {
+            CLK clk = getClockPort(core);
+            if(!frequencies.contains(clk.frequency())) {
+                frequencies.add(clk.frequency());
+                timer = add(timer, Attribute(PARAMETER(),
+                    Assignment("C_CLKOUT" + freqCounter + "_FREQ", Number(clk.frequency() * 1000000))));
+                timer = add(timer, Attribute(PARAMETER(),
+                    Assignment("C_CLKOUT" + freqCounter + "_GROUP", Ident("MMCMC0"))));
+                ports.add(Attribute(PORT(),
+                    Assignment("CLKOUT" + freqCounter, Ident("clk_" + clk.frequency() + "_0000MHzMMCM0"))));
+                freqCounter++;
+            }
+        }
+        
+        timer = timer.replaceAttributes(timer.attributes().addAll(ports));
+        mhs = add(mhs, timer);
     }
     
     /** Adds the microblaze to the design. */

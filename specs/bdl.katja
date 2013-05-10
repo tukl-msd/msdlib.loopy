@@ -8,12 +8,14 @@ backend java {
   package de.hopp.generator.frontend
   import java.lang.String
   import java.lang.Integer
+  import java.lang.Boolean
 }
 
 root BDLFile Pos
 
 external String
 external Integer
+external Boolean
 
 BDLFile (Imports imports, Backends backends, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
 
@@ -27,7 +29,10 @@ Backend (String name, String content, Position pos)
 // Definition of a new ipcore
 Core (String name, String version, Position pos, Imports source, Ports ports)
 
-Port (String name, Direction direction, Position pos, Options opts)
+Port = AXI(String name, Position pos, Direction direction, Options opts)
+     | CLK(String name, Position pos, Integer frequency)
+     | RST(String name, Position pos, Boolean polarity)
+
 Direction = IN() | OUT() | DUAL()
 
 // Instance of an ipcore

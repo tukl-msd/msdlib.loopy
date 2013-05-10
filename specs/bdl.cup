@@ -65,6 +65,7 @@ terminal BACKEND;
 terminal SWQUEUE, HWQUEUE, DEBUG, WIDTH, POLL;
 terminal MEDIUM, MAC, IP, MASK, GATE;
 terminal CORE, SOURCE, PORT;
+terminal CLK, RST;
 terminal IN, OUT, DUAL;
 terminal GPIO, INSTANCE, BIND, CPU;
 terminal SCHEDULER;
@@ -238,7 +239,7 @@ core ::=
      :}
   |  CORE:c ID version BEGIN error END
      {:
-         error("core declaration requires at least one source reference before the port list", cleft, cright);
+         error("error inside core declaration block", cleft, cright);
      :}
   ;
 
@@ -316,7 +317,7 @@ port   ::=
      PORT:p direct:d id_list:il option_list:opts
      {: 
          RESULT = BDL.Ports();
-         for(String id : il) RESULT = RESULT.add(BDL.Port(id, d, pos(pleft), opts));
+         for(String id : il) RESULT = RESULT.add(BDL.AXI(id, pos(pleft), d, opts));
      :}
   |  PORT:p ID option_list
      {:
@@ -325,6 +326,20 @@ port   ::=
   |  PORT:p direct option_list
      {:
          error("port is missing an identifier", pleft, pright);
+     :}
+  |  CLK:c ID:i DEC:val
+     {:
+         RESULT = BDL.Ports(BDL.CLK(i, pos(cleft), val));
+     :}
+  |  RST:r ID:i DEC:val
+     {:
+         boolean polarity = false;
+         switch(val) {
+         case 0: polarity = false; break;
+         case 1: polarity = true;  break;
+         default: error("invalid reset polarity", rleft, rright);
+         }
+         RESULT = BDL.Ports(BDL.RST(i, pos(rleft), polarity));
      :}
   ;
 

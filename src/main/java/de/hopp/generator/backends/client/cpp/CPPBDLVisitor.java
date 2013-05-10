@@ -195,7 +195,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     }
 
     public void visit(final CPUAxisPos axis) {
-        PortPos port = getPort(axis);
+        AXIPos port = getPort(axis);
         final int width = getWidth(axis);
         port.direction().Switch(new DirectionPos.Switch<Object, NE>() {
             public Object CaseINPos(INPos term) {
@@ -224,7 +224,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     }
     
     private static boolean isMasterConnection(BindingPos term) {
-        PortPos port = getPort(term);
+        AXIPos port = getPort(term);
         return port.direction().Switch(new DirectionPos.Switch<Boolean, NE>() {
             public Boolean CaseDUALPos(DUALPos term) { return true;  }
             public Boolean CaseOUTPos(OUTPos term)   { return false; }
@@ -232,7 +232,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
         });
     }
     private static boolean isSlaveConnection(BindingPos term) {
-        PortPos port = getPort(term);
+        AXIPos port = getPort(term);
         return port.direction().Switch(new DirectionPos.Switch<Boolean, NE>() {
             public Boolean CaseDUALPos(DUALPos term) { return true;  }
             public Boolean CaseOUTPos(OUTPos term)   { return true; }
@@ -342,7 +342,9 @@ public class CPPBDLVisitor extends Visitor<NE> {
     
     // ports (see above)
     public void visit(PortsPos term) { }
-    public void visit(PortPos  term) { }
+    public void visit(AXIPos   term) { }
+    public void visit(CLKPos   term) { }
+    public void visit(RSTPos   term) { }
     public void visit(INPos    term) { }
     public void visit(OUTPos   term) { }
     public void visit(DUALPos  term) { }
@@ -354,9 +356,9 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(PositionPos term) { }
     
     // literals
+    public void visit(IntegerPos term) { }
+    public void visit(BooleanPos term) { }
     public void visit(StringsPos term) { }
     public void visit(StringPos  term) { }
-    public void visit(IntegerPos term) { }
-
     
 }

@@ -110,6 +110,8 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 
 /* port related */
 "port"          { return symbol(BDLFileSymbols.PORT); }
+"clk"           { return symbol(BDLFileSymbols.CLK); }
+"rst"           { return symbol(BDLFileSymbols.RST); }
 "width"         { return symbol(BDLFileSymbols.WIDTH); }
 "in"            { return symbol(BDLFileSymbols.IN); }
 "out"           { return symbol(BDLFileSymbols.OUT); }

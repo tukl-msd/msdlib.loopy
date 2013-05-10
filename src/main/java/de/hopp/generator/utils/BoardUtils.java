@@ -138,7 +138,7 @@ public class BoardUtils {
      * exists within the parent core declaration. The existence of such a port declaration
      * has to be guaranteed by the frontend.
      */
-    public static PortPos getPort(BindingPos bind) {
+    public static AXIPos getPort(BindingPos bind) {
         String portName = bind.port().term();
 
         // throw an exception, if the parent is not a core instance
@@ -147,9 +147,51 @@ public class BoardUtils {
 
         // return the port, if it exists
         for(PortPos p : getCore(inst).ports())
-            if(p.name().term().equals(portName)) return p;
+            if(p.name().term().equals(portName) && p instanceof AXIPos) return (AXIPos)p;
 
         // otherwise, throw an exception (should never happen due to sanity checks)
+        throw new IllegalStateException();
+    }
+    
+    /**
+     * Get the clock frequency of the provided core
+     * @param core
+     * @return
+     * @throws IllegalStateException If no clock port has been specified.
+     * The existence of a clock port declaration has to be guaranteed by the frontend.
+     */
+    public static int getClockFrequency(CorePos core) {
+        for(Port port : core.ports().term())
+            if(port instanceof CLK) return ((CLK)port).frequency();
+        
+        throw new IllegalStateException();
+    }
+    
+    public static CLK getClockPort(CorePos core) {
+        for(Port port : core.ports().term())
+            if(port instanceof CLK) return ((CLK)port);
+        
+        throw new IllegalStateException();
+    }
+    
+    public static RST getResetPort(CorePos core) {
+        for(Port port : core.ports().term())
+            if(port instanceof RST) return ((RST)port);
+        
+        throw new IllegalStateException();
+    }
+    
+    /**
+     * Get the reset polarity of the provided core.
+     * @param core
+     * @return
+     * @throws IllegalStateException If no reset port has been specified.
+     * The existence of a reset port declaration has to be guaranteed by the frontend.
+     */
+    public static boolean getRSTPolarity(CorePos core) {
+        for(Port port : core.ports().term())
+            if(port instanceof RST) return ((RST)port).polarity();
+        
         throw new IllegalStateException();
     }
     

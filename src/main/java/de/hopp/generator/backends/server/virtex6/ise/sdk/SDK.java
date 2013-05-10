@@ -373,7 +373,7 @@ public class SDK extends Visitor<NE> {
 
     @Override
     public void visit(final CPUAxisPos axis) {
-        PortPos port = getPort(axis);
+        AXIPos port = getPort(axis);
 
         int width = getWidth(axis);
         boolean d = port.direction() instanceof INPos;
@@ -605,7 +605,9 @@ public class SDK extends Visitor<NE> {
     
     // ports (see above)
     public void visit(PortsPos term) { }
-    public void visit(PortPos  term) { }
+    public void visit(CLKPos   term) { }
+    public void visit(RSTPos   term) { }
+    public void visit(AXIPos   term) { }
     public void visit(INPos    term) { }
     public void visit(OUTPos   term) { }
     public void visit(DUALPos  term) { }
@@ -622,7 +624,7 @@ public class SDK extends Visitor<NE> {
     public void visit(StringsPos term) { }
     public void visit(StringPos  term) { }
     public void visit(IntegerPos term) { }
-
+    public void visit(BooleanPos term) { }
     
     private void addLEDs() {
         // deploy LED files
