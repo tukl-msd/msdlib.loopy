@@ -39,6 +39,7 @@ public class Configuration {
     // progress flags
     private boolean parseonly = false;
     private boolean dryrun    = false;
+    private boolean noBitGen  = false;
     
 //    /** setup an empty driver generator configuration */
     public Configuration() { 
@@ -75,13 +76,19 @@ public class Configuration {
         loglevel = LOG_QUIET;
     }
     
-    public void enableDryrun() {
-        dryrun = true;
-    }
+    /** enable parse only mode, in which only lexer and parser are executed */
     public void enableParseonly() {
         parseonly = true;
     }
-    
+    /** enable dryrun, meaning that generation phases are skipped */
+    public void enableDryrun() {
+        dryrun = true;
+    }
+    /** disable bitfile generation */
+    public void enableNoBitGen() {
+        noBitGen = true;
+    }
+
     public void setUnusued(String[] args) {
         this.args = args;
     }
@@ -112,6 +119,8 @@ public class Configuration {
     public boolean parseonly() { return parseonly; }
     /** check if this is only a dryrun, meaning that code deployment is skipped */
     public boolean dryrun()    { return dryrun; }
+    /** check if bitfile generation should be skipped */
+    public boolean noBitGen()    { return noBitGen; }
     
     /** check if the generator is set to produce no console output */
     public boolean QUIET()   { return loglevel == LOG_QUIET; }

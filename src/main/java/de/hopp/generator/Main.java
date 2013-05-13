@@ -100,6 +100,7 @@ public class Main {
         IO.println(" -o --parseonly        check only for parser errors");
         IO.println(" -n --dryrun           don't execute the generator phase of");
         IO.println("                       the backends, i.e. analyze only");
+        IO.println("    --noBitGen         disable bitfile generation");
         IO.println("    --config <file>    supplies the generator with a config file containing");
         IO.println("                       all information configurable with cli parameters.");
         IO.println("                       This will immediately start the generator ignoring all");
@@ -368,6 +369,8 @@ public class Main {
                 config.enableParseonly();
             } else if(args[i].equals("-n") || args[i].equals("--dryrun")) {
                 config.enableDryrun();
+            } else if(args[i].equals("--noBitGen")) {
+                config.enableNoBitGen();
                 
             } else if(args[i].equals("-c") || args[i].equals("--config")) {
                 // TODO run generator with the provided config

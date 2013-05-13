@@ -639,6 +639,16 @@ public abstract class XPS extends Visitor<NE> {
         mhs = add(mhs, blocks);
     }
     
+    /**
+     * Adds the clock generator to the design.
+     * 
+     * Depending on the described file, additional output frequencies might be required.
+     * Per default, 100, 200, 400 (buffered and unbuffered) MHz are provided.
+     * 
+     * The BDL allows all positive integer frequencies (though XPS will probably fail with some
+     * higher frequencies...).
+     * @param file The BDL file representing the board.
+     */
     protected void addTimer(BDLFilePos file) {
         Block timer = Block("clock_generator",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
@@ -654,7 +664,7 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("C_CLKOUT3_GROUP", Ident("MMCM0"))),
             Attribute(PARAMETER(), Assignment("C_CLKOUT3_BUF", Ident("FALSE"))),
             Attribute(PARAMETER(), Assignment("C_CLKOUT3_VARIABLE_PHASE", Ident("TRUE")))
-         );
+        );
         
         Attributes ports = Attributes(
             Attribute(PORT(), Assignment("LOCKED", Ident("proc_sys_reset_0_Dcm_locked"))),

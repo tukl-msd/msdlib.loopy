@@ -62,7 +62,12 @@ public abstract class ISE implements ProjectBackendIF {
         deployELFSources(board, config, errors);
         
         // stop here, if it was only a dryrun
+        // deployment phases also do not generate but only generate models...
         if(config.dryrun()) return;
+        
+        // stop also, if bitfile generation should be skipped
+        // in this case, deployment phases ran through
+        if(config.noBitGen()) return;
         
         // generate .bit and .elf files
         generateBITFile(config, errors);
