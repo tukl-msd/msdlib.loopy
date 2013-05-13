@@ -175,15 +175,17 @@ public class Main {
         BDLFilePos board = BDLFilePos(new Parser(errors).parse(schemaFile));
         IO.println();
         
+        if(board != null && board.term() != null) {
+            // print the raw board term (debug only)
+            IO.debug(board + "\n");
+            
+            // print the board (verbose only)
+            IO.verbose(printBoard(board) + "\n");
+        }
+        
         // abort if any errors occurred
         showStatus(false);
         
-        // print the board (verbose only)
-        IO.verbose(printBoard(board) + "\n");
-        
-        // print the raw board term (debug only)
-        IO.debug(board.term().toString() + "\n");
-
         // if this is a parseonly run, stop here
         if(config.parseonly()) {
             showStatus(true);

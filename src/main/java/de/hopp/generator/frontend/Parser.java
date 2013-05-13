@@ -104,7 +104,7 @@ public class Parser {
      * do not hold. May also add warnings for less severe conditions, that
      * are not necessarily required by the model but may indicate user errors
      * nonetheless or require the users attention otherwise.
-     *  - existence of all referenced source files
+     *  - existence of all referenced source files, cores and ports
      *  - no duplicate identifiers for cores, ports or instances
      *  - correct connection of all ports
      *    - no duplicate connections
@@ -115,14 +115,8 @@ public class Parser {
      * @param bdf
      */
     private void sanityCheck(BDLFile bdf) {
-        // what to do here (sequentially) and what to do in visitor? ... 
-        
-        // check for only single instances of medium and scheduler
-        // this cannot be specified with the current katja file... 
-        // --> be more liberal in bdl.katja or more restrictive in bdl.cup?
-        
-        Map<String, Core> cores = new HashMap<String, Core>();
         // iterate over all cores...
+        Map<String, Core> cores = new HashMap<String, Core>();
         for(Core core : bdf.cores()) {
             Set<String> sources = new HashSet<String>();
             for(Import source : core.source()) {
@@ -154,18 +148,36 @@ public class Parser {
                 else ports.put(port.name(), port);
             }
         }
-            
-        // check declaration of referenced cores
+        
+        // iterate over all instances...
+        Map<String, Instance> instances = new HashMap<String, Instance>();
         for(Instance inst : bdf.insts()) {
+            
+            // check declaration of referenced core
             if(!cores.containsKey(inst.core())) {
                 errors.addError(new ParserError("Instantiated undefined core " + inst.core(), inst.pos()));
                 continue;
             }
-        
+
+            // check declaration of referenced ports
+            for(Binding b : inst.bind()) {
+                boolean exists = false;
+                System.err.println("binding: " + b.port());
+                
+                for(Port port : cores.get(inst.core()).ports())
+                    if(port.name().equals(b.port())) exists = true;
+                
+                if(!exists) errors.addError(new ParserError("Binding to non-existing port " + b.port(), b.pos()));
+            }
+            
+            // check for duplicate instance identifiers
+            if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name(), inst.pos()));
+            else instances.put(inst.name(), inst);
+            
             // check connection of all declared axi ports
             for(Port port : cores.get(inst.core()).ports()) {
                 // skip non-axi ports (i.e. clk and rst)
-                if(! (port instanceof AXI)) return;
+                if(! (port instanceof AXI)) continue;
                 
                 boolean connected = false;
                 for(Binding bind : inst.bind()) if(bind.port().equals(port.name())) connected = true;
@@ -174,13 +186,8 @@ public class Parser {
                 if(!connected) errors.addWarning(new ParserWarning("Port " + port.name() + " of " +
                         inst.core() + " instance " + inst.name() + " is not connected", inst.pos()));
             }
-        } cores.clear();
-        
-        // check for duplicate instance identifiers
-        Map<String, Instance> instances = new HashMap<String, Instance>();
-        for(Instance inst : bdf.insts())
-            if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name(), inst.pos()));
-            else instances.put(inst.name(), inst);
+        }
+        cores.clear();
         instances.clear();
         
         // check for duplicate gpio instances

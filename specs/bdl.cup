@@ -89,17 +89,21 @@ non terminal GPIO gpio;
 non terminal Bindings bind;
 non terminal Scheduler scheduler;
 
-
 non terminal Decl decl;
 non terminal Decls decl_list;
+
 non terminal Imports source_list, source;
+non terminal Strings string_list;
+
 non terminal Ports port_list;
-non terminal Bindings bind_block, bind_list_part, cpu_bind_list_part;
+non terminal Bindings bind_block, bind_list_part;
 non terminal Code code_block;
 non terminal Options option_list, option_list_part;
 non terminal MOptions medium_option_list, medium_option_list_part;
+
 non terminal Direction direct;
-non terminal Strings id_list, id_list_part, string_list;
+non terminal Strings id_list, id_list_part;
+non terminal String id;
 
 
 /* grammar */
@@ -297,28 +301,35 @@ port_list ::=
   ;
 
 id_list ::=
-     ID:id id_list_part:l
+     id:id id_list_part:l
      {:
-         RESULT = l.appFront(id);
-     :}
-  |  direct:id id_list_part:l
-     {:
-        RESULT = l.appFront(id.Switch(new Direction.Switch<String, NE>() {
-           public String CaseIN  (IN   term) { return "in";   }
-           public String CaseOUT (OUT  term) { return "out";  }
-           public String CaseDUAL(DUAL term) { return "dual"; }
-        }));
+          RESULT = l.appFront(id);
      :}
   ;
-  
+ 
 id_list_part ::=
-     COMMA ID:id id_list_part:l
+     COMMA id:id id_list_part:l
      {:
          RESULT = l.appFront(id);
      :}
   |
      {:
          RESULT = BDL.Strings();
+     :}
+  ;
+
+id ::=
+      ID:id
+     {:
+         RESULT = id;
+     :}
+  |  direct:id
+     {:
+        RESULT = id.Switch(new Direction.Switch<String, NE>() {
+           public String CaseIN  (IN   term) { return "in";   }
+           public String CaseOUT (OUT  term) { return "out";  }
+           public String CaseDUAL(DUAL term) { return "dual"; }
+        });
      :}
   ;
 
@@ -385,10 +396,6 @@ direct ::=
      IN   {: RESULT = BDL.IN();   :}
   |  OUT  {: RESULT = BDL.OUT();  :}
   |  DUAL {: RESULT = BDL.DUAL(); :}
-//  |  ID:i
-//     {:
-//         error("unknown direction specifier \"" + i + "\"", ileft, iright); RESULT = BDL.IN();
-//     :}
   ;
 
 instance ::=
@@ -421,24 +428,20 @@ bind_list_part ::=
   ;
 
 bind ::=
-     BIND ID:port ID:axis option_list:opts
+     BIND id:port ID:axis option_list:opts
      {:
          RESULT = BDL.Bindings(BDL.Axis(axis, port, pos(portleft), opts));
      :}
   |
-     BIND:b ID:port option_list:opts
+     BIND:b id:port option_list:opts
      {:
          error("axis declaration missing port/axis identifier. Use \"cpu\" for processor connected port", bleft, bright);
          RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), opts));
      :}
-  |  CPU ID:port option_list:opts
+  |  CPU:c id_list:ports option_list:opts
      {:
-         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), opts));
-     :}
-  |  CPU ID:port cpu_bind_list_part:l option_list:opts
-     {:
-         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft)));
-         for(Binding b : l) RESULT = RESULT.add(((CPUAxis)b).replaceOpts(opts));
+         RESULT = BDL.Bindings();
+         for(String port : ports) RESULT = RESULT.add(BDL.CPUAxis(port, pos(cleft), opts));
      :}
   |  CPU:c ID:id1 ID:id2 option_list:opts
      {:
@@ -449,18 +452,6 @@ bind ::=
          );
      :}
   ;
-
-cpu_bind_list_part ::=
-     COMMA ID:port cpu_bind_list_part:l
-     {:
-         RESULT = l.appFront(BDL.CPUAxis(port, pos(portleft)));
-     :}
-  |  COMMA ID:port
-     {:
-         RESULT = BDL.Bindings(BDL.CPUAxis(port, pos(portleft), BDL.Options()));
-     :}
-  ;
-
 
 code_block ::=
      CBEGIN CEND:c
