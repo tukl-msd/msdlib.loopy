@@ -11,6 +11,10 @@
 #include "xparameters.h"
 #include "xbasic_types.h"
 
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 int outQueueSize = 0;
 
 /**
@@ -21,7 +25,10 @@ int outQueueSize = 0;
  *      -> input queue -> hw reset -> output queue
  */
 void reset_queues() {
-	if(DEBUG) xil_printf("reset queues ...\n");
+	#if DEBUG
+		loopy_print("reset queues ...\n");
+	#endif /* DEBUG */
+
 	// TODO set some reset flag
 	int i;
 	for(i = 0; i <  IN_STREAM_COUNT; i++) clear( inQueue[i]);
@@ -44,12 +51,15 @@ static void send_ack(unsigned char pid, unsigned int count) {
 void recv_message(unsigned char pid, int payload[], unsigned int size) {
 	unsigned int i = 0;
 	for(i = 0; i < size; i++) {
-		// add values, until sw queue is full
-		if(inQueue[pid]->size < SW_QUEUE_SIZE) {
+		// add values, until corresponding sw queue is full
+		if(inQueue[pid]->size < inQueue[pid]->cap) {
 			put(inQueue[pid], payload[i]);
 		} else break;
 	}
-	if(DEBUG) xil_printf("\nsend ack for pid %d with %d values", pid, i);
+
+	#if DEBUG
+		loopy_print("\nsend ack for pid %d with %d values", pid, i);
+	#endif /* DEBUG */
 
 	// acknowledge all stored values
 	send_ack(pid, i);
@@ -85,17 +95,22 @@ void send_gpio(unsigned char gid, unsigned char val) {
 //}
 
 void flush_queue(unsigned char pid) {
-	if(DEBUG) xil_printf("\nflushing %d ...", pid);
+	#if DEBUG
+		loopy_print("\nflushing %d ...", pid);
+	#endif /* DEBUG */
 
 	// return, if the queue is empty
 	if(outQueueSize == 0) {
-		if(DEBUG) xil_printf(" empty");
+		#if DEBUG
+			loopy_print(" empty");
+		#endif /* DEBUG */
 		return;
 	}
 
-	if(DEBUG) xil_printf(" count: %d", outQueueSize);
-	int i;
 
+	#if DEBUG
+		loopy_print(" count: %d", outQueueSize);
+	#endif /* DEBUG */
 	// otherwise, encode a data header
 	struct Message *m = encode_data(pid, outQueueSize);
 

@@ -3,10 +3,21 @@ package de.hopp.generator.utils;
 import katja.common.NE;
 import de.hopp.generator.frontend.*;
 
+/**
+ * Provides several utility methods concerning the board model.
+ * 
+ * This mainly concerns easy access to (referenced) elements, that are
+ * required to exist by definition.
+ * 
+ * @author Thomas Fischer
+ */
 public class BoardUtils {
     
+    /** The default size for board-side software queues. */
     public static final int defaultQueueSizeSW = 1024;
+    /** The default size for board-side hardware queues. */
     public static final int defaultQueueSizeHW = 64;
+    /** The default bitwidth of ports. */
     public static final int defaultWidth = 32;
     
 //    public static boolean hasLEDs(Board board) {
@@ -155,8 +166,8 @@ public class BoardUtils {
     
     /**
      * Get the clock frequency of the provided core
-     * @param core
-     * @return
+     * @param core A core.
+     * @return The clock frequency of the core.
      * @throws IllegalStateException If no clock port has been specified.
      * The existence of a clock port declaration has to be guaranteed by the frontend.
      */
@@ -167,6 +178,11 @@ public class BoardUtils {
         throw new IllegalStateException();
     }
     
+    /**
+     * Get the clock port of the provided core.
+     * @param core A core.
+     * @return The clock port of the core.
+     */
     public static CLK getClockPort(CorePos core) {
         for(Port port : core.ports().term())
             if(port instanceof CLK) return ((CLK)port);
@@ -174,6 +190,11 @@ public class BoardUtils {
         throw new IllegalStateException();
     }
     
+    /**
+     * Get the reset port of the provided core.
+     * @param core A core.
+     * @return The reset port of the core.
+     */
     public static RST getResetPort(CorePos core) {
         for(Port port : core.ports().term())
             if(port instanceof RST) return ((RST)port);
@@ -183,8 +204,8 @@ public class BoardUtils {
     
     /**
      * Get the reset polarity of the provided core.
-     * @param core
-     * @return
+     * @param core A core.
+     * @return true, if the reset polarity of the core is set to 1, false if set to 0.
      * @throws IllegalStateException If no reset port has been specified.
      * The existence of a reset port declaration has to be guaranteed by the frontend.
      */
@@ -197,7 +218,7 @@ public class BoardUtils {
     
     /**
      * Checks if a cpu port binding is polling or forwarding.
-     * @param axis The cpu binding of the port.
+     * @param axis A cpu binding.
      * @return true, if the port is polling, false otherwise.
      */
     public static boolean isPolling(CPUAxisPos axis) {
@@ -210,11 +231,11 @@ public class BoardUtils {
     }
     
     /**
-     * Get the defined value queue size parameter for this cpu axis.
+     * Get the defined value queue size parameter for this cpu binding.
      * 
      * This method returns the user-defined value queue size in the actual
      * bitwidth of the corresponding port.
-     * @param axis
+     * @param axis A cpu binding.
      * @return The value queue size for the bound port specified by the user.
      */
     private static int getPollingCount(CPUAxisPos axis) {
@@ -227,11 +248,11 @@ public class BoardUtils {
     }
     
     /**
-     * Get the defined value queue size parameter for this cpu axis.
+     * Get the defined value queue size parameter for this cpu binding.
      * 
      * The queue size is assumed to be specified in the actual bitwidth of connected the port.
      * However, this method returns the corresponding size for queue with bitwidth of 32-bit.
-     * @param axis
+     * @param axis A cpu binding.
      * @return The size of a 32-bit queue required to hold the number of values requested by the user.
      */
     public static int getPollingCount32(CPUAxisPos axis) {
@@ -239,11 +260,11 @@ public class BoardUtils {
     }
     
     /**
-     * Get the defined software queue size parameter for this cpu axis.
+     * Get the defined software queue size parameter for this cpu binding.
      * 
      * This method returns the user-defined queue size in the actual bitwidth
      * of the corresponding port.
-     * @param axis
+     * @param axis A cpu binding.
      * @return The queue size for the bound port specified by the user.
      */
     private static int getSWQueueSize(CPUAxisPos axis) {
@@ -260,19 +281,32 @@ public class BoardUtils {
     }
     
     /**
-     * Get the defined software queue size parameter for this cpu axis.
+     * Get the defined software queue size parameter for this cpu binding.
      * 
      * The queue size is assumed to be specified in the actual bitwidth of connected the port.
      * However, this method returns the corresponding size for queue with bitwidth of 32-bit.
      * This is required for calculating the size of value queues of polling ports and board-side
      * software queues in general.
-     * @param axis
+     * @param axis A cpu binding.
      * @return The size of a 32-bit queue required to hold the number of values requested by the user.
      */
     public static int getSWQueueSize32(CPUAxisPos axis) {
         return getSWQueueSize(axis) * (int)Math.ceil(getWidth(axis) / 32.0);
     }
     
+    /**
+     * Get the defined hardware queue size parameter fo this cpu binding.
+     * 
+     * The size is calculated in the following order:
+     *  - hardware queue size declaration at the binding itself
+     *  - hardware queue size declaration at the bound port
+     *  - hardware queue size declaration at file root
+     *  - default hardware queue size
+     *  
+     *  The first defined hardware queue size is taken as size for the specific binding.
+     * @param axis The cpu binding.
+     * @return The hardware queue size of the binding.
+     */
     public static int getHWQueueSize(CPUAxisPos axis) {
         // if there is a local definition, return that
         for(Option opt : axis.opts().term())
@@ -286,6 +320,11 @@ public class BoardUtils {
         return defaultQueueSizeHW;
     }
     
+    /**
+     * Get the direction specifier of the port referenced by a specific cpu binding.
+     * @param axis The cpu binding.
+     * @return The direction of the cpu binding.
+     */
     public static DirectionPos getDirection(CPUAxisPos axis) {
         return getPort(axis).direction();
     }
@@ -301,15 +340,13 @@ public class BoardUtils {
      */
     public static int getWidth(CPUAxisPos axis) {
         return getWidth(getPort(axis).term());
-        
-//        // the bitwidth option has to be set at the port definition
-//        for(Option opt : getPort(axis).opts().term())
-//            if(opt instanceof BITWIDTH) return ((BITWIDTH)opt).bit();
-//            
-//        // if it is not set, return the default width
-//        return defaultWidth;
     }
     
+    /**
+     * Get the bitwidth of an AXI port.
+     * @param port An AXI port.
+     * @return The bitwidth of the port.
+     */
     public static int getWidth(AXI port) {
         // the bitwidth option has to be set at the port definition
         for(Option opt : port.opts())

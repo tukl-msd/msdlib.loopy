@@ -3,7 +3,7 @@
 	<name>app_bsp</name>
 	<comment></comment>
 	<projects>
-		<project>edk_hw_platform</project>
+		<project>hw</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

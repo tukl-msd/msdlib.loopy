@@ -231,7 +231,7 @@ public class SDK extends Visitor<NE> {
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_bram_block))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("mikcroblaze_0_i_bram_ctrl")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_i_bram_ctrl")))
             ), MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("intc"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_intc))),
@@ -255,10 +255,10 @@ public class SDK extends Visitor<NE> {
         // add debug constants
         boolean debug = isDebug(board);
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
-        if(debug) addConst("print(...)", "xil_printf(__VA_ARGS__)",
+        if(debug) addConst("loopy_print(...)", "xil_printf(__VA_ARGS__)",
             "With the chosen debug level, debug output will be sent over the JTAG cable."
         );
-        else addConst("print(...)", "",
+        else addConst("loopy_print(...)", "",
             "With disabled debugging, calls to the print method are simply removed."
         );
 
@@ -393,15 +393,13 @@ public class SDK extends Visitor<NE> {
             mssFile = addBlock(mssFile, MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup +
-                        (up ? "upsizer" : "downsizer"))))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_mux")))
             ));
         } else if(width > 32) {
             mssFile = addBlock(mssFile, MHS.Block("DRIVER",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup +
-                        (up ? "upsizer" : "downsizer"))))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_mux")))
             ));
         }
         
@@ -532,7 +530,7 @@ public class SDK extends Visitor<NE> {
                 "            // try to write, skip if the hw queue is full",
                 "            if(axi_write(peek(inQueue[pid]), pid)) {",
                 "                #if DEBUG",
-                "                  print(\"\\nfailed to write to AXI stream\");",
+                "                  loopy_print(\"\\nfailed to write to AXI stream\");",
                 "                #endif /* DEBUG */",
                 "                break;",
                 "            }",

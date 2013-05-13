@@ -33,6 +33,13 @@ public class XPS_14_1 extends XPS {
     protected int globalHWQueueSize;
     protected int globalSWQueueSize;
 
+    /**
+     * Creates an XPS 14.1 project backend for a Virtex 6 board.
+     * 
+     * Initialises version strings of components from the Xilinx catalogue.
+     * @param config Configuration for this backend and the related generator run.
+     * @param errors ErrorCollection for this backend and the related generator run.
+     */
     public XPS_14_1(Configuration config, ErrorCollection errors) {
         coresDir = new File(ISEUtils.edkDir(config), "pcores");
         

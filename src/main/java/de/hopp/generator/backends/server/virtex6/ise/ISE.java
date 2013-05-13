@@ -50,7 +50,9 @@ import de.hopp.generator.frontend.BDLFilePos;
  */
 public abstract class ISE implements ProjectBackendIF {
 
+    /** Source directory of sdk sources for a virtex6 board. */
     public static File sdkSourceDir = new File(new File("deploy", "server"), "virtex6");
+    /** Source directory of edk sources for the ISE workflow. */
     public static File edkSourceDir = new File(new File("deploy", "server"), "ISE");
     
     protected abstract XPS xps();
