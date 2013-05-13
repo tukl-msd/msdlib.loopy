@@ -35,7 +35,7 @@ public enum ProjectBackend {
         for(ProjectBackend backend : ProjectBackend.values())
             if(backend.instance.getName().equals(name)) return backend;
 
-        throw new IllegalArgumentException("no board backend exists with given name");
+        throw new IllegalArgumentException("no virtex6 project backend exists with given name");
     }
 
     /**

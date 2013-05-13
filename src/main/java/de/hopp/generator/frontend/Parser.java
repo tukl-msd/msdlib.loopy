@@ -162,10 +162,15 @@ public class Parser {
                 continue;
             }
         
-            // check connection of all declared ports
+            // check connection of all declared axi ports
             for(Port port : cores.get(inst.core()).ports()) {
+                // skip non-axi ports (i.e. clk and rst)
+                if(! (port instanceof AXI)) return;
+                
                 boolean connected = false;
                 for(Binding bind : inst.bind()) if(bind.port().equals(port.name())) connected = true;
+                
+                // add a warning for unconnected ports
                 if(!connected) errors.addWarning(new ParserWarning("Port " + port.name() + " of " +
                         inst.core() + " instance " + inst.name() + " is not connected", inst.pos()));
             }
@@ -203,12 +208,12 @@ public class Parser {
                         " ports. Only two ports can be connected with a single axis.", "", -1));
         } connections.clear();
         
-        // check for invalid attribute combinations
+        // check for invalid options
         boolean sw = false, hw = false;
         
         // invalid options for the board in general
         for(Option o : bdf.opts()) {
-            // poll is simply not allowed
+            // poll is simply not allowed here
             if(o instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option", "", -1)); 
             // neither is bitwidth
             else if(o instanceof BITWIDTH) errors.addError(new ParserError("encountered option \"width\" as board option", "", -1));

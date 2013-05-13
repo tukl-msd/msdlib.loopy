@@ -149,7 +149,6 @@ public abstract class XPS extends Visitor<NE> {
                 // if the port is an axi stream port,
                 // add all attributes required for an axi stream interface
                 
-                
                 // cache bitwidth and direction of the port
                 int bitwidth = getWidth((AXI)port);
                 boolean direct = direction(((AXI)port).direction());
