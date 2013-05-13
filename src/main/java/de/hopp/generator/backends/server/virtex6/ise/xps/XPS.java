@@ -2,6 +2,9 @@ package de.hopp.generator.backends.server.virtex6.ise.xps;
 
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getClockPort;
+import static de.hopp.generator.utils.BoardUtils.getDirection;
+import static de.hopp.generator.utils.BoardUtils.getSWQueueSize32;
+import static de.hopp.generator.utils.BoardUtils.getWidth;
 
 import java.io.File;
 import java.util.HashMap;
@@ -15,7 +18,12 @@ import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.parser.*;
+import de.hopp.generator.parser.AndExp;
+import de.hopp.generator.parser.Attribute;
+import de.hopp.generator.parser.Attributes;
+import de.hopp.generator.parser.Block;
+import de.hopp.generator.parser.Blocks;
+import de.hopp.generator.parser.MHSFile;
 
 /**
  * Abstract XPS generation backend, providing some utility methods.
@@ -121,10 +129,10 @@ public abstract class XPS extends Visitor<NE> {
      * Creates the mpd file of a core. The file has still to be added to the mpd list.
      * @param core The core, for which an mpd file should be created
      * @return The generated mpd file
-     * @throws GenerationFailed Something went wrong during generation. This can be the case,
+     * @throws UsageError Something went wrong during generation. This can be the case,
      *                          if unexpected attributes occurred in the core description.
      */
-    protected static MHSFile createCoreMPD(Core core) throws GenerationFailed {
+    protected static MHSFile createCoreMPD(Core core) throws UsageError {
         
         Block block = Block(core.name());
         
@@ -138,28 +146,22 @@ public abstract class XPS extends Visitor<NE> {
         for(final Port port : core.ports()) {
             
             if(port instanceof AXI) {
-            
-                int bitwidth = 32;
-                for(Option opt : ((AXI)port).opts()) {
-                    if(opt instanceof BITWIDTH) bitwidth = ((BITWIDTH)opt).bit();
-                }
+                // if the port is an axi stream port,
+                // add all attributes required for an axi stream interface
                 
+                
+                // cache bitwidth and direction of the port
+                int bitwidth = getWidth((AXI)port);
+                boolean direct = direction(((AXI)port).direction());
+                
+                // add bus interface
                 block = add(block, Attribute(BUS_IF(),
                     Assignment("BUS", Ident(port.name())),
                     Assignment("BUS_STD", Ident("AXIS")),
-                    ((AXI)port).direction().Switch(new Direction.Switch<Assignment, GenerationFailed>() {
-                        public Assignment CaseIN(IN term)   {
-                            return Assignment("BUS_TYPE", Ident("TARGET"));
-                        }
-                        public Assignment CaseOUT(OUT term) {
-                            return Assignment("BUS_TYPE", Ident("INITIATOR"));
-                        }
-                        public Assignment CaseDUAL(DUAL term) throws GenerationFailed {
-                            throw new GenerationFailed("invalid direction for virtex 6");
-                        }
-                    })
+                    Assignment("BUS_TYPE", Ident(direct ? "TARGET" : "INITIATOR"))
                 ));
                 
+                // add protocol parameter
                 block = add(block, Attribute(PARAMETER(),
                         Assignment("C_"+port.name()+"_PROTOCOL", Ident("GENERIC")),
                         Assignment("DT", Ident("string")),
@@ -168,6 +170,7 @@ public abstract class XPS extends Visitor<NE> {
                         Assignment("BUS", Ident(port.name()))
                 ));
                 
+                // add width parameter
                 block = add(block, Attribute(PARAMETER(),
                         Assignment("C_"+port.name()+"_TDATA_WIDTH", Number(bitwidth)),
                         Assignment("DT", Ident("integer")),
@@ -176,33 +179,36 @@ public abstract class XPS extends Visitor<NE> {
                         Assignment("BUS", Ident(port.name()))
                 ));
                 
-                boolean direct = direction(((AXI)port).direction());
-                
+                // add ready port
                 block = add(block, Attribute(PORT(),
                         Assignment(port.name() + "_tready", Ident("TREADY")),
                         Assignment("DIR", Ident(direct ? "O" : "I")),
                         Assignment("BUS", Ident(port.name()))
                 ));
                 
+                // add valid port
                 block = add(block, Attribute(PORT(),
                         Assignment(port.name() + "_tvalid", Ident("TVALID")),
                         Assignment("DIR", Ident(direct ? "I" : "O")),
                         Assignment("BUS", Ident(port.name()))
                 ));
                 
+                // add data port
                 block = add(block, Attribute(PORT(),
                         Assignment(port.name() + "_tdata", Ident("TDATA")),
                         Assignment("DIR", Ident(direct ? "I" : "O")),
-                        Assignment("VEC", Range(bitwidth-1, 0)),
-                        Assignment("BUS", Ident(port.name()))
+                        Assignment("BUS", Ident(port.name())),
+                        Assignment("VEC", Range(bitwidth-1, 0))
                 ));
                 
+                // add last port
                 block = add(block, Attribute(PORT(),
                         Assignment(port.name() + "_tlast", Ident("TLAST")),
                         Assignment("DIR", Ident(direct ? "I" : "O")),
                         Assignment("BUS", Ident(port.name()))
                 ));
             } else if (port instanceof CLK) {
+                // for clock ports, only a port attribute is required
                 block = add(block, Attribute(PORT(),
                         Assignment(port.name(), STR("")),
                         Assignment("DIR", Ident("I")),
@@ -210,6 +216,7 @@ public abstract class XPS extends Visitor<NE> {
                         Assignment("ASSIGNMENT", Ident("REQUIRE"))
                 ));
             } else if(port instanceof RST) {
+                // for reset ports, only a port attribute is required
                 block = add(block, Attribute(PORT(),
                         Assignment(port.name(), STR("")),
                         Assignment("DIR", Ident("I")),
@@ -221,16 +228,23 @@ public abstract class XPS extends Visitor<NE> {
         return MHSFile(Attributes(), block);
     }
     
-    private static boolean direction(Direction direction) throws GenerationFailed {
-        return direction.Switch(new Direction.Switch<Boolean, GenerationFailed>() {
-            public Boolean CaseIN(IN term) throws GenerationFailed {
+    /**
+     * Translates the direction attribute of the port in a boolean value.
+     * @param direction Direction attribute of the port.
+     * @return true if in-going, false otherwise.
+     * @throws GenerationFailed If the port is bi-directional, since those
+     *                          ports are not supported using AXI4 stream interfaces.
+     */
+    private static boolean direction(Direction direction) throws UsageError {
+        return direction.Switch(new Direction.Switch<Boolean, UsageError>() {
+            public Boolean CaseIN(IN term) throws UsageError {
                 return true;
             }
-            public Boolean CaseOUT(OUT term) throws GenerationFailed {
+            public Boolean CaseOUT(OUT term) throws UsageError {
                 return false;
             }
-            public Boolean CaseDUAL(DUAL term) throws GenerationFailed {
-                throw new GenerationFailed("invalid direction for virtex6");
+            public Boolean CaseDUAL(DUAL term) throws UsageError {
+                throw new UsageError("invalid direction for virtex6");
             }
         });
     }
@@ -298,24 +312,50 @@ public abstract class XPS extends Visitor<NE> {
         );
     }
     
-    // helper methods modifying the mhs file of this visitor
-    
-    protected Attribute createCPUAxisBinding(final CPUAxis axis, boolean d, int width, int queueSize) throws UsageError {
+    /**
+     * Generate an attribute representing the binding of an axis directly to the virtex6 processors
+     * AXI4 stream interface.
+     * @param axis The model representation of the binding.
+     * @return The generated attribute representing the binding.
+     * @throws UsageError If a parameter of the port is invalid for this context.
+     */
+    protected Attribute createCPUAxisBinding(final CPUAxisPos axis) throws GenerationFailed, UsageError {
         
-        String axisGroup   = d ? "M" + axiStreamIdMaster++ : "S" + axiStreamIdSlave++;
+        boolean direct = direction(getDirection(axis).termDirection());
+        int width = getWidth(axis);
+        int queueSize = getSWQueueSize32(axis);
+        
+        String axisGroup   = direct ? "M" + axiStreamIdMaster++ : "S" + axiStreamIdSlave++;
         String currentAxis = axisGroup + "_AXIS";
         
         // add multiplexing, if required
-        currentAxis = addMux(axisGroup, d, width, currentAxis);
+        currentAxis = addMux(axisGroup, currentAxis, direct, width);
         
         // add queueing, if required
-        currentAxis = addQueue(axisGroup, d, width, queueSize, currentAxis);
+        currentAxis = addQueue(axisGroup, currentAxis, direct, width, queueSize);
         
         // connect the component to the last axis
-        return Attribute(BUS_IF(), Assignment(axis.port(), Ident(currentAxis)));
+        return Attribute(BUS_IF(), Assignment(axis.port().term(), Ident(currentAxis)));
     }
     
-    private String addQueue(String axisGroup, boolean d, int width, int depth, String currentAxis) throws UsageError {
+    /**
+     * Adds a queue to an AXI stream interface.
+     * 
+     * One end of the queue (depending on the direction attribute) is connected to the provided axis.
+     * The identifier of the axis connected to the other end is returned by the method and has to be
+     * connected to some other component.
+     * 
+     * @param axisGroup Basic identifier used to construct all axis identifiers of the corresponding port.
+     *   Usually consists of the direction of the port and a number.
+     * @param currentAxis Axis, which will be connected to one end of the queue (depending on direction).
+     * @param d Direction of the connected port. The corresponding end of the queue is connected
+     *   to the provided axis.
+     * @param width Bitwidth of values to be stored in the queue.
+     * @param depth Number of values that can be stored in the queue. If set to 0, no queue is added.
+     * @return Open axis of the queue.
+     * @throws UsageError If any parameter for the queue is invalid (e.g. negative width).
+     */
+    private String addQueue(String axisGroup, String currentAxis, boolean d, int width, int depth) throws UsageError {
         
         if(depth == 0) return currentAxis;
         if(depth < 0) throw new UsageError("negative queue size");
@@ -337,8 +377,28 @@ public abstract class XPS extends Visitor<NE> {
         // return the axis identifier of the queues port, that should be attached to the components port
         return queueAxis;
     }
-
-    private String addMux(String axisGroup, boolean d, int width, String currentAxis) throws UsageError {
+    
+    /**
+     * Adds a bitwidth resizer to an AXI stream interface.
+     * 
+     * One end of the resizer (depending on the direction attribute) is connected to the provided axis.
+     * The identifier of the axis connected to the other end is returned by the method and has to be
+     * connected to some other component.
+     * 
+     * The direction and bitwidth also determines, if an upsizer or downsizer is used.
+     * 
+     * @param axisGroup Basic identifier used to construct all axis identifiers of the corresponding port.
+     *   Usually consists of the direction of the port and a number.
+     * @param currentAxis Axis, which will be connected to one end of the resizer (depending on direction).
+     * @param d Direction of the connected port. The corresponding end of the resizer is connected
+     *   to the provided axis.
+     * @param width Depending on the direction, either source or target bitwidth. The other is always 32bit
+     *   (the width of the processors AXI stream interface). If the width is also 32bit, no translation
+     *   is required and no resizer is added.
+     * @return Open axis of the resizer.
+     * @throws UsageError If any parameter is invalid (e.g. negative width).
+     */
+    private String addMux(String axisGroup, String currentAxis, boolean d, int width) throws UsageError {
         
         if(width == 32) return currentAxis;
         if(width <= 0) throw new UsageError("encountered port with bitwidth of " + width);

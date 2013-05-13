@@ -3,10 +3,7 @@ package de.hopp.generator.backends.server.virtex6.ise.xps;
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getClockPort;
 import static de.hopp.generator.utils.BoardUtils.getCore;
-import static de.hopp.generator.utils.BoardUtils.getPort;
 import static de.hopp.generator.utils.BoardUtils.getResetPort;
-import static de.hopp.generator.utils.BoardUtils.getSWQueueSize32;
-import static de.hopp.generator.utils.BoardUtils.getWidth;
 
 import java.io.File;
 
@@ -260,14 +257,10 @@ public class XPS_14_1 extends XPS {
 
     public void visit(CPUAxisPos axis) {
         try {
-            // direction of the port: true marks in-going port, false an out-going one
-            // bi-directional not possible due to sanity check
-            boolean direction = getPort(axis).direction().termDirection() instanceof IN;
-
-            curBlock = add(curBlock, createCPUAxisBinding(
-                    axis.term(), direction, getWidth(axis), getSWQueueSize32(axis)
-            ));
+            curBlock = add(curBlock, createCPUAxisBinding(axis));
         } catch (UsageError e) {
+            errors.addError(e);
+        } catch (GenerationFailed e) {
             errors.addError(e);
         }
     }
@@ -314,7 +307,7 @@ public class XPS_14_1 extends XPS {
         // add the .mpd file to the mpd list
         try {
             mpdFiles.put(new File(coreDataDir, name + "_v2_1_0" + ".mpd"), createCoreMPD(term.term()));
-        } catch(GenerationFailed e) {
+        } catch(UsageError e) {
             errors.addError(e);
         }
     }

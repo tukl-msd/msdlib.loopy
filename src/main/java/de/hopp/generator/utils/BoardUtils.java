@@ -286,6 +286,10 @@ public class BoardUtils {
         return defaultQueueSizeHW;
     }
     
+    public static DirectionPos getDirection(CPUAxisPos axis) {
+        return getPort(axis).direction();
+    }
+    
     /**
      * Get the bitwidth of a cpu port binding.
      * 
@@ -296,10 +300,21 @@ public class BoardUtils {
      * @return The bitwidth of the referenced port declaration.
      */
     public static int getWidth(CPUAxisPos axis) {
+        return getWidth(getPort(axis).term());
+        
+//        // the bitwidth option has to be set at the port definition
+//        for(Option opt : getPort(axis).opts().term())
+//            if(opt instanceof BITWIDTH) return ((BITWIDTH)opt).bit();
+//            
+//        // if it is not set, return the default width
+//        return defaultWidth;
+    }
+    
+    public static int getWidth(AXI port) {
         // the bitwidth option has to be set at the port definition
-        for(Option opt : getPort(axis).opts().term())
+        for(Option opt : port.opts())
             if(opt instanceof BITWIDTH) return ((BITWIDTH)opt).bit();
-            
+        
         // if it is not set, return the default width
         return defaultWidth;
     }
