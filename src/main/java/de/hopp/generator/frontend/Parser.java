@@ -162,7 +162,6 @@ public class Parser {
             // check declaration of referenced ports
             for(Binding b : inst.bind()) {
                 boolean exists = false;
-                System.err.println("binding: " + b.port());
                 
                 for(Port port : cores.get(inst.core()).ports())
                     if(port.name().equals(b.port())) exists = true;
