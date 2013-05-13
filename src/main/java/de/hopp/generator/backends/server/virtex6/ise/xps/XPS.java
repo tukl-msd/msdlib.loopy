@@ -519,6 +519,7 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(PORT(), Assignment("Interconnect_aresetn", Ident("proc_sys_reset_0_Interconnect_aresetn"))), 
             Attribute(PORT(), Assignment("Ext_Reset_In", Ident("RESET"))),
             Attribute(PORT(), Assignment("BUS_STRUCT_RESET", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
+            Attribute(PORT(), Assignment("Peripheral_reset", Ident("proc_sys_reset_0_Peripheral_reset"))),
             Attribute(PORT(), Assignment("Peripheral_aresetn", Ident("proc_sys_reset_0_Peripheral_aresetn")))
           ), Block("axi_intc",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
