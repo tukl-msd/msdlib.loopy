@@ -33,8 +33,8 @@ struct tcp_pcb *con;
  * @ip The ip address to be printed.
  */
 static void print_ip ( char *msg, struct ip_addr *ip ) {
-    print(msg);
-    print("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
+    loopy_print(msg);
+    loopy_print("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
 
 /**
@@ -45,17 +45,17 @@ static void print_ip ( char *msg, struct ip_addr *ip ) {
  */
 static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
 	print_ip("  Board IP : ", ip);
-	print(":%d", PORT);
+	loopy_print(":%d", PORT);
 	print_ip("\n  Netmask  : ", mask);
 	print_ip("\n  Gateway  : ", gw);
 //	print_ip("\n  Host IP  : ", host);
-	print(":%d\n", PORT);
+	loopy_print(":%d\n", PORT);
 
 }
 //32506054
 static void set_unaligned ( int *target, int *data ) {
 	#if DEBUG
-		print("\nunaligning value: %d", *data);
+		loopy_print("\nunaligning value: %d", *data);
 	#endif /* DEBUG */
 
     int offset, i;
@@ -69,7 +69,7 @@ static void set_unaligned ( int *target, int *data ) {
     } else *target = *data;
 
 	#if DEBUG
-		print(" to %d", *target);
+		loopy_print(" to %d", *target);
 	#endif /* DEBUG */
 }
 
@@ -109,21 +109,21 @@ void medium_read() {
 }
 
 static void print_message(struct Message *m) {
-	print("\nsending message of size %d", m->headerSize + m->payloadSize);
-	print("\nheader int:  %d", m->header[0]);
+	loopy_print("\nsending message of size %d", m->headerSize + m->payloadSize);
+	loopy_print("\nheader int:  %d", m->header[0]);
 
-	print(" (Payload: ", m->payloadSize);
+	loopy_print(" (Payload: ", m->payloadSize);
 	int i;
-	for(i = 0; i < m->payloadSize-1; i++) print("%d, ", m->payload[i]);
-	print("%d", m->payload[m->payloadSize-1]);
-	print(" )");
+	for(i = 0; i < m->payloadSize-1; i++) loopy_print("%d, ", m->payload[i]);
+	loopy_print("%d", m->payload[m->payloadSize-1]);
+	loopy_print(" )");
 }
 
 void medium_send(struct Message *m) {
 //	if (tcp_sndbuf(tpcb) > p->len) {
 //			err = tcp_write(tpcb, p->payload, p->len, 1);
 //		} else
-//			print("no space in tcp_sndbuf\n\r");
+//			loopy_print("no space in tcp_sndbuf\n\r");
 	// I have no idea what I'm doing!
 	#if DEBUG
 		print_message(m);
@@ -147,7 +147,7 @@ void medium_send(struct Message *m) {
 		((int*)p->payload)[i+m->headerSize] = m->payload[i];
 
 //	for(i = 0; i < m->headerSize + m->payloadSize; i++) {
-//		print("\nval: %d", ((int*)p->payload)[i]);
+//		loopy_print("\nval: %d", ((int*)p->payload)[i]);
 //	}
 //
 //	// write header data in buffer
@@ -168,33 +168,33 @@ void medium_send(struct Message *m) {
 
 	// setup a connection to the host data port
 //	err = tcp_connect(data_pcb, &host, 8848, test);
-//	if (err != ERR_OK) print("Err: %d\r\n", err);
+//	if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
 
 	if (tcp_sndbuf(con) > p->len) {
 		// write the package (doesn't send automatically!)
 		err = tcp_write(con, p->payload, p->len, TCP_WRITE_FLAG_COPY);
 
 		#ifdef DEBUG
-			if (err != ERR_OK) print("Err: %d\r\n", err);
+			if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
 		#endif
 
 		// send the package?
 		err = tcp_output(con);
 
 		#ifdef DEBUG
-			if (err != ERR_OK) print("Err: %d\r\n", err);
+			if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
 		#endif
 	} else {
-		print("No space in tcp_sndbuf\n\r");
+		loopy_print("No space in tcp_sndbuf\n\r");
 	}
 
 //	tcp_sent(data_pcb, test2);
-//	print("\nclosing connection");
+//	loopy_print("\nclosing connection");
 
 	// close the connection
 //	err = tcp_close(data_pcb);
 //#ifdef DEBUG
-//		if (err != ERR_OK) print("Err: %d\r\n", err);
+//		if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
 //	#endif
 
 	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
@@ -265,7 +265,7 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 int start_application() {
 
 	#if DEBUG
-		print("Starting server application ...");
+		loopy_print("Starting server application ...");
 	#endif /* DEBUG */
 
 	err_t err;
@@ -273,14 +273,14 @@ int start_application() {
 	// create new TCP PCB structure
 	pcb = tcp_new();
 	if (!pcb) {
-		print("Error creating PCB. Out of Memory\n\r");
+		loopy_print("Error creating PCB. Out of Memory\n\r");
 		return -1;
 	}
 
 	// bind to specified @port
 	err = tcp_bind(pcb, IP_ADDR_ANY, PORT);
 	if (err != ERR_OK) {
-		print("Unable to bind to port %d: err = %d\n\r", PORT, err);
+		loopy_print("Unable to bind to port %d: err = %d\n\r", PORT, err);
 		return -2;
 	}
 
@@ -290,7 +290,7 @@ int start_application() {
 	// listen for connections
 	pcb = tcp_listen(pcb);
 	if (!pcb) {
-		print("Out of memory while tcp_listen\n\r");
+		loopy_print("Out of memory while tcp_listen\n\r");
 		return -3;
 	}
 
@@ -301,7 +301,7 @@ int start_application() {
 	data_pcb = tcp_new();
 
 	#if DEBUG
-		print(" done\n");
+		loopy_print(" done\n");
 	#endif /* DEBUG */
 
 
@@ -315,7 +315,7 @@ int start_application() {
 
 void init_medium() {
 	#if DEBUG
-		print("\nSetting up Ethernet interface ...\n");
+		loopy_print("\nSetting up Ethernet interface ...\n");
 	#endif /*D EBUG */
 
 	// the mac address of the board. this should be unique per board
@@ -340,7 +340,7 @@ void init_medium() {
 	// Reason? Somewhere in here is the link speed auto-negotiation
   	// Add network interface to the netif_list, and set it as default
 	if (!xemac_add(netif, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
-		print("Error adding N/W interface\n\r");
+		loopy_print("Error adding N/W interface\n\r");
 //		return -1;
 		return;
 	}
@@ -355,9 +355,9 @@ void init_medium() {
 	// enable interrupts
 	// TODO This is basically a platform-dependent call... (we're on a microblaze, but there is also an implementation for ppc and zynq, maybe more)
 	// TODO This should already be handled by init_platform. We do not require the medium to set up interrupts again...
-//	print("\nenable platform interrupts ...");
+//	loopy_print("\nenable platform interrupts ...");
 //	platform_enable_interrupts();
-//	print("done");
+//	loopy_print("done");
 
 	// specify that the network if is up
 	netif_set_up(netif);
