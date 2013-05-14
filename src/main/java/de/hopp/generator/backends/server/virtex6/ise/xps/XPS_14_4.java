@@ -20,5 +20,15 @@ public class XPS_14_4 extends XPS_14_1 {
      */
     public XPS_14_4(Configuration config, ErrorCollection errors) {
         super(config, errors);
+
+        // not sure if these are 14.4 changes or if they are available in an earlier version
+        // shouldn't the core version be independent of the xps version anyways...?
+        version_microblaze        = "8.40.a";
+        
+        version_axi_intc          = "1.03.a";
+        version_lmb_bram_if_cntlr = "3.10.c";
+        version_mdm               = "2.10.a";
+        version_axi_timer         = "1.03.a";
+        version_axi_v6_ddrx       = "1.06.a";
     }
 }

@@ -253,7 +253,7 @@ public:
 	 * @throws readException if the read failed.
 	 */
 	friend outPort& operator >>(outPort &o, std::vector<std::bitset<width>> &vals) {
-		o.read(val);
+		o.read(vals);
 		return o;
 	}
 

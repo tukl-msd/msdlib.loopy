@@ -43,7 +43,7 @@ protected:
 	 * Internal constructor, initialising size and done values.
 	 * @param size Total number of values to be processed.
 	 */
-	state(int size) : w(32), done(0), fail(false), m("") {
+	state(int size) : done(0), w(32), fail(false), m("") {
 		intPerValue = ceil((double) w / (sizeof(int) * 8));
 		this->size = size * intPerValue;
 	}
@@ -52,7 +52,7 @@ protected:
 	 * @param size Total number of values to be processed.
 	 * @param width Actual bitwidth of the state
 	 */
-	state(int size, int width) : w(width), done(0), fail(false), m("") {
+	state(int size, int width) : done(0), w(width), fail(false), m("") {
 		intPerValue = ceil((double) w / (sizeof(int) * 8));
 		this->size = size * intPerValue;
 	}
