@@ -79,14 +79,20 @@ public class XPS_14_1 extends XPS {
                 globalSWQueueSize = ((SWQUEUEPos)opt).qsize().term();
         }
         
+        // addDefaultParameters();
+        
         // visit boards components
         visit(term.cores());
         visit(term.insts());
         visit(term.gpios());
         visit(term.medium());
-        
+
+        // TODO move attributes to top...
+        // TODO independent interrupt controller!
         // add the default stuff...
         addDefault();
+        // addDefaultBlocks();
+        // addINTC();
         addTimer(term);
         addMicroblaze();
     }

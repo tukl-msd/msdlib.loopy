@@ -456,8 +456,8 @@ public abstract class XPS extends Visitor<NE> {
     /** Adds all basic components to the design, that are independent from the board. */
     protected void addDefault() {
         Attributes attr = Attributes(
-          Attribute(PARAMETER(), Assignment("VERSION", Ident(version))),
-          Attribute(PORT(), 
+          Attribute(PARAMETER(), Assignment("VERSION", Ident(version))
+          ), Attribute(PORT(), 
             Assignment("ddr_memory_we_n", Ident("ddr_memory_we_n")),
             Assignment("DIR", Ident("O"))
           ), Attribute(PORT(), 
