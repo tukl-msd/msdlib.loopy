@@ -1,0 +1,36 @@
+medium ethernet {
+  mac "00:0a:35:01:FB:E3"
+  ip "192.168.2.10"
+  mask "255.255.255.0"
+  gate "192.168.2.1"
+  port 8844
+}
+
+hwqueue 32
+
+core AxiTwoRng 1.00.a {
+  // list of vhdl sources
+  source "VHDL Sources/AxiMst.vhd", "VHDL Sources/AxiSlv.vhd", "VHDL Sources/AxiTwoRng.vhd"
+  source "VHDL Sources/RngUniformTausworthe88.vhd"
+
+  // declaration of the components interface
+  port in s_axis
+  port out m_axis
+
+  // declaration of the components clock and reset ports
+  clk aclk 100
+  rst aresetn 0
+}
+
+instance AxiTwoRng 1.00.a rng_a {
+  cpu s_axis {
+    // since this port is only used to configure the component once, a large queues are not required
+    swqueue 8
+    hwqueue 8
+  }
+  cpu m_axis {
+    // several values should be cached, but continuous forwarding seems not practicable for a random number generator (except if values are consumed faster than they are generated)
+    poll 64
+  }
+}
+
