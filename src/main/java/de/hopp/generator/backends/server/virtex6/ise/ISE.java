@@ -282,7 +282,7 @@ public abstract class ISE implements ProjectBackendIF {
                 "bitinit", "system.mhs",
                 "-p", device,
                 "-pe", "microblaze_0", "../sdk/app/Debug/app.elf",
-                "-o", config.serverDir().getCanonicalPath()
+                "-o", config.serverDir().getCanonicalPath() + "/download.bit"
             ).directory(edkDir(config));
             runProcess(pb, new String[0], config, errors);
         } catch (GenerationFailed e) {
