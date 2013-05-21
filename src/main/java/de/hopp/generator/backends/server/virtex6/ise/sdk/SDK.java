@@ -19,6 +19,7 @@ import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
+import de.hopp.generator.model.MInclude;
 import de.hopp.generator.model.MProcedure;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHS;
@@ -26,135 +27,135 @@ import de.hopp.generator.parser.MHSFile;
 
 /**
  * Generation backend for Xilinx SDK.
- * 
- * This backend is responsible for board-dependent files required to 
+ *
+ * This backend is responsible for board-dependent files required to
  * build up the .elf file.
  * This includes generation of the non-generic, board-dependent sources
  * (i.e. constants and components files) as well as a deployment list
  * of several generic, board-dependent sources (e.g. GPIO devices).
- * 
- * 
- * 
+ *
+ *
+ *
  * Since there seem to be no fundamental changes in the SDK since 14.1,
  * only one backend is provided here, which is assumed to be compatible with all
  * generated bitfiles. If this proves not to be the case, rename the SDK accordingly
  * and provide a structure similar to the XPS backends.
- * 
+ *
  * @author Thomas Fischer
  */
 public class SDK extends Visitor<NE> {
-    
+
     private static File gpioSrc = new File(sdkSourceDir, "gpio");
-    
-    private ErrorCollection errors;
-    
+
+    private final ErrorCollection errors;
+
     // target folders
-    private File targetDir;
-    private File targetSrc;
-    
+    private final File targetDir;
+    private final File targetSrc;
+
     // generic files to copy
     protected Map<File, File> deployFiles;
-    
+
     // generated files
     protected MFile components;
     protected MFile constants;
     protected MFile scheduler;
     protected MHSFile mssFile;
-    
+
     // parts of the generated files
     private MProcedure init;
     private MProcedure reset;
     private MProcedure axi_write;
     private MProcedure axi_read;
-    
+
     // counter variables
     private int axiStreamIdMaster = 0;
     private int axiStreamIdSlave  = 0;
-    
-    private int gpiCount = 0;
+
+    private final int gpiCount = 0;
     private int gpoCount = 0;
-    
+
     // version strings
     protected String version;
-    
+
     protected String version_os;
     protected String version_cpu;
-    
+
     protected String version_intc;
     protected String version_v6_ddrx;
     protected String version_bram_block;
     protected String version_timer_controller;
-    
+
     protected String version_uartlite;
     protected String version_ethernetlite;
     protected String version_lwip_lib_name;
     protected String version_lwip_lib;
-    
+
     protected String version_gpio_leds;
     protected String version_gpio_buttons;
     protected String version_gpio_switches;
-    
+
     protected String version_queue;
     protected String version_resizer;
-    
+
     public MFile getComponents() {
         return components;
     }
-    
+
     public MFile getConstants() {
         return constants;
     }
-    
+
     public MFile getScheduler() {
         return scheduler;
     }
-    
+
     public MHSFile getMSS() {
         return mssFile;
     }
-    
+
     public Map<File, File> getFiles() {
         return deployFiles;
     }
-    
+
     public SDK(Configuration config, ErrorCollection errors) {
         this.errors = errors;
-        
+
         // initialise version strings
         version                   = "2.2.0";
-        
+
         version_os                = "3.08.a";
         version_cpu               = "1.14.a";
-        
+
         version_bram_block        = "3.01.a";
         version_intc              = "2.05.a";
         version_timer_controller  = "2.04.a";
         version_v6_ddrx           = "2.00.a";
-        
+
         version_uartlite          = "2.00.a";
         version_ethernetlite      = "3.03.a";
-        
+
         version_lwip_lib_name     = "lwip140";
         version_lwip_lib          = "1.03.a";
-        
+
         version_gpio_leds         = "3.00.a";
         version_gpio_buttons      = "3.00.a";
         version_gpio_switches     = "3.00.a";
-        
+
         version_queue             = "1.00.a";
         version_resizer           = "1.00.a";
-        
+
         // set directories
         this.targetDir = sdkAppDir(config);
         targetSrc = new File(targetDir, "src");
-        
+
         // setup files and methods
         deployFiles = new HashMap<File, File>();
         setupFiles();
         setupMethods();
         setupMSS();
     }
-    
+
     private void setupFiles() {
         components = MFile(MDocumentation(Strings(
                 "Contains component-specific initialisation and processing procedures."
@@ -166,7 +167,7 @@ public class SDK extends Visitor<NE> {
             )), "constants", targetSrc.getPath(), MPreProcDirs(),
             MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
     }
-    
+
     private void setupMethods() {
         init  = MProcedure(MDocumentation(Strings(
                 "Initialises all components on this board.",
@@ -201,7 +202,7 @@ public class SDK extends Visitor<NE> {
                 "switch(target) {"
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
     }
-    
+
     private void setupMSS() {
         mssFile = MHS.MHSFile(
             MHS.Attributes(
@@ -210,8 +211,8 @@ public class SDK extends Visitor<NE> {
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_NAME", MHS.STR("standalone"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.STR(version_os))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.STR("microblaze_0"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.STR("debug_module"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.STR("debug_module")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.STR("rs232_uart_1"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.STR("rs232_uart_1")))
             ), MHS.Block("PROCESSOR",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("cpu"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_cpu))),
@@ -240,23 +241,27 @@ public class SDK extends Visitor<NE> {
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("uartlite"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_uartlite))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("debug_module")))
+            ), MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("uartlite"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_uartlite))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("rs232_uart_1")))
             )
         );
     }
-    
+
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos  term) { }
     public void visit(BackendsPos term) { }
     public void visit(OptionsPos  term) { }
-    
-    @Override
+
     public void visit(BDLFilePos board) {
-        
+
         // add debug constants
         boolean debug = isDebug(board);
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         if(debug) addConst("loopy_print(...)", "xil_printf(__VA_ARGS__)",
-            "With the chosen debug level, debug output will be sent over the JTAG cable."
+            "With the chosen debug level, debug output will be sent over the JTAG cable.",
+            MBracketInclude("stdio.h")
         );
         else addConst("loopy_print(...)", "",
             "With disabled debugging, calls to the print method are simply removed."
@@ -265,17 +270,17 @@ public class SDK extends Visitor<NE> {
         // add queue size constant
         addConst("MAX_OUT_SW_QUEUE_SIZE", String.valueOf(maxQueueSize(board)),
                 "Maximal size of out-going software queues.");
-        
+
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
-        
+
         // add gpio utils file, if gpio components are present
         if(!board.gpios().isEmpty()) {
             File target = new File(new File(targetSrc, "components"), "gpio");
             deployFiles.put(new File(gpioSrc, "gpio.h"), new File(target, "gpio.h"));
             deployFiles.put(new File(gpioSrc, "gpio.c"), new File(target, "gpio.c"));
         }
-        
+
         // visit board components
         visit(board.medium());
         visit(board.scheduler());
@@ -286,11 +291,11 @@ public class SDK extends Visitor<NE> {
         // add stream count constants
         addConst("IN_STREAM_COUNT", String.valueOf(axiStreamIdMaster), "Number of in-going stream interfaces.");
         addConst("OUT_STREAM_COUNT", String.valueOf(axiStreamIdSlave), "Number of out-going stream interfaces.");
-        
+
         // add init and reset procedures to the source file
         components = add(components, init);
         components = add(components, reset);
-        
+
         // finish axi read and write procedures
         axi_write = addLines(axi_write, MCode(Strings(
                 "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
@@ -307,62 +312,64 @@ public class SDK extends Visitor<NE> {
                 "fsl_isinvalid(rslt);",
                 "if(DEBUG) xil_printf(\" (invalid: %d)\", rslt);",
                 "return rslt;")));
-        
+
         // add axi read and write procedures
         components = add(components, axi_write);
         components = add(components, axi_read);
     }
 
-    @Override
     public void visit(ETHERNETPos term) {
         // deploy Ethernet medium files
         deployFiles.put(new File(sdkSourceDir, "ethernet.c"), new File(new File(targetSrc, "medium"), "medium.c"));
-        
+
         // add Ethernet-specific constants
-        for(MOptionPos opt : term.opts()) {
+        for(MOptionPos opt : term.opts())
             opt.Switch(new MOptionPos.Switch<String, NE>() {
+                @Override
                 public String CaseMACPos(MACPos term) {
                     addMAC(term.val().term()); return null;
                 }
+                @Override
                 public String CaseIPPos(IPPos term) {
                     addIP("IP", term.val().term(), "IP address"); return null;
                 }
+                @Override
                 public String CaseMASKPos(MASKPos term) {
                     addIP("MASK", term.val().term(), "network mask"); return null;
                 }
+                @Override
                 public String CaseGATEPos(GATEPos term) {
                     addIP("GW", term.val().term(), "standard gateway"); return null;
                 }
+                @Override
                 public String CasePORTIDPos(PORTIDPos term) {
                     addConst("PORT", term.val().term().toString(), "The port for this boards TCP-connection.");
                     return null;
                 }
             });
-        }
-        
+
         // add Ethernet driver and lwip library to bsp
         mssFile = addBlock(mssFile, MHS.Block("DRIVER",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("emaclite"))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_ethernetlite))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("ethernet_lite")))
         ));
-        
+
         mssFile = addBlock(mssFile, MHS.Block("LIBRARY",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_NAME", MHS.Ident(version_lwip_lib_name))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_VER", MHS.Ident(version_lwip_lib))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0")))
         ));
     }
-    
+
     public void visit(UARTPos term) {
-        
-    }
-    
-    public void visit(PCIEPos term) {
-        
+
     }
 
-    @Override
+    public void visit(PCIEPos term) {
+
+    }
+
     public void visit(GPIOPos term) {
         String name = term.name().term();
         if(name.equals("leds")) addLEDs();
@@ -371,38 +378,32 @@ public class SDK extends Visitor<NE> {
         else errors.addError(new ParserError("Unknown GPIO device " + name + " for Virtex6", "", -1));
     }
 
-    @Override
     public void visit(final CPUAxisPos axis) {
         AXIPos port = getPort(axis);
 
         int width = getWidth(axis);
         boolean d = port.direction() instanceof INPos;
-        boolean up = (width < 32 && !d) || (width > 32 && d);
+//        boolean up = ((width < 32) && !d) || ((width > 32) && d);
 
         String axisGroup   = d ? "m" + axiStreamIdMaster : "s" + axiStreamIdSlave;
-        
-        if(getHWQueueSize(axis) > 0) {
-            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_queue))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_queue")))
-            ));
-        }
-        
-        if(width < 32) {
-            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_mux")))
-            ));
-        } else if(width > 32) {
-            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_mux")))
-            ));
-        }
-        
+
+        if(getHWQueueSize(axis) > 0) mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_queue))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_queue")))
+        ));
+
+        if(width < 32) mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_mux")))
+        ));
+        else if(width > 32) mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("generic"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_resizer))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(axisGroup + "_mux")))
+        ));
+
         port.direction().termDirection().Switch(new Direction.Switch<Boolean, NE>() {
             public Boolean CaseIN(IN term) {
                 addWriteStream(axis); return null;
@@ -415,7 +416,7 @@ public class SDK extends Visitor<NE> {
             }
         });
     }
-    
+
     private void addWriteStream(CPUAxisPos axis) {
         if(axiStreamIdMaster>15) {
             errors.addError(new ParserError("too many writing AXI stream interfaces for Virtex6", "", -1));
@@ -425,7 +426,7 @@ public class SDK extends Visitor<NE> {
             "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
             ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
         )));
-        
+
         init = addLines(init, MCode(
             Strings("inQueue[" + axiStreamIdMaster + "] = createQueue(" + getSWQueueSize32(axis) + ");"),
             MQuoteInclude("../io.h")
@@ -442,7 +443,7 @@ public class SDK extends Visitor<NE> {
             "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
             ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
         )));
-        
+
         init = addLines(init, MCode(
             Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize32(axis) + ";"),
             MQuoteInclude("../io.h")
@@ -452,64 +453,61 @@ public class SDK extends Visitor<NE> {
             Strings("isPolling[" + axiStreamIdSlave + "] = " + (isPolling(axis) ? 1 : 0) + ";"),
             MQuoteInclude("../io.h")
         ));
-        
+
         init = addLines(init, MCode(
             Strings("pollCount[" + axiStreamIdSlave + "] = " + getPollingCount32(axis) + ";"),
             MQuoteInclude("../io.h")
         ));
-        
+
         axiStreamIdSlave++;
     }
-    
+
     // list types
     public void visit(GPIOsPos     term) { for(    GPIOPos gpio : term) visit(gpio); }
     public void visit(InstancesPos term) { for(InstancePos inst : term) visit(inst); }
     public void visit(BindingsPos  term) { for( BindingPos bind : term) visit(bind); }
     public void visit(MOptionsPos  term) { for( MOptionPos opt  : term) visit(opt);  }
-    
+
     // general (handled before this visitor)
     public void visit(ImportPos term)  { }
     public void visit(BackendPos term) { }
-    
+
     // scheduler (irrelevant for host-side driver
     public void visit(SchedulerPos term) {
-        if(term.code() instanceof DEFAULTPos) {
-            scheduler = MFile(MDocumentation(Strings(
-                    "A primitive scheduler.",
-                    "Reads values from the medium, shifts values between Microblaze and VHDL components,",
-                    "and writes results back to the medium."
-                ), AUTHOR("Thomas Fischer"), SINCE("18.02.2013")
-                ), "scheduler", targetSrc.getPath(), MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures(
-                    MProcedure(
-                        MDocumentation(Strings(
-                            "Starts the scheduling loop.",
-                            "The scheduling loop performs the following actions in each iteration:",
-                            " - read and process messages from the medium",
-                            " - write values from Microblaze input queue to hardware input queue for each input stream",
-                            " - write values from hardware output queue to the medium (caches several values before sending)"
-                        )), MModifiers(), MVoid(), "schedule", MParameters(), defaultScheduler()
+        if(term.code() instanceof DEFAULTPos) scheduler = MFile(MDocumentation(Strings(
+                "A primitive scheduler.",
+                "Reads values from the medium, shifts values between Microblaze and VHDL components,",
+                "and writes results back to the medium."
+            ), AUTHOR("Thomas Fischer"), SINCE("18.02.2013")
+            ), "scheduler", targetSrc.getPath(), MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures(
+                MProcedure(
+                    MDocumentation(Strings(
+                        "Starts the scheduling loop.",
+                        "The scheduling loop performs the following actions in each iteration:",
+                        " - read and process messages from the medium",
+                        " - write values from Microblaze input queue to hardware input queue for each input stream",
+                        " - write values from hardware output queue to the medium (caches several values before sending)"
+                    )), MModifiers(), MVoid(), "schedule", MParameters(), defaultScheduler()
+                )
+            )
+         );
+        else scheduler = MFile(MDocumentation(Strings()
+            ), "scheduler", targetSrc.getPath(), MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures(
+                MProcedure(
+                    MDocumentation(Strings()), MModifiers(), MVoid(), "schedule", MParameters(), MCode(
+                        Strings().addAll(((USER_DEFINED)term.code().term()).content()),
+                        MQuoteInclude("constants.h"),
+                        MQuoteInclude("queueUntyped.h"),
+                        MQuoteInclude("io.h"),
+                        MForwardDecl("void medium_read()"),
+                        MForwardDecl("int axi_write ( int val, int target )"),
+                        MForwardDecl("int axi_read ( int *val, int target )")
                     )
                 )
-             );
-        } else {
-            scheduler = MFile(MDocumentation(Strings()
-                ), "scheduler", targetSrc.getPath(), MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures(
-                    MProcedure(
-                        MDocumentation(Strings()), MModifiers(), MVoid(), "schedule", MParameters(), MCode(
-                            Strings().addAll(((USER_DEFINED)term.code().term()).content()),
-                            MQuoteInclude("constants.h"),
-                            MQuoteInclude("queueUntyped.h"),
-                            MQuoteInclude("io.h"),
-                            MForwardDecl("void medium_read()"),
-                            MForwardDecl("int axi_write ( int val, int target )"),
-                            MForwardDecl("int axi_read ( int *val, int target )")
-                        )
-                    )
-                )
-            );
-        }
+            )
+        );
     }
-    
+
     private MCode defaultScheduler() {
         return MCode(
             Strings(
@@ -573,34 +571,34 @@ public class SDK extends Visitor<NE> {
             MForwardDecl("int axi_read ( int *val, int target )")
         );
     }
-    
+
     // code blocks (handled directly when occurring)
     public void visit(DEFAULTPos term)      { }
     public void visit(USER_DEFINEDPos term) { }
-    
+
     // missing medium declaration
     public void visit(NONEPos term) { }
-    
+
     // options (handled directly inside the board or port if occurring)
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
     public void visit(DEBUGPos    term) { }
     public void visit(POLLPos     term) { }
-    
+
     // same goes for medium options
     public void visit(MACPos    term) { }
     public void visit(IPPos     term) { }
     public void visit(MASKPos   term) { }
     public void visit(GATEPos   term) { }
     public void visit(PORTIDPos term) { }
-    
+
     // cores
     // we do not need to visit cores here, since a class will be created
     // for each instance directly connected to the boards CPU, not for each core
     public void visit(CoresPos term) { }
     public void visit(CorePos  term) { }
-    
+
     // ports (see above)
     public void visit(PortsPos term) { }
     public void visit(CLKPos   term) { }
@@ -609,7 +607,7 @@ public class SDK extends Visitor<NE> {
     public void visit(INPos    term) { }
     public void visit(OUTPos   term) { }
     public void visit(DUALPos  term) { }
-    
+
     // ignore instances here, just visit port bindings
     public void visit(InstancePos term) { visit(term.bind()); }
     // component axis (these get ignored... that's the whole point)
@@ -617,13 +615,13 @@ public class SDK extends Visitor<NE> {
 
     // position
     public void visit(PositionPos term) { }
-    
+
     // literals
     public void visit(StringsPos term) { }
     public void visit(StringPos  term) { }
     public void visit(IntegerPos term) { }
     public void visit(BooleanPos term) { }
-    
+
     private void addLEDs() {
         // deploy LED files
         File target = new File(new File(targetSrc, "components"), "gpio");
@@ -633,20 +631,20 @@ public class SDK extends Visitor<NE> {
             // add LED init to component init
         init = addLines(init, MCode(Strings("init_LED();"),
                 MForwardDecl("int init_LED()")));
-    
+
         mssFile = addBlock(mssFile, MHS.Block("DRIVER",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_leds))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("leds_8bits")))
         ));
     }
-    
+
     private void addSwitches() {
         // deploy switch files
         File target = new File(new File(targetSrc, "components"), "gpio");
         deployFiles.put(new File(gpioSrc, "switches.h"), new File(target, "switches.h"));
         deployFiles.put(new File(gpioSrc, "switches.c"), new File(target, "switches.c"));
-            
+
         // add switch init to component init
         init = addLines(init, MCode(Strings("init_switches();"),
                 MForwardDecl("int init_switches()")));
@@ -654,7 +652,7 @@ public class SDK extends Visitor<NE> {
         components = add(components, MDef(MDocumentation(Strings(
                 "Identifier of the switch component"
                 )), MModifiers(PRIVATE()), "gpo_switches", String.valueOf(gpoCount++)));
-        
+
         // add callback procedure to component file
         // TODO user-defined code and additional documentation
         components = add(components, MProcedure(
@@ -667,12 +665,12 @@ public class SDK extends Visitor<NE> {
                     "set_LED(read_switches());",
                     "send_gpio(gpo_switches, read_switches());"),
                 MQuoteInclude("xbasic_types.h"),
-                MForwardDecl("u32 read_switch()"),
+                MForwardDecl("u32 read_switches()"),
                 MForwardDecl("void set_LED(u32 state)"),
                 MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)")
             )
         ));
-        
+
         // add the driver block to the mss file
         mssFile = addBlock(mssFile, MHS.Block("DRIVER",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
@@ -686,15 +684,15 @@ public class SDK extends Visitor<NE> {
         File target = new File(new File(targetSrc, "components"), "gpio");
         deployFiles.put(new File(gpioSrc, "button.h"), new File(target, "button.h"));
         deployFiles.put(new File(gpioSrc, "button.c"), new File(target, "button.c"));
-            
+
         // add button init to component init
         init = addLines(init, MCode(Strings("init_buttons();"),
                 MForwardDecl("int init_buttons()")));
-        
+
         components = add(components, MDef(MDocumentation(Strings(
                 "Identifier of the button component"
                 )), MModifiers(PRIVATE()), "gpo_buttons", String.valueOf(gpoCount++)));
-        
+
         // add callback procedure to component file
         // TODO user-defined code and additional documentation
         components = add(components, MProcedure(
@@ -710,7 +708,7 @@ public class SDK extends Visitor<NE> {
                 MForwardDecl("u32 read_buttons()")
             )
         ));
-        
+
         // add the driver block to the mss file
         mssFile = addBlock(mssFile, MHS.Block("DRIVER",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
@@ -718,7 +716,7 @@ public class SDK extends Visitor<NE> {
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("dip_switches_8bits")))
         ));
     }
-    
+
     private void addIP(String id, String ipString, String doc) {
         String[] ip = ipString.split("\\.");
         addConst(id + "_1", ip[0], "The first  8 bits of the " + doc + " of this board.");
@@ -726,7 +724,7 @@ public class SDK extends Visitor<NE> {
         addConst(id + "_3", ip[2], "The third  8 bits of the " + doc + " of this board.");
         addConst(id + "_4", ip[3], "The fourth 8 bits of the " + doc + " of this board.");
     }
-    
+
     private void addMAC(String macString) {
         String[] mac = macString.split(":");
         addConst("MAC_1", "0x" + mac[0], "The first  8 bits of the MAC address of this board.");
@@ -737,10 +735,10 @@ public class SDK extends Visitor<NE> {
         addConst("MAC_6", "0x" + mac[5], "The sixth  8 bits of the MAC address of this board.");
     }
 
-    private void addConst(String id, String val, String doc) {
-        constants = add(constants, MDef(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val));
+    private void addConst(String id, String val, String doc, MInclude ... needed) {
+        constants = add(constants, MDef(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val, needed));
     }
-    
+
     private MHSFile addBlock(MHSFile file, Block block) {
         return file.replaceBlocks(file.blocks().add(block));
     }

@@ -10,7 +10,7 @@
 
 int decode_header_v2(int first) {
 	xil_printf(" \nERROR: protocol version 2 is not implemented.\n");
-	return NULL;
+	return 0;
 }
 
 struct Message* encode_ack_v2(unsigned char pid, unsigned int count) {

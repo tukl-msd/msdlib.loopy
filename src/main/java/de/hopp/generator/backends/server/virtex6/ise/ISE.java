@@ -31,7 +31,7 @@ import de.hopp.generator.frontend.BDLFilePos;
 
 /**
  * Abstract project backend for Xilinx ISE projects for the Virtex6 board.
- * 
+ *
  * This backend is responsible for the generation of .elf and .bit files.
  * To that purpose, the ISE workflow is used.
  * The workflow implies creation of an XPS project for .bit file generation
@@ -42,8 +42,8 @@ import de.hopp.generator.frontend.BDLFilePos;
  * The abstract class describes the workflow. Steps of the workflow are
  * required to be overridden in the implementations.
  *
- * 
- * 
+ *
+ *
  * This flow is assumed to cover all versions of ISE.
  * If this proves not to be the case in some earlier or later, unsupported version,
  * introduce a new ProjectBackendIF subclass with the adjusted flow and
@@ -55,9 +55,14 @@ import de.hopp.generator.frontend.BDLFilePos;
 public abstract class ISE implements ProjectBackendIF {
 
     /** Source directory of sdk sources for a virtex6 board. */
-    public static File sdkSourceDir = new File(new File("deploy", "server"), "virtex6");
+    public static final File sdkSourceDir = new File(new File("deploy", "server"), "virtex6");
     /** Source directory of edk sources for the ISE workflow. */
-    public static File edkSourceDir = new File(new File("deploy", "server"), "ISE");
+    public static final File edkSourceDir = new File(new File("deploy", "server"), "ISE");
+
+    protected static final String arch       = "virtex6";
+    protected static final String device     = "xc6vlx240t";
+    protected static final String pack       = "ff1156";
+    protected static final String speedgrade = "-1";
 
     protected abstract XPS xps();
     protected abstract SDK sdk();
@@ -78,7 +83,10 @@ public abstract class ISE implements ProjectBackendIF {
 
         // generate .bit and .elf files
         generateBITFile(config, errors);
-        generateELFFile();
+        generateELFFile(config, errors);
+
+        // load .elf into .bit file
+        runBitInit(config, errors);
     }
 
     /**
@@ -155,60 +163,6 @@ public abstract class ISE implements ProjectBackendIF {
     }
 
     /**
-     * Starts whatever external tool is responsible for generation of the BIT file
-     */
-    protected void generateBITFile(Configuration config, ErrorCollection errors) {
-        config.IOHANDLER().println("running xps synthesis (this may take some time) ...");
-
-        BufferedReader input = null;
-
-        try {
-            // setup process builder (all of this would be soooo much easier with Java 7 ;)
-            ProcessBuilder pb = new ProcessBuilder("xps", "-nw").directory(edkDir(config));
-            if(config.VERBOSE()) pb = pb.redirectErrorStream(true);
-
-            // start the process
-            Process p = pb.start();
-
-            // get output stream of the process (which is an input stream for this program)
-            if(config.VERBOSE())
-                input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            else
-                input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-            // feed the required commands to the spawned process
-            PrintWriter pWriter = new PrintWriter(p.getOutputStream());
-            pWriter.println("xload new system.xmp virtex6 xc6vlx240t ff1156 -1");
-            pWriter.println("save proj");
-            pWriter.println("xset parallel_synthesis yes");
-            pWriter.println("xset sdk_export_dir " + sdkDir(config).getCanonicalPath());
-            pWriter.println("run bits");
-            pWriter.println("run exporttosdk");
-            pWriter.println("exit");
-            pWriter.close();
-
-            // print the output stream of the process
-            String line;
-            while((line = input.readLine()) != null)
-                config.IOHANDLER().println(line);
-
-            // wait for the process to terminate and store the result
-            int rslt = p.waitFor();
-
-            // if something went wrong, print a warning
-            if(rslt != 0) errors.addWarning(new Warning("failed to correctly terminate xps process"));
-        } catch (IOException e) {
-            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
-        } catch (InterruptedException e) {
-            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
-        } finally {
-            try {
-                if(input != null) input.close();
-            } catch(IOException e) { /* well... memory leak... */ }
-        }
-    }
-
-    /**
      * Generates necessary Sources for generation of the ELF file
      */
     protected void deployELFSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
@@ -260,9 +214,139 @@ public abstract class ISE implements ProjectBackendIF {
         IO.println("  generate server-side api specification ... ");
         doxygen(sdkAppDir(config), IO, errors);
     }
+    /**
+     * Starts whatever external tool is responsible for generation of the BIT file
+     */
+    protected void generateBITFile(Configuration config, ErrorCollection errors) {
+        config.IOHANDLER().println("running xps synthesis (this may take some time) ...");
+
+        try {
+            // setup process builder (all of this would be soooo much easier with Java 7 ;)
+            ProcessBuilder pb = new ProcessBuilder("xps", "-nw").directory(edkDir(config));
+            String[] args = new String[] {
+                "xload new system.xmp " + arch + " " + device + " " + pack + " " + speedgrade,
+                "save proj",
+                "xset parallel_synthesis yes",
+                "xset sdk_export_dir " + sdkDir(config).getCanonicalPath(),
+                "run bits",
+                "run exporttosdk",
+                "exit"
+            };
+            runProcess(pb, args, config, errors);
+
+        } catch (GenerationFailed e) {
+            errors.addWarning(new Warning("failed to correctly terminate xps process"));
+        } catch (IOException e) {
+            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
+        } catch (InterruptedException e) {
+            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
+        }
+    }
 
     /** Starts whatever external tool is responsible for generation of the ELF file */
-    protected void generateELFFile() {
+    protected void generateELFFile(Configuration config, ErrorCollection errors) {
+        config.IOHANDLER().println("running sdk to generate elf file (this may take some time) ...");
 
+        try {
+            // import all required projects to workspace
+            runProcess(new ProcessBuilder(sdkCommand("import", "hw")).directory(sdkDir(config)),
+                new String[0], config, errors);
+            runProcess(new ProcessBuilder(sdkCommand("import", "app_bsp")).directory(sdkDir(config)),
+                new String[0], config, errors);
+            runProcess(new ProcessBuilder(sdkCommand("import", "app")).directory(sdkDir(config)),
+                new String[0], config, errors);
+
+            //build the project
+            runProcess(new ProcessBuilder(sdkCommand("build", "app")).directory(sdkDir(config)),
+                new String[0], config, errors);
+        } catch(GenerationFailed e) {
+            errors.addError(e);
+        } catch(Exception e) {
+            errors.addError(new GenerationFailed("Failed to generate .elf file: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Initialises the bitfile with the elf file
+     */
+    private void runBitInit(Configuration config, ErrorCollection errors) {
+        try {
+            // create required directories
+            if(!config.serverDir().mkdirs())
+                errors.addError(new GenerationFailed("Could not generate required directories"));
+
+            if(errors.hasErrors()) return;
+
+            // build and run bitinit process
+            ProcessBuilder pb = new ProcessBuilder(
+                "bitinit", "system.mhs",
+                "-p", device,
+                "-pe", "microblaze_0", "../sdk/app/Debug/app.elf",
+                "-o", config.serverDir().getCanonicalPath()
+            ).directory(edkDir(config));
+            runProcess(pb, new String[0], config, errors);
+        } catch (GenerationFailed e) {
+            errors.addError(e);
+        } catch (Exception e) {
+            errors.addError(new GenerationFailed("Could not initialise bit file with elf file: " + e.getMessage()));
+        }
+    }
+
+    private static void runProcess(ProcessBuilder pb, String[] args, Configuration config, ErrorCollection errors)
+            throws IOException, InterruptedException, GenerationFailed{
+
+        BufferedReader input = null;
+
+        // if the run is verbose, merge error and input streams
+        if(config.VERBOSE()) pb = pb.redirectErrorStream(true);
+
+        try {
+            // start the process
+            Process p = pb.start();
+
+            // get output stream of the process (which is an input stream for this program)
+            if(config.VERBOSE())
+                input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            else
+                input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+            // feed the required commands to the spawned process
+            PrintWriter pWriter = new PrintWriter(p.getOutputStream());
+            for(String s : args) pWriter.println(s);
+            pWriter.close();
+
+            // print the output stream of the process
+            String line;
+            while((line = input.readLine()) != null)
+                config.IOHANDLER().println(line);
+
+            // wait for the process to terminate and store the result
+            int rslt = p.waitFor();
+
+            // if something went wrong, print a warning
+            if(rslt != 0) throw new GenerationFailed("Process terminated with result " + rslt);
+        } finally {
+            try {
+                if(input != null) input.close();
+            } catch(IOException e) { /* well... memory leak... */ }
+        }
+    }
+
+    private static String[] sdkCommand(String command, String project) {
+        return new String[] {
+            "xsdk",
+            "-eclipseargs",
+//            "-vm",
+//            "/software/Xilinx_14.4/14.4/ISE_DS/ISE/java6/lin64/jre/bin",
+            "-nosplash",
+            "-application",
+            "org.eclipse.cdt.managedbuilder.core.headlessbuild",
+            "-" + command,
+            project,
+            "-data",
+            ".",
+            "-vmargs",
+            "-Dorg.eclipse.cdt.core.console=org.eclipse.cdt.core.systemConsole"
+        };
     }
 }

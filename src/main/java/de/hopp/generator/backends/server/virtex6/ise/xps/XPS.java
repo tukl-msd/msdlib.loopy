@@ -520,6 +520,12 @@ public abstract class XPS extends Visitor<NE> {
                 Assignment("DIR", Ident("O")),
                 Assignment("VEC", Range(12, 0))
             ), Attribute(PORT(),
+                Assignment("RS232_Uart_1_sout", Ident("RS232_Uart_1_sout")),
+                Assignment("DIR", Ident("O"))
+            ), Attribute(PORT(),
+                Assignment("RS232_Uart_1_sin", Ident("RS232_Uart_1_sin")),
+                Assignment("DIR", Ident("I"))
+            ), Attribute(PORT(),
                 Assignment("RESET", Ident("RESET")),
                 Assignment("DIR", Ident("I")),
                 Assignment("SIGIS", Ident("RST")),
@@ -543,6 +549,9 @@ public abstract class XPS extends Visitor<NE> {
               "NET CLK_P LOC = \"J9\"   |  IOSTANDARD = \"LVDS_25\"  |  DIFF_TERM = \"TRUE\";\n" +
               "NET RESET LOC = \"H10\"  |  IOSTANDARD = \"SSTL15\"   |  TIG;\n" +
               "\n" +
+              "NET RS232_Uart_1_sin LOC  = \"J24\"  |  IOSTANDARD = \"LVCMOS25\";\n" +
+              "NET RS232_Uart_1_sout LOC = \"J25\"  |  IOSTANDARD = \"LVCMOS25\";\n" +
+              "\n" +
               "# generic additional constraints\n" +
               "NET \"CLK\" TNM_NET = sys_clk_pin;\n" +
               "TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 200000 kHz;\n" +
@@ -552,6 +561,8 @@ public abstract class XPS extends Visitor<NE> {
 
     /** Adds all basic components to the design, that are independent from the board. */
     protected void addDefaultBlocks() {
+        intrCntrlPorts = intrCntrlPorts.add(Ident("RS232_Uart_1_Interrupt"));
+
         mhs = add(mhs, Blocks(
             Block("proc_sys_reset",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("proc_sys_reset_0"))),
@@ -677,6 +688,20 @@ public abstract class XPS extends Visitor<NE> {
                 Attribute(PORT(), Assignment("PD_PSEN", Ident("psen"))),
                 Attribute(PORT(), Assignment("PD_PSINCDEC", Ident("psincdec"))),
                 Attribute(PORT(), Assignment("PD_PSDONE", Ident("psdone")))
+            ), Block("axi_uartlite",
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("RS232_Uart_1"))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_uartlite))),
+                Attribute(PARAMETER(), Assignment("C_BAUDRATE", Number(9600))),
+                Attribute(PARAMETER(), Assignment("C_DATA_BITS", Number(8))),
+                Attribute(PARAMETER(), Assignment("C_USE_PARITY", Number(0))),
+                Attribute(PARAMETER(), Assignment("C_ODD_PARITY", Number(1))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40600000"))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4060ffff"))),
+                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("TX", Ident("RS232_Uart_1_sout"))),
+                Attribute(PORT(), Assignment("RX", Ident("RS232_Uart_1_sin"))),
+                Attribute(PORT(), Assignment("Interrupt", Ident("RS232_Uart_1_Interrupt")))
             )
         ));
     }

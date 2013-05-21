@@ -3,7 +3,7 @@ package de.hopp.generator.utils;
 import de.hopp.generator.model.*;
 
 public class Model {
-    
+
     public static MFile add(MFile file, MClass c) {
         return file.replaceClasses(file.classes().add(c));
     }
@@ -43,7 +43,7 @@ public class Model {
     public static MFile addDoc(MFile file, String line) {
         return file.replaceDoc(file.doc().replaceDoc(file.doc().doc().add(line)));
     }
-    
+
     public static MInitList add(MInitList init, String param) {
         return init.replaceParams(init.params().add(param));
     }
@@ -51,5 +51,5 @@ public class Model {
         return init.replaceParams(init.params().addAll(list.params()))
                    .replaceNeeded(init.needed().addAll(list.needed()));
     }
-    
+
 }

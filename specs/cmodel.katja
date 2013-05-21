@@ -41,7 +41,7 @@ MVisibility = PUBLIC() | PROTECTED() | PRIVATE()
 MExtend( MVisibility visibility, MType type )
 
 // preprocessing directives
-MPreProcDir = MDef    ( MDocumentation doc, MModifiers modifiers, String name, String value )
+MPreProcDir = MDef    ( MDocumentation doc, MModifiers modifiers, String name, String value, MIncludes needed )
             | MPreIF  ( MModifiers modifiers, String cond, MPreProcDir thenDir)
             | MPreITE ( MModifiers modifiers, String cond, MPreProcDir thenDir, MPreProcDir elseDir)
 

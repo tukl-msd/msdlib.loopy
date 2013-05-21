@@ -86,8 +86,7 @@ public class XPS_14_1 extends XPS {
         visit(term.gpios());
         visit(term.medium());
 
-        // TODO move attributes to top...
-        // TODO independent interrupt controller!
+        // TODO independent interrupt controller?
         // add the default stuff...
         addDefaultBlocks();
         // addINTC();
@@ -162,25 +161,25 @@ public class XPS_14_1 extends XPS {
         mhs = add(mhs, attr);
 
         mhs = add(mhs, Block("axi_ethernetlite",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Ethernet_Lite"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_ethernetlite))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40e00000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x40e0ffff"))),
-            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("PHY_tx_en", Ident("Ethernet_Lite_TX_EN"))),
-            Attribute(PORT(), Assignment("PHY_tx_clk", Ident("Ethernet_Lite_TX_CLK"))),
-            Attribute(PORT(), Assignment("PHY_tx_data", Ident("Ethernet_Lite_TXD"))),
-            Attribute(PORT(), Assignment("PHY_rx_er", Ident("Ethernet_Lite_RX_ER"))),
-            Attribute(PORT(), Assignment("PHY_dv", Ident("Ethernet_Lite_RX_DV"))),
-            Attribute(PORT(), Assignment("PHY_rx_clk", Ident("Ethernet_Lite_RX_CLK"))),
-            Attribute(PORT(), Assignment("PHY_rx_data", Ident("Ethernet_Lite_RXD"))),
-            Attribute(PORT(), Assignment("PHY_rst_n", Ident("Ethernet_Lite_PHY_RST_N"))),
-            Attribute(PORT(), Assignment("PHY_MDIO", Ident("Ethernet_Lite_MDIO"))),
-            Attribute(PORT(), Assignment("PHY_MDC", Ident("Ethernet_Lite_MDC"))),
-            Attribute(PORT(), Assignment("PHY_crs", Ident("Ethernet_Lite_CRS"))),
-            Attribute(PORT(), Assignment("PHY_col", Ident("Ethernet_Lite_COL"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("Ethernet_Lite_IP2INTC_Irpt")))
+            Attribute(PARAMETER(), Assignment("INSTANCE",     Ident("Ethernet_Lite"))),
+            Attribute(PARAMETER(), Assignment("HW_VER",       Ident(version_axi_ethernetlite))),
+            Attribute(PARAMETER(), Assignment("C_BASEADDR",   MemAddr("0x40e00000"))),
+            Attribute(PARAMETER(), Assignment("C_HIGHADDR",   MemAddr("0x40e0ffff"))),
+            Attribute(BUS_IF(),    Assignment("S_AXI",        Ident("axi4lite_0"))),
+            Attribute(PORT(),      Assignment("S_AXI_ACLK",   Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(),      Assignment("PHY_tx_en",    Ident("Ethernet_Lite_TX_EN"))),
+            Attribute(PORT(),      Assignment("PHY_tx_clk",   Ident("Ethernet_Lite_TX_CLK"))),
+            Attribute(PORT(),      Assignment("PHY_tx_data",  Ident("Ethernet_Lite_TXD"))),
+            Attribute(PORT(),      Assignment("PHY_rx_er",    Ident("Ethernet_Lite_RX_ER"))),
+            Attribute(PORT(),      Assignment("PHY_dv",       Ident("Ethernet_Lite_RX_DV"))),
+            Attribute(PORT(),      Assignment("PHY_rx_clk",   Ident("Ethernet_Lite_RX_CLK"))),
+            Attribute(PORT(),      Assignment("PHY_rx_data",  Ident("Ethernet_Lite_RXD"))),
+            Attribute(PORT(),      Assignment("PHY_rst_n",    Ident("Ethernet_Lite_PHY_RST_N"))),
+            Attribute(PORT(),      Assignment("PHY_MDIO",     Ident("Ethernet_Lite_MDIO"))),
+            Attribute(PORT(),      Assignment("PHY_MDC",      Ident("Ethernet_Lite_MDC"))),
+            Attribute(PORT(),      Assignment("PHY_crs",      Ident("Ethernet_Lite_CRS"))),
+            Attribute(PORT(),      Assignment("PHY_col",      Ident("Ethernet_Lite_COL"))),
+            Attribute(PORT(),      Assignment("IP2INTC_Irpt", Ident("Ethernet_Lite_IP2INTC_Irpt")))
         ));
 
         intrCntrlPorts = intrCntrlPorts.add(Ident("Ethernet_Lite_IP2INTC_Irpt"));
@@ -208,31 +207,7 @@ public class XPS_14_1 extends XPS {
 
     @Override
     public void visit(UARTPos term) {
-        mhs = add(mhs, Attribute(PORT(), Assignment("RS232_Uart_1_sout", Ident("RS232_Uart_1_sout")),
-                            Assignment("DIR", Ident("O"))));
-        mhs = add(mhs, Attribute(PORT(), Assignment("RS232_Uart_1_sin", Ident("RS232_Uart_1_sin")),
-                            Assignment("DIR", Ident("I"))));
 
-        mhs = add(mhs, Block("axi_uartlite",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("RS232_Uart_1"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_uartlite))),
-            Attribute(PARAMETER(), Assignment("C_BAUDRATE", Number(9600))),
-            Attribute(PARAMETER(), Assignment("C_DATA_BITS", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_USE_PARITY", Number(0))),
-            Attribute(PARAMETER(), Assignment("C_ODD_PARITY", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40600000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4060ffff"))),
-            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("TX", Ident("RS232_Uart_1_sout"))),
-            Attribute(PORT(), Assignment("RX", Ident("RS232_Uart_1_sin"))),
-            Attribute(PORT(), Assignment("Interrupt", Ident("RS232_Uart_1_Interrupt")))
-        ));
-
-        intrCntrlPorts = intrCntrlPorts.add(Ident("RS232_Uart_1_Interrupt"));
-
-        ucf += "\nNET RS232_Uart_1_sin LOC  = \"J24\"  |  IOSTANDARD = \"LVCMOS25\";" +
-               "\nNET RS232_Uart_1_sout LOC = \"J25\"  |  IOSTANDARD = \"LVCMOS25\";\n";
     }
 
     @Override
@@ -303,7 +278,7 @@ public class XPS_14_1 extends XPS {
 
         // reference core and version
         curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("INSTANCE", Ident(term.name().term()))));
-        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("HW_VER", Ident(term.version().term()))));
+        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("HW_VER",   Ident(term.version().term()))));
 
         // define bus interfaces
         visit(term.bind());
@@ -393,7 +368,6 @@ public class XPS_14_1 extends XPS {
     public void visit(PortsPos term) { }
 
     // options are irrelevant in this visitor (so far)
-    // TODO inject queues and multiplexer into mhs design --> provide some default cores!
     @Override
     public void visit(HWQUEUEPos arg0)  { }
     @Override
