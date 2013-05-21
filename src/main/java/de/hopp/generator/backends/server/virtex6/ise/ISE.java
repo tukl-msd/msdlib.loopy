@@ -272,7 +272,7 @@ public abstract class ISE implements ProjectBackendIF {
     private void runBitInit(Configuration config, ErrorCollection errors) {
         try {
             // create required directories
-            if(!config.serverDir().mkdirs())
+            if(!config.serverDir().exists() && !config.serverDir().mkdirs())
                 errors.addError(new GenerationFailed("Could not generate required directories"));
 
             if(errors.hasErrors()) return;
