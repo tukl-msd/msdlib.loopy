@@ -456,9 +456,21 @@ Additionally, a board description file is required by the generator. So a comple
 
 \texttt{java -jar driverGenerator.jar [OPTIONS] <bdl file>}.\\
 
-The output of the generator consists of two groups of files. The first group contains all files that make up the board side of the driver, which have to be compiled to an \texttt{.elf} file by the Xilinx SDK. The second group are files for the client side, that can be used to wrap communication with the board and its components.
+The output of the generator consists of three groups of files. The first group contains all files that make up the host side of the driver, that can be used to wrap communication with the board and its components. This usually is some sort of library in the chosen target language.
+The second group of files are those that make up the board side driver. So far, this is a single bit file, which already is initialised with the elf file.
+A third group consists of temporary files required for generation of the board-side driver. These files usually do not require user interaction, but can be used for debugging in case of errors.
 
-In addition to the required sources, documentation for both host- and board-side sources is generated, using doxygen.
+In addition to these sources, documentation for both host- and board-side sources is generated, using doxygen.
+
+\paragraph{Logging}
+The driver generator itself does not provide a more elaborate logging mechanism than printing output on console. However, logging of underlying tools can be used for debugging purposes. All working files of the Xilinx toolsuite, including its logs, are located in the temporary directory. These logs should be consulted in case of an error:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \texttt{temp/edk/system.log} as the central log of bitfile generation using Xilinx ISE.
+\item \texttt{temp/sdk/.metadata/.log} is the log of the Xilinx SDK, responsible for .elf file generation.
+\item \texttt{temp/edk/bitinit.log}, the log of the bitfile initialisation.
+\end{itemize}
+
+Several other tools and logs are involved in bitfile generation, but these should give an initial hint on where to look for the source of an error.
 
 \subsection{Executing your Application}
 Now the regular design process from Xilinx can be continued. The next step would be writing a host application that uses the generated host-side driver and API (see \Cref{sec:api} for a overview over this API). The board-side driver is represented by the \texttt{.bit} \textcolor{red}{and \texttt{.elf}} file resulting from the command line calls preformed by the driver generator. After the FPGA has been programmed using these files, your program should be able to communicate with VHDL components on the FPGA through the API provided by the host-side driver.
