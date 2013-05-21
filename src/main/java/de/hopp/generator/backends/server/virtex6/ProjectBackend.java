@@ -6,10 +6,10 @@ import de.hopp.generator.backends.server.virtex6.ise.ISE_14_4;
 public enum ProjectBackend {
     ISE_14_1(new ISE_14_1()),
     ISE_14_4(new ISE_14_4());
-    
+
     // one instance of the backend
     private ProjectBackendIF instance;
-    
+
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param object one instance of the backend
@@ -33,7 +33,7 @@ public enum ProjectBackend {
      */
     public static ProjectBackend fromName(String name) {
         for(ProjectBackend backend : ProjectBackend.values())
-            if(backend.instance.getName().equals(name)) return backend;
+            if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return backend;
 
         throw new IllegalArgumentException("no virtex6 project backend exists with given name");
     }
@@ -45,7 +45,7 @@ public enum ProjectBackend {
      */
     public static boolean exists(String name) {
         for(ProjectBackend backend : ProjectBackend.values())
-            if(backend.instance.getName().equals(name)) return true;
+            if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return true;
 
         return false;
     }

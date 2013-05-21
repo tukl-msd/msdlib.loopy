@@ -5,10 +5,10 @@ import de.hopp.generator.backends.client.cpp.CPP;
 
 public enum ClientBackend {
     CPP(new CPP());
-    
+
     // one instance of the backend
     private de.hopp.generator.backends.client.ClientBackend instance;
-    
+
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param object one instance of the backend
@@ -32,7 +32,7 @@ public enum ClientBackend {
      */
     public static ClientBackend fromName(String name) {
         for(ClientBackend backend : ClientBackend.values())
-            if(backend.instance.getName().equals(name)) return backend;
+            if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return backend;
 
         throw new IllegalArgumentException("no host backend exists with given name");
     }
@@ -44,7 +44,7 @@ public enum ClientBackend {
      */
     public static boolean exists(String name) {
         for(ClientBackend backend : ClientBackend.values())
-            if(backend.instance.getName().equals(name)) return true;
+            if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return true;
 
         return false;
     }

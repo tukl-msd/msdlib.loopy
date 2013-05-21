@@ -5,10 +5,10 @@ import de.hopp.generator.backends.server.virtex6.Virtex6;
 public enum ServerBackend {
     VIRTEX6ML605(new Virtex6());
 //    VIRTEX6ML605_XPS_14_1(new Virtex6ML605(new XPS_14_1()));
-    
+
     // one instance of the backend
     private de.hopp.generator.backends.server.ServerBackend instance;
-    
+
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param object one instance of the backend
@@ -32,7 +32,7 @@ public enum ServerBackend {
      */
     public static ServerBackend fromName(String name) {
         for(ServerBackend backend : ServerBackend.values())
-            if(backend.instance.getName().equals(name)) return backend;
+            if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return backend;
 
         throw new IllegalArgumentException("no board backend exists with given name");
     }
@@ -44,7 +44,7 @@ public enum ServerBackend {
      */
     public static boolean exists(String name) {
         for(ServerBackend backend : ServerBackend.values())
-            if(backend.instance.getName().equals(name)) return true;
+            if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return true;
 
         return false;
     }
