@@ -86,7 +86,7 @@ public abstract class ISE implements ProjectBackendIF {
         generateELFFile(config, errors);
 
         // load .elf into .bit file
-        runBitInit(config, errors);
+//        runBitInit(config, errors);
     }
 
     /**
