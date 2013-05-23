@@ -143,11 +143,11 @@ public class Main {
         // parse all cli parameters
         String schema = parseParameters(args);
 
-        if(config.startGUI()) {
+//        if(config.startGUI()) {
             // if GUI mode has been started, inject all parsed parameters and ignore invalid flags
-            de.hopp.generator.gui.GUI.main(new String[0]);
-            return;
-        }
+//            de.hopp.generator.gui.GUI.main(new String[0]);
+//            return;
+//        }
 
         // abort if any errors occurred
         showStatus(false);
@@ -384,8 +384,8 @@ public class Main {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
-            } else if(args[i].equals("--gui")) {
-                config.enableGUI();
+//            } else if(args[i].equals("--gui")) {
+//                config.enableGUI();
             // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 showUsage();
