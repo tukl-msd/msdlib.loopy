@@ -3,7 +3,7 @@ package de.hopp.generator.frontend;
 import de.hopp.generator.backends.server.virtex6.Virtex6;
 
 public enum ServerBackend {
-    VIRTEX6ML605(new Virtex6());
+    VIRTEX6(new Virtex6());
 //    VIRTEX6ML605_XPS_14_1(new Virtex6ML605(new XPS_14_1()));
 
     // one instance of the backend

@@ -15,24 +15,27 @@ public class Configuration {
     private final IOHandler IO;
     private String[] args;
 
+    // bdl file
+    private File bdlFile;
+
     // backends
     private ClientBackend client;
     private ServerBackend server;
 
     // destination folders
-    public final static String defaultServerDir = "server";
-    public final static String defaultClientDir = "client";
-    public final static String defaultTempDir   = "temp";
+    final static String defaultServerDir = "server";
+    final static String defaultClientDir = "client";
+    final static String defaultTempDir   = "temp";
 
     private File serverDir = new File(defaultServerDir);
     private File clientDir = new File(defaultClientDir);
     private File tempDir   = new File(defaultTempDir);
 
     // logging related properties
-    public static final int LOG_QUIET   = 0;
-    public static final int LOG_INFO    = 100;
-    public static final int LOG_VERBOSE = 200;
-    public static final int LOG_DEBUG   = 300;
+    private static final int LOG_QUIET   = 0;
+    private static final int LOG_INFO    = 100;
+    private static final int LOG_VERBOSE = 200;
+    private static final int LOG_DEBUG   = 300;
 
     private int loglevel = LOG_INFO;
 
@@ -41,6 +44,7 @@ public class Configuration {
     private boolean dryrun    = false;
     private boolean noBitGen  = false;
 
+    // other flags
     private boolean startGUI  = false;
 
 //    /** setup an empty driver generator configuration */
@@ -50,6 +54,10 @@ public class Configuration {
 
     public void setServer(ServerBackend server) { this.server = server; }
     public void setClient(ClientBackend client) { this.client = client; }
+
+    public void setBDLFile(File bdlFile) {
+        this.bdlFile = bdlFile;
+    }
 
     /** set the directory, into which the client-side files of the driver should be generated */
     public void setClientDir(File dir) {
@@ -66,15 +74,19 @@ public class Configuration {
     }
 
     /** sets the log level to debug, which will result in additional console prints of the generator */
-    public void enableDebug() {
+    public void setLogDebug() {
         loglevel = LOG_DEBUG;
     }
     /** sets the log level to verbose, which will result in additional console prints of the generator */
-    public void enableVerbose() {
+    public void setLogVerbose() {
         loglevel = LOG_VERBOSE;
     }
+    /** sets the log level to verbose, which will result in a reasonable amount of console prints of the generator */
+    public void setLogInfo() {
+        loglevel = LOG_INFO;
+    }
     /** sets the log level to quiet, which will disable console prints of the generator */
-    public void enableQuiet() {
+    public void setLogQuiet() {
         loglevel = LOG_QUIET;
     }
 
@@ -91,8 +103,8 @@ public class Configuration {
         noBitGen = true;
     }
 
-    public void enableGUI() {
-        startGUI = true;
+    public void setGUI(boolean gui) {
+        startGUI = gui;
     }
 
     public void setUnusued(String[] args) {
@@ -103,16 +115,18 @@ public class Configuration {
      * Set the log level of this generator run.
      * @param printLevel
      */
-    public void setPrintLevel(int printLevel) {
-             if (printLevel < LOG_QUIET) loglevel = LOG_QUIET;
-        else if (printLevel > LOG_DEBUG) loglevel = LOG_DEBUG;
-        else loglevel = printLevel;
-    }
+//    public void setPrintLevel(int printLevel) {
+//             if (printLevel < LOG_QUIET) loglevel = LOG_QUIET;
+//        else if (printLevel > LOG_DEBUG) loglevel = LOG_DEBUG;
+//        else loglevel = printLevel;
+//    }
 
     public String[] UNUSED() { return args; }
 
     public ServerBackend server() { return server; }
     public ClientBackend client() { return client; }
+
+    public File getBDLFile() { return bdlFile; }
 
     /** get the directory, into which the server files should be generated */
     public File serverDir()  { return serverDir; }
@@ -132,6 +146,8 @@ public class Configuration {
 
     /** check if the generator is set to produce no console output */
     public boolean QUIET()   { return loglevel == LOG_QUIET; }
+    /** check if the generator is set to produce some console output */
+    public boolean INFO()   { return loglevel == LOG_INFO; }
     /** check if the generator is set to produce more console output */
     public boolean VERBOSE() { return loglevel >= LOG_VERBOSE; }
     /** check if the generator is set to produce debug console output */

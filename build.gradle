@@ -40,6 +40,7 @@ repositories {
 dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
   compile group: 'commons-io', name: 'commons-io', version: '2.4'
+  compile group: 'org.jdesktop', name: 'beansbinding', version: '1.2.1'
   // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
   compile files("$katjaCommon", "$bdl", "$mhs", "$model")

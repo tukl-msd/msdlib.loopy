@@ -23,12 +23,12 @@ public class Main {
 
     public final static String version = "0.0.1";
 
-    private Configuration config;
     private final IOHandler IO;
-    private final ErrorCollection errors;
+    private Configuration config;
+    private ErrorCollection errors;
 
-    public Configuration config()   { return config; }
     public IOHandler io()           { return IO; }
+    public Configuration config()   { return config; }
     public ErrorCollection errors() { return errors; }
 
     public Main() {
@@ -48,7 +48,7 @@ public class Main {
     }
 
     private void showUsage() {
-        config.setPrintLevel(Configuration.LOG_INFO);
+        config.setLogInfo();
 
         // show usage line
         IO.println("Usage: java de.hopp.generator.Main [options] <filename>");
@@ -136,50 +136,49 @@ public class Main {
     }
 
     private void run(String[] args) {
+        // parse all cli parameters
+        parseParameters(args);
 
+        // execute with parsed config
+        run();
+    }
+
+    void run() {
         // first of all show the copyright information
         IO.showCopyright();
 
-        // parse all cli parameters
-        String schema = parseParameters(args);
-
         if(config.startGUI()) {
             // if GUI mode has been started, inject all parsed parameters and ignore invalid flags
-            de.hopp.generator.gui.GUI.main(new String[0]);
+            errors = new ErrorCollection();
+            config.setGUI(false);
+            de.hopp.generator.GUI.run(this);
             return;
         }
 
         // abort if any errors occurred
         showStatus(false);
 
-        // check, if backends are specified
-//        if(clientBackend == null) errors.addError(new UsageError("No client backend selected"));
-//        if(serverBackend == null) errors.addError(new UsageError("No server backend selected"));
-//
-//         // abort if any errors occurred
-//        showStatus();
-
-        File schemaFile = new File(schema);
+        File bdlFile = config.getBDLFile();
 
         // check if the given string references an existing file
-        if(!schemaFile.exists()) {
-            IO.error("Could not find file " + schemaFile.getPath());
+        if(!bdlFile.exists()) {
+            IO.error("Could not find file " + bdlFile.getPath());
             throw new ExecutionFailed();
-        } else if(!schemaFile.isFile()) {
-            IO.error(schemaFile.getPath() + " is no file");
+        } else if(!bdlFile.isFile()) {
+            IO.error(bdlFile.getPath() + " is no file");
             throw new ExecutionFailed();
         }
 
         // print parsed cli parameters
         IO.println();
         IO.println("HOPP Driver Generator executed with:");
-        IO.println("- source bdf file : " + schemaFile);
+        IO.println("- source bdf file : " + bdlFile);
         config.printConfig();
 
         // start parser
         IO.println();
         IO.println("starting parser");
-        BDLFilePos board = BDLFilePos(new Parser(errors).parse(schemaFile));
+        BDLFilePos board = BDLFilePos(new Parser(errors).parse(bdlFile));
         IO.println();
 
         if(board != null && board.term() != null) {
@@ -229,8 +228,9 @@ public class Main {
         // finished
         IO.println();
         showStatus(true);
-
     }
+
+
 
 //    if(args[i].equals("-p")) {
 //        // basically: do this in each and every option... ): doesn't seem to be a nice solution...
@@ -256,7 +256,7 @@ public class Main {
 //    if it is not null, pass everything unknown to the backend
 //    if it is not null and we find a known flag let the backend parse the block and parse the known flag (maybe with a null backend again)
 //    if the end of the input is reached... well... add whatever you get to the remaining list...
-    private String parseParameters(String[] args) throws ExecutionFailed {
+    private void parseParameters(String[] args) throws ExecutionFailed {
 
         // take away system configuration options
         args = parseOptions(args);
@@ -304,8 +304,8 @@ public class Main {
             throw new ExecutionFailed();
         }
 
-        // return the argument
-        return args[0];
+        // set the bdl file in the configuration
+        config.setBDLFile(new File(args[0]));
     }
 
     private String[] parseOptions(String[] args) throws ExecutionFailed {
@@ -364,11 +364,11 @@ public class Main {
 
             // LOGGING flags
             } else if(args[i].equals("-d") || args[i].equals("--debug")) {
-                config.enableDebug();
+                config.setLogDebug();
             } else if(args[i].equals("-v") || args[i].equals("--verbose")) {
-                config.enableVerbose();
+                config.setLogVerbose();
             } else if(args[i].equals("-q") || args[i].equals("--quiet")) {
-                config.enableQuiet();
+                config.setLogQuiet();
 
             // PROGRESS flags
             } else if(args[i].equals("-o") || args[i].equals("--parseonly")) {
@@ -385,7 +385,7 @@ public class Main {
                     throw new ExecutionFailed();
                 }
             } else if(args[i].equals("--gui")) {
-                config.enableGUI();
+                config.setGUI(true);
             // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 showUsage();
