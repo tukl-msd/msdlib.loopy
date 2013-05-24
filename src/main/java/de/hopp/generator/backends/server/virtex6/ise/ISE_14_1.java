@@ -5,8 +5,8 @@ import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.server.virtex6.ProjectBackendIF;
 import de.hopp.generator.backends.server.virtex6.ise.sdk.SDK;
-import de.hopp.generator.backends.server.virtex6.ise.xps.XPS;
-import de.hopp.generator.backends.server.virtex6.ise.xps.XPS_14_1;
+import de.hopp.generator.backends.server.virtex6.ise.xps.MHS_14;
+import de.hopp.generator.backends.server.virtex6.ise.xps.MHS_14_1;
 import de.hopp.generator.frontend.BDLFilePos;
 
 /**
@@ -17,7 +17,7 @@ import de.hopp.generator.frontend.BDLFilePos;
  */
 public class ISE_14_1 extends ISE implements ProjectBackendIF {
 
-    XPS xps;
+    MHS_14 xps;
     SDK sdk;
 
     @Override
@@ -38,14 +38,14 @@ public class ISE_14_1 extends ISE implements ProjectBackendIF {
     
     @Override
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-        xps = new XPS_14_1(config, errors);
+        xps = new MHS_14_1(config, errors);
         sdk = new SDK(config, errors);
         
         super.generate(board, config, errors);
     }
 
     @Override
-    protected XPS xps() {
+    protected MHS_14 xps() {
         return xps;
     }
 
