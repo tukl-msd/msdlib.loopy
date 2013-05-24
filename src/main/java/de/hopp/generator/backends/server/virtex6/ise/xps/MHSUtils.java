@@ -6,6 +6,16 @@ import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.Blocks;
 import de.hopp.generator.parser.MHSFile;
 
+/**
+ * Utility methods for working with the mhs model.
+ *
+ * Since this is an output model of the generator,
+ * this concerns manipulation methods rather than
+ * analysis.
+ *
+ * @author Thomas Fischer
+ * @since 25.3.13
+ */
 public class MHSUtils {
     public static MHSFile add(MHSFile file, Attributes attr) {
         return file.replaceAttributes(file.attributes().addAll(attr));

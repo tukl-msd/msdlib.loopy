@@ -7,7 +7,7 @@ import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.edkDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkBSPDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
-import static de.hopp.generator.backends.server.virtex6.ise.xps.XPSUtils.deployUCF;
+import static de.hopp.generator.backends.server.virtex6.ise.xps.UCF.deployUCF;
 import static de.hopp.generator.utils.Files.copy;
 
 import java.io.BufferedReader;
@@ -24,7 +24,7 @@ import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ProjectBackendIF;
 import de.hopp.generator.backends.server.virtex6.ise.sdk.SDK;
 import de.hopp.generator.backends.server.virtex6.ise.xps.IPCores;
-import de.hopp.generator.backends.server.virtex6.ise.xps.MHS_14;
+import de.hopp.generator.backends.server.virtex6.ise.xps.MHSGenerator;
 import de.hopp.generator.backends.unparser.MHSUnparser;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.exceptions.Warning;
@@ -66,7 +66,7 @@ public abstract class ISE implements ProjectBackendIF {
     protected static final String pack       = "ff1156";
     protected static final String speedgrade = "-1";
 
-    protected abstract MHS_14 xps();
+    protected abstract MHSGenerator xps();
     protected abstract SDK sdk();
 
     @Override
@@ -97,11 +97,9 @@ public abstract class ISE implements ProjectBackendIF {
     protected void deployBITSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
         IOHandler IO = config.IOHANDLER();
 
-        xps().visit(board);
-
         StringBuffer buffer  = new StringBuffer();
         MHSUnparser unparser = new MHSUnparser(buffer);
-        unparser.visit(xps().getMHSFile());
+        unparser.visit(xps().generateMHSFile(board));
 
         if(errors.hasErrors()) return;
 

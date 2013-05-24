@@ -1,7 +1,8 @@
-package de.hopp.generator.backends.server.virtex6.ise.xps;
+package de.hopp.generator.backends.server.virtex6.ise.xps.v14_4;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.server.virtex6.ise.xps.v14_1.MHS_14_1;
 
 /**
  * Generation backend for a project for Xilinx XPS version 14.4. This includes

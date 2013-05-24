@@ -32,6 +32,11 @@ public class IPCores {
 
     /**
      * Generate and deploy all files required to describe an IPCore.
+     *
+     * These required files are:
+     * - the .mpd file describing the interface of the core
+     * - the .pao file referencing the sources of the core and
+     * - the vhdl sources themselves
      * @param core The core for which files should be deployed.
      * @param config Configuration of this run, containing required directories and log level.
      * @throws IOException if an Exception occurred with an underlying file operation.

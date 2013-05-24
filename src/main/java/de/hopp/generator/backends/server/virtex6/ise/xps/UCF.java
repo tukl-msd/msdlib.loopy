@@ -17,7 +17,7 @@ import de.hopp.generator.frontend.GPIO;
  * @author Thomas Fischer
  * @since 24.5.13
  */
-public class XPSUtils {
+public class UCF {
 
     /**
      * Generates and deploys a .ucf constraint file for a board description.

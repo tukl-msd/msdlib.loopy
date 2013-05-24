@@ -1,4 +1,4 @@
-package de.hopp.generator.backends.server.virtex6.ise.xps;
+package de.hopp.generator.backends.server.virtex6.ise.xps.v14_1;
 
 import static de.hopp.generator.backends.server.virtex6.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
@@ -8,6 +8,7 @@ import static de.hopp.generator.utils.BoardUtils.getResetPort;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
+import de.hopp.generator.backends.server.virtex6.ise.xps.MHSGenerator;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.parser.Attributes;
@@ -19,7 +20,7 @@ import de.hopp.generator.parser.Block;
  * components like parameterised queues and DeMUXes.
  * @author Thomas Fischer
  */
-public class MHS_14_1 extends MHS_14 {
+public class MHS_14_1 extends MHSGenerator {
 
     // temporary variables used to build up the mhs file
     protected Block curBlock;
