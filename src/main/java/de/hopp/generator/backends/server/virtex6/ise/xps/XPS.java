@@ -3,7 +3,7 @@ package de.hopp.generator.backends.server.virtex6.ise.xps;
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getClockPort;
 import static de.hopp.generator.utils.BoardUtils.getDirection;
-import static de.hopp.generator.utils.BoardUtils.getSWQueueSize32;
+import static de.hopp.generator.utils.BoardUtils.getHWQueueSize;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 
 import java.io.File;
@@ -355,7 +355,7 @@ public abstract class XPS extends Visitor<NE> {
 
         boolean direct = direction(getDirection(axis).termDirection());
         int width = getWidth(axis);
-        int queueSize = getSWQueueSize32(axis);
+        int queueSize = getHWQueueSize(axis);
 
         String axisGroup   = direct ? "M" + axiStreamIdMaster++ : "S" + axiStreamIdSlave++;
         String currentAxis = axisGroup + "_AXIS";
