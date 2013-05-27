@@ -10,8 +10,8 @@ hwqueue 32
 
 core AxiTwoRng 1.00.a {
   // list of vhdl sources
-  source "VHDL Sources/AxiMst.vhd", "VHDL Sources/AxiSlv.vhd", "VHDL Sources/AxiTwoRng.vhd"
-  source "VHDL Sources/RngUniformTausworthe88.vhd"
+  source "vhdl_sources/AxiMst.vhd", "vhdl_sources/AxiSlv.vhd", "vhdl_sources/AxiTwoRng.vhd"
+  source "vhdl_sources/RngUniformTausworthe88.vhd"
 
   // declaration of the components interface
   port in s_axis
