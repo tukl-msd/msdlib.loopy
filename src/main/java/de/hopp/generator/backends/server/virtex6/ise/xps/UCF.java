@@ -26,8 +26,8 @@ public class UCF {
      * @throws IOException if an Exception occurred with the underlying file operations.
      */
     public static void deployUCF(BDLFile bdlFile, Configuration config) throws IOException {
-        File dataDir = new File(edkDir(config), "data");
-        write(dataDir, generateUCF(bdlFile));
+        File target = new File(new File(edkDir(config), "data"), "system.ucf");
+        write(target, generateUCF(bdlFile));
     }
 
     private static String generateUCF(BDLFile bdlFile) {

@@ -3,7 +3,7 @@ package de.hopp.generator.backends.server.virtex6.ise.xps;
 import static de.hopp.generator.backends.server.virtex6.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
-import static de.hopp.generator.utils.Files.copy;
+import static org.apache.commons.io.FileUtils.copyFile;
 import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.FilenameUtils.getName;
 
@@ -20,7 +20,6 @@ import de.hopp.generator.frontend.*;
 import de.hopp.generator.parser.Attributes;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHSFile;
-
 /**
  * Handles generation and deployment of files required to describe IPCores
  * for the XPS toolsuite.
@@ -81,7 +80,7 @@ public class IPCores {
         // deploy sources
         for(Import source : core.source()) {
             target = new File(coreSrcDir, getName(source.file()));
-            copy(source.file(), target, config.IOHANDLER());
+            copyFile(new File(source.file()), target);
         }
     }
 
