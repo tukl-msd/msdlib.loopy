@@ -141,8 +141,8 @@ public class Configuration {
 
     /** print this config on console */
     public void printConfig() {
-        IO.println("- host backend    : " + client().getName());
-        IO.println("- board backend   : " + server().getName());
+        IO.println("- host backend    : " + (client == null ? "none" : client().getName()));
+        IO.println("- board backend   : " + (server == null ? "none" : server().getName()));
         IO.println("- host folder     : " + clientDir().getAbsolutePath());
         IO.println("- board folder    : " + serverDir().getAbsolutePath());
         IO.println("- temp folder     : " + tempDir().getAbsolutePath());
