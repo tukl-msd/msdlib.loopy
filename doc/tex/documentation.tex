@@ -392,6 +392,12 @@ For both bindings, the referenced port has to exist within the core declaration.
 If the tools described in \Cref{sec:setup} are correctly installed, the following steps should provide you with a working version of the driver generator.
 
 
+\subsection{Checking out the Generator}
+First of all, the project has to be checked out (if you are reading this document, you have probably done that already). As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.} The the complete command for the initial checkout is:\\
+
+\texttt{hg clone https://softech.informatik.uni-kl.de/hg/ag/hopp <target dir>}
+
+Later updates can be performed using \texttt{hg pull -u} (which will pull and immediately update the local copy afterwards.
 %\begin{figure}
 %\centering
 %\begin{tikzpicture}
@@ -424,8 +430,6 @@ If the tools described in \Cref{sec:setup} are correctly installed, the followin
 %\end{figure}
 
 \subsection{Building the Generator}
-First of all, the project has to be checked out. As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.}
-
 After checking out the project, all sources have to be compiled and packaged. This can be done using the gradle build tool. The command to build a jar package is \texttt{gradle jar}. Simply type it in a shell in the project root repository, where the file \texttt{build.gradle} is located. Running the build file will generate an executable jar package under the path \texttt{<project>/build/libs}. Navigate there and try running it using the command \texttt{java -jar <name of the jar package>}.\footnote{This should result in the usage help and an error, since no \texttt{.bdl} file has been specified.}
 
 \subsection{Running the Generator}
