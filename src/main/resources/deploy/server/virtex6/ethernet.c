@@ -21,7 +21,7 @@
 
 // attributes of Driver
 struct ip_addr ip, mask, gw;
-struct netif *netif, server_netif;
+struct netif *netif_ptr, server_netif;
 struct tcp_pcb *pcb;
 struct tcp_pcb *data_pcb;
 
@@ -105,7 +105,7 @@ static int wordIndex;
  * No... I have no idea how this works...
  */
 void medium_read() {
-	xemacif_input(netif);
+	xemacif_input(netif_ptr);
 }
 
 static void print_message(struct Message *m) {
@@ -307,7 +307,7 @@ int start_application() {
 
 	// receive and process packets
 //	while (1) {
-//		xemacif_input(netif);
+//		xemacif_input(netif_ptr);
 //	}
 
 	return 0;
@@ -321,7 +321,7 @@ void init_medium() {
 	// the mac address of the board. this should be unique per board
 	unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
 
-	netif = &server_netif;
+	netif_ptr = &server_netif;
 
 	// initialize IP addresses to be used
 	IP4_ADDR(&ip,   IP_1,   IP_2,   IP_3,   IP_4);
@@ -339,18 +339,18 @@ void init_medium() {
 	// This fails completely (as in "does not terminate"), if there is no Ethernet cable attached to the board...
 	// Reason? Somewhere in here is the link speed auto-negotiation
   	// Add network interface to the netif_list, and set it as default
-	if (!xemac_add(netif, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
+	if (!xemac_add(netif_ptr, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
 		loopy_print("Error adding N/W interface\n\r");
 //		return -1;
 		return;
 	}
-	netif_set_default(netif);
+	netif_set_default(netif_ptr);
 
 	/* Create a new DHCP client for this interface.
 	 * Note: you must call dhcp_fine_tmr() and dhcp_coarse_tmr() at
 	 * the predefined regular intervals after starting the client.
 	 */
-	/* dhcp_start(netif); */
+	/* dhcp_start(netif_ptr); */
 
 	// enable interrupts
 	// TODO This is basically a platform-dependent call... (we're on a microblaze, but there is also an implementation for ppc and zynq, maybe more)
@@ -360,5 +360,5 @@ void init_medium() {
 //	loopy_print("done");
 
 	// specify that the network if is up
-	netif_set_up(netif);
+	netif_set_up(netif_ptr);
 }
