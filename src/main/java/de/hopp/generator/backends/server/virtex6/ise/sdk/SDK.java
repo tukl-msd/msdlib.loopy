@@ -206,45 +206,45 @@ public class SDK extends Visitor<NE> {
     private void setupMSS() {
         mssFile = MHS.MHSFile(
             MHS.Attributes(
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("VERSION", MHS.STR(version)))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("VERSION", MHS.Ident(version)))
             ), MHS.Block("OS",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_NAME", MHS.STR("standalone"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.STR(version_os))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.STR("microblaze_0"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.STR("rs232_uart_1"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.STR("rs232_uart_1")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_NAME", MHS.Ident("standalone"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.Ident(version_os))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.Ident("rs232_uart_1"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.Ident("rs232_uart_1")))
             ), MHS.Block("PROCESSOR",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("cpu"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_cpu))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("cpu"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_cpu))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("microblaze_0")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("tmrctr"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_timer_controller))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("axi_timer_0")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("tmrctr"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_timer_controller))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("axi_timer_0")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("v6_ddrx"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_v6_ddrx))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("ddr3_sdram")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("v6_ddrx"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_v6_ddrx))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("ddr3_sdram")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_bram_block))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_d_bram_ctrl")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("bram"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_bram_block))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("microblaze_0_d_bram_ctrl")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("bram"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_bram_block))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_i_bram_ctrl")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("bram"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_bram_block))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("microblaze_0_i_bram_ctrl")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("intc"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_intc))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("microblaze_0_intc")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("intc"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_intc))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("microblaze_0_intc")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("uartlite"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_uartlite))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("debug_module")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("uartlite"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_uartlite))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("debug_module")))
             ), MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.STR("uartlite"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.STR(version_uartlite))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.STR("rs232_uart_1")))
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("uartlite"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER", MHS.Ident(version_uartlite))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("rs232_uart_1")))
             )
         );
     }
