@@ -292,6 +292,9 @@ void recv_poll(unsigned char pid) {
 	// acquire port lock
 	std::unique_lock<std::mutex> port_lock(inPorts[pid]->port_mutex);
 
+    // ignore the poll, if there are unacknowledged values in transit
+    if(*inPorts[pid]->transit > 0) return;
+
 	// set transit counter to 0 to enable transmissions
 	*inPorts[pid]->transit = 0;
 

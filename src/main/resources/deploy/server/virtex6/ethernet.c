@@ -52,7 +52,7 @@ static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct i
 	loopy_print(":%d\n", PORT);
 
 }
-//32506054
+
 static void set_unaligned ( int *target, int *data ) {
 	#if DEBUG
 		loopy_print("\nunaligning value: %d", *data);
@@ -96,19 +96,11 @@ static int get_unaligned ( int *data ) {
 }
 
 /** stores a received message */
-static struct pbuf *msg;
+static struct pbuf *msgFst = NULL, *msgCurSeg = NULL;
 /** stores the position of the next word to read in the received message */
-static int wordIndex;
+static unsigned short wordIndex = 0, rWordIndex = 0;
 
-/**
- * Reads a package from the medium.
- * No... I have no idea how this works...
- */
-void medium_read() {
-	xemacif_input(netif_ptr);
-}
-
-static void print_message(struct Message *m) {
+static void inline print_message(struct Message *m) {
 	loopy_print("\nsending message of size %d", m->headerSize + m->payloadSize);
 	loopy_print("\nheader int:  %d", m->header[0]);
 
@@ -205,13 +197,27 @@ void medium_send(struct Message *m) {
 
 /**
  * Read the next integer value from a received message.
- * Requires, that a message has indeed been received beforehand.
- * @returns The read integer value.
  */
 int recv_int() {
-	// some check over the length of the message
-	int word = get_unaligned(msg->payload + wordIndex*4);
-	wordIndex++;
+    // get next pbuf, if there is currently none (might block indefinitely, if client is faulty...)
+    while(msgFst == NULL) xemacif_input(netif_ptr);
+
+	// get an integer value
+	int word = get_unaligned(msgCurSeg->payload + rWordIndex*4);
+
+	// increment word indices
+	wordIndex++; rWordIndex++;
+
+	// end of pbuf chain - free memory
+	if(wordIndex*4 >= msgFst->tot_len) {
+		pbuf_free(msgFst);
+		msgFst = NULL;
+	// end of current pbuf segment - get the next (and reset relative word index)
+	} else if(rWordIndex*4 >= msgCurSeg->len) {
+		msgCurSeg = msgCurSeg->next;
+		rWordIndex = 0;
+	}
+
 	return word;
 }
 
@@ -228,17 +234,37 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) 
 		return ERR_OK;
 	}
 
-	// indicate that the packet has been received
-	tcp_recved(tpcb, p->len);
+	// set message pointers, reset word indices
+	msgFst    = p; msgCurSeg  = msgFst;
+	wordIndex = 0; rWordIndex = 0;
 
-	// let the protocol interpreter handle the package
-	msg = p; wordIndex = 0;
-	while(wordIndex * 4 < msg->len)	decode_header(recv_int());
+//	while(wordIndex * 4 < msg->len)	decode_header(recv_int());
 
-	// free the received pbuf
-	pbuf_free(p);
+	// indicate that the packet has been received (this MIGHT be too early now...)
+	tcp_recved(tpcb, p->tot_len);
+
+	loopy_print("\npbuf len: %d", msgFst->len);
+	loopy_print("\ntotal pbuf len: %d", msgFst->tot_len);
+
+	// free the received pbuf (this DEFINITELY is too early now...)
+//	pbuf_free(p);
 
 	return ERR_OK;
+}
+
+/**
+ * Gets the next set of values from the lwip stack and runs protocol interpretation.
+ *
+ * If there still is an unfinished pbuf, the first unread value of this pbuf will be
+ * processed. Otherwise, the procedure tries to acquire a new pbuf.
+ * If none is available, this basically is a no-op.
+ *
+ */
+void medium_read() {
+    // if no pbuf is cached, get the next one
+    if(msgFst == NULL) xemacif_input(netif_ptr);
+    // if there is a pbuf (now), decode the first int as header
+    if(msgFst != NULL) decode_header(recv_int());
 }
 
 /**
@@ -264,9 +290,7 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 int start_application() {
 
-	#if DEBUG
-		loopy_print("Starting server application ...");
-	#endif /* DEBUG */
+	loopy_print("Starting server application ...");
 
 	err_t err;
 
@@ -300,10 +324,7 @@ int start_application() {
 	// init the data pcb...
 	data_pcb = tcp_new();
 
-	#if DEBUG
-		loopy_print(" done\n");
-	#endif /* DEBUG */
-
+	loopy_print(" done\n");
 
 	// receive and process packets
 //	while (1) {
