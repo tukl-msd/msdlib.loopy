@@ -41,9 +41,47 @@ public class Main {
         Main main = new Main();
 
         try {
+//            VhdlFile file = parseFile("coresources/myQueue.vhd");
+//
+//            for(LibraryUnit u : file.getElements()) {
+//                System.out.println(u.toString());
+//                if(u instanceof Entity) {
+//                    Entity e = (Entity)u;
+//
+//                    for(VhdlObjectProvider<Signal> vop : e.getPort()) {
+//                        for(Signal s : vop.getVhdlObjects()) {
+//                            System.out.println("found signal: " + s.getIdentifier());
+//                            System.out.println("  precedence: " + s.getPrecedence());
+//                            System.out.println("  kind: " + s.getKind().toString());
+//                            System.out.println("  mode: " + s.getMode().toString());
+//                            System.out.println("  type: " + s.getType().toString());
+//                            if(s.getType() instanceof IndexSubtypeIndication) {
+//                                IndexSubtypeIndication isi = (IndexSubtypeIndication) s.getType();
+//                                for(DiscreteRange<?> range : isi.getRanges()) {
+//                                    if(range instanceof Range) {
+//                                        Range r = (Range) range;
+//                                        System.out.println("  range from :" + r.getFrom());
+//                                        System.out.println("  range to   : " + r.getTo());
+//                                    }
+//                                }
+//                            }
+//
+//                            System.out.println("  default value: " +
+//                                (s.getDefaultValue() == null ? "null" : s.getDefaultValue().toString()));
+//                        }
+//
+//                    }
+//                }
+//            }
             main.run(args);
         } catch(ExecutionFailed e) {
             System.exit(1);
+//        } catch (IOException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        } catch (VhdlParserException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
         }
     }
 

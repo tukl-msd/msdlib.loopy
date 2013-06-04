@@ -27,7 +27,7 @@ public class ISEUtils {
     public static File sdkAppDir(Configuration config) {
         return new File(sdkDir(config), "app");
     }
-    
+
     /**
      * Returns the directory used for the Xilinx SDK board support package.
      * @param config Configuration of this run.
@@ -36,7 +36,7 @@ public class ISEUtils {
     public static File sdkBSPDir(Configuration config) {
         return new File(sdkDir(config), "app_bsp");
     }
-    
+
     /**
      * Returns the directory used for the Xilinx XPS files.
      * @param config Configuration of this run.
@@ -45,5 +45,4 @@ public class ISEUtils {
     public static File edkDir(Configuration config) {
         return new File(config.tempDir(), "edk");
     }
-    
 }

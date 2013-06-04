@@ -18,7 +18,9 @@
 
 package de.hopp.generator;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 import de.hopp.generator.exceptions.Error;
 import de.hopp.generator.exceptions.Warning;
@@ -31,8 +33,8 @@ import de.hopp.generator.exceptions.Warning;
 public class ErrorCollection {
 
     // holds all errors and warning
-    private List<Warning> warnings = new LinkedList<Warning>();
-    private List<Error>     errors = new LinkedList<Error>();
+    private final List<Warning> warnings = new LinkedList<Warning>();
+    private final List<Error>     errors = new LinkedList<Error>();
 
     /**
      * Adds an error to the error collection

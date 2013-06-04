@@ -7,9 +7,8 @@ import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.edkDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkBSPDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
+import static de.hopp.generator.backends.server.virtex6.ise.xps.UCF.deployUCF;
 import static de.hopp.generator.utils.Files.copy;
-import static org.apache.commons.io.FileUtils.copyFile;
-import static org.apache.commons.io.FileUtils.write;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -24,10 +23,13 @@ import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ProjectBackendIF;
 import de.hopp.generator.backends.server.virtex6.ise.sdk.SDK;
-import de.hopp.generator.backends.server.virtex6.ise.xps.XPS;
+import de.hopp.generator.backends.server.virtex6.ise.xps.IPCores;
+import de.hopp.generator.backends.server.virtex6.ise.xps.MHSGenerator;
 import de.hopp.generator.backends.unparser.MHSUnparser;
+import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.exceptions.Warning;
 import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.frontend.Core;
 
 /**
  * Abstract project backend for Xilinx ISE projects for the Virtex6 board.
@@ -64,7 +66,7 @@ public abstract class ISE implements ProjectBackendIF {
     protected static final String pack       = "ff1156";
     protected static final String speedgrade = "-1";
 
-    protected abstract XPS xps();
+    protected abstract MHSGenerator xps();
     protected abstract SDK sdk();
 
     @Override
@@ -95,31 +97,42 @@ public abstract class ISE implements ProjectBackendIF {
     protected void deployBITSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
         IOHandler IO = config.IOHANDLER();
 
-        xps().visit(board);
-
         StringBuffer buffer  = new StringBuffer();
         MHSUnparser unparser = new MHSUnparser(buffer);
-        unparser.visit(xps().getMHSFile());
+        unparser.visit(xps().generateMHSFile(board));
 
         if(errors.hasErrors()) return;
+
+        // generate and deploy core sources
+        for(Core core : board.cores().term()) {
+            try {
+                IPCores.deployCore(core, config);
+            } catch (UsageError e) {
+                errors.addError(e);
+            } catch (IOException e) {
+                errors.addError(new GenerationFailed(
+                    "Failed to deploy source files for core " + core.name() +
+                        " due to:\n" + e.getMessage()));
+            }
+        }
 
         // if this is only a dryrun, return
         if(config.dryrun()) return;
 
-        // deploy board-independent files and directories
+        // deploy board-independent files and directories (mig project file, queue and resizer cores
         try {
             copy(edkSourceDir.getPath(), edkDir(config), IO);
         } catch(IOException e) {
             e.printStackTrace();
             errors.addError(new GenerationFailed("Failed to deploy generic edk sources due to:\n" + e.getMessage()));
         }
+
+        // deploy board-dependent files
         try {
-            File target = new File(edkDir(config), "data/system.ucf");
-            printBuffer(new StringBuffer(xps().getUCFFile()), target);
+            deployUCF(board.term(), config);
         } catch (IOException e) {
             errors.addError(new GenerationFailed(e.getMessage()));
         }
-
         try {
             // deploy generated .mhs file
             File target = new File(edkDir(config), "system.mhs");
@@ -129,37 +142,7 @@ public abstract class ISE implements ProjectBackendIF {
             errors.addError(new GenerationFailed(e.getMessage()));
         }
 
-        // deploy core sources
-        for(File target : xps().getCoreSources().keySet())
-            try {
-                IO.debug("copying " + xps().getCoreSources().get(target) + " to "+ target.getPath());
-                copyFile(new File(xps().getCoreSources().get(target)), target);
-            } catch(IOException e) {
-                errors.addError(new GenerationFailed(e.getMessage()));
-            }
-
-        // deploy core pao files
-        for(File target : xps().getPAOFiles().keySet())
-            try {
-                IO.debug("deploying " + target);
-                write(target, xps().getPAOFiles().get(target));
-            } catch(IOException e) {
-                errors.addError(new GenerationFailed(e.getMessage()));
-            }
-
-        // deploy core mpd files
-        for(File target : xps().getMPDFiles().keySet())
-            try {
-                IO.debug("deploying " + target);
-
-                buffer   = new StringBuffer();
-                unparser = new MHSUnparser(buffer);
-                unparser.visit(xps().getMPDFiles().get(target));
-
-                printBuffer(buffer, target);
-            } catch(IOException e) {
-                errors.addError(new GenerationFailed(e.getMessage()));
-            }
+        // deploy generated ucf file
     }
 
     /**
