@@ -12,9 +12,9 @@
 #include <bitset>
 #include <mutex>
 
+#include "../utils.h"
 #include "../linkedQueue.h"
 #include "../io/state.h"
-
 
 class abstractInPort;
 /** List of all in-going ports of this driver. */
@@ -186,6 +186,30 @@ public:
 	}
 
 	/**
+	 * Writes bit vectors from a file to this port and waits for the write to return.
+	 * This implies waiting for the board to receive and acknowledge the written values.
+	 *
+	 * @see utils.h
+	 * @param file File containing the values to be written.
+	 * @param delim Separation character between two values.
+	 * @param f Function formatting values read from the file (cf ios_base.h).
+	 * @throws protocolException  Indicates a problem with message encoding.
+	 *                            This should not happen, when using this port interface.
+	 * @throws interfaceException Indicates a problem with the communication medium.
+	 *                            This usually means, that the connection to the board
+	 *                            has been lost for some reason (and therefore, the driver
+	 *                            has failed completely).
+	 * @throws invalidArgument If the provided file does not exist.
+	 * @warning Though described as a blocking write, this method currently only blocks
+	 *          until the microblaze has received the value, not until the component
+	 *          has received it. This will be fixed in a later version
+	 */
+	void write(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {
+	    std::vector<bitset<width>> vals = read_file<width>(file, delim, f);
+	    write(vals);
+	}
+
+	/**
 	 * Writes a bit vector value to this port without waiting for it to return.
 	 * This still implies, that the value has not been received by the board (or not even
      * been sent to the board) yet.
@@ -218,6 +242,21 @@ public:
 	std::shared_ptr<writeState<width>> nbwrite(const std::bitset<width> vals[], unsigned int size) {
 		return nbwrite(new writeState<width>(vals, size));
 	}
+
+    /**
+     * Writes bit vectors from a file to this port without waiting for it to return.
+     * This still implies, that the value has not been received by the board (or not even
+     * been sent to the board) yet.
+     * @see utils.h
+     * @param file File containing the values to be written.
+     * @param delim Separation character between two values.
+     * @param f Function formatting values read from the file (cf ios_base.h).
+     * @throws invalidArgument If the provided file does not exist.
+     */
+	std::shared_ptr<writeState<width>> nbwrite(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {
+        std::vector<bitset<width>> vals = read_file<width>(file, delim, f);
+        return nbwrite(vals);
+    }
 
 	/**
 	 * Writes a bit vector to a port and waits for the write to return.

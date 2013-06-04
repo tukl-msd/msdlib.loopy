@@ -31,7 +31,7 @@ void reset_queues() {
 
 	// TODO set some reset flag
 	int i;
-	for(i = 0; i <  IN_STREAM_COUNT; i++) clear( inQueue[i]);
+	for(i = 0; i < IN_STREAM_COUNT; i++) clear( inQueue[i]);
 	outQueueSize = 0;
 	// TODO does this guarantee, that no more values will be written to the MB queues??
 }

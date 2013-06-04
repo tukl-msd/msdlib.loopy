@@ -11,6 +11,7 @@
 #include <memory>
 #include <bitset>
 
+#include "../utils.h"
 #include "../linkedQueue.h"
 #include "../io/state.h"
 
@@ -197,6 +198,23 @@ public:
 	 */
 	void read(std::bitset<width> vals[], unsigned int size) {
 		read(new readState<width>(vals, size));
+	}
+
+    /**
+     * Reads several values from this port into a file.
+     * This is a blocking read, meaning that the reading program will wait until a value is returned.
+     *
+     * @see utils.h
+     * @param size The number of values to be read.
+     * @param file Path of the file where the values should be stored in.
+     * @param delim Separation character between two values.
+     * @param f Function formatting values written to the file (cf ios_base.h).
+     * @throws readException if the read failed.
+     */
+	void read(int count, const char *file, const char delim, ios_base& (*f)(ios_base&)) {
+	    std::vector<std::bitset<width>> vals(count);
+	    read(vals);
+	    write_file(file, delim, f, vals);
 	}
 
 	/**

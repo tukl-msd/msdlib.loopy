@@ -1,41 +1,39 @@
-/*
+/**
+ * Main of the board-side application.
+ *
+ * Initialises the boards components and starts the scheduling loop.
+ *
  * @file
  * @author Thomas Fischer
  * @since 01.02.2013
  */
-
-#include "fsl.h"
-//#include "medium/medium.h"
-#include <stdlib.h>
-//#include "medium/message.h"
-#include "xparameters.h"
-
-#include "components/components.h"
-#include "components/gpio/led.h"
-
-#include "io.h"
 
 // forward declarations
 void init_platform();
 void init_medium();
 void init_components();
 void init_queue();
+
 void start_application();
-void cleanup_platform();
+void schedule();
 
 void reset_components();
 void reset_queues();
-void schedule();
 
-void XUartLite_SendByte(u32 BaseAddress, u8 Data);
-void UartSendInt(int number);
+void cleanup_platform();
 
+/**
+ * Resets all components and corresponding queues.
+ */
 void reset() {
-	reset_components();
-	reset_queues();
+    reset_components();
+    reset_queues();
 }
 
-// main method
+/**
+ * Initialises components and starts scheduling loop.
+ * @return 0 if terminated succesfully, 1 otherwise.
+ */
 int main() {
 	// initialise the platform. This also sets up the interrupt controller
 	init_platform();
