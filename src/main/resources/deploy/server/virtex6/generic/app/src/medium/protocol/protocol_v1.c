@@ -14,7 +14,9 @@
 int recv_int();
 
 // gpio
+#if gpi_count > 0 || gpo_count > 0
 void gpio_write(int target, int val);
+#endif
 
 // axi stream interface
 void axi_write ( int  val, int target );
@@ -95,7 +97,9 @@ int decode_header_v1(int first) {
         pollCount[id] += size;
 		break;
 	case gpio: // This marks a GPIO message. We need to switch over the target component.
+#if gpi_count > 0 || gpo_count > 0
 	    gpio_write(id, size);
+#endif
 	case ack: // This is an acknowledgement.
 		      // By design, acks should only be sent by the server.
 		      // Consequently, receiving such a message is an error ;)
