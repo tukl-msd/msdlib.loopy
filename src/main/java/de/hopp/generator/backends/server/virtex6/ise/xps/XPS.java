@@ -264,7 +264,7 @@ public abstract class XPS extends Visitor<NE> {
      * @throws UsageError If the port is bi-directional, since those
      *                          ports are not supported using AXI4 stream interfaces.
      */
-    private static boolean direction(Direction direction) throws UsageError {
+    protected static boolean direction(Direction direction) throws UsageError {
         return direction.Switch(new Direction.Switch<Boolean, UsageError>() {
             @Override
             public Boolean CaseIN(IN term) throws UsageError {
@@ -318,7 +318,7 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4000ffff"))),
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
             Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("GPIO_IO_O", Ident("Push_Buttons_5Bits_TRI_I"))),
+            Attribute(PORT(), Assignment("GPIO_IO_I", Ident("Push_Buttons_5Bits_TRI_I"))),
             Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("Push_Buttons_5Bits_IP2INTC_Irpt")))
             );
     }
@@ -339,7 +339,7 @@ public abstract class XPS extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4004ffff"))),
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
             Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("GPIO_IO_O", Ident("DIP_Switches_8Bits_TRI_I"))),
+            Attribute(PORT(), Assignment("GPIO_IO_I", Ident("DIP_Switches_8Bits_TRI_I"))),
             Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("DIP_Switches_8Bits_IP2INTC_Irpt")))
             );
     }

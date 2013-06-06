@@ -80,7 +80,7 @@ MAnyType = MType             ( String name, Strings doc )
 //       | StructType ( String name, Strings doc ) // can also be done with "usual" type by adding "struct "
 //       | EnumType   ( String name, Strings doc ) // can also be done with "usual" type by adding "enum "
 //       | ClassType  ( String name, Strings doc ) // can also be done with "usual" type by adding "class "
-         | MArrayType        ( MAnyType type, Integer length )
+         | MArrayType        ( MAnyType type, String length )
          | MPointerType      ( MAnyType type )
          | MConstPointerType ( MAnyType type )
 

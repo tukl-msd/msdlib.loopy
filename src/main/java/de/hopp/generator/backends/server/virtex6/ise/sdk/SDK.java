@@ -21,6 +21,7 @@ import de.hopp.generator.model.MCode;
 import de.hopp.generator.model.MFile;
 import de.hopp.generator.model.MInclude;
 import de.hopp.generator.model.MProcedure;
+import de.hopp.generator.model.Strings;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHS;
 import de.hopp.generator.parser.MHSFile;
@@ -44,8 +45,6 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  */
 public class SDK extends Visitor<NE> {
-
-    private static File gpioSrc = new File(sdkSourceDir, "gpio");
 
     private final ErrorCollection errors;
 
@@ -72,7 +71,7 @@ public class SDK extends Visitor<NE> {
     private int axiStreamIdMaster = 0;
     private int axiStreamIdSlave  = 0;
 
-    private final int gpiCount = 0;
+    private int gpiCount = 0;
     private int gpoCount = 0;
 
     // version strings
@@ -173,7 +172,7 @@ public class SDK extends Visitor<NE> {
                 "Initialises all components on this board.",
                 "This includes gpio components and user-defined IPCores,",
                 "but not the communication medium this board is attached with."
-            )), MModifiers(), MVoid(), "init_components", MParameters(), MCode(Strings()));
+            )), MModifiers(), MVoid(), "init_components", MParameters(), MCode(Strings("int status;")));
         reset = MProcedure(MDocumentation(Strings(
                 "Resets all components in this board.",
                 "This includes gpio components and user-defined IPCores,",
@@ -274,13 +273,6 @@ public class SDK extends Visitor<NE> {
         // add protocol version constant
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
 
-        // add gpio utils file, if gpio components are present
-        if(!board.gpios().isEmpty()) {
-            File target = new File(new File(targetSrc, "components"), "gpio");
-            deployFiles.put(new File(gpioSrc, "gpio.h"), new File(target, "gpio.h"));
-            deployFiles.put(new File(gpioSrc, "gpio.c"), new File(target, "gpio.c"));
-        }
-
         // visit board components
         visit(board.medium());
         visit(board.scheduler());
@@ -291,6 +283,10 @@ public class SDK extends Visitor<NE> {
         // add stream count constants
         addConst("IN_STREAM_COUNT", String.valueOf(axiStreamIdMaster), "Number of in-going stream interfaces.");
         addConst("OUT_STREAM_COUNT", String.valueOf(axiStreamIdSlave), "Number of out-going stream interfaces.");
+
+        // add gpio count constants
+        addConst("gpi_count", String.valueOf(gpiCount), "Number of gpi components");
+        addConst("gpo_count", String.valueOf(gpoCount), "Number of gpo components");
 
         // add init and reset procedures to the source file
         components = add(components, init);
@@ -370,12 +366,166 @@ public class SDK extends Visitor<NE> {
 
     }
 
-    public void visit(GPIOPos term) {
-        String name = term.name().term();
-        if(name.equals("leds")) addLEDs();
-        else if(name.equals("switches")) addSwitches();
-        else if(name.equals("buttons")) addButtons();
-        else errors.addError(new ParserError("Unknown GPIO device " + name + " for Virtex6", "", -1));
+    public void visit(final GPIOPos gpio) {
+        File componentsDir = new File(targetSrc, "components");
+        deployFiles.put(new File(sdkSourceDir, "gpio.h"), new File(componentsDir, "gpio.h"));
+        deployFiles.put(new File(sdkSourceDir, "gpio.c"), new File(componentsDir, "gpio.c"));
+
+        gpio.direction().termDirection().Switch(new Direction.Switch<String, NE>() {
+            public String CaseIN(IN term) {
+                // add gpi id definition
+                components = add(components, MDef(MDocumentation(Strings(
+                        "GPI ID of the " + gpio.name().term() + " component"
+                    )), MModifiers(PRIVATE()), "gpi_" + gpio.name().term(), String.valueOf(gpiCount)));
+
+                // add exception handler method
+                components = add(components, createExceptionHandler(gpio.term()));
+
+                // generate code for init method
+                try {
+                    init = addLines(init, initGPI(gpio.term()));
+                } catch (ParserError e) { errors.addError(e); }
+
+                // increment gpi count
+                gpiCount++;
+
+                return null;
+            }
+
+            public String CaseOUT(OUT term) {
+                // add gpo id definition
+                components = add(components, MDef(MDocumentation(Strings(
+                    "GPO ID of the " + gpio.name().term() + " component"
+                )), MModifiers(PRIVATE()), "gpo_" + gpio.name().term(), String.valueOf(gpoCount)));
+
+                // generate code for init method
+                try {
+                    init = addLines(init, initGPO(gpio.term()));
+                } catch (ParserError e) { errors.addError(e); }
+
+                // increment gpo count
+                gpoCount++;
+
+                return null;
+            }
+            public String CaseDUAL(DUAL term) {
+                throw new RuntimeException("Bi-directional GPIO components not allowed");
+            }
+        });
+
+        try {
+            // add the driver block to the mss file
+            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(hwVersion(gpio.term())))),
+                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(hwInstance(gpio.term()))))
+            ));
+        } catch(ParserError e) {
+            errors.addError(e);
+        }
+    }
+
+    private MProcedure createExceptionHandler(final GPIO gpio) {
+        MCode body =
+            gpio.callback().Switch(new Code.Switch<MCode, NE>() {
+                private final String start = "XGpio *GpioPtr = (XGpio *)CallbackRef;";
+                private final Strings end  = Strings("",
+                    "// Clear the Interrupt",
+                    "XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);"
+                );
+
+                public MCode CaseDEFAULT(DEFAULT term) {
+                    return MCode(Strings(start, "",
+                        "// transmit gpi state change to host",
+                        "send_gpio(gpi_" + gpio.name() + ", gpio_read(gpi_" + gpio.name() + "));"
+                    ).addAll(end),
+                    MForwardDecl("int gpio_read(int target)"),
+                    MForwardDecl("int gpio_write(int target, int val)"));
+                }
+                public MCode CaseUSER_DEFINED(USER_DEFINED term) {
+                    return MCode(Strings(start, "",
+                        "// user-defined callback code"
+                    ).addAll(term.content()).addAll(end));
+                }
+        });
+        return MProcedure(MDocumentation(Strings(
+                "The Xil_ExceptionHandler to be used as callback for the " + gpio.name() + " component.",
+                "This handler executes user-defined code and clears the interrupt."
+            )), MModifiers(PRIVATE()),
+            MVoid(), "GpioHandler_" + gpio.name(), MParameters(
+                MParameter(VALUE(), MPointerType(MType("void")), "CallbackRef")
+            ), body);
+    }
+
+    private MCode initGPI(GPIO gpio) throws ParserError {
+        String name = gpio.name();
+        return MCode(Strings(
+            "loopy_print(\"\\ninitialise " + name + " ...\");",
+            "status = XGpio_Initialize(&gpi_components[gpi_" + name + "], " + deviceID(gpio) + ");",
+            "if(status != XST_SUCCESS) {",
+            "    loopy_print(\" error setting up " + name + ": %d\", status);",
+            "    return;",
+            "}",
+            "XGpio_SetDataDirection(&gpi_components[gpi_" + name + "], GPIO_CHANNEL1, 0x0);",
+            "status = GpioIntrSetup(&gpi_components[gpi_" + name + "], " + deviceID(gpio) + ",",
+            "    " + deviceIntrChannel(gpio) + ", GPIO_CHANNEL1, GpioHandler_" + name + ");",
+            "if(status != XST_SUCCESS) {",
+            "    loopy_print(\" error setting up " + name + ": %d\", status);",
+            "    return;",
+            "}",
+            "loopy_print(\" done\");",
+            ""
+        ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
+    }
+
+    private MCode initGPO(GPIO gpio) throws ParserError {
+        String name = gpio.name();
+        return MCode(Strings(
+            "loopy_print(\"\\ninitialise " + name + " ...\");",
+            "status = XGpio_Initialize(&gpo_components[gpo_" + name + "], " + deviceID(gpio) + ");",
+            "if(status != XST_SUCCESS) {",
+            "    loopy_print(\" error setting up " + name + ": %d\", status);",
+            "    return;",
+            "}",
+            "XGpio_SetDataDirection(&gpo_components[gpo_" + name + "], GPIO_CHANNEL1, 0x0);",
+            "loopy_print(\" done\");",
+            ""
+        ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
+    }
+
+    private String deviceID(GPIO gpio) throws ParserError {
+        if(gpio.name().equals("leds"))          return "XPAR_LEDS_8BITS_DEVICE_ID";
+        else if(gpio.name().equals("switches")) return "XPAR_DIP_SWITCHES_8BITS_DEVICE_ID";
+        else if(gpio.name().equals("buttons"))  return "XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID";
+
+        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
+            gpio.pos().filename(), gpio.pos().line());
+    }
+
+    private String deviceIntrChannel(GPIO gpio) throws ParserError{
+        if(gpio.name().equals("switches"))     return "XPAR_MICROBLAZE_0_INTC_DIP_SWITCHES_8BITS_IP2INTC_IRPT_INTR";
+        else if(gpio.name().equals("buttons")) return "XPAR_MICROBLAZE_0_INTC_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_INTR";
+
+        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
+            gpio.pos().filename(), gpio.pos().line());
+    }
+
+    private String hwInstance(GPIO gpio) throws ParserError {
+        if(gpio.name().equals("leds"))          return "leds_8bits";
+        else if(gpio.name().equals("switches")) return "dip_switches_8bits";
+        else if(gpio.name().equals("buttons"))  return "push_buttons_5bits";
+
+        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
+            gpio.pos().filename(), gpio.pos().line());
+    }
+
+    private String hwVersion(GPIO gpio) throws ParserError {
+        if(gpio.name().equals("leds"))          return version_gpio_leds;
+        else if(gpio.name().equals("switches")) return version_gpio_switches;
+        else if(gpio.name().equals("buttons"))  return version_gpio_buttons;
+
+        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
+            gpio.pos().filename(), gpio.pos().line());
     }
 
     public void visit(final CPUAxisPos axis) {
@@ -621,101 +771,6 @@ public class SDK extends Visitor<NE> {
     public void visit(StringPos  term) { }
     public void visit(IntegerPos term) { }
     public void visit(BooleanPos term) { }
-
-    private void addLEDs() {
-        // deploy LED files
-        File target = new File(new File(targetSrc, "components"), "gpio");
-        deployFiles.put(new File(gpioSrc, "led.h"), new File(target, "led.h"));
-        deployFiles.put(new File(gpioSrc, "led.c"), new File(target, "led.c"));
-
-            // add LED init to component init
-        init = addLines(init, MCode(Strings("init_LED();"),
-                MForwardDecl("int init_LED()")));
-
-        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_leds))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("leds_8bits")))
-        ));
-    }
-
-    private void addSwitches() {
-        // deploy switch files
-        File target = new File(new File(targetSrc, "components"), "gpio");
-        deployFiles.put(new File(gpioSrc, "switches.h"), new File(target, "switches.h"));
-        deployFiles.put(new File(gpioSrc, "switches.c"), new File(target, "switches.c"));
-
-        // add switch init to component init
-        init = addLines(init, MCode(Strings("init_switches();"),
-                MForwardDecl("int init_switches()")));
-
-        components = add(components, MDef(MDocumentation(Strings(
-                "Identifier of the switch component"
-                )), MModifiers(PRIVATE()), "gpo_switches", String.valueOf(gpoCount++)));
-
-        // add callback procedure to component file
-        // TODO user-defined code and additional documentation
-        components = add(components, MProcedure(
-            MDocumentation(Strings(
-                "Callback procedure for the switch gpio component.",
-                "This procedure is called, whenever the state of the switch component changes."
-            )), MModifiers(PRIVATE()), MVoid(), "callback_switches", MParameters(), MCode(
-                Strings(
-                    "// Test application: set LED state to Switch state",
-                    "set_LED(read_switches());",
-                    "send_gpio(gpo_switches, read_switches());"),
-                MQuoteInclude("xbasic_types.h"),
-                MForwardDecl("u32 read_switches()"),
-                MForwardDecl("void set_LED(u32 state)"),
-                MForwardDecl("void send_gpio(unsigned char gid, unsigned char state)")
-            )
-        ));
-
-        // add the driver block to the mss file
-        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_buttons))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("push_buttons_5bits")))
-        ));
-    }
-
-    private void addButtons() {
-        // deploy button files
-        File target = new File(new File(targetSrc, "components"), "gpio");
-        deployFiles.put(new File(gpioSrc, "button.h"), new File(target, "button.h"));
-        deployFiles.put(new File(gpioSrc, "button.c"), new File(target, "button.c"));
-
-        // add button init to component init
-        init = addLines(init, MCode(Strings("init_buttons();"),
-                MForwardDecl("int init_buttons()")));
-
-        components = add(components, MDef(MDocumentation(Strings(
-                "Identifier of the button component"
-                )), MModifiers(PRIVATE()), "gpo_buttons", String.valueOf(gpoCount++)));
-
-        // add callback procedure to component file
-        // TODO user-defined code and additional documentation
-        components = add(components, MProcedure(
-            MDocumentation(Strings(
-                "Callback procedure for the pushbutton gpio component.",
-                "This procedure is called, whenever the state of the pushbutton component changes."
-            )), MModifiers(PRIVATE()), MVoid(), "callback_buttons", MParameters(), MCode(
-                Strings(
-                    "// Test application: print out some text",
-                    "xil_printf(\"\\nhey - stop pushing!! %d\", read_buttons());",
-                    "send_gpio(gpo_buttons, read_buttons());"),
-                MQuoteInclude("xbasic_types.h"),
-                MForwardDecl("u32 read_buttons()")
-            )
-        ));
-
-        // add the driver block to the mss file
-        mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(version_gpio_switches))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("dip_switches_8bits")))
-        ));
-    }
 
     private void addIP(String id, String ipString, String doc) {
         String[] ip = ipString.split("\\.");

@@ -51,5 +51,4 @@ public class Model {
         return init.replaceParams(init.params().addAll(list.params()))
                    .replaceNeeded(init.needed().addAll(list.needed()));
     }
-
 }

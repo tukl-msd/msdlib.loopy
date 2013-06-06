@@ -38,11 +38,11 @@ int main() {
 	// initialise the platform. This also sets up the interrupt controller
 	init_platform();
 
-	// initialise Ethernet
-	init_medium();
-
 	// initialise all components
 	init_components();
+
+	// initialise Ethernet
+	init_medium();
 
 	// perform medium-specific startup operations (TODO merge with init?)
 	start_application();

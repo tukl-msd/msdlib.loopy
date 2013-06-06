@@ -254,7 +254,7 @@ public class XPS_14_1 extends XPS {
         } else if(name.equals("switches")) {
             mhs = add(mhs, Attribute(PORT(),
                 Assignment("DIP_Switches_8Bits_TRI_I", Ident("DIP_Switches_8Bits_TRI_I")),
-                Assignment("DIR", Ident("O")),
+                Assignment("DIR", Ident("I")),
                 Assignment("VEC", Range(7,0))
             ));
             addPortToInterruptController("DIP_Switches_8Bits_IP2INTC_Irpt");

@@ -9,6 +9,7 @@ import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkBSPDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.utils.Files.copy;
 import static org.apache.commons.io.FileUtils.copyFile;
+import static org.apache.commons.io.FileUtils.copyFileToDirectory;
 import static org.apache.commons.io.FileUtils.write;
 
 import java.io.BufferedReader;
@@ -84,6 +85,20 @@ public abstract class ISE implements ProjectBackendIF {
         // generate .bit and .elf files
         generateBITFile(config, errors);
         generateELFFile(config, errors);
+
+        // deploy bit and elf files
+        try {
+            File bitFile = new File(new File(edkDir(config), "implementation"), "system.bit");
+            copyFileToDirectory(bitFile, config.serverDir());
+        } catch (IOException e) {
+            errors.addWarning(new Warning("could not deploy .bit file due to: " + e.getMessage()));
+        }
+        try {
+            File elfFile = new File(new File(new File(sdkDir(config), "app"), "Debug"), "app.elf");
+            copyFileToDirectory(elfFile, config.serverDir());
+        } catch (IOException e) {
+            errors.addWarning(new Warning("could not deploy .elf file due to: " + e.getMessage()));
+        }
 
         // load .elf into .bit file
 //        runBitInit(config, errors);
