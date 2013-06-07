@@ -1,8 +1,9 @@
 medium ethernet {
+  // USE YOUR BOARDS MAC AND DESIRED IP ADDRESS / PORT HERE ;)
   mac "00:0a:35:01:FB:E3"
-  ip "192.168.2.10"
+  ip "192.168.1.10"
   mask "255.255.255.0"
-  gate "192.168.2.1"
+  gate "192.168.1.1"
   port 8844
 }
 
@@ -29,7 +30,7 @@ instance AxiTwoRng 1.00.a rng_a {
     hwqueue 8
   }
   cpu m_axis {
-    // several values should be cached, but continuous forwarding seems not practicable for a random number generator (except if values are consumed faster than they are generated)
+    // several values should be cached, but continuous forwarding seems not practicable for a random number generator (except perhaps if values are consumed faster than they are generated)
     poll 64
   }
 }

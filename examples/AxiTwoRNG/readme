@@ -1,7 +1,7 @@
 Steps to perform for this example:
 
 - Download and compile loopy generator (cf loopy documentation, chapter 2)
-- Run loopy generator using the following command:
+- Run loopy generator using the following command (do NOT leave out verbose parameter):
 
   java -jar <your compiled jarfile> -c c++ -s virtex6 -p ise14.1 -v sample.bdf
 
@@ -10,10 +10,11 @@ Steps to perform for this example:
   The temp folder contains the Xilinx EDK and SDK projects.
 
 - XPS should be called automatically and executed on the XPS project.
-- Run Xilinx SDK using the temp/sdk folder as workspace
-- Import all projects in the temp/sdk folder to the workspace
-- Use .bit and .elf in temp/sdk/hw and temp/sdk/app/Debug respectively to program fpga
-- Run your program
+- XSDK will fail with a popup - skip this popup
+- open XSDK using the workspace <project>/temp/sdk
+- rebuild (standard ctrl+b)
+- Use .bit and .elf in <project>/temp/sdk/hw (alternatively, a copy is made in <project>/server) and <project>/temp/sdk/app/Debug respectively to program fpga
+- Run client application using your own main.
 
 For convenience, a sample main has been provided as well.
   

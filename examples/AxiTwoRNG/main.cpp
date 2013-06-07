@@ -17,17 +17,17 @@ void randomTest() {
   int seed3 = 0x37543452;
 
   // init seed vector
-  vector<bitset<32> > vector;
-  vector.push_back(reset);
-  vector.push_back(seed1);
-  vector.push_back(seed2);
-  vector.push_back(seed3);
-  vector.push_back(seed1);
-  vector.push_back(seed1);
-  vector.push_back(seed1);
+  vector<bitset<32> > vec;
+  vec.push_back(reset);
+  vec.push_back(seed1);
+  vec.push_back(seed2);
+  vec.push_back(seed3);
+  vec.push_back(seed1);
+  vec.push_back(seed1);
+  vec.push_back(seed1);
 
   // write seed vector
-  rng_a.s_axis.write(vector);
+  rng_a.s_axis.write(vec);
 
   // wait for values
   sleep(5);
@@ -46,8 +46,4 @@ int main() {
 
   shutdown();
 }
-
-
-
-
 
