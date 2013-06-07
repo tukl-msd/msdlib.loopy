@@ -4,11 +4,20 @@
  */
 
 #include "gpio.h"
-#include "../interrupts.h"
+#include "interrupts.h"
 
 static u16 GlobalIntrMask; /* GPIO channel mask that is needed by the Interrupt Handler */
 
 static volatile u32 IntrFlag; /* Interrupt Handler Flag */
+
+int gpio_write(int target, int val) {
+    XGpio_DiscreteWrite(&gpo_components[target], GPIO_CHANNEL1, val);
+    return XST_SUCCESS;
+}
+
+int gpio_read(int target) {
+    return XGpio_DiscreteRead(&gpi_components[target], GPIO_CHANNEL1);
+}
 
 int GpioIntrSetup(XGpio *InstancePtr, u16 DeviceId, u16 IntrId, u16 IntrMask, Xil_ExceptionHandler GpioHandler) {
 	int Result;

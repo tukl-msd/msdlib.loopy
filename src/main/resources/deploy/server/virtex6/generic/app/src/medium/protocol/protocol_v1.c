@@ -14,7 +14,9 @@
 int recv_int();
 
 // gpio
-void set_LED(u32 state);
+#if gpi_count > 0 || gpo_count > 0
+void gpio_write(int target, int val);
+#endif
 
 // axi stream interface
 void axi_write ( int  val, int target );
@@ -95,17 +97,9 @@ int decode_header_v1(int first) {
         pollCount[id] += size;
 		break;
 	case gpio: // This marks a GPIO message. We need to switch over the target component.
-		switch(id) {
-		case 0: // This marks setting of the LED state. In this case, we use the size field as value.
-			set_LED(size);
-			break;
-		case 1: // switch poll - answer with current state
-			break;
-		case 2: // button poll - answer with current state
-			break;
-		default: if(DEBUG) xil_printf("\nWARNING: unknown GPIO component identifier %d. The frame will be ignored.", id);
-		}
-		break;
+#if gpi_count > 0 || gpo_count > 0
+	    gpio_write(id, size);
+#endif
 	case ack: // This is an acknowledgement.
 		      // By design, acks should only be sent by the server.
 		      // Consequently, receiving such a message is an error ;)

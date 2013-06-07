@@ -11,8 +11,12 @@
 #include "xbasic_types.h"
 #include "xil_exception.h"
 #include "xgpio.h"
+#include "../constants.h"
 
 #define GPIO_CHANNEL1 1
+
+XGpio gpi_components[gpi_count];
+XGpio gpo_components[gpo_count];
 
 /**
  * Set up interrupt handler for a gpio component.
