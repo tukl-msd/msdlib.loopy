@@ -347,6 +347,10 @@ An interface description consists of several port declarations. A port is either
 
 \textcolor{red}{VHDL analysis can also be used to simplify the specification of the core interface, since it already is fully specified in the VHDL file.}
 
+\textbf{IMPORTANT NOTE:} the ports described using this syntax have to be AXI4 stream compliant and the ports of the vhdl component have to follow a strict naming pattern. The four ports that make up an AXI4 stream have to be suffixed \texttt{\_data}, \texttt{\_ready}, \texttt{\_valid} and \texttt{\_last} accordingly. For example, an in-going AXI4 stream port \texttt{inA} requires the basic ports \texttt{inA\_data}, \texttt{inA\_ready} and so on. Also carefully check directions and widths of these ports, since VHDL code is not analysed and will result in very late error detection.
+
+\textcolor{red}{It would be nice, if there was some sort of AXI4 wrapper that can be used for non-compliant components...}
+
 Finally, the core requires bindings for the implicit clock and reset ports. These may be interleaved with the "normal" AXI stream ports.
 
 \begin{lstlisting}[language=bdl]
