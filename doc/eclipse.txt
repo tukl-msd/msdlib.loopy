@@ -1,0 +1,24 @@
+=== Installation ===
+This section guides you through the basic steps for installing the eclipse IDE for C/C++ developers or adjusting an existing eclipse IDE to also work with C/C++ projects.
+
+-From Scratch:
+Visit www.eclipse.org and navigate your way to the download section. There you find a dedicated package "Eclipse IDE for C/C++ Developers". Select your operating system of choice, download and install.
+
+-Adjusting existing Installations:
+Open your eclipse and navigate to Help -> Install New Software. In the pulldown on top, select "All Available Sites" and wait for eclipse to fetch available plugins. Once the process is finished, install the CDT. (This step requires probably requires some more documentation ;)
+
+=== C++11 Setup ===
+Unfortunately, C++11 support is still experimental within the gcc c++ compiler and disabled by default. 
+To make it even worse, this setup is project-specific and has to be performed for each new project.
+
+- navigate to project -> properties -> C/C++ Build -> Settings
+- add "__GXX_EXPERIMENTAL_CXX0X__" (with the double underscore, without quotes) to
+    GCC C++ Compiler -> Preprocessor -> Defined symbols
+- enable GCC C++ Compiler -> Miscellanesous -> Position Independent Code (-fPIC)
+- add "-std=c++0x -pthread" (without quotes)
+    to GCC C++ Compiler -> Miscellaneous -> Other flags
+    and GCC C++ Linker -> Miscellaneous -> Linker flags
+
+It is possible, that you STILL get errors in the generated code. These are not actual compiler errors but rather errors from a bugged eclipse analysis step. These can be disabled in Project -> Properties -> C/C++ General -> Code Analysis -> Use project settings. Disable whatever Warning you're getting (a re-occuring issue is std::to_string(errno) in interface.cpp - a function, that supposedly is not found). Note, that this only disables eclipse code analysis. Actual compiler errors are still reported when building the project. You may also try to re-enable this analysis afterwards and check, if the error disappeared.
+
+
