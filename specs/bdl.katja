@@ -41,7 +41,7 @@ Instance(String name, String core, String version, Position pos, Bindings bind)
 Binding = Axis(String port, String axis, Position pos, Options opts)
         | CPUAxis(String port, Position pos, Options opts)
 
-GPIO (String name, Direction direction, Position pos, Code callback)
+GPIO (String name, Position pos, Code callback)
 
 // Definition of the attached medium
 Medium = NONE()

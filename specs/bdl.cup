@@ -378,17 +378,13 @@ port   ::=
   ;
 
 gpio ::=
-     GPIO direct:d ID:id code_block:cb
+     GPIO ID:id code_block:cb
      {:
-         RESULT = BDL.GPIO(id, d, pos(idleft), cb);
-     :}
-  |  GPIO:g ID code_block
-     {:
-         error("GPIO specification is missing a valid direction specifier", gleft, gright);
+         RESULT = BDL.GPIO(id, pos(idleft), cb);
      :}
   |  GPIO:g direct code_block
      {:
-         error("GPIO specification is missing an identifier", gleft, gright);
+         error("Invalid ID for GPIO component", gleft, gright);
      :}
   ;
 

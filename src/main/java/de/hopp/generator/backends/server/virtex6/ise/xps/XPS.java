@@ -282,69 +282,6 @@ public abstract class XPS extends Visitor<NE> {
     }
 
     /**
-     * Generates an LED core.
-     * @return A Block representing the generated core.
-     */
-    protected Block createLEDs() {
-        return Block("axi_gpio",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("LEDs_8Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_gpio_leds))),
-            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(0))),
-            Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40020000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4002ffff"))),
-            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("GPIO_IO_O", Ident("LEDs_8Bits_TRI_O"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("LEDs_8Bits_IP2INTC_Irpt")))
-            );
-    }
-
-    /**
-     * Generates a Pushbutton core.
-     * @return A Block representing the generated core.
-     */
-    protected Block createButtons() {
-        return Block("axi_gpio",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Push_Buttons_5Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_gpio_buttons))),
-            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(5))),
-            Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40000000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4000ffff"))),
-            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("GPIO_IO_I", Ident("Push_Buttons_5Bits_TRI_I"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("Push_Buttons_5Bits_IP2INTC_Irpt")))
-            );
-    }
-
-    /**
-     * Generates a DIP Switch core.
-     * @return A Block representing the generated core.
-     */
-    protected Block createSwitches() {
-        return Block("axi_gpio",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DIP_Switches_8Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_gpio_switches))),
-            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40040000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4004ffff"))),
-            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("GPIO_IO_I", Ident("DIP_Switches_8Bits_TRI_I"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("DIP_Switches_8Bits_IP2INTC_Irpt")))
-            );
-    }
-
-    /**
      * Generate an attribute representing the binding of an axis directly to the virtex6 processors
      * AXI4 stream interface.
      * @param axis The model representation of the binding.

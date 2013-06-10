@@ -24,25 +24,25 @@ public class CPP extends AbstractClientBackend {
     public CPP() {
 
     }
-    
+
     public String getName() {
         return "c++";
     }
-    
+
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-        
+
         IOHandler IO = config.IOHANDLER();
-        
+
         // generate  board-specific MFiles
-        CPPBDLVisitor visit = new CPPBDLVisitor(config);
+        CPPBDLVisitor visit = new CPPBDLVisitor(config, errors);
         visit.visit(board);
-        
+
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;
-        
+
         // return, if this is only a dry run
         if(config.dryrun()) return;
-        
+
         // deploy generic client code
         try {
             copy("deploy/client/cpp", config.clientDir(), IO);
@@ -50,7 +50,7 @@ public class CPP extends AbstractClientBackend {
             errors.addError(new GenerationFailed(""));
             return;
         }
-        
+
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;
 
@@ -58,11 +58,11 @@ public class CPP extends AbstractClientBackend {
         printMFile(visit.consts, UnparserType.HEADER, errors);
         printMFile(visit.comps,  UnparserType.HEADER, errors);
         printMFile(visit.comps,  UnparserType.CPP, errors);
-        
+
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;
-        
-        
+
+
         // generate api specification
         IO.println("  generate client-side api specification ... ");
         doxygen(config.clientDir(), IO, errors);

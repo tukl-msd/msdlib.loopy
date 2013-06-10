@@ -360,6 +360,7 @@ public abstract class ISE implements ProjectBackendIF {
             project,
             "-data",
             ".",
+//            "--launcher.suppressErrors",
             "-vmargs",
             "-Dorg.eclipse.cdt.core.console=org.eclipse.cdt.core.systemConsole"
         };

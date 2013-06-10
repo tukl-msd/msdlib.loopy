@@ -13,6 +13,8 @@ import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ise.ISEUtils;
+import de.hopp.generator.backends.server.virtex6.ise.gpio.GpioEnum;
+import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.parser.Attributes;
@@ -217,58 +219,20 @@ public class XPS_14_1 extends XPS {
 
     @Override
     public void visit(GPIOPos term) {
-        String name = term.name().term();
-        if(name.equals("leds")) {
-            mhs = add(mhs, Attribute(PORT(),
-                Assignment("LEDs_8Bits_TRI_O", Ident("LEDs_8Bits_TRI_O")),
-                Assignment("DIR", Ident("O")),
-                Assignment("VEC", Range(7,0))
-            ));
-            addPortToInterruptController("LEDs_8Bits_IP2INTC_Irpt");
-            mhs = add(mhs, createLEDs());
+        GpioEnum gpio;
 
-            ucf += "\nNET LEDs_8Bits_TRI_O[0] LOC = \"AC22\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[1] LOC = \"AC24\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[2] LOC = \"AE22\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[3] LOC = \"AE23\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[4] LOC = \"AB23\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[5] LOC = \"AG23\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[6] LOC = \"AE24\"  |  IOSTANDARD = \"LVCMOS25\";" +
-                   "\nNET LEDs_8Bits_TRI_O[7] LOC = \"AD24\"  |  IOSTANDARD = \"LVCMOS25\";\n";
-
-        } else if(name.equals("buttons")) {
-            mhs = add(mhs, Attribute(PORT(),
-                Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),
-                Assignment("DIR", Ident("I")),
-                Assignment("VEC", Range(4,0))
-            ));
-            addPortToInterruptController("Push_Buttons_5Bits_IP2INTC_Irpt");
-            mhs = add(mhs, createButtons());
-
-            ucf += "\nNET Push_Buttons_5Bits_TRI_I[0] LOC = \"G26\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET Push_Buttons_5Bits_TRI_I[1] LOC = \"A19\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET Push_Buttons_5Bits_TRI_I[2] LOC = \"G17\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET Push_Buttons_5Bits_TRI_I[3] LOC = \"A18\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET Push_Buttons_5Bits_TRI_I[4] LOC = \"H17\"  |  IOSTANDARD = \"LVCMOS15\";\n";
-
-        } else if(name.equals("switches")) {
-            mhs = add(mhs, Attribute(PORT(),
-                Assignment("DIP_Switches_8Bits_TRI_I", Ident("DIP_Switches_8Bits_TRI_I")),
-                Assignment("DIR", Ident("I")),
-                Assignment("VEC", Range(7,0))
-            ));
-            addPortToInterruptController("DIP_Switches_8Bits_IP2INTC_Irpt");
-            mhs = add(mhs, createSwitches());
-
-            ucf += "\nNET DIP_Switches_8Bits_TRI_I[0] LOC = \"D22\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[1] LOC = \"C22\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[2] LOC = \"L21\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[3] LOC = \"L20\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[4] LOC = \"C18\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[5] LOC = \"B18\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[6] LOC = \"K22\"  |  IOSTANDARD = \"LVCMOS15\";" +
-                   "\nNET DIP_Switches_8Bits_TRI_I[7] LOC = \"K21\"  |  IOSTANDARD = \"LVCMOS15\";\n";
+        try {
+            gpio = GpioEnum.fromString(term.name().term());
+        } catch (IllegalArgumentException e) {
+            errors.addError(new ParserError(e.getMessage(), term.pos().term()));
+            return;
         }
+
+        mhs = add(mhs, gpio.getMHSAttribute());
+        mhs = add(mhs, gpio.getMHSBlock(version_gpio_leds));
+
+        addPortToInterruptController(gpio.getINTCPort());
+        ucf += gpio.getUCFConstraints();
     }
 
     @Override

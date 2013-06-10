@@ -14,6 +14,7 @@ import java.util.Map;
 import katja.common.NE;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.server.virtex6.ise.gpio.GpioEnum;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
@@ -366,60 +367,68 @@ public class SDK extends Visitor<NE> {
 
     }
 
-    public void visit(final GPIOPos gpio) {
+    public void visit(final GPIOPos term) {
         File componentsDir = new File(targetSrc, "components");
         deployFiles.put(new File(sdkSourceDir, "gpio.h"), new File(componentsDir, "gpio.h"));
         deployFiles.put(new File(sdkSourceDir, "gpio.c"), new File(componentsDir, "gpio.c"));
 
-        gpio.direction().termDirection().Switch(new Direction.Switch<String, NE>() {
-            public String CaseIN(IN term) {
-                // add gpi id definition
-                components = add(components, MDef(MDocumentation(Strings(
-                        "GPI ID of the " + gpio.name().term() + " component"
-                    )), MModifiers(PRIVATE()), "gpi_" + gpio.name().term(), String.valueOf(gpiCount)));
+        GpioEnum gpio;
 
-                // add exception handler method
-                components = add(components, createExceptionHandler(gpio.term()));
+        try {
+            gpio = GpioEnum.fromString(term.name().term());
+        } catch (IllegalArgumentException e) {
+            errors.addError(new ParserError(e.getMessage(), term.pos().term()));
+            return;
+        }
+//        components = add(components, gpio.getSDKDefinition());
+//        components = add(components, gpio.getSDKExceptionHandler());
+//        init = addLines(init, gpio.getSDKInit());
 
-                // generate code for init method
-                try {
-                    init = addLines(init, initGPI(gpio.term()));
-                } catch (ParserError e) { errors.addError(e); }
+        if(gpio.isGPI() && gpio.isGPO()) {
+            errors.addError(new ParserError("Bi-directional GPIO components not allowed for Virtex 6 boards",
+                term.pos().filename().term(), term.pos().line().term()));
+            return;
+        }
+        if(!gpio.isGPI() && !gpio.isGPO()) throw new IllegalStateException(
+            "No direction specified for GPIO component " + gpio.id() + "." +
+            " This is a bug in the GPIO specification of the component inside the generator." +
+            " Please report this error.");
 
-                // increment gpi count
-                gpiCount++;
+        if(gpio.isGPI()) {
+         // add gpi id definition
+            components = add(components, MDef(MDocumentation(Strings(
+                    "GPI ID of the " + term.name().term() + " component"
+                )), MModifiers(PRIVATE()), "gpi_" + term.name().term(), String.valueOf(gpiCount)));
 
-                return null;
-            }
+            // add exception handler method
+            components = add(components, createExceptionHandler(term.term()));
 
-            public String CaseOUT(OUT term) {
-                // add gpo id definition
-                components = add(components, MDef(MDocumentation(Strings(
-                    "GPO ID of the " + gpio.name().term() + " component"
-                )), MModifiers(PRIVATE()), "gpo_" + gpio.name().term(), String.valueOf(gpoCount)));
+            // generate code for init method
+            try {
+                init = addLines(init, initGPI(gpio));
+            } catch (ParserError e) { errors.addError(e); }
 
-                // generate code for init method
-                try {
-                    init = addLines(init, initGPO(gpio.term()));
-                } catch (ParserError e) { errors.addError(e); }
+            // increment gpi count
+            gpiCount++;
+        } else {
+            // add gpo id definition
+            components = add(components, MDef(MDocumentation(Strings(
+                "GPO ID of the " + term.name().term() + " component"
+            )), MModifiers(PRIVATE()), "gpo_" + term.name().term(), String.valueOf(gpoCount)));
 
-                // increment gpo count
-                gpoCount++;
+            // generate code for init method
+            try {
+                init = addLines(init, initGPO(gpio));
+            } catch (ParserError e) { errors.addError(e); }
 
-                return null;
-            }
-            public String CaseDUAL(DUAL term) {
-                throw new RuntimeException("Bi-directional GPIO components not allowed");
-            }
-        });
+            // increment gpo count
+            gpoCount++;
+        }
+
 
         try {
             // add the driver block to the mss file
-            mssFile = addBlock(mssFile, MHS.Block("DRIVER",
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_NAME", MHS.Ident("gpio"))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DRIVER_VER",  MHS.Ident(hwVersion(gpio.term())))),
-                MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident(hwInstance(gpio.term()))))
-            ));
+            mssFile = addBlock(mssFile, gpio.getMSSBlock(hwVersion(term.term())));
         } catch(ParserError e) {
             errors.addError(e);
         }
@@ -457,18 +466,18 @@ public class SDK extends Visitor<NE> {
             ), body);
     }
 
-    private MCode initGPI(GPIO gpio) throws ParserError {
-        String name = gpio.name();
+    private MCode initGPI(GpioEnum gpio) throws ParserError {
+        String name = gpio.id();
         return MCode(Strings(
             "loopy_print(\"\\ninitialise " + name + " ...\");",
-            "status = XGpio_Initialize(&gpi_components[gpi_" + name + "], " + deviceID(gpio) + ");",
+            "status = XGpio_Initialize(&gpi_components[gpi_" + name + "], " + gpio.deviceID() + ");",
             "if(status != XST_SUCCESS) {",
             "    loopy_print(\" error setting up " + name + ": %d\", status);",
             "    return;",
             "}",
             "XGpio_SetDataDirection(&gpi_components[gpi_" + name + "], GPIO_CHANNEL1, 0x0);",
-            "status = GpioIntrSetup(&gpi_components[gpi_" + name + "], " + deviceID(gpio) + ",",
-            "    " + deviceIntrChannel(gpio) + ", GPIO_CHANNEL1, GpioHandler_" + name + ");",
+            "status = GpioIntrSetup(&gpi_components[gpi_" + name + "], " + gpio.deviceID() + ",",
+            "    " + gpio.deviceIntrChannel() + ", GPIO_CHANNEL1, GpioHandler_" + name + ");",
             "if(status != XST_SUCCESS) {",
             "    loopy_print(\" error setting up " + name + ": %d\", status);",
             "    return;",
@@ -478,11 +487,11 @@ public class SDK extends Visitor<NE> {
         ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
     }
 
-    private MCode initGPO(GPIO gpio) throws ParserError {
-        String name = gpio.name();
+    private MCode initGPO(GpioEnum gpio) throws ParserError {
+        String name = gpio.id();
         return MCode(Strings(
             "loopy_print(\"\\ninitialise " + name + " ...\");",
-            "status = XGpio_Initialize(&gpo_components[gpo_" + name + "], " + deviceID(gpio) + ");",
+            "status = XGpio_Initialize(&gpo_components[gpo_" + name + "], " + gpio.deviceID() + ");",
             "if(status != XST_SUCCESS) {",
             "    loopy_print(\" error setting up " + name + ": %d\", status);",
             "    return;",
@@ -493,39 +502,12 @@ public class SDK extends Visitor<NE> {
         ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
     }
 
-    private String deviceID(GPIO gpio) throws ParserError {
-        if(gpio.name().equals("leds"))          return "XPAR_LEDS_8BITS_DEVICE_ID";
-        else if(gpio.name().equals("switches")) return "XPAR_DIP_SWITCHES_8BITS_DEVICE_ID";
-        else if(gpio.name().equals("buttons"))  return "XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID";
-
-        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
-            gpio.pos().filename(), gpio.pos().line());
-    }
-
-    private String deviceIntrChannel(GPIO gpio) throws ParserError{
-        if(gpio.name().equals("switches"))     return "XPAR_MICROBLAZE_0_INTC_DIP_SWITCHES_8BITS_IP2INTC_IRPT_INTR";
-        else if(gpio.name().equals("buttons")) return "XPAR_MICROBLAZE_0_INTC_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_INTR";
-
-        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
-            gpio.pos().filename(), gpio.pos().line());
-    }
-
-    private String hwInstance(GPIO gpio) throws ParserError {
-        if(gpio.name().equals("leds"))          return "leds_8bits";
-        else if(gpio.name().equals("switches")) return "dip_switches_8bits";
-        else if(gpio.name().equals("buttons"))  return "push_buttons_5bits";
-
-        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
-            gpio.pos().filename(), gpio.pos().line());
-    }
-
     private String hwVersion(GPIO gpio) throws ParserError {
         if(gpio.name().equals("leds"))          return version_gpio_leds;
         else if(gpio.name().equals("switches")) return version_gpio_switches;
         else if(gpio.name().equals("buttons"))  return version_gpio_buttons;
 
-        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6",
-            gpio.pos().filename(), gpio.pos().line());
+        throw new ParserError("Unknown GPIO device " + gpio.name() + " for Virtex6", gpio.pos());
     }
 
     public void visit(final CPUAxisPos axis) {
