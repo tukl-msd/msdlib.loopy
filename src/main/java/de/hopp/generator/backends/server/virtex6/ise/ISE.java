@@ -263,17 +263,9 @@ public abstract class ISE implements ProjectBackendIF {
         config.IOHANDLER().println("running sdk to generate elf file (this may take some time) ...");
 
         try {
-            // import all required projects to workspace
-            runProcess(new ProcessBuilder(sdkCommand("import", "hw")).directory(sdkDir(config)),
-                new String[0], config, errors);
-            runProcess(new ProcessBuilder(sdkCommand("import", "app_bsp")).directory(sdkDir(config)),
-                new String[0], config, errors);
-            runProcess(new ProcessBuilder(sdkCommand("import", "app")).directory(sdkDir(config)),
-                new String[0], config, errors);
-
-            //build the project
-            runProcess(new ProcessBuilder(sdkCommand("build", "app")).directory(sdkDir(config)),
-                new String[0], config, errors);
+            // import & build all required projects
+          runProcess(new ProcessBuilder(sdkCommand).directory(sdkDir(config)),
+          new String[0], config, errors);
         } catch(GenerationFailed e) {
             errors.addError(e);
         } catch(Exception e) {
@@ -347,22 +339,20 @@ public abstract class ISE implements ProjectBackendIF {
         }
     }
 
-    private static String[] sdkCommand(String command, String project) {
-        return new String[] {
-            "xsdk",
-            "-eclipseargs",
-//            "-vm",
-//            "/software/Xilinx_14.4/14.4/ISE_DS/ISE/java6/lin64/jre/bin",
-            "-nosplash",
-            "-application",
-            "org.eclipse.cdt.managedbuilder.core.headlessbuild",
-            "-" + command,
-            project,
-            "-data",
-            ".",
-//            "--launcher.suppressErrors",
-            "-vmargs",
-            "-Dorg.eclipse.cdt.core.console=org.eclipse.cdt.core.systemConsole"
-        };
-    }
+    private static String[] sdkCommand = new String[] {
+        "xsdk",
+        "-eclipseargs",
+        "-nosplash",
+        "-data",
+        ".",
+        "-application",
+        "org.eclipse.cdt.managedbuilder.core.headlessbuild",
+        "-importAll",
+        ".",
+        "-cleanBuild",
+        "all",
+        "--launcher.suppressErrors",
+        "-vmargs",
+        "-Dorg.eclipse.cdt.core.console=org.eclipse.cdt.core.systemConsole"
+    };
 }
