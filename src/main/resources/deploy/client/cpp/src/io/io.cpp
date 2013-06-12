@@ -29,8 +29,8 @@ abstractInPort   *inPorts[ IN_PORT_COUNT];
 abstractOutPort *outPorts[OUT_PORT_COUNT];
 
 // gpio queues
-gpi *gpis [GPI_COUNT];
-gpo *gpos [GPO_COUNT];
+abstract_gpi *gpis [GPI_COUNT];
+abstract_gpo *gpos [GPO_COUNT];
 
 bool is_active = true;
 

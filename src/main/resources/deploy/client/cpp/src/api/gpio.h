@@ -1,5 +1,5 @@
 /**
- * Describes the default gpio components (LEDs, switches and buttons).
+ * Describes generic components.
  * @file
  * @author: Thomas Fischer
  * @since: 28.01.2013
@@ -19,6 +19,27 @@
 // other datatyps
 #include "component.h"
 
+// standard library
+#include <unistd.h>
+#include <stdio.h>
+#include <math.h>
+
+#include <bitset>
+
+// other datatypes
+#include "../constants.h"
+
+/** Global writer lock. Use, whenever interacting with shared objects. */
+extern std::mutex writer_mutex;
+/** Notify this variable, when new values can be sent to the board. */
+extern std::condition_variable can_write;
+
+class abstract_gpo;
+class abstract_gpi;
+
+extern abstract_gpo *gpos[];
+extern abstract_gpi *gpis[];
+
 /**
  * Abstract representation of a generic gpio component.
  * This covers in-going as well as out-going components.
@@ -29,31 +50,42 @@ protected:
 	std::atomic<int> state;
 };
 
-/**
- * Abstract representation of a generic gpo component.
- * A gpo component is a component that is used as output device for the board,
- * but is not part of the host-side driver.
- * Consequently, it can only be written to from the driver.
- */
-class gpo : public gpio {
-friend void scheduleWriter();
+class abstract_gpi : public gpio {
+friend void recv_gpio(unsigned char gid, unsigned char val);
 protected:
-	/** Identifier of the gpo component. */
-	unsigned char gpo_id;
+    /** Identifier of the gpi component. */
+    unsigned char gpi_id;
 
-	/**
-	 * Sets the gpo state using a single integer value.
-	 * @param state The new gpo state represented by a single integer value.
-	 *              The value has to be in the interval [0;255].
-	 */
-	void writeStateInternal(int state);
+    /** mutex of the gpi component. */
+    std::mutex gpi_mutex;
+    /** condition variable, which is set if the state of the gpi component changes. */
+    std::condition_variable has_changed;
+
+    /**
+     * Read the current state of a gpi component.
+     * @return Integer value representing the current state of the component.
+     */
+    unsigned char readStateInternal() {
+        return state;
+    }
+
 public:
-	/**
-	 * Constructor for the generic gpo component.
-	 * @param gpo_id Identifier used for this component.
-	 */
-	gpo(unsigned char gpo_id);
-	virtual ~gpo() {};
+    /**
+     * Constructor for the generic gpi component.
+     * @param gpi_id Identifier used for this component.
+     */
+    abstract_gpi(unsigned char gpi_id) : gpi_id(gpi_id) {
+        gpis[gpi_id] = this;
+    };
+    virtual ~abstract_gpi() {};
+    /** Blocks, until the state of the gpi component changes. */
+    void waitForChange() {
+        // acquire the gpo lock
+        std::unique_lock<std::mutex> lock (gpi_mutex);
+
+        // wait for the state to change
+        has_changed.wait(lock);
+    }
 };
 
 /**
@@ -62,118 +94,117 @@ public:
  * but is not part of the host-side driver.
  * Consequently, it can only be read from the driver.
  */
-class gpi : public gpio {
-friend void recv_gpio(unsigned char gid, unsigned char val);
+template<int width>
+class gpi : public abstract_gpi {
+public:
+    /**
+     * Constructor for the generic gpi component.
+     * @param gpi_id Identifier used for this component.
+     */
+    gpi(unsigned char gpi_id) : abstract_gpi(gpi_id) { }
+    virtual ~gpi() {};
+
+    std::bitset<width> readState() {
+        return std::bitset<width>(readStateInternal());
+    }
+};
+
+class abstract_gpo : public gpio {
+friend void scheduleWriter();
 protected:
-	/** Identifier of the gpi component. */
-	unsigned char gpi_id;
+    /** Identifier of the gpo component. */
+    unsigned char gpo_id;
 
-	/** mutex of the gpi component. */
-	std::mutex gpi_mutex;
-	/** condition variable, which is set if the state of the gpi component changes. */
-	std::condition_variable has_changed;
+    /**
+     * Sets the gpo state using a single integer value.
+     * @param state The new gpo state represented by a single integer value.
+     *              The value has to be in the interval [0;255].
+     */
+    void writeStateInternal(int state) {
+        // acquire writer lock
+        std::unique_lock<std::mutex> lock(writer_mutex);
 
-	/**
-	 * Read the current state of a gpi component.
-	 * @return Integer value representing the current state of the component.
-	 */
-	unsigned char readStateInternal();
+        // write the new state atomically (yay)
+        this->state = state;
+        // notify (doesn't matter, if it was written before... then we just notified twice. woohoo
+        can_write.notify_one();
+    }
+
 public:
-	/**
-	 * Constructor for the generic gpi component.
-	 * @param gpi_id Identifier used for this component.
-	 */
-	gpi(unsigned char gpi_id);
-	virtual ~gpi() {};
-
-	/** Blocks, until the state of the gpi component changes. */
-	void waitForChange();
+    /**
+     * Constructor for the generic gpo component.
+     * @param gpo_id Identifier used for this component.
+     */
+    abstract_gpo(unsigned char gpo_id) : gpo_id(gpo_id) {
+        gpos[gpo_id] = this;
+    }
+    virtual ~abstract_gpo() {};
 };
 
 /**
- * An abstract representation of the LED component of the board.
- * Encapsulates communication with this component. This primarily
- * includes setting the LEDs of the board to a specific state,
- * but also a sample application demonstrating communication
- * with the board.
- * @see components.h for a list of specific gpio instances within this board driver.
+ * Abstract representation of a generic gpo component.
+ * A gpo component is a component that is used as output device for the board,
+ * but is not part of the host-side driver.
+ * Consequently, it can only be written to from the driver.
  */
-class leds : public gpo {
-private:
-	/** Pointer to the state of the led component */
-//	std::shared_ptr<std::atomic<int>> state;
+template<int width>
+class gpo : public abstract_gpo {
+protected:
+    /** Minimal value for the GPO test application. */
+//    #define MIN_VALUE std::bitset<width>(3).to_ulong()
+    /** Maximal value for the GPO test application. */
+//    #define MAX_VALUE std::bitset<width>(3 << (width-2)).to_ulong()
+#define MIN_VALUE 3
+#define MAX_VALUE 192
 
-	bool next(bool direction, int &state);
+    /**
+     * Sets the next GPO state out of the current GPO state and a direction. The next
+     * GPO state is considered to be the current state shifted one position into direction
+     * if possible, otherwise shifted in the opposite direction.
+     *
+     * @param direction The current direction, into which the GPO state should be shifted.
+     *        0 will shift to the right, 1 will shift to the left (I guess)
+     * @param state Pointer to the current GPO state. The state will be changed by
+     *        this procedure
+     * @return the direction for the next step of GPO shifting.
+     */
+    bool next(bool direction, int &state) {
+        if(direction) {
+            if(state >= MAX_VALUE) return next(!direction, state);
+            state = state * 2;
+        } else {
+            if(state <= MIN_VALUE) return next(!direction, state);
+            state = state / 2;
+        }
+        return direction;
+    }
 public:
-	/**
-	 * Constructor for the LED component.
-	 * @param gpo_id Identifier used for this component.
-	 */
-	leds(int gpo_id) : gpo(gpo_id) { }
-	~leds() {}
-	/**
-	 * Sets the LED state using an array of integer values.
-	 * @param state The new LED state represented by a boolean array of size 8.
-	 *              Each true value lights up an LED.
-	 * @returns true if the write was successful, false otherwise
-	 */
-	void writeState(bool state[8]);
-	/**
-	 * Starts the test application.
-	 */
-	void test();
-};
+	gpo(unsigned char gpo_id) : abstract_gpo(gpo_id) { }
+	virtual ~gpo() {};
 
-/**
- * An abstract representation of the button component of the board.
- * Encapsulates communication with this component. This primarily
- * includes reading the current button state into an array.
- * @see components.h for a list of specific gpio instances within this board driver.
- */
-class buttons : public gpi {
-private:
-	/** Pointer to the state of the button component */
-//	std::shared_ptr<std::atomic<int>> state;
-public:
-	/**
-	 * Constructor for the button component.
-	 * @param gpi_id Identifier used for this component.
-	 */
-	buttons(int gpi_id) : gpi(gpi_id) { }
-	/**
-	 * Reads the current button state into a boolean array.
-	 * Note that the boolean array has to be at least of size 5.
-	 * Note that true does NOT mark a currently pressed button, but
-	 * a change between pressed and not pressed (or vice versa).
-	 * @param state The boolean array, into which the state will be written.
-	 * @return true if the read was successful, false otherwise.
-	 */
-	bool readState(bool state[5]);
-};
+	void writeState(std::bitset<width> state) {
+	    writeStateInternal(state.to_ulong());
+	}
 
-/**
- * An abstract representation of the switch component of the board.
- * Encapsulates communication with this component. This primarily
- * includes reading the current switch state into an array.
- * @see components.h for a list of specific gpio instances within this board driver.
- */
-class switches : public gpi {
-private:
-	/** Pointer to the state of the switch component */
-//	std::shared_ptr<std::atomic<int>> state;
-public:
 	/**
-	 * Constructor for the switch component.
-	 * @param gpi_id Identifier used for this component.
-	 */
-	switches(int gpi_id) : gpi(gpi_id){ }
-	/**
-	 * Reads the current switch state into a boolean array.
-	 * Note that the boolean array has to be at least of size 8.
-	 * @param state The boolean array, into which the state will be written.
-	 * @return true if the read was successful, false otherwise.
-	 */
-	bool readState(bool state[8]);
+     * Starts the test application for this gpo component.
+     *
+     * The test application will write several different values to the component.
+     * For example, for a LED component, this should result into a moving pattern of enabled LEDs.
+     */
+    void test() {
+        if(DEBUG) printf("\nstarting hopp lwip GPO test for GPO component %u...\n", gpo_id);
+        bool direction = false;
+        int state = MIN_VALUE;
+
+        int i = 0;
+        while(i < 13) {
+            writeStateInternal(state);
+            direction = next(direction, state);
+            i++;
+            usleep(175000);
+        }
+    }
 };
 
 #endif /* GPIO_H_ */

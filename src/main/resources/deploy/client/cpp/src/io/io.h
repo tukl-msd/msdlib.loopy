@@ -87,8 +87,8 @@ extern abstractInPort   *inPorts[];
 extern abstractOutPort *outPorts[];
 
 /** Pointers to the in-going gp queues */
-extern gpi *gpis[];
+extern abstract_gpi *gpis[];
 /** Pointers to the out-going gp queues */
-extern gpo *gpos[];
+extern abstract_gpo *gpos[];
 
 #endif /* IO_H_ */
