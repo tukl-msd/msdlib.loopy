@@ -135,6 +135,8 @@ void init_platform() {
 #endif
 
 	platform_setup_interrupts();
+
+	platform_enable_interrupts();
 }
 
 void cleanup_platform() {
