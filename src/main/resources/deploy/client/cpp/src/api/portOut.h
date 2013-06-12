@@ -117,7 +117,7 @@ protected:
 	 * @param state #state of the read operation to be executed.
 	 * @return Shared pointer to the #state
 	 */
-	std::shared_ptr<readState<width>> nbread(readState<width> &state) {
+	std::shared_ptr<readState<width>> nbread(readState<width> *state) {
 		std::shared_ptr<readState<width>> s(state);
 
 		// acquire port lock
@@ -141,7 +141,7 @@ protected:
 			}
 			// otherwise, take a value, update the state and do another iteration
 			int a = *readValueQueue->take();
-			s->values[s->size - s->done] = a;
+			s->vals[s->size - s->done] = a;
 			s->done++;
 		}
 
