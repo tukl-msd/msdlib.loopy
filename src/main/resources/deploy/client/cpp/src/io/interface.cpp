@@ -59,13 +59,10 @@ void ethernet::setup() {
 	struct sockaddr_in stSockAddr;
 	int Res;
 
-	//	char *ip = "131.246.92.144";
-	//  char *ip = "192.168.1.10";
-
 	if(DEBUG) printf("setting up data socket @%s:%d ...", ip, port);
 
 	// throw an exception, if socket creation faileds
-	if (-1 == socketFD_send) //|| -1 == Config_SocketFD)
+	if (-1 == socketFD_send)
 		throw mediumException(std::string("failed to create socket: ") +
 						strerror(errno) + " (" + std::to_string(errno) + ")");
 
@@ -92,7 +89,6 @@ void ethernet::setup() {
 	if (-1 == connect(socketFD_send, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))){
 //		close(socketFD_send);
 		teardown();
-		// TODO this is slightly ridiculous... not sure, if I should construct the string this way in C++ ...
 		throw mediumException(std::string("failed to open Ethernet connection: ") +
 				strerror(errno) + " (" + std::to_string(errno) + ")");
 	}
@@ -142,7 +138,6 @@ void ethernet::setup() {
 
 void ethernet::teardown() {
 	// Disconnect the Socket
-//	shutdown(socketFD_send, SHUT_RDWR);
 	if(close(socketFD_send) != 0) throw mediumException(
 			std::string("failed to close Ethernet connection: ") +
 			strerror(errno) + " (" + std::to_string(errno) + ")");
@@ -185,32 +180,21 @@ void ethernet::send(std::vector<int> val) {
 	send(val.data(), val.size());
 }
 
-//void ethernet::readInt(int buf[], int size) {
-//
-//	// print debug message
-//	if(DEBUG) printf("\nreading package of size %d ... ", size);
-//
-//	// read data
-//	if(read(socketFD_send, buf, size*4) < 0) throw mediumException(
-//			std::string("failed reading from socket: ") +
-//			strerror(errno) + " (" + std::to_string(errno) + ")");
-//
-//	// print another debug message
-//	if(DEBUG) {
-//		printf(" values: ");
-//		int i;
-//		for(i = 0; i < size; i++) {
-//			printf("%d", buf[i]);
-//			if(i < size-1) printf(", ");
-//		}
-//	}
-//}
-
 void ethernet::readInt(int *val) {
-//	recv(socketFD_send, val, 4, 0);
-	if(recv(socketFD_send, val, 4, 0) < 0) throw mediumException(
-			std::string("failed reading from socket: ") +
-			strerror(errno) + " (" + std::to_string(errno) + ")");
+    unsigned int tmp = 0;
+    int i = 0;
+    *val = 0;
+
+    while(i < 4) {
+        int j = recv(socketFD_send, &tmp, 4-i, 0);
+        if(i < 0) throw mediumException(
+            std::string("failed reading from socket: ") +
+            strerror(errno) + " (" + std::to_string(errno) + ")");
+        i += j;
+
+        *val = *val << (j*8);
+        *val = *val | tmp;
+    }
 }
 
 bool ethernet::waitForData(unsigned int timeout, unsigned int utimeout) {

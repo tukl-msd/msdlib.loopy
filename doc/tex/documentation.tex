@@ -299,6 +299,8 @@ hwqueue 32
 
 The debug flag results in additional console output of the generated driver. Note, that this output is sent over UART and therefore significantly slows down the driver.
 
+\textbf{Important note:} Debugging over UART \textbf{vastly} slows down the board side driver. The performance impact is so big, that it can even lead to ICMP timeouts and the complete Ethernet communication breaking down. \textcolor{red}{Debugging over Ethernet is preferred but not implemented so far...}
+
 If not specified otherwise, debugging is disabled and the queue sizes are set to default (1024 for the software queue, 64 for the hardware queue).
 
 \subsubsection{GPIO}
@@ -347,7 +349,7 @@ An interface description consists of several port declarations. A port is either
 
 \textcolor{red}{VHDL analysis can also be used to simplify the specification of the core interface, since it already is fully specified in the VHDL file.}
 
-\textbf{IMPORTANT NOTE:} the ports described using this syntax have to be AXI4 stream compliant and the ports of the vhdl component have to follow a strict naming pattern. The four ports that make up an AXI4 stream have to be suffixed \texttt{\_data}, \texttt{\_ready}, \texttt{\_valid} and \texttt{\_last} accordingly. For example, an in-going AXI4 stream port \texttt{inA} requires the basic ports \texttt{inA\_data}, \texttt{inA\_ready} and so on. Also carefully check directions and widths of these ports, since VHDL code is not analysed and will result in very late error detection.
+\textbf{Important note:} The ports described using this syntax have to be AXI4 stream compliant and the ports of the vhdl component have to follow a strict naming pattern. The four ports that make up an AXI4 stream have to be suffixed \texttt{\_data}, \texttt{\_ready}, \texttt{\_valid} and \texttt{\_last} accordingly. For example, an in-going AXI4 stream port \texttt{inA} requires the basic ports \texttt{inA\_data}, \texttt{inA\_ready} and so on. Also carefully check directions and widths of these ports, since VHDL code is not analysed and will result in very late error detection.
 
 \textcolor{red}{It would be nice, if there was some sort of AXI4 wrapper that can be used for non-compliant components...}
 
@@ -965,8 +967,8 @@ Data & 1001 & Port ID & Payload Size & Yes\\
 GPIO & 1110 & GPIO ID & GPIO State & No\\
 Ack & 1111 & Port ID & Ack Count & No\\
 Poll & 1010 & Port ID & Poll Count & No\\
-Reset & 0000 & Unused & Unused & No\\
-Debug & 0111 & Debug Type & Payload Size & Yes
+\textcolor{red}{Reset} & 0000 & Unused & Unused & No\\
+\textcolor{red}{Debug} & 0111 & Debug Type & Payload Size & Yes
  \end{tabular}
 \caption{Overview of messages in protocol version 1}
 \label{tab:proto:messages}

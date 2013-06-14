@@ -112,87 +112,58 @@ static void inline print_message(struct Message *m) {
 }
 
 void medium_send(struct Message *m) {
-//	if (tcp_sndbuf(tpcb) > p->len) {
-//			err = tcp_write(tpcb, p->payload, p->len, 1);
-//		} else
-//			loopy_print("no space in tcp_sndbuf\n\r");
-	// I have no idea what I'm doing!
-	#if DEBUG
-		print_message(m);
-	#endif /* DEBUG */
+    #if DEBUG
+        print_message(m);
+    #endif /* DEBUG */
 
-	// allocate transport buffer for the message
-	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, sizeof(int) * (m->headerSize + m->payloadSize), PBUF_POOL);
+    int i;
+    // calculate total message size
+    int totalSize = m->headerSize + m->payloadSize;
 
-	int i;
+    // unalign header and data
+    for(i = 0; i < m->headerSize; i++)
+        set_unaligned(m->header+i, m->header+i);
+    for(i = 0; i < m->payloadSize; i++)
+        set_unaligned(m->payload+i, m->payload+i);
 
-	// unalign header and data
-	for(i = 0; i < m->headerSize; i++)
-		set_unaligned(&m->header[i], &m->header[i]);
-	for(i = 0; i < m->payloadSize; i++)
-		set_unaligned(&m->payload[i], &m->payload[i]);
+    err_t err;
 
-	// write header and payload
-	for(i = 0; i < m->headerSize; i++)
-		((int*)p->payload)[i] = m->header[i];
-	for(i = 0; i < m->payloadSize; i++)
-		((int*)p->payload)[i+m->headerSize] = m->payload[i];
+    // setup a connection to the host data port
+//  err = tcp_connect(data_pcb, &host, 8848, test);
+//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
 
-//	for(i = 0; i < m->headerSize + m->payloadSize; i++) {
-//		loopy_print("\nval: %d", ((int*)p->payload)[i]);
-//	}
-//
-//	// write header data in buffer
-//	for(i = 0; i < m->headerSize; i++)
-//		set_unaligned((void*)(((int)(p->payload))+(sizeof(int)*i)), &m->header[i]);
-//
-////	for(i = 0; i < m->headerSize; i++) *(((int*)(p->payload))+(4*i)) = m->header[i];
-//
-//	// write payload in buffer
-//	for(i = 0; i < m->payloadSize; i++)
-//		set_unaligned((void*)(((int)(p->payload))+(sizeof(int)*(i+m->headerSize))), &m->payload[i]);
+    int *msg = malloc(totalSize * sizeof(int));
 
-	// set i to total size of application layer message
-//	i = m->headerSize + m->payloadSize;
+    // for some reason, i cannot directly write the message arrays here ):
+    // --> append them to one single array... duplicates required memory though...
+    int j;
+    for(i = 0; i < m->headerSize; i++)
+        msg[i] = m->header[i];
+    for(j = 0; j < m->payloadSize; j++)
+        msg[i+j] = m->payload[j];
 
-	// create new tcp package
-	err_t err;
+    if (tcp_sndbuf(con) > totalSize) {
+        // write message header to tcp buffer (copying values)
+        // TODO this can be made more efficient without copying and deleting the message in the ack callback
+        err = tcp_write(con, msg, totalSize * sizeof(int), TCP_WRITE_FLAG_COPY);
+        if (err != ERR_OK) xil_printf("\nError while writing message payload (%d)", err);
 
-	// setup a connection to the host data port
-//	err = tcp_connect(data_pcb, &host, 8848, test);
-//	if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
+        // flush tcp buffer
+        err = tcp_output(con);
+        if (err != ERR_OK) xil_printf("\nError while flushing tcp buffer (%d)", err);
 
-	if (tcp_sndbuf(con) > p->len) {
-		// write the package (doesn't send automatically!)
-		err = tcp_write(con, p->payload, p->len, TCP_WRITE_FLAG_COPY);
+    } else {
+        xil_printf("\nNot enough space in tcp_sndbuf");
+    }
 
-		#ifdef DEBUG
-			if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
-		#endif
+    free(msg);
 
-		// send the package?
-		err = tcp_output(con);
+//  tcp_sent(data_pcb, test2);
+//  loopy_print("\nclosing connection");
 
-		#ifdef DEBUG
-			if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
-		#endif
-	} else {
-		loopy_print("No space in tcp_sndbuf\n\r");
-	}
-
-//	tcp_sent(data_pcb, test2);
-//	loopy_print("\nclosing connection");
-
-	// close the connection
-//	err = tcp_close(data_pcb);
-//#ifdef DEBUG
-//		if (err != ERR_OK) loopy_print("Err: %d\r\n", err);
-//	#endif
-
-	// free the buffer (this is probably a bad idea, if we do not copy and do not output manually beforehand)
-//	m->header = NULL;
-//	m->payload = NULL;
-	pbuf_free(p);
+    // close the connection
+//  err = tcp_close(data_pcb);
+//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
 }
 
 /**
