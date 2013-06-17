@@ -170,14 +170,15 @@ void ethernet::send(int buf[], int size) {
 	if(DEBUG) printf(" done");
 }
 
-// lazy version... probably to many conversions between vectors and arrays currently ;)
 void ethernet::send(std::vector<int> val) {
-	// convert vector to string array
-//	int buf[val.size()];
-//	for(unsigned int i = 0; i < val.size(); i++) buf[i] = val.at(i);
-
 	// use array method
 	send(val.data(), val.size());
+}
+
+void ethernet::readChar(char* val) {
+    if(recv(socketFD_send, val, 1, 0) < 0) throw mediumException(
+        std::string("failed reading from socket: ") +
+        strerror(errno) + " (" + std::to_string(errno) + ")");
 }
 
 void ethernet::readInt(int *val) {

@@ -31,6 +31,10 @@ protocol::protocol() {}
 #define gpio 14
 #define ack  15
 
+#define info    3
+#define warning 8
+#define error  13
+
 protocol_v1::protocol_v1() {}
 
 unsigned int protocol_v1::max_size() {
@@ -60,7 +64,6 @@ void protocol_v1::decode(int first) {
 		printf("\n  target  : %hhu", id);
 		printf("\n  size    : %d", size);
 	}
-
 
 	std::cout.flush();
 
@@ -94,11 +97,43 @@ void protocol_v1::decode(int first) {
 			 // receiving a soft reset from the board indicates, that the board performed a successful reset.
 		     // signal the application (since reset() is a blocking call)
 		break;
-	case  debug: // This is an error message. It should be stored in some error queue (throw it, if the call was synchronous?)
-		break;
+    case  debug: // This is an error message. It should be stored in some error queue (throw it, if the call was synchronous?)
+        // severity
+        // 0011  3 info
+        // 1000  8 warning
+        // 1101 13 error
+
+        if(size == 0) break;
+        else { // need a new scope here...
+
+            // the size is given in byte
+            unsigned int i;
+            char payload[size];
+
+            for(i = 0; i < size; i++) {
+                try {
+                    if(intrfc->waitForData(0, 250000)) intrfc->readChar(payload + i);
+                } catch(mediumException &e) {
+                    printf("%s", e.what());
+                    intrfc->waitForData(0, 250000);
+                }
+            }
+
+            switch(id){
+            case info:    cout << "Info: ";    break;
+            case warning: cout << "Warning: "; break;
+            case error:   cout << "Error: ";   break;
+            default:      cout << "Debug Message: "; break;
+            }
+
+            cout << payload << endl;
+        }
+
+        break;
 	case  data: // This is a blocking data package.
 		if(size == 0) break;
-		else {
+
+		else { // need a new scope here
 			// check if the pid is in range
 			if(id > OUT_PORT_COUNT-1) throw protocolException(std::string("pid value (") +
 					std::to_string(id) + ") of received data message exceeded count of out-going ports (" +
@@ -111,28 +146,35 @@ void protocol_v1::decode(int first) {
 			std::cout.flush();
 
 			// try to read a value from the medium
-			for(i = 0; i < size; i++)
-				try { //if(intrfc->waitForData(0, 250000)) {
-					intrfc->readInt(payload + i);
-//					intrfc->readInt(&payload[i]);
-				//}
-			} catch(mediumException &e) {
-				// TODO is it a good idea, to ignore read "exceptions" here??
-				// what does it mean, to have an exception here?
-				// there should be another value according to size, but it can't be read from the medium currently
-				// this might happen, if...
-				// a) the medium is really slow and we loop faster than values arrive
-				// b) considering e.g. Ethernet, the message is split into multiple layer 3 messages
-				//    and the next one hasn't arrived yet
-				// c) broken board-side driver didn't send all the values specified in the size field...
-				// d) broken medium (lost connection for some reason)
-				// while a) and b) fix themselves by ignoring this message, c) and d) do not...
-				printf("%s", e.what());
-				// SOLUTION for d): perform a short wait and die over there, if something is wrong with the medium
-				// this however does NOT solve c) - buggy drivers will not send enough values...
-				//  this probably is a stupid use-case though. We do not look at attackers...
-				intrfc->waitForData(0, 250000);
+			while(i < size) {
+				try {
+				    if(intrfc->waitForData(0, 250000)) {
+                        intrfc->readInt(&(payload[i]));
+                        printf("\nreading an int %u, %d", i, payload[i]);
+                        i++;
+                    }
+
+//				    if(intrfc->waitForData(0, 250000))
+//				        i += intrfc->readInts(payload + i, size - i);
+                } catch(mediumException &e) {
+                    // TODO is it a good idea, to ignore read "exceptions" here??
+                    // what does it mean, to have an exception here?
+                    // there should be another value according to size, but it can't be read from the medium currently
+                    // this might happen, if...
+                    // a) the medium is really slow and we loop faster than values arrive
+                    // b) considering e.g. Ethernet, the message is split into multiple layer 3 messages
+                    //    and the next one hasn't arrived yet
+                    // c) broken board-side driver didn't send all the values specified in the size field...
+                    // d) broken medium (lost connection for some reason)
+                    // while a) and b) fix themselves by ignoring this message, c) and d) do not...
+                    printf("%s", e.what());
+                    // SOLUTION for d): perform a short wait and die over there, if something is wrong with the medium
+                    // this however does NOT solve c) - buggy drivers will not send enough values...
+                    //  this probably is a stupid use-case though. We do not look at attackers...
+                    intrfc->waitForData(0, 250000);
+                }
 			}
+//			intrfc->readInts(payload, size);
 
 			std::cout.flush();
 
@@ -157,8 +199,9 @@ void protocol_v1::decode(int first) {
 		acknowledge(id, size);
 		break;
 	default:
-		throw protocolException(std::string("unknown message type (") + std::to_string(type) +
-				") for protocol version 1");
+		throw protocolException(
+		        std::string("unknown message type (") +
+		        std::to_string(type) + ") for protocol version 1");
 	}
 
 	if(DEBUG) printf("\nfinished message interpretation");

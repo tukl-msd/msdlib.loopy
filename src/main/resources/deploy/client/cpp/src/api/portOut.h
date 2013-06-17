@@ -105,7 +105,8 @@ protected:
 			s->store(*val);
 		}
 
-		task_empty.wait(lock);
+		// if there are still unfinished tasks, wait until all have been processed
+		if(! readTaskQueue->empty()) task_empty.wait(lock);
 	}
 
 	/**

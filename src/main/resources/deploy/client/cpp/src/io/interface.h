@@ -80,9 +80,13 @@ public:
 	/**
 	 * Reads a single integer value from the medium.
 	 * @param val Pointer to where the read value should be stored.
-	 * @return true if successful, false otherwise
 	 */
 	virtual void readInt(int *val) = 0;
+	/**
+	 * Reads a single character from the medium.
+	 * @param val Pointer to where the read value should be stored.
+     */
+    virtual void readChar(char *val) = 0;
 	/**
 	 * Waits until data arrives or a timeout occurs.
 	 * @param timeout Number of seconds until a timeout occurs.
@@ -141,6 +145,11 @@ public:
 	 * @return true if sending was susccessful, false otherwise
 	 */
 	void send(int val[], int size);
+    /**
+     * Reads a single character from the medium.
+     * @param val Pointer to where the read value should be stored.
+     */
+    void readChar(char *val);
 	/**
 	 * Reads a single integer value from the medium.
 	 * @param val Pointer to where the read value should be stored.
