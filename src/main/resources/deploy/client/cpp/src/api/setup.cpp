@@ -29,7 +29,9 @@ void shutdownWriteLoop() {
 }
 
 void shutdown() {
+#if DEBUG
 	printf("\nkilling I/O threads");
+#endif /* DEBUG */
 
 	shutdownWriteLoop();
 	writerThread->join(); writerThread = NULL;

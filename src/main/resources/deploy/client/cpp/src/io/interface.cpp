@@ -28,7 +28,7 @@
 #define BUTTON_POLL 2
 
 interface::interface() {
-	refCount = 0;
+    refCount = 0;
 }
 
 void interface::incRef() {
@@ -59,7 +59,9 @@ void ethernet::setup() {
 	struct sockaddr_in stSockAddr;
 	int Res;
 
-	if(DEBUG) printf("setting up data socket @%s:%d ...", ip, port);
+#if DEBUG
+	printf("setting up data socket @%s:%d ...", ip, port);
+#endif /* DEBUG */
 
 	// throw an exception, if socket creation faileds
 	if (-1 == socketFD_send)
@@ -133,7 +135,9 @@ void ethernet::setup() {
 
 	//everything else --> listening loop...
 
+#if DEBUG
 	printf(" done\n");
+#endif /* DEBUG */
 }
 
 void ethernet::teardown() {
@@ -151,7 +155,7 @@ void ethernet::send(int val) {
 
 void ethernet::send(int buf[], int size) {
 	// print debug message
-	if(DEBUG) {
+#if DEBUG
 		printf("\nsending package of size %d with values: ", size);
 		int i;
 		for(i = 0; i < size; i++) {
@@ -159,7 +163,7 @@ void ethernet::send(int buf[], int size) {
 			if(i < size-1) printf(", ");
 		}
 		printf(" ...");
-	}
+#endif /* DEBUG */
 
 	// write data
 	if(write(socketFD_send, buf, size*4) < 0) throw mediumException(
@@ -167,7 +171,9 @@ void ethernet::send(int buf[], int size) {
 			strerror(errno) + " (" + std::to_string(errno) + ")");
 
 	// print finishing debug message
-	if(DEBUG) printf(" done");
+#if DEBUG
+	printf(" done");
+#endif /* DEBUG */
 }
 
 void ethernet::send(std::vector<int> val) {

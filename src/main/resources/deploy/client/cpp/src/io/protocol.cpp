@@ -57,13 +57,13 @@ void protocol_v1::decode(int first) {
 	// the last two bytes mark the size of this frame
 	unsigned int size = fmod(first, pow(2, 16));
 
-	if(DEBUG) {
+#if DEBUG
 		printf("\ndecoded the following message header: %d", first);
 		printf("\n  version : %hhu", version);
 		printf("\n  type    : %hhu", type);
 		printf("\n  target  : %hhu", id);
 		printf("\n  size    : %d", size);
-	}
+#endif /* DEBUG */
 
 	std::cout.flush();
 
@@ -150,7 +150,6 @@ void protocol_v1::decode(int first) {
 				try {
 				    if(intrfc->waitForData(0, 250000)) {
                         intrfc->readInt(&(payload[i]));
-                        printf("\nreading an int %u, %d", i, payload[i]);
                         i++;
                     }
 

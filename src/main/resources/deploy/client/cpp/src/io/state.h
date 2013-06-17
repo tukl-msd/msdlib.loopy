@@ -260,7 +260,9 @@ private:
 		while(put < count) {
 			if(put + done == size) break;
 
+#if DEBUG
 			printf("\nstoring value @ state: %d", val[put]);
+#endif /* DEBUG */
 
 			// leftshift current value
 			currentValue = currentValue << (sizeof(int) * 8);

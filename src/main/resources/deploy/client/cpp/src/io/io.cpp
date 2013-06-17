@@ -62,13 +62,19 @@ std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsign
 }
 
 void scheduleWriter() {
-	if(DEBUG) printf("\nbegin write loop");
+#if DEBUG
+	printf("\nbegin write loop");
+#endif /* DEBUG */
 
 	// terminate if not active
 	while(is_active) {
-		printf("\n locking writer...");
-		std::unique_lock<std::mutex> lock(writer_mutex);
-        printf(" locked");
+#if DEBUG
+	    printf("\n locking writer...");
+#endif /* DEBUG */
+	    std::unique_lock<std::mutex> lock(writer_mutex);
+#if DEBUG
+		printf(" locked");
+#endif /* DEBUG */
 
 		// gpi values are not acknowledged. They are not queued on the board, since there
 		// is virtually now processing time. The value is simply written into memory.
@@ -95,13 +101,17 @@ void scheduleWriter() {
 		// send all data from in-going ports
 		for(unsigned char i = 0; i < IN_PORT_COUNT; i++) {
 
+#if DEBUG
 			printf("\ntrying to lock port %u..." , i);
+#endif /* DEBUG */
 
 			// try to lock the port
 			std::unique_lock<std::mutex> port_lock(inPorts[i]->port_mutex, std::try_to_lock);
 
+#if DEBUG
 			if(port_lock.owns_lock()) printf(" success");
 			else printf(" failed");
+#endif /* DEBUG */
 
 			// if we could not acquire the lock, continue with the next port
 			if(! port_lock.owns_lock()) continue;
@@ -146,20 +156,29 @@ void scheduleWriter() {
 		//     i.e. nothing in transit and a previously empty queue)
 		//  - server-side ack or poll (received by reader thread)
 		//  - shutdown
-		if(DEBUG) printf("\n writer will wait now...");
+#if DEBUG
+		printf("\n writer will wait now...");
+#endif /* DEBUG */
 
 		can_write.wait(lock);
 	}
 
-	if(DEBUG) printf("\n stopped write loop");
+#if DEBUG
+	printf("\n stopped write loop");
+#endif /* DEBUG */
 }
 
 void scheduleReader() {
-	if(DEBUG) printf("\nbegin read loop");
+#if DEBUG
+    printf("\nbegin read loop");
+#endif /* DEBUG */
 
 	while(is_active) {
-		if(DEBUG) printf("\ntrying to read...");
-		// wait 2 seconds for input
+#if DEBUG
+	    printf("\ntrying to read...");
+#endif /* DEBUG */
+
+	    // wait 2 seconds for input
 		if(intrfc->waitForData(2,0)) {
 			try {
 				// read and interpret a value
@@ -193,7 +212,9 @@ void send_poll(unsigned char pid, unsigned int count) {
  * @param val Value to be stored.
  */
 void read_unsafe(unsigned char pid, int val) {
-	if(DEBUG) printf("\n  storing value %d ...", val);
+#if DEBUG
+    printf("\n  storing value %d ...", val);
+#endif /* DEBUG */
 
 	std::cout.flush();
 
@@ -210,18 +231,24 @@ void read_unsafe(unsigned char pid, int val) {
 		if(s->finished()) outPorts[pid]->readTaskQueue->take();
 	}
 
-	if(DEBUG) printf(" done");
+#if DEBUG
+	printf(" done");
+#endif /* DEBUG */
 }
 
 void read(unsigned char pid, int val[], int size) {
-	if(DEBUG) printf("\n locking port %d ...", pid);
+#if DEBUG
+    printf("\n locking port %d ...", pid);
+#endif /* DEBUG */
 
 	std::cout.flush();
 
 	// acquire the port lock
 	std::unique_lock<std::mutex> lock(outPorts[pid]->port_mutex);
 
-	if(DEBUG) printf(" done\n storing values (count: %d) ...", size);
+#if
+	printf(" done\n storing values (count: %d) ...", size);
+#endif /* DEBUG */
 
 	std::cout.flush();
 
@@ -237,7 +264,9 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 
 	// return, if the queue is empty (count == 0 or unexpected ack)
 	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
-		if(DEBUG) printf("queue is empty, count: %d", count);
+#if DEBUG
+		printf("queue is empty, count: %d", count);
+#endif /* DEBUG */
 		return;
 	}
 
