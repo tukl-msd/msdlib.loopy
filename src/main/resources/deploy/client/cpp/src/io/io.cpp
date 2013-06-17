@@ -246,7 +246,7 @@ void read(unsigned char pid, int val[], int size) {
 	// acquire the port lock
 	std::unique_lock<std::mutex> lock(outPorts[pid]->port_mutex);
 
-#if
+#if DEBUG
 	printf(" done\n storing values (count: %d) ...", size);
 #endif /* DEBUG */
 

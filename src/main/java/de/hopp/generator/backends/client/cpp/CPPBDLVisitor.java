@@ -18,6 +18,7 @@ import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.server.virtex6.ise.gpio.GpioEnum;
 import de.hopp.generator.exceptions.ParserError;
+import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
 import de.hopp.generator.model.MClass;
@@ -142,13 +143,18 @@ public class CPPBDLVisitor extends Visitor<NE> {
             errors.addError(new ParserError(e.getMessage(), term.pos().term()));
             return;
         }
-        if(gpio.isGPI()) init.replaceParams(init.params().add(String.valueOf(gpi++)));
-        if(gpio.isGPO()) init.replaceParams(init.params().add(String.valueOf(gpo++)));
+
+        if(gpio.isGPI()) init = add(init, String.valueOf(gpi++));
+        if(gpio.isGPO()) init = add(init, String.valueOf(gpo++));
+
+        if(gpio.isGPI() && gpio.isGPO()) errors.addError(
+            new UsageError("bi-directional gpio components are currently not supported by the c++ client backend"));
 
         // add attribute for the GPIO component
         comps = add(comps, MAttribute(MDocumentation(Strings(
                 "An instance of the #" + gpio.id() + " core."
-            )), MModifiers(PUBLIC()), MType("class " + gpio.id()), "gpio_"+ gpio.id(), init));
+            )), MModifiers(PUBLIC()), MType("class " + (gpio.isGPI() ? "gpi" : "gpo") + "<" + gpio.width() + ">"),
+            "gpio_"+ gpio.id(), init));
     }
 
     @Override
