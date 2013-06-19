@@ -23,8 +23,6 @@
 struct ip_addr ip, mask, gw;
 struct netif *netif_ptr, server_netif;
 struct tcp_pcb *pcb;
-struct tcp_pcb *data_pcb;
-
 struct tcp_pcb *con;
 
 /**
@@ -33,8 +31,8 @@ struct tcp_pcb *con;
  * @ip The ip address to be printed.
  */
 static void print_ip ( char *msg, struct ip_addr *ip ) {
-    loopy_print(msg);
-    loopy_print("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
+    xil_printf(msg);
+    xil_printf("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
 
 /**
@@ -45,19 +43,15 @@ static void print_ip ( char *msg, struct ip_addr *ip ) {
  */
 static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
 	print_ip("  Board IP : ", ip);
-	loopy_print(":%d", PORT);
+	xil_printf(":%d", PORT);
 	print_ip("\n  Netmask  : ", mask);
 	print_ip("\n  Gateway  : ", gw);
 //	print_ip("\n  Host IP  : ", host);
-	loopy_print(":%d\n", PORT);
+	xil_printf(":%d\n", PORT);
 
 }
 
 static void set_unaligned ( int *target, int *data ) {
-	#if DEBUG
-		loopy_print("\nunaligning value: %d", *data);
-	#endif /* DEBUG */
-
     int offset, i;
     char *byte, *res;
 
@@ -67,10 +61,6 @@ static void set_unaligned ( int *target, int *data ) {
         res = (void*)target;
         for (i=0; i<4; i++) *(res++) = ((*(byte++)) & 0xFF);
     } else *target = *data;
-
-	#if DEBUG
-		loopy_print(" to %d", *target);
-	#endif /* DEBUG */
 }
 
 static int get_unaligned ( int *data ) {
@@ -100,71 +90,6 @@ static struct pbuf *msgFst = NULL, *msgCurSeg = NULL;
 /** stores the position of the next word to read in the received message */
 static unsigned short wordIndex = 0, rWordIndex = 0;
 
-static void inline print_message(struct Message *m) {
-	loopy_print("\nsending message of size %d", m->headerSize + m->payloadSize);
-	loopy_print("\nheader int:  %d", m->header[0]);
-
-	loopy_print(" (Payload: ", m->payloadSize);
-	int i;
-	for(i = 0; i < m->payloadSize-1; i++) loopy_print("%d, ", m->payload[i]);
-	loopy_print("%d", m->payload[m->payloadSize-1]);
-	loopy_print(" )");
-}
-
-void medium_send(struct Message *m) {
-    #if DEBUG
-        print_message(m);
-    #endif /* DEBUG */
-
-    int i;
-    // calculate total message size
-    int totalSize = m->headerSize + m->payloadSize;
-
-    // unalign header and data
-    for(i = 0; i < m->headerSize; i++)
-        set_unaligned(m->header+i, m->header+i);
-    for(i = 0; i < m->payloadSize; i++)
-        set_unaligned(m->payload+i, m->payload+i);
-
-    err_t err;
-
-    // setup a connection to the host data port
-//  err = tcp_connect(data_pcb, &host, 8848, test);
-//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
-
-    int *msg = malloc(totalSize * sizeof(int));
-
-    // for some reason, i cannot directly write the message arrays here ):
-    // --> append them to one single array... duplicates required memory though...
-    int j;
-    for(i = 0; i < m->headerSize; i++)
-        msg[i] = m->header[i];
-    for(j = 0; j < m->payloadSize; j++)
-        msg[i+j] = m->payload[j];
-
-    if (tcp_sndbuf(con) > totalSize) {
-        // write message header to tcp buffer (copying values)
-        // TODO this can be made more efficient without copying and deleting the message in the ack callback
-        err = tcp_write(con, msg, totalSize * sizeof(int), TCP_WRITE_FLAG_COPY);
-        if (err != ERR_OK) xil_printf("\nError while writing message payload (%d)", err);
-
-        // flush tcp buffer
-        err = tcp_output(con);
-        if (err != ERR_OK) xil_printf("\nError while flushing tcp buffer (%d)", err);
-
-    } else {
-        xil_printf("\nNot enough space in tcp_sndbuf");
-    }
-
-    free(msg);
-
-//  tcp_sent(data_pcb, test2);
-//  loopy_print("\nclosing connection");
-
-    // close the connection
-//  err = tcp_close(data_pcb);
-//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
-}
 
 /**
  * Read the next integer value from a received message.
@@ -193,6 +118,76 @@ int recv_int() {
 }
 
 /**
+ * Gets the next set of values from the lwip stack and runs protocol interpretation.
+ *
+ * If there still is an unfinished pbuf, the first unread value of this pbuf will be
+ * processed. Otherwise, the procedure tries to acquire a new pbuf.
+ * If none is available, this basically is a no-op.
+ *
+ */
+void medium_read() {
+    // if no pbuf is cached, get the next one
+    if(msgFst == NULL) xemacif_input(netif_ptr);
+    // if there is a pbuf (now), decode the first int as header
+    if(msgFst != NULL) decode_header(recv_int());
+}
+
+void medium_send(struct Message *m) {
+    #if DEBUG
+        print_message(m);
+    #endif /* DEBUG */
+
+    int i;
+    // calculate total message size
+    int totalSize = m->headerSize + m->payloadSize;
+
+    // unalign header and data
+    for(i = 0; i < m->headerSize; i++)
+        set_unaligned(m->header+i, m->header+i);
+    for(i = 0; i < m->payloadSize; i++)
+        set_unaligned(m->payload+i, m->payload+i);
+
+    // TODO setup an individual connection to the host for data (or check if it's still connected)
+//  err = tcp_connect(data_pcb, &host, 8848, test);
+//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+
+    int *msg = malloc(totalSize * sizeof(int));
+
+    // for some reason, i cannot directly write the message arrays here ):
+    // --> append them to one single array... duplicates required memory though...
+    int j;
+    for(i = 0; i < m->headerSize; i++)
+        msg[i] = m->header[i];
+    for(j = 0; j < m->payloadSize; j++)
+        msg[i+j] = m->payload[j];
+
+    err_t err;
+
+    if (tcp_sndbuf(con) > totalSize) {
+        // write message header to tcp buffer (copying values)
+        // TODO this can be made more efficient without copying and deleting the message in the ack callback
+        err = tcp_write(con, msg, totalSize * sizeof(int), TCP_WRITE_FLAG_COPY);
+        if (err != ERR_OK) xil_printf("\nError while writing message payload (%d)", err);
+
+        // flush tcp buffer
+        err = tcp_output(con);
+        if (err != ERR_OK) xil_printf("\nError while flushing tcp buffer (%d)", err);
+
+    } else {
+        xil_printf("\nNot enough space in tcp_sndbuf");
+    }
+
+    free(msg);
+
+//  tcp_sent(data_pcb, test2);
+//  loopy_print("\nclosing connection");
+
+    // close the data connection? (since no ack is required here)
+//  err = tcp_close(data_pcb);
+//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
+}
+
+/**
  * This procedure is called, whenever a packet is received.
  * It simply delegates the content of the package to the protocol decoder
  * and frees the memory after it has been processed
@@ -214,28 +209,10 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) 
 	// indicate that the packet has been received (this MIGHT be too early now...)
 	tcp_recved(tpcb, p->tot_len);
 
-	loopy_print("\npbuf len: %d", msgFst->len);
-	loopy_print("\ntotal pbuf len: %d", msgFst->tot_len);
-
 	// free the received pbuf (this DEFINITELY is too early now...)
 //	pbuf_free(p);
 
 	return ERR_OK;
-}
-
-/**
- * Gets the next set of values from the lwip stack and runs protocol interpretation.
- *
- * If there still is an unfinished pbuf, the first unread value of this pbuf will be
- * processed. Otherwise, the procedure tries to acquire a new pbuf.
- * If none is available, this basically is a no-op.
- *
- */
-void medium_read() {
-    // if no pbuf is cached, get the next one
-    if(msgFst == NULL) xemacif_input(netif_ptr);
-    // if there is a pbuf (now), decode the first int as header
-    if(msgFst != NULL) decode_header(recv_int());
 }
 
 /**
@@ -261,21 +238,23 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 int start_application() {
 
-	loopy_print("Starting server application ...");
+#if DEBUG
+	xil_printf("Starting server application ...");
+#endif /* DEBUG */
 
 	err_t err;
 
 	// create new TCP PCB structure
 	pcb = tcp_new();
 	if (!pcb) {
-		loopy_print("Error creating PCB. Out of Memory\n\r");
+		xil_printf("Error creating PCB. Out of Memory\n\r");
 		return -1;
 	}
 
 	// bind to specified @port
 	err = tcp_bind(pcb, IP_ADDR_ANY, PORT);
 	if (err != ERR_OK) {
-		loopy_print("Unable to bind to port %d: err = %d\n\r", PORT, err);
+	    xil_printf("Unable to bind to port %d: err = %d\n\r", PORT, err);
 		return -2;
 	}
 
@@ -285,17 +264,14 @@ int start_application() {
 	// listen for connections
 	pcb = tcp_listen(pcb);
 	if (!pcb) {
-		loopy_print("Out of memory while tcp_listen\n\r");
+		xil_printf("Out of memory while tcp_listen\n\r");
 		return -3;
 	}
 
 	// specify callback to use for incoming connections
 	tcp_accept(pcb, accept_callback);
 
-	// init the data pcb...
-	data_pcb = tcp_new();
-
-	loopy_print(" done\n");
+	xil_printf(" done\n");
 
 	// receive and process packets
 //	while (1) {
@@ -306,9 +282,9 @@ int start_application() {
 }
 
 void init_medium() {
-	#if DEBUG
-		loopy_print("\nSetting up Ethernet interface ...\n");
-	#endif /*D EBUG */
+#if DEBUG
+	xil_printf("\nSetting up Ethernet interface ...\n");
+#endif /* DEBUG */
 
 	// the mac address of the board. this should be unique per board
 	unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
@@ -332,7 +308,7 @@ void init_medium() {
 	// Reason? Somewhere in here is the link speed auto-negotiation
   	// Add network interface to the netif_list, and set it as default
 	if (!xemac_add(netif_ptr, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
-		loopy_print("Error adding N/W interface\n\r");
+		xil_printf("Error adding N/W interface\n\r");
 //		return -1;
 		return;
 	}

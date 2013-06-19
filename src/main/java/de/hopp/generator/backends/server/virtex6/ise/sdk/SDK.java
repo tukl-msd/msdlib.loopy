@@ -187,7 +187,7 @@ public class SDK extends Visitor<NE> {
                 MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                "if(DEBUG) xil_printf(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
+                "loopy_print(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
                 "switch(target) {"
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
         axi_read  = MProcedure(MDocumentation(Strings(
@@ -198,7 +198,7 @@ public class SDK extends Visitor<NE> {
                 MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
             ), MCode(Strings(
                 "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                "if(DEBUG) xil_printf(\"\\nreading from out-going port %d ...\", target);",
+                "loopy_print(\"\\nreading from out-going port %d ...\", target);",
                 "switch(target) {"
             ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
     }
@@ -295,19 +295,19 @@ public class SDK extends Visitor<NE> {
 
         // finish axi read and write procedures
         axi_write = addLines(axi_write, MCode(Strings(
-                "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
+                "default: loopy_print(\"ERROR: unknown axi stream port %d\", target);",
                 "}", "// should be call by value --> reuse the memory address...",
                 "int rslt = 1;",
                 "fsl_isinvalid(rslt);",
-                "if(DEBUG) xil_printf(\" (invalid: %d)\", rslt);",
+                "loopy_print(\" (invalid: %d)\", rslt);",
                 "return rslt;")));
         axi_read  = addLines(axi_read,  MCode(Strings(
-                "default: xil_printf(\"ERROR: unknown axi stream port %d\", target);",
+                "default: loopy_print(\"ERROR: unknown axi stream port %d\", target);",
                 "}", "// should be call by value --> reuse the memory address...",
-                "if(DEBUG) xil_printf(\"\\n %d\", *val);",
+                "loopy_print(\"\\n %d\", *val);",
                 "int rslt = 1;",
                 "fsl_isinvalid(rslt);",
-                "if(DEBUG) xil_printf(\" (invalid: %d)\", rslt);",
+                "loopy_print(\" (invalid: %d)\", rslt);",
                 "return rslt;")));
 
         // add axi read and write procedures
@@ -469,20 +469,28 @@ public class SDK extends Visitor<NE> {
     private MCode initGPI(GpioEnum gpio) throws ParserError {
         String name = gpio.id();
         return MCode(Strings(
-            "loopy_print(\"\\ninitialise " + name + " ...\");",
+            "#if DEBUG",
+            "xil_printf(\"\\ninitialise " + name + " ...\");",
+            "#endif /* DEBUG */",
             "status = XGpio_Initialize(&gpi_components[gpi_" + name + "], " + gpio.deviceID() + ");",
             "if(status != XST_SUCCESS) {",
-            "    loopy_print(\" error setting up " + name + ": %d\", status);",
+            "#if DEBUG",
+            "    xil_printf(\" error setting up " + name + ": %d\", status);",
+            "#endif /* DEBUG */",
             "    return;",
             "}",
             "XGpio_SetDataDirection(&gpi_components[gpi_" + name + "], GPIO_CHANNEL1, 0x0);",
             "status = GpioIntrSetup(&gpi_components[gpi_" + name + "], " + gpio.deviceID() + ",",
             "    " + gpio.deviceIntrChannel() + ", GPIO_CHANNEL1, GpioHandler_" + name + ");",
             "if(status != XST_SUCCESS) {",
-            "    loopy_print(\" error setting up " + name + ": %d\", status);",
+            "#if DEBUG",
+            "    xil_printf(\" error setting up " + name + ": %d\", status);",
+            "#endif /* DEBUG */",
             "    return;",
             "}",
-            "loopy_print(\" done\");",
+            "#if DEBUG",
+            "    xil_printf(\" done\");",
+            "#endif /* DEBUG */",
             ""
         ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
     }
@@ -490,14 +498,20 @@ public class SDK extends Visitor<NE> {
     private MCode initGPO(GpioEnum gpio) throws ParserError {
         String name = gpio.id();
         return MCode(Strings(
-            "loopy_print(\"\\ninitialise " + name + " ...\");",
+            "#if DEBUG",
+            "    xil_printf(\"\\ninitialise " + name + " ...\");",
+            "#endif /* DEBUG */",
             "status = XGpio_Initialize(&gpo_components[gpo_" + name + "], " + gpio.deviceID() + ");",
             "if(status != XST_SUCCESS) {",
-            "    loopy_print(\" error setting up " + name + ": %d\", status);",
+            "#if DEBUG",
+            "    xil_printf(\" error setting up " + name + ": %d\", status);",
+            "#endif /* DEBUG */",
             "    return;",
             "}",
             "XGpio_SetDataDirection(&gpo_components[gpo_" + name + "], GPIO_CHANNEL1, 0x0);",
-            "loopy_print(\" done\");",
+            "#if DEBUG",
+            "    xil_printf(\" done\");",
+            "#endif /* DEBUG */",
             ""
         ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
     }

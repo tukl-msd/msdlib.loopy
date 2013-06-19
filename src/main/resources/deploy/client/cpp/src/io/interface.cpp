@@ -181,12 +181,6 @@ void ethernet::send(std::vector<int> val) {
 	send(val.data(), val.size());
 }
 
-void ethernet::readChar(char* val) {
-    if(recv(socketFD_send, val, 1, 0) < 0) throw mediumException(
-        std::string("failed reading from socket: ") +
-        strerror(errno) + " (" + std::to_string(errno) + ")");
-}
-
 void ethernet::readInt(int *val) {
     unsigned int tmp = 0;
     int i = 0;

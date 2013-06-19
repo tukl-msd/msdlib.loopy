@@ -136,10 +136,14 @@ struct Message* encode_gpio_v1(unsigned char gid, unsigned char val) {
 }
 
 struct Message* encode_data_v1(unsigned char pid, unsigned int size) {
+#if DEBUG
 	xil_printf("\nencoding data message %d %d %d", data, pid, size);
+#endif /* DEBUG */
 	struct Message *m = message_new();
 	int header = (version << 24) + (data << 20) + (pid << 16) + size;
+#if DEBUG
 	xil_printf("\nencoded header: %d", header);
+#endif /* DEBUG */
 	message_header(m, &header, 1);
 	return m;
 }

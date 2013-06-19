@@ -106,27 +106,30 @@ void protocol_v1::decode(int first) {
         if(size == 0) break;
         else { // need a new scope here...
 
-            // the size is given in byte
+            // the size is given in sizeof(int)
             unsigned int i;
-            char payload[size];
+            int payload[size];
 
             for(i = 0; i < size; i++) {
                 try {
-                    if(intrfc->waitForData(0, 250000)) intrfc->readChar(payload + i);
+                    if(intrfc->waitForData(0, 250000)) intrfc->readInt(payload + i);
                 } catch(mediumException &e) {
                     printf("%s", e.what());
                     intrfc->waitForData(0, 250000);
                 }
             }
 
+            // TODO replace cout here with actual output stream...
+            cout << endl;
             switch(id){
-            case info:    cout << "Info: ";    break;
-            case warning: cout << "Warning: "; break;
-            case error:   cout << "Error: ";   break;
-            default:      cout << "Debug Message: "; break;
+            case info:    cout << "INFO:    "; break;
+            case warning: cout << "WARNING: "; break;
+            case error:   cout << "ERROR:   "; break;
+            default:      cout << "DEBUG:   "; break;
             }
 
-            cout << payload << endl;
+            // TODO relace above switch with something similar to hex/dec/...?
+            cout << (char*)payload;
         }
 
         break;
@@ -139,7 +142,7 @@ void protocol_v1::decode(int first) {
 					std::to_string(id) + ") of received data message exceeded count of out-going ports (" +
 					std::to_string(OUT_PORT_COUNT) + ")");
 
-			// the size is given in byte
+			// the size is given in sizeof(int)
 			int payload[size];
 			unsigned int i = 0;
 
@@ -149,7 +152,7 @@ void protocol_v1::decode(int first) {
 			while(i < size) {
 				try {
 				    if(intrfc->waitForData(0, 250000)) {
-                        intrfc->readInt(&(payload[i]));
+                        intrfc->readInt(payload + i);
                         i++;
                     }
 

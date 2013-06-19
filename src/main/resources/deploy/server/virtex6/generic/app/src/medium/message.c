@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 
+#include "../constants.h"
+
 struct Message* message_new() {
 	struct Message *m = malloc(sizeof(struct Message));
 	m->header = NULL;
@@ -40,4 +42,15 @@ void message_free(struct Message *m) {
 	free(m->header);
 //	free(m->payload);
 	free(m);
+}
+
+void inline print_message(struct Message *m) {
+    loopy_print("\nsending message of size %d", m->headerSize + m->payloadSize);
+    loopy_print("\nheader int:  %d", m->header[0]);
+
+    loopy_print(" (Payload: ", m->payloadSize);
+    int i;
+    for(i = 0; i < m->payloadSize-1; i++) loopy_print("%d, ", m->payload[i]);
+    loopy_print("%d", m->payload[m->payloadSize-1]);
+    loopy_print(" )");
 }

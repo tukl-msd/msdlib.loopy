@@ -128,19 +128,28 @@ void send_debug(unsigned char type, const char *format, ...) {
 	// make a run over the vararg parameter to determine the size
 	va_list args;
 	va_start(args, format);
-	int size = vsnprintf(NULL, 0, format, args) + 1;
+	unsigned int size = vsnprintf(NULL, 0, format, args) + 1;
 	va_end(args);
 
-	// TODO check, that the size is smaller than the maxsize of the protocol!
+    // properly align the char array to sizeof(int)
+    // under the assumption, that sizeof(int) % sizeof(char) = 0
+    #define cpi (sizeof(int) / sizeof(char))
+    size += (cpi - (size % cpi)) % cpi;
 
-	// allocate memory and store the formatted string
-	char *c = malloc(sizeof(char) * size);
-	va_start(args, format);
-	vsnprintf(c, size, format, args);
-	va_end(args);
+    // TODO check, that the resulting size is smaller than the maxsize of the protocol!?
 
-	// encode and send a message
-	struct Message *m = encode_debug(type, size);
-	message_payload(m, (int*)c, size);
+    // allocate memory and store the formatted string
+    char *c = malloc(sizeof(char) * size);
+    va_start(args, format);
+    vsnprintf(c, size, format, args);
+    va_end(args);
+
+	// encode and send a message (using sizeof(int) as size)
+	struct Message *m = encode_debug(type, size / cpi);
+	message_payload(m, (int*)c, size / cpi);
 	medium_send(m);
+
+	// free allocated memory
+	message_free(m);
+	free(c);
 }

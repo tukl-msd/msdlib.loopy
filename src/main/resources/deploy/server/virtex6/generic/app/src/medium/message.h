@@ -61,4 +61,10 @@ void message_header(struct Message *m, int header[], int size);
  */
 void message_free(struct Message *m);
 
+/**
+ * Prints a message using the specified debug print method.
+ * @param m Pointer to the message to be printed.
+ */
+void inline print_message(struct Message *m);
+
 #endif /* MESSAGE_H_ */
