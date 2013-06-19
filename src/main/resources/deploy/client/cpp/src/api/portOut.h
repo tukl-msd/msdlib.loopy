@@ -234,7 +234,7 @@ public:
 	 * @param vals The vector, into which the values are stored.
 	 * @return A #state representing this read.
 	 */
-	std::shared_ptr<readState<width>> nbread(std::vector<std::bitset<width>> vals) {
+	std::shared_ptr<readState<width>> nbread(std::vector<std::bitset<width>> &vals) {
 		return nbread(new readState<width>(vals.data(), vals.size()));
 	}
 

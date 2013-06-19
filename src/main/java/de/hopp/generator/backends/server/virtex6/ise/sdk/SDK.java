@@ -65,8 +65,6 @@ public class SDK extends Visitor<NE> {
     // parts of the generated files
     private MProcedure init;
     private MProcedure reset;
-    private MProcedure axi_write;
-    private MProcedure axi_read;
 
     // counter variables
     private int axiStreamIdMaster = 0;
@@ -179,28 +177,6 @@ public class SDK extends Visitor<NE> {
                 "This includes gpio components and user-defined IPCores,",
                 "but not the communication medium, this board is attached with."
             )), MModifiers(), MVoid(), "reset_components", MParameters(), MCode(Strings()));
-        axi_write = MProcedure(MDocumentation(Strings(
-                "Write a value to an AXI stream."),
-                PARAM("val", "Value to be written to the stream."),
-                PARAM("target", "Target stream identifier.")
-            ), MModifiers(PRIVATE()), MType("int"), "axi_write", MParameters(
-                MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
-            ), MCode(Strings(
-                "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                "loopy_print(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
-                "switch(target) {"
-            ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
-        axi_read  = MProcedure(MDocumentation(Strings(
-                "Read a value from an AXI stream."),
-                PARAM("val", "Pointer to the memory area, where the read value will be stored."),
-                PARAM("target", "Target stream identifier.")
-            ), MModifiers(PRIVATE()), MType("int"), "axi_read", MParameters(
-                MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
-            ), MCode(Strings(
-                "// YES, this is ridiculous... THANKS FOR NOTHING, XILINX!",
-                "loopy_print(\"\\nreading from out-going port %d ...\", target);",
-                "switch(target) {"
-            ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
     }
 
     private void setupMSS() {
@@ -293,24 +269,48 @@ public class SDK extends Visitor<NE> {
         components = add(components, init);
         components = add(components, reset);
 
-        // finish axi read and write procedures
-        axi_write = addLines(axi_write, MCode(Strings(
-                "default: loopy_print(\"ERROR: unknown axi stream port %d\", target);",
-                "}", "// should be call by value --> reuse the memory address...",
-                "int rslt = 1;",
-                "fsl_isinvalid(rslt);",
-                "loopy_print(\" (invalid: %d)\", rslt);",
-                "return rslt;")));
-        axi_read  = addLines(axi_read,  MCode(Strings(
-                "default: loopy_print(\"ERROR: unknown axi stream port %d\", target);",
-                "}", "// should be call by value --> reuse the memory address...",
-                "loopy_print(\"\\n %d\", *val);",
-                "int rslt = 1;",
-                "fsl_isinvalid(rslt);",
-                "loopy_print(\" (invalid: %d)\", rslt);",
-                "return rslt;")));
-
         // add axi read and write procedures
+        MProcedure axi_write = MProcedure(MDocumentation(Strings(
+            "Write a value to an AXI stream."),
+            PARAM("val", "Value to be written to the stream."),
+            PARAM("target", "Target stream identifier.")
+        ), MModifiers(PRIVATE()), MType("int"), "axi_write", MParameters(
+            MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
+        ), MCode(Strings(
+          "loopy_print(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
+          "if(target > " + (axiStreamIdMaster-1) + ") {",
+          "    loopy_print(\"ERROR: unknown axi stream port %d\", target);",
+          "    return 1;",
+          "}",
+          "putdfslx(val, target, FSL_NONBLOCKING);",
+          "",
+          "int rslt = 1;",
+          "fsl_isinvalid(rslt);",
+          "loopy_print(\" (invalid: %d)\", rslt);",
+          "return rslt;"
+        ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
+
+        MProcedure axi_read  = MProcedure(MDocumentation(Strings(
+            "Read a value from an AXI stream."),
+            PARAM("val", "Pointer to the memory area, where the read value will be stored."),
+            PARAM("target", "Target stream identifier.")
+        ), MModifiers(PRIVATE()), MType("int"), "axi_read", MParameters(
+            MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
+        ), MCode(Strings(
+            "loopy_print(\"\\nreading from out-going port %d ...\", target);",
+            "if(target > 0) {",
+            "    loopy_print(\"ERROR: unknown axi stream port %d\", target);",
+            "    return 1;",
+            "}",
+            "getdfslx(*val, target, FSL_NONBLOCKING);",
+            "",
+            "loopy_print(\"\\n %d\", *val);",
+            "int rslt = 1;",
+            "fsl_isinvalid(rslt);",
+            "loopy_print(\" (invalid: %d)\", rslt);",
+            "return rslt;"
+        ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
+
         components = add(components, axi_write);
         components = add(components, axi_read);
     }
@@ -568,10 +568,6 @@ public class SDK extends Visitor<NE> {
             errors.addError(new ParserError("too many writing AXI stream interfaces for Virtex6", "", -1));
             return;
         }
-        axi_write = addLines(axi_write, MCode(Strings(
-            "case "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+
-            ": putfslx(val, "+(axiStreamIdMaster>9?"":" ")+axiStreamIdMaster+", FSL_NONBLOCKING); break;"
-        )));
 
         init = addLines(init, MCode(
             Strings("inQueue[" + axiStreamIdMaster + "] = createQueue(" + getSWQueueSize32(axis) + ");"),
@@ -585,10 +581,6 @@ public class SDK extends Visitor<NE> {
             errors.addError(new ParserError("too many reading AXI stream interfaces for Virtex6", "", -1));
             return;
         }
-        axi_read  = addLines(axi_read,  MCode(Strings(
-            "case "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+
-            ": getfslx(*val, "+(axiStreamIdSlave>9?"":" ")+axiStreamIdSlave+", FSL_NONBLOCKING); break;"
-        )));
 
         init = addLines(init, MCode(
             Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize32(axis) + ";"),
