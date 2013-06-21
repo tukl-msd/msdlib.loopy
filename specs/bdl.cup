@@ -64,7 +64,7 @@ terminal String CEND;
 terminal IMPORT;
 terminal BACKEND;
 terminal SWQUEUE, HWQUEUE, DEBUG, WIDTH, POLL;
-terminal MEDIUM, MAC, IP, MASK, GATE;
+terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT;
 terminal CORE, SOURCE, PORT;
 terminal CLK, RST;
 terminal IN, OUT, DUAL;
@@ -525,6 +525,10 @@ medium_option ::=
   |  PORT:key DEC:val
      {:
          RESULT = BDL.PORTID(pos(keyleft),val);
+     :}
+  |  TIMEOUT:key DEC:val
+     {:
+         RESULT = BDL.TOUT(pos(keyleft),val);
      :}
   ;
 

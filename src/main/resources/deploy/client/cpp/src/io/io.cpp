@@ -329,7 +329,13 @@ void recv_poll(unsigned char pid) {
 
 	// notify writer thread, if there are waiting tasks
 	if(!inPorts[pid]->writeTaskQueue->empty()) {
+		// acquire the writer lock
 		std::unique_lock<std::mutex> lock(writer_mutex);
+
+		// release the port lock!
+		port_lock.unlock();
+
+		// notify writer
 		can_write.notify_one();
 	}
 }

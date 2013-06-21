@@ -4,16 +4,23 @@ import static de.hopp.generator.backends.server.virtex6.ise.ISE.sdkSourceDir;
 import static de.hopp.generator.backends.server.virtex6.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.*;
+import static de.hopp.generator.utils.Files.getResouce;
 import static de.hopp.generator.utils.Model.add;
 import static de.hopp.generator.utils.Model.addLines;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import katja.common.NE;
+
+import org.apache.commons.io.IOUtils;
+
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ise.gpio.GpioEnum;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.*;
@@ -47,6 +54,7 @@ import de.hopp.generator.parser.MHSFile;
  */
 public class SDK extends Visitor<NE> {
 
+    private final Configuration config;
     private final ErrorCollection errors;
 
     // target folders
@@ -61,6 +69,7 @@ public class SDK extends Visitor<NE> {
     protected MFile constants;
     protected MFile scheduler;
     protected MHSFile mssFile;
+    protected String lScript;
 
     // parts of the generated files
     private MProcedure init;
@@ -112,11 +121,16 @@ public class SDK extends Visitor<NE> {
         return mssFile;
     }
 
+    public String getLScript() {
+        return lScript;
+    }
+
     public Map<File, File> getFiles() {
         return deployFiles;
     }
 
     public SDK(Configuration config, ErrorCollection errors) {
+        this.config = config;
         this.errors = errors;
 
         // initialise version strings
@@ -225,12 +239,31 @@ public class SDK extends Visitor<NE> {
         );
     }
 
+    private void setupLinkerScript(BDLFilePos file) {
+        InputStream input = null;
+        try {
+            input = getResouce(new File(sdkSourceDir, "lscript.ld").getPath(), config.IOHANDLER()).openStream();
+            lScript = IOUtils.toString(input);
+
+            // TODO This will allocate to much memory, since there is no distinction between stack and heap here...
+            lScript = lScript.replaceFirst("%STACK_SIZE", "0x" + Integer.toHexString(totalMemorySize(file)*4));
+            lScript = lScript.replaceFirst("%HEAP_SIZE",  "0x" + Integer.toHexString(totalMemorySize(file)*4));
+        } catch (IOException e) {
+            errors.addError(new GenerationFailed("Internal Error: " + e.getMessage()));
+            return;
+        } finally {
+            if(input != null) IOUtils.closeQuietly(input);
+        }
+    }
+
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos  term) { }
     public void visit(BackendsPos term) { }
     public void visit(OptionsPos  term) { }
 
     public void visit(BDLFilePos board) {
+
+        setupLinkerScript(board);
 
         // add debug constants
         boolean debug = isDebug(board);
@@ -322,28 +355,27 @@ public class SDK extends Visitor<NE> {
         // add Ethernet-specific constants
         for(MOptionPos opt : term.opts())
             opt.Switch(new MOptionPos.Switch<String, NE>() {
-                @Override
                 public String CaseMACPos(MACPos term) {
                     addMAC(term.val().term()); return null;
                 }
-                @Override
                 public String CaseIPPos(IPPos term) {
                     addIP("IP", term.val().term(), "IP address"); return null;
                 }
-                @Override
                 public String CaseMASKPos(MASKPos term) {
                     addIP("MASK", term.val().term(), "network mask"); return null;
                 }
-                @Override
                 public String CaseGATEPos(GATEPos term) {
                     addIP("GW", term.val().term(), "standard gateway"); return null;
                 }
-                @Override
                 public String CasePORTIDPos(PORTIDPos term) {
                     addConst("PORT", term.val().term().toString(), "The port for this boards TCP-connection.");
                     return null;
                 }
+                public String CaseTOUTPos(TOUTPos term) {
+                    return null;
+                }
             });
+        addConst("TIMEOUT", String.valueOf(getTimeout(term)), "Reception timeout for an attempt to free memory.");
 
         // add Ethernet driver and lwip library to bsp
         mssFile = addBlock(mssFile, MHS.Block("DRIVER",
@@ -355,7 +387,8 @@ public class SDK extends Visitor<NE> {
         mssFile = addBlock(mssFile, MHS.Block("LIBRARY",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_NAME", MHS.Ident(version_lwip_lib_name))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_VER", MHS.Ident(version_lwip_lib))),
-            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0")))
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0"))),
+            MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("TCP_SND_BUF", MHS.Number(tcp_sndbufSize(term)*4)))
         ));
     }
 
@@ -637,7 +670,7 @@ public class SDK extends Visitor<NE> {
                         MQuoteInclude("constants.h"),
                         MQuoteInclude("queueUntyped.h"),
                         MQuoteInclude("io.h"),
-                        MForwardDecl("void medium_read()"),
+                        MForwardDecl("int medium_read()"),
                         MForwardDecl("int axi_write ( int val, int target )"),
                         MForwardDecl("int axi_read ( int *val, int target )")
                     )
@@ -653,9 +686,9 @@ public class SDK extends Visitor<NE> {
                 "unsigned int i;",
                 "",
                 "while(1) {",
-                "    // receive a package from the interface (or all?)",
+                "    // receive all available packages from the interface",
                 "    // esp stores data packages in sw queue",
-                "    medium_read();",
+                "    while(medium_read()) { }",
                 "    ",
                 "    // write data from sw queue to hw queue (if possible)",
                 "    for(pid = 0; pid < IN_STREAM_COUNT; pid++) {",
@@ -696,7 +729,10 @@ public class SDK extends Visitor<NE> {
                 "            if(isPolling[pid]) pollCount[pid]--;",
                 "        }",
                 "        // flush sw queue",
-                "        flush_queue(pid);",
+                "        if(flush_queue(pid)) {",
+                "            xil_printf(\"\\nterminating...\");",
+                "            return;",
+                "        }",
                 "        outQueueSize = 0;",
                 "    }",
                 "}"
@@ -704,7 +740,7 @@ public class SDK extends Visitor<NE> {
             MQuoteInclude("constants.h"),
             MQuoteInclude("queueUntyped.h"),
             MQuoteInclude("io.h"),
-            MForwardDecl("void medium_read()"),
+            MForwardDecl("int medium_read()"),
             MForwardDecl("int axi_write ( int val, int target )"),
             MForwardDecl("int axi_read ( int *val, int target )")
         );
@@ -729,6 +765,7 @@ public class SDK extends Visitor<NE> {
     public void visit(IPPos     term) { }
     public void visit(MASKPos   term) { }
     public void visit(GATEPos   term) { }
+    public void visit(TOUTPos   term) { }
     public void visit(PORTIDPos term) { }
 
     // cores

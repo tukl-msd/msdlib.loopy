@@ -61,6 +61,7 @@ MOption = MAC    (Position pos, String val)
         | MASK   (Position pos, String val)
         | GATE   (Position pos, String val)
         | PORTID (Position pos, Integer val)
+        | TOUT   (Position pos, Integer val)
 
 Scheduler (Position pos, Code code)
 

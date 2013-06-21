@@ -32,7 +32,7 @@ void reset() {
 
 /**
  * Initialises components and starts scheduling loop.
- * @return 0 if terminated succesfully, 1 otherwise.
+ * @return 0.
  */
 int main() {
 	// initialise the platform. This also sets up the interrupt controller
@@ -50,7 +50,7 @@ int main() {
 	// start the scheduler
 	schedule();
 
-	// never reached
+	// cleanup after failure
 	cleanup_platform();
 
 	return 0;

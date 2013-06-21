@@ -337,6 +337,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(IPPos     term) { }
     public void visit(MASKPos   term) { }
     public void visit(GATEPos   term) { }
+    public void visit(TOUTPos   term) { }
     public void visit(PORTIDPos term) { }
 
     // cores

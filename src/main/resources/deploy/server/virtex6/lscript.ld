@@ -10,8 +10,8 @@
 /*                                                                 */
 /*******************************************************************/
 
-_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : 0xA000;
-_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0xA000;
+_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : %STACK_SIZE;
+_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : %HEAP_SIZE;
 
 /* Define Memories in the system */
 

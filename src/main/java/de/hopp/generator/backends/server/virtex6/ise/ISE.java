@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
+import org.apache.commons.io.FileUtils;
+
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
@@ -221,6 +223,12 @@ public abstract class ISE implements ProjectBackendIF {
         printMFile(sdk().getScheduler(),  UnparserType.C,      errors);
 
         printMFile(sdk().getMSS(), new File(sdkBSPDir(config), "system.mss"), errors);
+
+        try {
+            FileUtils.writeStringToFile(new File(new File(sdkAppDir(config), "src"), "lscript.ld"), sdk().getLScript());
+        } catch (IOException e) {
+            errors.addError(new GenerationFailed("Failed to deploy linker script due to:\n" + e.getMessage()));
+        }
 
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;

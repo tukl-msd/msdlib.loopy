@@ -100,9 +100,7 @@ protected:
 				break;
 			}
 			// otherwise, take a value, update the state and do another iteration
-			std::shared_ptr<int> val = readValueQueue->take();
-
-			s->store(*val);
+			s->store(*readValueQueue->take());
 		}
 
 		// if there are still unfinished tasks, wait until all have been processed
@@ -141,9 +139,7 @@ protected:
 				return s;
 			}
 			// otherwise, take a value, update the state and do another iteration
-			int a = *readValueQueue->take();
-			s->vals[s->size - s->done] = a;
-			s->done++;
+			s->store(*readValueQueue->take());
 		}
 
 		return s;

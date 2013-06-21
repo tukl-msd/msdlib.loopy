@@ -103,6 +103,7 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "mask"          { return symbol(BDLFileSymbols.MASK); }
 "gate"          { return symbol(BDLFileSymbols.GATE); }
 "port"          { return symbol(BDLFileSymbols.PORT); }
+"timeout"       { return symbol(BDLFileSymbols.TIMEOUT); }
 
 /* core related */
 "core"          { return symbol(BDLFileSymbols.CORE); }

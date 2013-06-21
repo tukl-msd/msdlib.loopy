@@ -24,12 +24,14 @@ int start_application();
 /**
  * Sends a message over the medium.
  * @param m The message to be sent.
+ * @return 0 if successful, 1 if failed.
  */
-void medium_send(struct Message *m);
+int medium_send(struct Message *m);
 
 /**
- * Reads a values from the medium.
+ * Reads a message from the medium and pushes it to the procol interpreter.
+ * @return 1 if a message was available, 0 if no message was available.
  */
-void medium_read();
+int medium_read();
 
 #endif /* MEDIUM_H_ */

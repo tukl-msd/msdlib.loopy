@@ -371,6 +371,8 @@ public class XPS_14_1 extends XPS {
     @Override
     public void visit(GATEPos term)     { }
     @Override
+    public void visit(TOUTPos term)   { }
+    @Override
     public void visit(PORTIDPos term)   { }
     @Override
     public void visit(AXIPos term)      { }

@@ -61,8 +61,10 @@ void send_gpio(unsigned char gid, unsigned char val);
  * Flushes the software output queue and sends its contents to the host-side client.
  * This does neither influence input queues nor the hardware output queues for any port.
  * @param pid The port, of which data is currently stored in the output queue.
+ * @return 0 if successful, 1 otherwise. A failure might occur due to problems while sending
+ *         the contents of the queue over the medium.
  */
-void flush_queue(unsigned char pid);
+int flush_queue(unsigned char pid);
 
 /**
  * Sends a debug message to the host-side driver.

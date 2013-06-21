@@ -94,7 +94,7 @@ void send_gpio(unsigned char gid, unsigned char val) {
 //	for(i = 0; i < m->payloadSize; i++) UartSendInt(m->payload[i]);
 //}
 
-void flush_queue(unsigned char pid) {
+int flush_queue(unsigned char pid) {
 	#if DEBUG
 		loopy_print("\nflushing %d ...", pid);
 	#endif /* DEBUG */
@@ -104,7 +104,7 @@ void flush_queue(unsigned char pid) {
 		#if DEBUG
 			loopy_print(" empty");
 		#endif /* DEBUG */
-		return;
+		return 0;
 	}
 
 
@@ -117,10 +117,12 @@ void flush_queue(unsigned char pid) {
 	// append the actual payload
 	message_payload(m, outQueue, outQueueSize);
 
-	medium_send(m);
+	int rslt = medium_send(m);
 
 	message_free(m);
 	outQueueSize = 0;
+
+	return rslt;
 }
 
 void send_debug(unsigned char type, const char *format, ...) {
