@@ -468,28 +468,33 @@ public class SDK extends Visitor<NE> {
     }
 
     private MProcedure createExceptionHandler(final GPIO gpio) {
-        MCode body =
-            gpio.callback().Switch(new Code.Switch<MCode, NE>() {
-                private final String start = "XGpio *GpioPtr = (XGpio *)CallbackRef;";
-                private final Strings end  = Strings("",
-                    "// Clear the Interrupt",
-                    "XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);"
-                );
+        MCode body = gpio.callback().Switch(new Code.Switch<MCode, NE>() {
+            private final String start = "XGpio *GpioPtr = (XGpio *)CallbackRef;";
+            private final Strings end  = Strings("",
+                "// Clear the Interrupt",
+                "XGpio_InterruptClear(GpioPtr, GPIO_CHANNEL1);"
+            );
 
-                public MCode CaseDEFAULT(DEFAULT term) {
-                    return MCode(Strings(start, "",
-                        "// transmit gpi state change to host",
-                        "send_gpio(gpi_" + gpio.name() + ", gpio_read(gpi_" + gpio.name() + "));"
-                    ).addAll(end),
-                    MForwardDecl("int gpio_read(int target)"),
-                    MForwardDecl("int gpio_write(int target, int val)"));
-                }
-                public MCode CaseUSER_DEFINED(USER_DEFINED term) {
-                    return MCode(Strings(start, "",
-                        "// user-defined callback code"
-                    ).addAll(term.content()).addAll(end));
-                }
+            public MCode CaseDEFAULT(DEFAULT term) {
+                return MCode(Strings(start, "",
+                    "// transmit gpi state change to host",
+                    "send_gpio(gpi_" + gpio.name() + ", gpio_read(gpi_" + gpio.name() + "));"
+                ).addAll(end));
+            }
+            public MCode CaseUSER_DEFINED(USER_DEFINED term) {
+                return MCode(Strings(start, "",
+                    "// user-defined callback code"
+                ).addAll(term.content()).addAll(end));
+            }
         });
+
+        // add default methods for gpio communication
+        body = body.replaceNeeded(MIncludes(
+            MForwardDecl("int gpio_read(int target)"),
+            MForwardDecl("int gpio_write(int target, int val)"),
+            MForwardDecl("void send_gpio(unsigned char gid, unsigned char val)")
+        ));
+
         return MProcedure(MDocumentation(Strings(
                 "The Xil_ExceptionHandler to be used as callback for the " + gpio.name() + " component.",
                 "This handler executes user-defined code and clears the interrupt."

@@ -7,7 +7,8 @@ medium ethernet {
   port 8844
 }
 
-hwqueue 32
+// disable hardware queues
+hwqueue 0
 
 core AxiTwoRng 1.00.a {
   // list of vhdl sources
@@ -27,10 +28,9 @@ instance AxiTwoRng 1.00.a rng_a {
   cpu s_axis {
     // since this port is only used to configure the component once, a large queues are not required
     swqueue 8
-    hwqueue 8
   }
   cpu m_axis {
-    // several values should be cached, but continuous forwarding seems not practicable for a random number generator (except perhaps if values are consumed faster than they are generated)
+    // several values should be cached, but continuous forwarding seems not practicable for a random number generator (except perhaps if values are guaranteed to be consumed faster than they are generated)
     poll 64
   }
 }

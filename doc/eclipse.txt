@@ -19,6 +19,9 @@ To make it even worse, this setup is project-specific and has to be performed fo
     to GCC C++ Compiler -> Miscellaneous -> Other flags
     and GCC C++ Linker -> Miscellaneous -> Linker flags
 
+Make sure, to hit the apply button AFTER EVERY CHANGE! There seems to be some bug not correctly storing multiple changed preferences on several pages at once.
+If this did not work so far, restart eclipse.
+
 It is possible, that you STILL get errors in the generated code. These are not actual compiler errors but rather errors from a bugged eclipse analysis step. These can be disabled in Project -> Properties -> C/C++ General -> Code Analysis -> Use project settings. Disable whatever Warning you're getting (a re-occuring issue is std::to_string(errno) in interface.cpp - a function, that supposedly is not found). Note, that this only disables eclipse code analysis. Actual compiler errors are still reported when building the project. You may also try to re-enable this analysis afterwards and check, if the error disappeared.
 
 

@@ -19,7 +19,8 @@ public class BoardUtils {
     public static final int defaultQueueSizeHW = 64;
     /** The default bitwidth of ports. */
     public static final int defaultWidth = 32;
-
+    /** The default size for the TCP sendbuffer. */
+    public static final int defaultTCPSendBuffer = 8192;
 //    public static boolean hasLEDs(Board board) {
 //        for(Component comp : board.components())
 //            if(comp instanceof LEDS) return true;
@@ -401,7 +402,7 @@ public class BoardUtils {
      * @return The calculated size for the TCP send buffer in 4byte integers.
      */
     public static int tcp_sndbufSize(ETHERNETPos term) {
-        return maxQueueSize(term.root()) *10;
+        return Math.max(defaultTCPSendBuffer, maxQueueSize(term.root()) *10);
     }
 
     private static int totalQueueSize(BDLFilePos file) {
