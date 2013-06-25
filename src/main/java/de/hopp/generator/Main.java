@@ -12,6 +12,11 @@ import de.hopp.generator.frontend.BDLFilePos;
 import de.hopp.generator.frontend.ClientBackend;
 import de.hopp.generator.frontend.Parser;
 import de.hopp.generator.frontend.ServerBackend;
+//import static de.upb.hni.vmagic.parser.VhdlParser.parseFile;
+//import de.upb.hni.vmagic.VhdlFile;
+//import de.upb.hni.vmagic.libraryunit.Entity;
+//import de.upb.hni.vmagic.libraryunit.LibraryUnit;
+//import de.upb.hni.vmagic.parser.VhdlParserException;
 
 /**
  * Main class of the generator.
@@ -41,9 +46,55 @@ public class Main {
         Main main = new Main();
 
         try {
+//            VhdlFile file = parseFile("coresources/myQueue.vhd");
+//            Entity e = null;
+//
+//            for(LibraryUnit u : file.getElements()) {
+//                if(u instanceof Entity)
+//                    if(e == null) e = (Entity)u;
+//                    else throw new RuntimeException("multiple entities found in file");
+//            }
+//
+//            if(e == null) throw new RuntimeException("no entity found in sourcefile");
+//
+//            System.out.println("Entity " + e.getIdentifier());
+
+//            for(VhdlObjectProvider<Constant> vop : e.getGeneric()) {
+//                for(Constant c : vop.getVhdlObjects()) {
+//                    System.out.println(c.getIdentifier() + " = " + c.getDefaultValue());
+//                }
+//            }
+//
+//            for(VhdlObjectProvider<Signal> vop : e.getPort()) {
+//                for(Signal s : vop.getVhdlObjects()) {
+//                    System.out.println("  signal: " + s.getIdentifier());
+//                    System.out.println("    kind: " + s.getKind().toString());
+//                    System.out.println("    mode: " + s.getMode().toString());
+//                    if(s.getType() instanceof IndexSubtypeIndication) {
+//                        IndexSubtypeIndication isi = (IndexSubtypeIndication) s.getType();
+//                        for(DiscreteRange<?> range : isi.getRanges()) {
+//                            if(range instanceof Range) {
+//                                Range r = (Range) range;
+//                                System.out.println("    range [" +
+//                                    unparseExpression(r.getFrom()) + ":" +
+//                                    unparseExpression(r.getTo()) + "]");
+//                            }
+//                        }
+//                    }
+//
+//                    System.out.println("  default value: " +
+//                        (s.getDefaultValue() == null ? "null" : s.getDefaultValue().toString()));
+//                }
+//            }
             main.run(args);
         } catch(ExecutionFailed e) {
             System.exit(1);
+//        } catch (IOException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        } catch (VhdlParserException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
         }
     }
 
