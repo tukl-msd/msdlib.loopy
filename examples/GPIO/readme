@@ -1,0 +1,12 @@
+Steps to perform for this example:
+
+- Download and compile loopy generator (cf loopy documentation, chapter 2)
+- Run loopy generator using the provided script
+
+  The generator will deploy a client and server (and temp) folder.
+  The client folder contains the host-side API, that can be used inside your program.
+  The server folder contains the board-side driver, i.e. .bit and .elf file
+  The temp folder contains the Xilinx EDK and SDK projects.
+
+- Use .bit and .elf in the server director to program fpga
+- Run client application using your own main or the provided main.  

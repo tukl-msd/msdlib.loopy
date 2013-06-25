@@ -1,0 +1,21 @@
+medium ethernet {
+  // USE YOUR BOARDS MAC AND DESIRED IP ADDRESS / PORT HERE ;)
+  mac "00:0a:35:01:FB:E3"
+  ip "192.168.1.10"
+  mask "255.255.255.0"
+  gate "192.168.1.1"
+  port 8844
+}
+
+// disable hardware queues
+hwqueue 0
+
+// enable all currently supported gpio components
+gpio leds
+gpio buttons
+gpio switches {:
+  // overrides the default callback method
+  // usually, the method forwards a state change to the host-side driver
+  // here, the switch state is linked to the led state
+
+:}
