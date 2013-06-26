@@ -28,6 +28,7 @@
 
 // other datatypes
 #include "../constants.h"
+#include "../logger.h"
 
 /** Global writer lock. Use, whenever interacting with shared objects. */
 extern std::mutex writer_mutex;
@@ -193,7 +194,7 @@ public:
      * For example, for a LED component, this should result into a moving pattern of enabled LEDs.
      */
     void test() {
-        if(DEBUG) printf("\nstarting hopp lwip GPO test for GPO component %u...\n", gpo_id);
+        logger_host << INFO << "running loopy GPO test for GPO component " << gpo_id << endl;
         bool direction = false;
         int state = MIN_VALUE;
 
@@ -204,6 +205,8 @@ public:
             i++;
             usleep(175000);
         }
+
+        logger_host << INFO << "finished GPO test for GPO component " << gpo_id << endl;
     }
 };
 

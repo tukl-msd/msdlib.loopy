@@ -58,6 +58,7 @@ public class CPP extends AbstractClientBackend {
         printMFile(visit.consts, UnparserType.HEADER, errors);
         printMFile(visit.comps,  UnparserType.HEADER, errors);
         printMFile(visit.comps,  UnparserType.CPP, errors);
+        printMFile(visit.logger, UnparserType.CPP, errors);
 
         // abort, if errors occurred TODO add another exception
         if(errors.hasErrors()) return;

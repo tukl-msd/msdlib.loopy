@@ -92,7 +92,7 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "backend"       { yybegin(BACKEND_START); }
 
 /* global options */
-"debug"         { return symbol(BDLFileSymbols.DEBUG);   }
+"log"           { return symbol(BDLFileSymbols.LOG);     }
 "swqueue"       { return symbol(BDLFileSymbols.SWQUEUE); }
 "hwqueue"       { return symbol(BDLFileSymbols.HWQUEUE); }
 

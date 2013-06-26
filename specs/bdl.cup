@@ -1,8 +1,8 @@
 package de.hopp.generator.frontend;
 
 import java_cup.runtime.*;
-import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.exceptions.ParserError;
 import katja.common.NE;
 
 /* Preliminaries to set up and use the scanner.  */
@@ -63,7 +63,7 @@ terminal BEGIN, END, CBEGIN, COMMA;
 terminal String CEND;
 terminal IMPORT;
 terminal BACKEND;
-terminal SWQUEUE, HWQUEUE, DEBUG, WIDTH, POLL;
+terminal SWQUEUE, HWQUEUE, LOG, WIDTH, POLL;
 terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT;
 terminal CORE, SOURCE, PORT;
 terminal CLK, RST;
@@ -88,6 +88,9 @@ non terminal Instance instance;
 non terminal GPIO gpio;
 non terminal Bindings bind;
 non terminal Scheduler scheduler;
+
+non terminal LogSeverity severity;
+non terminal Boolean device;
 
 non terminal Decl decl;
 non terminal Decls decl_list;
@@ -223,9 +226,37 @@ option ::=
      {:
          RESULT = BDL.POLL(pos(keyleft), 0);
      :}
-  |  DEBUG:key
+  |  LOG:key device:dev severity:sev
      {:
-         RESULT = BDL.DEBUG(pos(keyleft));
+         RESULT = BDL.LOG(pos(keyleft), dev, sev, BDL.CONSOLE());
+     :}
+  |  LOG:key device:dev severity:sev STRING_LITERAL:file
+     {:
+         RESULT = BDL.LOG(pos(keyleft), dev, sev, BDL.FILE(file));
+     :}
+  ;
+
+severity ::=
+     {:
+         RESULT = BDL.ERROR();
+     :}
+  |  ID:id
+     {:
+         if(id.equals("error"))        { RESULT = BDL.ERROR();  }
+         else if(id.equals("warning")) { RESULT = BDL.WARN();   }
+         else if(id.equals("info"))    { RESULT = BDL.INFO();   }
+         else if(id.equals("fine"))    { RESULT = BDL.FINE();   }
+         else if(id.equals("finer"))   { RESULT = BDL.FINER();  }
+         else if(id.equals("finest"))  { RESULT = BDL.FINEST(); }
+         else error("unknown severity " + id, idleft, idright);
+     :}
+  ;
+device ::=
+     ID:id
+     {:
+         if(id.equals("host"))       { RESULT = true;  }
+         else if(id.equals("board")) { RESULT = false; }
+         else error("unknown device specifier " + id, idleft, idright);
      :}
   ;
 

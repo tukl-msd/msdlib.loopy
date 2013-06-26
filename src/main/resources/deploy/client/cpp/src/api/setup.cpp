@@ -2,7 +2,9 @@
  * @author Thomas Fischer
  * @since 16.04.2013
  */
+
 #include "setup.h"
+#include "../logger.h"
 #include "../io/io.h"
 
 #include <thread>
@@ -29,9 +31,7 @@ void shutdownWriteLoop() {
 }
 
 void shutdown() {
-#if DEBUG
-	printf("\nkilling I/O threads");
-#endif /* DEBUG */
+	logger_host << "killing I/O threads" << endl;
 
 	shutdownWriteLoop();
 	writerThread->join(); writerThread = NULL;

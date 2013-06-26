@@ -11,6 +11,7 @@
 // data types
 #include "protocol.h"
 #include "../constants.h"
+#include "../logger.h"
 
 #include <math.h>
 
@@ -62,19 +63,15 @@ std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsign
 }
 
 void scheduleWriter() {
-#if DEBUG
-	printf("\nbegin write loop");
-#endif /* DEBUG */
+	logger_host << INFO << "begin write loop" << endl;
 
 	// terminate if not active
 	while(is_active) {
-#if DEBUG
-	    printf("\n locking writer...");
-#endif /* DEBUG */
+	    logger_host << FINE << "locking writer ...";
+
 	    std::unique_lock<std::mutex> lock(writer_mutex);
-#if DEBUG
-		printf(" locked");
-#endif /* DEBUG */
+
+	    logger_host << " locked" << endl;
 
 		// gpi values are not acknowledged. They are not queued on the board, since there
 		// is virtually now processing time. The value is simply written into memory.
@@ -101,17 +98,13 @@ void scheduleWriter() {
 		// send all data from in-going ports
 		for(unsigned char i = 0; i < IN_PORT_COUNT; i++) {
 
-#if DEBUG
-			printf("\ntrying to lock port %u..." , i);
-#endif /* DEBUG */
+		    logger_host << FINE << " trying to lock port " << i << " ...";
 
 			// try to lock the port
 			std::unique_lock<std::mutex> port_lock(inPorts[i]->port_mutex, std::try_to_lock);
 
-#if DEBUG
-			if(port_lock.owns_lock()) printf(" success");
-			else printf(" failed");
-#endif /* DEBUG */
+			if(port_lock.owns_lock()) logger_host << " success" << endl;
+			else logger_host << " failed" << endl;
 
 			// if we could not acquire the lock, continue with the next port
 			if(! port_lock.owns_lock()) continue;
@@ -156,27 +149,19 @@ void scheduleWriter() {
 		//     i.e. nothing in transit and a previously empty queue)
 		//  - server-side ack or poll (received by reader thread)
 		//  - shutdown
-#if DEBUG
-		printf("\n writer will wait now...");
-#endif /* DEBUG */
+		logger_host << FINE << "writer will wait now ..." << endl;
 
 		can_write.wait(lock);
 	}
 
-#if DEBUG
-	printf("\n stopped write loop");
-#endif /* DEBUG */
+	logger_host << INFO << "stopped write loop" << endl;
 }
 
 void scheduleReader() {
-#if DEBUG
-    printf("\nbegin read loop");
-#endif /* DEBUG */
+    logger_host << INFO << "begin read loop" << endl;
 
 	while(is_active) {
-#if DEBUG
-	    printf("\ntrying to read...");
-#endif /* DEBUG */
+	    logger_host << FINE << "trying to read ..." << endl;
 
 	    // wait 2 seconds for input
 		if(intrfc->waitForData(2,0)) {
@@ -188,10 +173,10 @@ void scheduleReader() {
 			} catch(mediumException &e) {
 				// there should be data, but there is no data.
 				// this is a bit weird...
-				printf("%s", e.what());
+			    logger_host << ERROR << e.what();
 			} catch(protocolException &e) {
 				// marks an error in decoding the message
-				printf("%s", e.what());
+			    logger_host << ERROR << e.what();
 			}
 		}
 	}
@@ -212,9 +197,7 @@ void send_poll(unsigned char pid, unsigned int count) {
  * @param val Value to be stored.
  */
 void read_unsafe(unsigned char pid, int val) {
-#if DEBUG
-    printf("\n  storing value %d ...", val);
-#endif /* DEBUG */
+    logger_host << FINE << " storing value " << val << " ...");
 
 	std::cout.flush();
 
@@ -231,24 +214,20 @@ void read_unsafe(unsigned char pid, int val) {
 		if(s->finished()) outPorts[pid]->readTaskQueue->take();
 	}
 
-#if DEBUG
-	printf(" done");
-#endif /* DEBUG */
+	logger_host << " done" << endl;
 }
 
 void read(unsigned char pid, int val[], int size) {
-#if DEBUG
-    printf("\n locking port %d ...", pid);
-#endif /* DEBUG */
+
+    logger_host << FINE << " locking port " << pid << " ...";
 
 	std::cout.flush();
 
 	// acquire the port lock
 	std::unique_lock<std::mutex> lock(outPorts[pid]->port_mutex);
 
-#if DEBUG
-	printf(" done\n storing values (count: %d) ...", size);
-#endif /* DEBUG */
+	logger_host << " done" << endl;
+	logger_host << FINE << " storing values (count: " << size << ") ..." << endl);
 
 	std::cout.flush();
 
@@ -264,9 +243,7 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 
 	// return, if the queue is empty (count == 0 or unexpected ack)
 	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
-#if DEBUG
-		printf("queue is empty, count: %d", count);
-#endif /* DEBUG */
+	    logger_host << FINE << "queue is empty, count: " << count << endl);
 		return;
 	}
 

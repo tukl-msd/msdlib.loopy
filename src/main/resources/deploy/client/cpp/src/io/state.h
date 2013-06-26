@@ -17,6 +17,8 @@
 #include <math.h>
 #include <vector>
 
+#include "../logger.h"
+
 template <int width>
 class outPort;
 
@@ -260,9 +262,7 @@ private:
 		while(put < count) {
 			if(put + done == size) break;
 
-#if DEBUG
-			printf("\nstoring value @ state: %d", val[put]);
-#endif /* DEBUG */
+			logger_host << FINE << "storing value @ state: " << val[put] << endl;
 
 			// leftshift current value
 			currentValue = currentValue << (sizeof(int) * 8);

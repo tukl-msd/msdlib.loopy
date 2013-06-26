@@ -15,17 +15,18 @@ using namespace std;
 /** severity enum */
 enum severity { CRIT, ERROR, WARN, INFO, FINE, FINER, FINEST };
 
-/** typedef to support */
+/** This is a function pointer that takes a stream as input and returns the stream. */
 typedef std::ostream& (*STRFUNC)(std::ostream&);
 
 /**
  * The logger is used to log significant events occurring in the driver.
  * It is implemented as a stream - events should be printed using the shift operation.
  */
-class _logger : public ostream::basic_ostream {
+class logger : public ostream::basic_ostream {
 private:
     ostream *stream_ptr;
     severity sev;
+    string prefix;
 
     /**
      * Converts the current severity of the logger to a string.
@@ -45,8 +46,9 @@ private:
     }
 
 public:
-    _logger(ostream *stream_ptr) : sev(INFO) {
+    logger(ostream *stream_ptr, string prefix) : sev(INFO) {
         this->stream_ptr = stream_ptr;
+        this->prefix     = prefix;
     }
 
     /**
@@ -56,29 +58,31 @@ public:
      * If the overall debug level of the driver is below the provided severity,
      * nothing will be forwarded to the wrapped stream.
      */
-    friend _logger& operator <<(_logger &i, const severity s) {
+    friend logger& operator <<(logger &i, const severity s) {
         if(i.stream_ptr == NULL) return i;
         i.sev = s;
-        i << i.print_severity();
+        i << i.prefix << i.print_severity();
         return i;
     }
-    friend _logger& operator <<(_logger &i, STRFUNC func) {
+    friend logger& operator <<(logger &i, STRFUNC func) {
         if(i.stream_ptr == NULL) return i;
         if(i.sev <= current_severity) func(*i.stream_ptr);
         return i;
     }
+    // for some reason making this a friend as well breaks endl ):
     template<typename T>
-    _logger& operator <<(const T t) {
-        if(stream_ptr == NULL) return *this;
-        if(sev <= current_severity) *stream_ptr << t;
-        return *this;
+    friend logger& operator <<(logger &i, const T t) {
+        if(i.stream_ptr == NULL) return i;
+        if(i.sev <= current_severity) *i.stream_ptr << t;
+        return i;
     }
 };
 
 /**
  * Logger instance.
  */
-extern _logger logger;
+extern logger logger_host;
+extern logger logger_board;
 
 #endif /* LOGGER_H_ */
 

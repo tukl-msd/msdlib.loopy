@@ -34,6 +34,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     // generated files
     MFile comps;
     MFile consts;
+    MFile logger;
 
     // temp variables for construction of local methods of VHDL components
     private MClass  comp;
@@ -59,9 +60,11 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
         comps  = addDoc(comps,  "Describes user-defined IPCores and instantiates all cores present within this driver.");
         consts = addDoc(consts, "Defines several constants used by the client.");
+
+        logger = MFile(MDocumentation(Strings()), "logger", clientSrc,
+            MPreProcDirs(), MStructs(), MEnums(), MAttributes(), MProcedures());
     }
 
-    @Override
     public void visit(BDLFilePos term) {
 
         boolean debug = false;
@@ -71,7 +74,25 @@ public class CPPBDLVisitor extends Visitor<NE> {
             // duplicates and invalid parameters are already caught by sanity check
             if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
             if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
-            if(o instanceof DEBUG)   debug = true;
+//            if(o instanceof DEBUG)   debug = true;
+            if(o instanceof LOG) {
+                LOG log = (LOG)o;
+
+                final String prefix = log.host() ? "Host:  " : "Board: ";
+                final String name = log.host() ? "logger_host" : "logger_board";
+                MInitList initList = log.target().Switch(new LogTarget.Switch<MInitList, NE>() {
+                    public MInitList CaseCONSOLE(CONSOLE term) {
+                        return MInitList(Strings("&cout", "\"" + prefix + "\""));
+                    }
+                    public MInitList CaseFILE(FILE term) {
+                        return MInitList(Strings("new ofstream(\"" + term.file() + "\")",
+                            "\"" + prefix + "\""));
+                    }
+                });
+
+                logger = add(logger, MAttribute(MDocumentation(Strings()), MModifiers(),
+                    MType("logger"), name, initList));
+            }
         }
 
         // add derived constants
@@ -112,8 +133,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(BackendsPos term)  { }
     public void visit(OptionsPos term) { }
 
-    @Override
-    public void visit(ETHERNETPos term) {
+        public void visit(ETHERNETPos term) {
         for(MOption opt : term.opts().term()) {
             if(opt instanceof IP) {
                 consts = add(consts, MDef(
@@ -131,8 +151,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     public void visit(PCIEPos term) { }
 
-    @Override
-    public void visit(GPIOPos term) {
+        public void visit(GPIOPos term) {
         // construct init block according to GPIO direction
         MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude("gpio.h")));
 
@@ -157,7 +176,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
             "gpio_"+ gpio.id(), init));
     }
 
-    @Override
     public void visit(InstancePos term) {
         if(!hasCPUConnection(term)) return;
 
@@ -329,8 +347,18 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
-    public void visit(DEBUGPos    term) { }
     public void visit(POLLPos     term) { }
+    public void visit(LOGPos      term) { }
+
+    // detailed debug options
+    public void visit(CONSOLEPos term) { }
+    public void visit(FILEPos    term) { }
+    public void visit(ERRORPos   term) { }
+    public void visit(WARNPos    term) { }
+    public void visit(INFOPos    term) { }
+    public void visit(FINEPos    term) { }
+    public void visit(FINERPos   term) { }
+    public void visit(FINESTPos  term) { }
 
     // same goes for medium options
     public void visit(MACPos    term) { }
@@ -366,5 +394,4 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(BooleanPos term) { }
     public void visit(StringsPos term) { }
     public void visit(StringPos  term) { }
-
 }

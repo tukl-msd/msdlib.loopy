@@ -21,64 +21,64 @@ import de.hopp.generator.exceptions.UsageError;
 public class Parser {
 
     private ErrorCollection errors;
-    
+
     public Parser(ErrorCollection errors) {
         this.errors = errors;
     }
-    
+
     public BDLFile parse(File file){
         // resolve all imports (recursively) and construct one big BDLFile
         LinkedList<File> files = new LinkedList<File>();
         Set<String> fileNames = new HashSet<String>();
         files.add(file);
-        
+
         BDLFile bdl = parse(files, fileNames);
-        
+
         // abort, if errors occurred
         if(errors.hasErrors()) return null;
-        
+
         // perform sanity checks on the parsed bdl file
         sanityCheck(bdl);
 
         // abort, if errors occurred
 //        if(errors.hasErrors()) throw new ParserError("Fatal error while parsing board description file");
-        
+
         // return its results
         return bdl;
     }
-    
+
     private BDLFile parse(LinkedList<File> files, Set<String> fileNames) {
         // if the file list is empty, return null
         if(files.isEmpty()) return null;
-        
+
         // get the first file from the list and remove it
         File file = files.remove();
-        
+
         try {
             if(fileNames.contains(file.getCanonicalPath())) return parse(files, fileNames);
-            
+
             // construct scanner and parser
             InputStream input = new FileInputStream(file);
             BDLFileScanner scanner = new BDLFileScanner(input);
             BDLFileParser parser = new BDLFileParser(scanner);
-            
+
             // set attributes of the parser
             parser.setErrorCollection(errors);
             parser.setFilename(file.getCanonicalPath());
-            
+
             // parse the file
             try {
                 Symbol symbol = parser.parse();
-                
+
                 // abort, if errors occurred while parsing
                 if(errors.hasErrors()) return null;
-                
+
                 // otherwise, cast the result to a BDLFile
                 BDLFile bdl = (BDLFile) symbol.value;
-                
+
                 // add all imports of this file
                 for(Import imp : bdl.imports()) files.add(new File(imp.file()));
-                
+
                 // return merge of this file and recursive call
                 return merge(bdl, parse(files, fileNames));
             } catch(Exception e) {
@@ -90,14 +90,14 @@ public class Parser {
         }
         return null;
     }
-    
+
     private BDLFile merge(BDLFile file1, BDLFile file2) {
         // if the second file is null, return the first file
         if(file2 == null) return file1;
-        
+
         return file1;
     }
-        
+
     /**
      * Checks several conditions, which are assumed to hold for the model.
      * Adds errors to the error collection of the parser, if conditions
@@ -124,23 +124,23 @@ public class Parser {
                 File sourcefile = new File(source.file());
                 if(!sourcefile.exists() || !sourcefile.isFile())
                     errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", source.pos()));
-            
+
                 // check for duplicate filenames
                 if(!sources.add(getBaseName(source.file()).toLowerCase())) {
                     errors.addError(new ParserError("name of sourcefile " + source.file() +
                         " clashes (case-insensitive) with other sourcefile", source.pos()));
                 }
             }
-            
+
             // check for existence of a source named after the core
 //            if(! sources.contains(core.name().toLowerCase())) errors.addError(new ParserError(
 //                "core " + core.name() + " does not contain a top level source file named after the core.", core.pos()
 //            ));
-            
+
             // check for duplicate core identifiers
             if(cores.keySet().contains(core.name())) errors.addError(new ParserError("Duplicate core " + core.name(), core.pos()));
             else cores.put(core.name(), core);
-            
+
             // check for duplicate port identifiers
             Map<String, Port> ports = new HashMap<String, Port>();
             for(Port port : core.ports()) {
@@ -148,11 +148,11 @@ public class Parser {
                 else ports.put(port.name(), port);
             }
         }
-        
+
         // iterate over all instances...
         Map<String, Instance> instances = new HashMap<String, Instance>();
         for(Instance inst : bdf.insts()) {
-            
+
             // check declaration of referenced core
             if(!cores.containsKey(inst.core())) {
                 errors.addError(new ParserError("Instantiated undefined core " + inst.core(), inst.pos()));
@@ -162,25 +162,25 @@ public class Parser {
             // check declaration of referenced ports
             for(Binding b : inst.bind()) {
                 boolean exists = false;
-                
+
                 for(Port port : cores.get(inst.core()).ports())
                     if(port.name().equals(b.port())) exists = true;
-                
+
                 if(!exists) errors.addError(new ParserError("Binding to non-existing port " + b.port(), b.pos()));
             }
-            
+
             // check for duplicate instance identifiers
             if(instances.containsKey(inst.name())) errors.addError(new ParserError("Duplicate instance identifier " + inst.name(), inst.pos()));
             else instances.put(inst.name(), inst);
-            
+
             // check connection of all declared axi ports
             for(Port port : cores.get(inst.core()).ports()) {
                 // skip non-axi ports (i.e. clk and rst)
                 if(! (port instanceof AXI)) continue;
-                
+
                 boolean connected = false;
                 for(Binding bind : inst.bind()) if(bind.port().equals(port.name())) connected = true;
-                
+
                 // add a warning for unconnected ports
                 if(!connected) errors.addWarning(new ParserWarning("Port " + port.name() + " of " +
                         inst.core() + " instance " + inst.name() + " is not connected", inst.pos()));
@@ -188,19 +188,19 @@ public class Parser {
         }
         cores.clear();
         instances.clear();
-        
+
         // check for duplicate gpio instances
         Map<String, GPIO> gpios = new HashMap<String, GPIO>();
         for(GPIO gpio : bdf.gpios())
             if(gpios.containsKey(gpio.name())) errors.addError(new ParserError("Duplicate GPIO instance " + gpio.name(), gpio.pos()));
             else gpios.put(gpio.name(), gpio);
         gpios.clear();
-        
+
         // check axis connection count (one for cpu axis, two for others)
         Map<String, Integer> connections = new HashMap<String, Integer>();
         for(Instance inst : bdf.insts())
             for(Binding bind : inst.bind()) {
-                if(bind instanceof CPUAxis) continue; 
+                if(bind instanceof CPUAxis) continue;
                 // increment counter for this axis
                 else if(connections.containsKey(((Axis)bind).axis()))
                     connections.put(((Axis)bind).axis(), connections.get(bind)+1);
@@ -213,14 +213,14 @@ public class Parser {
                 errors.addError(new ParserError("Axis " + axis + " is connected to " + connections.get(axis) +
                         " ports. Only two ports can be connected with a single axis.", "", -1));
         } connections.clear();
-        
+
         // check for invalid options
-        boolean sw = false, hw = false;
-        
+        boolean sw = false, hw = false, debug_host = false, debug_board = false;
+
         // invalid options for the board in general
         for(Option o : bdf.opts()) {
             // poll is simply not allowed here
-            if(o instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option", "", -1)); 
+            if(o instanceof POLL) errors.addError(new ParserError("encountered option \"poll\" as board option", "", -1));
             // neither is bitwidth
             else if(o instanceof BITWIDTH) errors.addError(new ParserError("encountered option \"width\" as board option", "", -1));
             // swqueue and hwqueue are allowed to occur at most once
@@ -230,8 +230,18 @@ public class Parser {
             else if(o instanceof HWQUEUE)
                 if(hw) errors.addError(new ParserError("duplicate board option \"swqueue\"", "", -1));
                 else hw = true;
+            // at most a single instance of the log parameter for host and board
+            else if(o instanceof LOG)
+                if(((LOG)o).host())
+                    if(debug_host)
+                        errors.addError(new ParserError("duplicate board optione \"log host\"", "", -1));
+                    else debug_host = true;
+                else
+                    if(debug_board)
+                        errors.addError(new ParserError("duplicate board optione \"log board\"", "", -1));
+                    else debug_board = true;
         }
-        
+
         boolean poll, width;
         // invalid options for port specifications
         for(Core core : bdf.cores()) {
@@ -248,12 +258,12 @@ public class Parser {
                     else rst = true;
                     continue;
                 }
-                
+
                 sw = false; hw = false; poll = false; width = false;
                 for(Option o : ((AXI)port).opts()) {
                     if(o instanceof POLL)
                         // poll is not allowed to occur at in-going ports
-                        if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port", port.pos())); 
+                        if(port instanceof IN) errors.addError(new ParserError("encountered option \"poll\" at in-going port", port.pos()));
                         // at out-going ports it must occur at most once
                         else if(poll) errors.addError(new ParserError("duplicate port option \"poll\"", port.pos()));
                         else poll = true;
@@ -270,11 +280,11 @@ public class Parser {
                         else hw = true;
                 }
             }
-            
+
             if(!clk) errors.addError(new ParserError("core declaration is missing clock port", core.pos()));
             if(!rst) errors.addError(new ParserError("core declaration is missing reset port", core.pos()));
         }
-        
+
         // check, if the scheduler or gpio callbacks have been overridden and add appropriate warning
         if(bdf.scheduler().code() instanceof USER_DEFINED) errors.addWarning(new ParserWarning(
                 "Default scheduler was overridden. Note that no guarantees can be made for user-defined schedulers.",
@@ -289,9 +299,9 @@ public class Parser {
         //      plus potential queue overhead...
         for(GPIO gpio : bdf.gpios()) if(gpio.callback() instanceof USER_DEFINED)
             errors.addWarning(new ParserWarning("Default gpio callback behaviour was overridden", gpio.pos()));
-        
-        
-        
+
+
+
 //        // check options of Ethernet medium for validity
         if(bdf.medium() instanceof ETHERNET) {
             ETHERNET medium = (ETHERNET)bdf.medium();
@@ -345,7 +355,7 @@ public class Parser {
                 new ParserError("Ethernet specification is missing port attribute", medium.pos()));
         }
    }
-    
+
 //  /** converts ip addresses represented as string arrays int integer arrays.
 //  * Also does validity checks for the given ip address.
 //  * @throws IllegalArgumentException The given string array does not fulfill
@@ -359,7 +369,7 @@ public class Parser {
 //     for(int i = 0; i<ip.length; i++) {
 //         try {
 //             int j = Integer.valueOf(ip[i]);
-//             if (j < 0 | j > 255) 
+//             if (j < 0 | j > 255)
 //                 throw new IllegalArgumentException("invalid ip address: components can only range from 0 to 255");
 //             targ[i] = j;
 //         } catch (NumberFormatException e) {
@@ -376,9 +386,9 @@ public class Parser {
 //}
 //
 //private static boolean isHexCharacter(char c) {
-//return c >= 0 || c <= 9 || c >= 'a' || c <= 'f' || c >= 'A' || c <= 'F'; 
+//return c >= 0 || c <= 9 || c >= 'a' || c <= 'f' || c >= 'A' || c <= 'F';
 //}
-    
+
     private void checkIP(String ip, Position pos) {
         String[] parts = ip.split("\\.");
         if(parts.length < 4)
@@ -398,7 +408,7 @@ public class Parser {
             }
         }
     }
-    
+
     private void checkMAC(String mac, Position pos) {
         String[] parts = mac.split(":");
         if(parts.length < 6)

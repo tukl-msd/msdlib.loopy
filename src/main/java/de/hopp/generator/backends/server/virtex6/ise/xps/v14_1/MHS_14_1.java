@@ -246,8 +246,18 @@ public class MHS_14_1 extends MHSGenerator {
     public void visit(HWQUEUEPos arg0)  { }
     public void visit(SWQUEUEPos arg0)  { }
     public void visit(BITWIDTHPos term) { }
-    public void visit(DEBUGPos term)    { }
     public void visit(POLLPos term)     { }
+    public void visit(LOGPos term)      { }
+
+    // detailed debug options
+    public void visit(CONSOLEPos term) { }
+    public void visit(FILEPos    term) { }
+    public void visit(ERRORPos   term) { }
+    public void visit(WARNPos    term) { }
+    public void visit(INFOPos    term) { }
+    public void visit(FINEPos    term) { }
+    public void visit(FINERPos   term) { }
+    public void visit(FINESTPos  term) { }
 
     // code blocks are irrelevant in this visitor
     public void visit(DEFAULTPos term)      { }

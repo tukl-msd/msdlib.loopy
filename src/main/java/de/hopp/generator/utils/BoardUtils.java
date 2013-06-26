@@ -76,7 +76,9 @@ public class BoardUtils {
      */
     public static String printBoard(BDLFilePos board) {
         String rslt = "parsed the following board";
-        rslt += "\n  -debug: " + (isDebug(board) ? "yes" : "no");
+//        rslt += "\n  -debug: " + (isDebug(board) ? "yes" : "no");
+        rslt += "\n  -host log level  "  + getLogSeverity(board,  true).sortName();
+        rslt += "\n  -board log level " + getLogSeverity(board, false).sortName();
         rslt += "\n  -" + board.medium().termMedium().Switch(new Medium.Switch<String, NE>() {
             public String CaseNONE(NONE term) {
                 return "no medium";
@@ -112,16 +114,25 @@ public class BoardUtils {
         return rslt;
     }
 
-    /**
-     * Checks if the debug flag has been set in a board description file.
-     * @param board The board description to be checked.
-     * @return true, if the debug flag has been set, false otherwise.
-     */
-    public static boolean isDebug(BDLFilePos board) {
-        boolean debug = false;
-        for(OptionPos opt : board.opts()) if(opt instanceof DEBUGPos) debug = true;
-        return debug;
+    public static LogSeverity getLogSeverity(BDLFilePos board, boolean host) {
+        for(Option opt : board.term().opts())
+            if(opt instanceof LOG)
+                if (((LOG)opt).host().booleanValue() == host)
+                    return ((LOG)opt).sev();
+
+        return BDL.ERROR();
     }
+
+//    /**
+//     * Checks if the debug flag has been set in a board description file.
+//     * @param board The board description to be checked.
+//     * @return true, if the debug flag has been set, false otherwise.
+//     */
+//    public static boolean isDebug(BDLFilePos board) {
+//        boolean debug = false;
+//        for(OptionPos opt : board.opts()) if(opt instanceof LOGPos) debug = true;
+//        return debug;
+//    }
 
     /**
      * Get the core referenced by a specific instance.

@@ -265,8 +265,8 @@ public class SDK extends Visitor<NE> {
 
         setupLinkerScript(board);
 
-        // add debug constants
-        boolean debug = isDebug(board);
+        // add debug constants TODO something more detailed than this int...
+        boolean debug = getLogSeverity(board, false) != BDL.ERROR();
         addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
         if(debug) addConst("loopy_print(...)", "xil_printf(__VA_ARGS__)",
             "With the chosen debug level, debug output will be sent over the JTAG cable.",
@@ -762,8 +762,18 @@ public class SDK extends Visitor<NE> {
     public void visit(HWQUEUEPos  arg0) { }
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
-    public void visit(DEBUGPos    term) { }
     public void visit(POLLPos     term) { }
+    public void visit(LOGPos      term) { }
+
+    // detailed debug options
+    public void visit(CONSOLEPos term) { }
+    public void visit(FILEPos    term) { }
+    public void visit(ERRORPos   term) { }
+    public void visit(WARNPos    term) { }
+    public void visit(INFOPos    term) { }
+    public void visit(FINEPos    term) { }
+    public void visit(FINERPos   term) { }
+    public void visit(FINESTPos  term) { }
 
     // same goes for medium options
     public void visit(MACPos    term) { }
