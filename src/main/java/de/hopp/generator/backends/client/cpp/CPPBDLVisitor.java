@@ -75,24 +75,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
             if(o instanceof HWQUEUE) queueSizeHW = ((HWQUEUE)o).qsize();
             if(o instanceof SWQUEUE) queueSizeSW = ((SWQUEUE)o).qsize();
 //            if(o instanceof DEBUG)   debug = true;
-            if(o instanceof LOG) {
-                LOG log = (LOG)o;
-
-                final String prefix = log.host() ? "Host:  " : "Board: ";
-                final String name = log.host() ? "logger_host" : "logger_board";
-                MInitList initList = log.target().Switch(new LogTarget.Switch<MInitList, NE>() {
-                    public MInitList CaseCONSOLE(CONSOLE term) {
-                        return MInitList(Strings("&cout", "\"" + prefix + "\""));
-                    }
-                    public MInitList CaseFILE(FILE term) {
-                        return MInitList(Strings("new ofstream(\"" + term.file() + "\")",
-                            "\"" + prefix + "\""));
-                    }
-                });
-
-                logger = add(logger, MAttribute(MDocumentation(Strings()), MModifiers(),
-                    MType("logger"), name, initList));
-            }
         }
 
         // add derived constants
@@ -108,6 +90,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
                 "that should be send in one message"
             )), MModifiers(PUBLIC()), "QUEUE_SIZE_SW", String.valueOf(queueSizeSW)));
 
+        visit(term.logs());
         visit(term.medium());
         visit(term.gpios());
         visit(term.scheduler());
@@ -131,6 +114,33 @@ public class CPPBDLVisitor extends Visitor<NE> {
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos term)   { }
     public void visit(BackendsPos term)  { }
+
+    public void visit(LogsPos term) {
+        final String hostPrefix = "Host:  ", boardPrefix = "Board: ";
+        final String hostName   = "logger_host", boartName = "logger_board";
+
+        addLogger("logger_host",  "Host:  ", term.host());
+        addLogger("logger_board", "Board: ", term.board());
+    }
+
+    private void addLogger(final String name, final String prefix, LogPos log) {
+        MInitList initList = log.termLog().Switch(new Log.Switch<MInitList, NE>() {
+            public MInitList CaseNOLOG(NOLOG term) {
+                return MInitList(Strings("NULL", "\"" + prefix + "\""));
+            }
+            public MInitList CaseCONSOLE(CONSOLE term) {
+                return MInitList(Strings("&cout", "\"" + prefix + "\""));
+            }
+            public MInitList CaseFILE(FILE term) {
+                return MInitList(Strings("new ofstream(\"" + term.file() + "\")",
+                    "\"" + prefix + "\""));
+            }
+
+        });
+        logger = add(logger, MAttribute(MDocumentation(Strings()),
+            MModifiers(), MType("logger"), name, initList));
+    }
+
     public void visit(OptionsPos term) { }
 
         public void visit(ETHERNETPos term) {
@@ -348,11 +358,12 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
     public void visit(POLLPos     term) { }
-    public void visit(LOGPos      term) { }
 
-    // detailed debug options
-    public void visit(CONSOLEPos term) { }
-    public void visit(FILEPos    term) { }
+    // logger options
+    public void visit(NOLOGPos    term) { }
+    public void visit(CONSOLEPos  term) { }
+    public void visit(FILEPos     term) { }
+
     public void visit(ERRORPos   term) { }
     public void visit(WARNPos    term) { }
     public void visit(INFOPos    term) { }

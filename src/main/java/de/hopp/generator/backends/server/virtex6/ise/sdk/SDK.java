@@ -265,19 +265,29 @@ public class SDK extends Visitor<NE> {
 
         setupLinkerScript(board);
 
-        // add debug constants TODO something more detailed than this int...
-        boolean debug = getLogSeverity(board, false) != BDL.ERROR();
-        addConst("DEBUG", debug ? "1" : "0", "Indicates, if additional messages should be logged on the console.");
-        if(debug) addConst("loopy_print(...)", "xil_printf(__VA_ARGS__)",
-            "With the chosen debug level, debug output will be sent over the JTAG cable.",
-            MBracketInclude("stdio.h")
-        );
-        else addConst("loopy_print(...)", "",
-            "With disabled debugging, calls to the print method are simply removed."
-        );
+        LogSeverity severity = getLogSeverity(board.logs().board());
+
+        // add debug constant TODO something more detailed than this int...
+        int debug = severity.Switch(new LogSeverity.Switch<Integer, NE>() {
+            public Integer CaseERROR(ERROR term)   { return 0; }
+            public Integer CaseWARN(WARN term)     { return 1; }
+            public Integer CaseINFO(INFO term)     { return 2; }
+            public Integer CaseFINE(FINE term)     { return 3; }
+            public Integer CaseFINER(FINER term)   { return 4; }
+            public Integer CaseFINEST(FINEST term) { return 5; }
+        });
+
+        addConst("SEVERITY", String.valueOf(debug),
+            "Indicates, if additional messages should be logged on the console.");
+//        if(debug) addConst("loopy_print(...)", "xil_printf(__VA_ARGS__)",
+//            "With the chosen debug level, debug output will be sent over the JTAG cable.",
+//            MBracketInclude("stdio.h")
+//        );
+
+        addLoggingMacros(debug);
 
         // add queue size constant
-        addConst("MAX_OUT_SW_QUEUE_SIZE", String.valueOf(maxQueueSize(board)),
+        addConst("MAX_OUT_SW_QUEUE_SIZE", String.valueOf(maxOutQueueSize(board)),
                 "Maximal size of out-going software queues.");
 
         // add protocol version constant
@@ -346,6 +356,22 @@ public class SDK extends Visitor<NE> {
 
         components = add(components, axi_write);
         components = add(components, axi_read);
+    }
+
+    /* Log everything up to value, skip afterwards */
+    private void addLoggingMacros(int value) {
+        final String[] name   = { "error", "warn", "info", "fine", "finer", "finest" };
+        final String[] plural = { "errors", "warnings", "info messages", "fine info messages",
+                  "finer info messages", "finest info messages" };
+
+        for(int i = 0; i <= value; i++)
+            addConst("log_"+name[i]+"(...)", "xil_printf(__VA_ARGS__)",
+                "With the chosen debug level, "+plural[i]+
+                " will be reported to the host driver over Ethernet.");
+        for(int i = value+1; i < name.length; i++)
+            addConst("log_"+name[i]+"(...)", "",
+                "With the chosen debug level, "+plural[i]+
+                " will not be reported to the host driver.");
     }
 
     public void visit(ETHERNETPos term) {
@@ -763,11 +789,13 @@ public class SDK extends Visitor<NE> {
     public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
     public void visit(POLLPos     term) { }
-    public void visit(LOGPos      term) { }
 
-    // detailed debug options
-    public void visit(CONSOLEPos term) { }
-    public void visit(FILEPos    term) { }
+    // logger options
+    public void visit(LogsPos     term) { }
+    public void visit(NOLOGPos    term) { }
+    public void visit(CONSOLEPos  term) { }
+    public void visit(FILEPos     term) { }
+
     public void visit(ERRORPos   term) { }
     public void visit(WARNPos    term) { }
     public void visit(INFOPos    term) { }

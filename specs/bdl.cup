@@ -20,7 +20,7 @@ action code {:
 :}
 
 parser code {:
-//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
+//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Logs(BDL.NOLOG(), BDL.NOLOG()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
 //
 //  public BDLFile getBDLFile() {
 //    return board;
@@ -89,6 +89,7 @@ non terminal GPIO gpio;
 non terminal Bindings bind;
 non terminal Scheduler scheduler;
 
+non terminal Logs log;
 non terminal LogSeverity severity;
 non terminal Boolean device;
 
@@ -117,6 +118,7 @@ file ::=
      {:
          Imports imports     = BDL.Imports();
          Backends backends   = BDL.Backends();
+         Logs logs           = BDL.Logs(BDL.NOLOG(), BDL.NOLOG());
          Options opts        = BDL.Options();
          Cores cores         = BDL.Cores();
          GPIOs gpios         = BDL.GPIOs();
@@ -127,6 +129,23 @@ file ::=
                 if(d == null) continue;
            else if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
            else if(d instanceof Backend)  { backends = backends.add((Backend)d);  }
+           else if(d instanceof Logs)     {
+             Logs newLogs = (Logs)d;
+
+             // check if there is a new host logger
+             if(!(newLogs.host() instanceof NOLOG))
+                 // set host logger, if none was specified, otherwise throw error
+                 if(logs.host() instanceof NOLOG)
+                     logs.replaceHost(newLogs.host());
+                 else error("duplicate definition of host logger", lleft, lright);
+
+             // check if there is a new board logger
+             if(!(newLogs.board() instanceof NOLOG))
+                 // set board logger, if none was specified, otherwise throw error
+                 if(logs.board() instanceof NOLOG)
+                     logs.replaceBoard(newLogs.board());
+                 else error("duplicate definition of board logger", lleft, lright);
+           }
            else if(d instanceof Option)   {     opts =     opts.add((Option)d);   }
            else if(d instanceof Core)     {    cores =    cores.add((Core)d);     }
            else if(d instanceof Instance) {    insts =    insts.add((Instance)d); }
@@ -141,7 +160,7 @@ file ::=
              scheduler = (Scheduler)d;
            }
          }
-         RESULT = BDL.BDLFile(imports, backends, opts, cores, gpios, insts, medium, scheduler);
+         RESULT = BDL.BDLFile(imports, backends, logs, opts, cores, gpios, insts, medium, scheduler);
      :}
   ;
 
@@ -160,6 +179,7 @@ decl_list ::=
 decl ::=
      imp:i       {: RESULT = i; :}
   |  backend:b   {: RESULT = b; :}
+  |  log:l       {: RESULT = l; :}
   |  option:o    {: RESULT = o; :}
   |  core:c      {: RESULT = c; :}
   |  instance:i  {: RESULT = i; :}
@@ -226,13 +246,20 @@ option ::=
      {:
          RESULT = BDL.POLL(pos(keyleft), 0);
      :}
-  |  LOG:key device:dev severity:sev
+  ;
+
+log ::=
+  LOG:key device:dev severity:sev
      {:
-         RESULT = BDL.LOG(pos(keyleft), dev, sev, BDL.CONSOLE());
+         Log log = BDL.CONSOLE(pos(keyleft), sev);
+         if(dev) RESULT = BDL.Logs(log, BDL.NOLOG());
+         else    RESULT = BDL.Logs(BDL.NOLOG(), log);
      :}
   |  LOG:key device:dev severity:sev STRING_LITERAL:file
      {:
-         RESULT = BDL.LOG(pos(keyleft), dev, sev, BDL.FILE(file));
+         Log log = BDL.FILE(pos(keyleft), sev, file);
+         if(dev) RESULT = BDL.Logs(log, BDL.NOLOG());
+         else    RESULT = BDL.Logs(BDL.NOLOG(), log);
      :}
   ;
 

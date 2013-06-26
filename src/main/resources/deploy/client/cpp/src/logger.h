@@ -7,6 +7,7 @@
 #define LOGGER_H_
 
 #include <iostream>
+#include <fstream>
 
 #include "constants.h"
 

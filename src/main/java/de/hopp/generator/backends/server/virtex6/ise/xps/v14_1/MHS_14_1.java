@@ -235,23 +235,25 @@ public class MHS_14_1 extends MHSGenerator {
     }
 
     // imports and backends should be handled before this visitor
-    public void visit(ImportPos term)  { }
+    public void visit(ImportPos  term) { }
     public void visit(BackendPos term) { }
 
     // cores themselves are not represented in the mhs
-    public void visit(CorePos term)  { }
+    public void visit(CorePos  term) { }
     public void visit(PortsPos term) { }
 
     // options are irrelevant in this visitor (so far)
-    public void visit(HWQUEUEPos arg0)  { }
-    public void visit(SWQUEUEPos arg0)  { }
+    public void visit(HWQUEUEPos  arg0) { }
+    public void visit(SWQUEUEPos  arg0) { }
     public void visit(BITWIDTHPos term) { }
-    public void visit(POLLPos term)     { }
-    public void visit(LOGPos term)      { }
+    public void visit(POLLPos     term) { }
 
-    // detailed debug options
-    public void visit(CONSOLEPos term) { }
-    public void visit(FILEPos    term) { }
+    // logger options
+    public void visit(LogsPos     term) { }
+    public void visit(NOLOGPos    term) { }
+    public void visit(CONSOLEPos  term) { }
+    public void visit(FILEPos     term) { }
+
     public void visit(ERRORPos   term) { }
     public void visit(WARNPos    term) { }
     public void visit(INFOPos    term) { }
@@ -260,30 +262,30 @@ public class MHS_14_1 extends MHSGenerator {
     public void visit(FINESTPos  term) { }
 
     // code blocks are irrelevant in this visitor
-    public void visit(DEFAULTPos term)      { }
+    public void visit(DEFAULTPos      term) { }
     public void visit(USER_DEFINEDPos term) { }
 
     // positions are handled directly when they occur
     public void visit(PositionPos term) { }
-    public void visit(INPos term)       { }
-    public void visit(OUTPos term)      { }
-    public void visit(DUALPos term)     { }
+    public void visit(INPos       term) { }
+    public void visit(OUTPos      term) { }
+    public void visit(DUALPos     term) { }
 
     // Ethernet options are irrelevant in this visitor
     public void visit(MOptionsPos term) { }
-    public void visit(MACPos term)      { }
-    public void visit(IPPos term)       { }
-    public void visit(MASKPos term)     { }
-    public void visit(GATEPos term)     { }
-    public void visit(PORTIDPos term)   { }
-    public void visit(TOUTPos term)     { }
-    public void visit(AXIPos term)      { }
-    public void visit(CLKPos term)      { }
-    public void visit(RSTPos term)      { }
+    public void visit(MACPos      term) { }
+    public void visit(IPPos       term) { }
+    public void visit(MASKPos     term) { }
+    public void visit(GATEPos     term) { }
+    public void visit(PORTIDPos   term) { }
+    public void visit(TOUTPos     term) { }
+    public void visit(AXIPos      term) { }
+    public void visit(CLKPos      term) { }
+    public void visit(RSTPos      term) { }
 
     // literals
     public void visit(IntegerPos term) { }
     public void visit(BooleanPos term) { }
     public void visit(StringsPos term) { }
-    public void visit(StringPos term)  { }
+    public void visit(StringPos  term) { }
 }

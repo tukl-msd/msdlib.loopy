@@ -230,16 +230,6 @@ public class Parser {
             else if(o instanceof HWQUEUE)
                 if(hw) errors.addError(new ParserError("duplicate board option \"swqueue\"", "", -1));
                 else hw = true;
-            // at most a single instance of the log parameter for host and board
-            else if(o instanceof LOG)
-                if(((LOG)o).host())
-                    if(debug_host)
-                        errors.addError(new ParserError("duplicate board optione \"log host\"", "", -1));
-                    else debug_host = true;
-                else
-                    if(debug_board)
-                        errors.addError(new ParserError("duplicate board optione \"log board\"", "", -1));
-                    else debug_board = true;
         }
 
         boolean poll, width;

@@ -114,10 +114,12 @@ void scheduleWriter() {
 			// skip the port, if it's task queue is empty
 			if(inPorts[i]->writeTaskQueue->empty()) continue;
 
+			// TODO this should be set individually for each port binding! not global
+			unsigned int size = QUEUE_SIZE_SW;
+			unsigned int sendSize = std::min(size, proto->max_size())
 			// gather i values to be sent, where i the minimum of the maximal numbers of values
 			// receivable by the board and the maximal size of a message with the used protocol version
-			unsigned int size = QUEUE_SIZE_SW;
-			std::vector<int> val = take(inPorts[i]->writeTaskQueue, std::min(size, proto->max_size()));
+			std::vector<int> val = take(inPorts[i]->writeTaskQueue, sendSize);
 
 			// set the transit counter and write variable
 			*inPorts[i]->transit  = val.size();
