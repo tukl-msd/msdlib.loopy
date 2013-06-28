@@ -14,7 +14,7 @@
 using namespace std;
 
 /** severity enum */
-enum severity { CRIT, ERROR, WARN, INFO, FINE, FINER, FINEST };
+enum severity { ERROR, WARN, INFO, FINE, FINER, FINEST };
 
 /** This is a function pointer that takes a stream as input and returns the stream. */
 typedef std::ostream& (*STRFUNC)(std::ostream&);
@@ -35,14 +35,13 @@ private:
      */
     string print_severity() {
         switch(sev) {
-        case CRIT:   return "CRITICAL: ";
-        case ERROR:  return "ERROR   : ";
-        case WARN:   return "WARNING : ";
-        case INFO:   return "INFO    : ";
-        case FINE:   return "FINE    : ";
-        case FINER:  return "FINER   : ";
-        case FINEST: return "FINEST  : ";
-        default:     return "UNKNOWN : ";
+        case ERROR:  return "ERROR  : ";
+        case WARN:   return "WARNING: ";
+        case INFO:   return "INFO   : ";
+        case FINE:   return "FINE   : ";
+        case FINER:  return "FINER  : ";
+        case FINEST: return "FINEST : ";
+        default:     return "UNKNOWN: ";
         }
     }
 

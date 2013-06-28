@@ -136,14 +136,14 @@ file ::=
              if(!(newLogs.host() instanceof NOLOG))
                  // set host logger, if none was specified, otherwise throw error
                  if(logs.host() instanceof NOLOG)
-                     logs.replaceHost(newLogs.host());
+                     logs = logs.replaceHost(newLogs.host());
                  else error("duplicate definition of host logger", lleft, lright);
 
              // check if there is a new board logger
              if(!(newLogs.board() instanceof NOLOG))
                  // set board logger, if none was specified, otherwise throw error
                  if(logs.board() instanceof NOLOG)
-                     logs.replaceBoard(newLogs.board());
+                     logs = logs.replaceBoard(newLogs.board());
                  else error("duplicate definition of board logger", lleft, lright);
            }
            else if(d instanceof Option)   {     opts =     opts.add((Option)d);   }

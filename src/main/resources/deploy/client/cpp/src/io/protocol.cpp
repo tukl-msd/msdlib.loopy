@@ -116,15 +116,8 @@ void protocol_v1::decode(int first) {
                 }
             }
 
-            switch(id){
-            case info:    logger_board << INFO;    break;
-            case warning: logger_board << WARNING; break;
-            case error:   logger_board << ERROR;   break;
-            default:      logger_board << INFO;    break;
-            }
-            logger_board << ": " << (char*)payload << endl;
-            // TODO relace above switch with something similar to hex/dec/...?
-
+            // stream severity to logger
+            logger_board << (severity)id << (char*)payload << endl;
         }
 
         break;

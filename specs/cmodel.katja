@@ -1,20 +1,3 @@
-/*
-    Katja
-    Copyright (C) 2003-2009 see README file for authors
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 specification Model
 
 backend java {
@@ -35,9 +18,9 @@ external Integer
 MFile ( MDocumentation doc, String name, String directory, MPreProcDirs dirs, MStructs structs, MEnums enums, MAttributes attributes, MProcedures procedures, MClasses classes )
 MClass ( MDocumentation doc, MModifiers modifiers, String name, MExtends extend, 
 	 MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses nested )
-MModifier = MVisibility | CONSTANT() | STATIC() | INLINE() // don't know if more are required
+MModifier = MVisibility | CONSTANT() | STATIC() | INLINE()
 // modifiers obviously allow invalid combinations. We rely on the programmer to refrain from using these
-MVisibility = PUBLIC() | PROTECTED() | PRIVATE()
+MVisibility = PUBLIC() | PRIVATE()
 MExtend( MVisibility visibility, MType type )
 
 // preprocessing directives
@@ -47,9 +30,7 @@ MPreProcDir = MDef    ( MDocumentation doc, MModifiers modifiers, String name, S
 
 // struct and enum model
 MStruct     ( MDocumentation doc, MModifiers modifiers, String name, MAttributes attributes )
-MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here...
-                                                              // --> MValue(String name, String value), MValues * MValue
-
+MEnum       ( MDocumentation doc, MModifiers modifiers, String name, Strings values ) // TODO maybe add code fragments here... --> MValue(String name, String value), MValues * MValue
 
 // attribute model
 MAttribute ( MDocumentation doc, MModifiers modifiers, MAnyType type, String name, MInitial initial )
@@ -84,11 +65,9 @@ MAnyType = MType             ( String name, Strings doc )
          | MPointerType      ( MAnyType type )
          | MConstPointerType ( MAnyType type )
 
-MInclude = MQuoteInclude   ( String name )
-         | MBracketInclude ( String name )
-         | MForwardDecl    ( String name )
-
-// MIncludeType = QUOTES() | BRACKETS() | FWDDEF() // not sure if this suffices, i.e., if only structs can (or should) be referenced here...
+MInclude = MQuoteInclude   ( MVisibility vis, String name )
+         | MBracketInclude ( MVisibility vis, String name )
+         | MForwardDecl    ( MVisibility vis, String name ) // name here encodes the declaration of the method
 
 // documentation
 MDocumentation ( Strings doc, MTags tags )

@@ -1,11 +1,9 @@
 package de.hopp.generator.backends.unparser;
 
-import static de.hopp.generator.model.Model.*;
-
+import static de.hopp.generator.model.Model.PRIVATE;
+import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
-
-import katja.common.NE;
 
 /**
  * C++ unparser. Generates C++ code out of the given model.
@@ -21,8 +19,8 @@ public class CppUnparser extends CUnparser {
     public CppUnparser(StringBuffer buffer, String name) {
         super(buffer, name);
     }
-    
-    
+
+    @Override
     protected String qualifiedName(MMethodInFile method) {
         return method.Switch(new MMethodInFile.Switch<String, NE>() {
             public String CaseMProcedureInFile(MProcedureInFile proc) {
@@ -42,7 +40,8 @@ public class CppUnparser extends CUnparser {
             }
         });
     }
-    
+
+    @Override
     protected String qualifiedName(MClassInFile mclass) {
         if(mclass.parent().parent() instanceof MFileInFile)
             return mclass.name().term();
@@ -50,7 +49,7 @@ public class CppUnparser extends CUnparser {
             return qualifiedName((MClassInFile)mclass.parent().parent()) + "::" + mclass.name().term();
         throw new RuntimeException();
     }
-    
+
     @Override
     public void visit(MClassesInFile classes) throws InvalidConstruct {
         if(classes.size() > 0) {
@@ -63,7 +62,7 @@ public class CppUnparser extends CUnparser {
             buffer.append('\n');
         }
     }
-    
+
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
         visit(mclass.methods());
@@ -72,13 +71,13 @@ public class CppUnparser extends CUnparser {
 
     @Override
     public void visit(MVoidInFile mvoid) { buffer.append("void"); }
-    
+
 //    @Override
 //    public void visit(MInitInFile init) {
 //        visit(init.con());
 //        visit(init.vals());
 //    }
-    
+
     @Override
     public void visit(MMemberInitsInFile inits) {
         if(!inits.isEmpty()) {
@@ -86,29 +85,29 @@ public class CppUnparser extends CUnparser {
             for(MMemberInitInFile init : inits) visit(init);
         }
     }
-    
+
     @Override
     public void visit(MInitListInFile list) {
         buffer.append('(');
-        
+
         for(StringInFile s : list.params()) {
             if(s.position() != 0) buffer.append(", ");
             buffer.append(s.term());
         }
-        
+
         buffer.append(')');
     }
-//    
+//
 //    public void visit(MConstrInFile constr) throws InvalidConstruct {
 //        visit(constr.doc());
 //        super.visit(constr);
 //    }
-//    
+//
 //    public void visit(MDestrInFile destr) throws InvalidConstruct {
 //        visit(destr.doc());
 //        super.visit(destr);
 //    }
-//    
+//
 //    @Override
     // Do not unparse attributes in sourcefile
 //    public void visit(MAttributesInFile attributes) { }

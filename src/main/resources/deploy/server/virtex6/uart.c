@@ -55,8 +55,9 @@ int recv_int() {
 }
 
 int start_application() {
-	if(DEBUG) xil_printf("\nStart listening for inbound message headers ...");
-
+#if SEVERITY >= SEVERITY_INFO
+    xil_printf("\nStart listening for inbound message headers ...");
+#endif
 	// Start listening loop
 	while(1) {
 		decode_header(recv_int());
@@ -65,7 +66,9 @@ int start_application() {
 }
 
 void init_medium() {
-	if(DEBUG) xil_printf("\nSetting up UART/USB interface");
+#if SEVERITY >= SEVERITY_INFO
+    xil_printf("\nSetting up UART/USB interface");
+#endif
 	// Nothing to do... works out of the box, it seems...
 }
 

@@ -163,7 +163,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
         public void visit(GPIOPos term) {
         // construct init block according to GPIO direction
-        MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude("gpio.h")));
+        MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude(PRIVATE(), "gpio.h")));
 
         GpioEnum gpio;
         try {
@@ -198,7 +198,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
         constructor = MConstr(MDocumentation(Strings(
                 "Constructor for the #" + term.name().term() + " core.",
                 "Creates a new " + term.name().term() + " instance on a board attached to the provided communication medium."
-            )), MModifiers(PUBLIC()), MParameters(), MMemberInits(), MCode(Strings(), MQuoteInclude("component.h")));
+            )), MModifiers(PUBLIC()), MParameters(), MMemberInits(), MCode(Strings(), MQuoteInclude(PRIVATE(), "component.h")));
         destructor  = MDestr(MDocumentation(Strings(
                 "Destructor for the #" + term.name().term() + " core.",
                 "Deletes registered ports and unregisters the core from the communication medium."
@@ -279,8 +279,8 @@ public class CPPBDLVisitor extends Visitor<NE> {
                 "Communicate with the #" + comp.name() + " core through this port."
             )), MModifiers(PUBLIC()), MType("inPort<"+width+">"),
             name, MCodeFragment("",
-                MQuoteInclude("component.h"),
-                MQuoteInclude("portIn.h")
+                MQuoteInclude(PUBLIC(), "component.h"),
+                MQuoteInclude(PUBLIC(), "portIn.h")
             )
         ));
 
@@ -297,8 +297,8 @@ public class CPPBDLVisitor extends Visitor<NE> {
                 "Communicate with the #" + comp.name() + " core through this port."
             )), MModifiers(PUBLIC()), MType("outPort<"+width+">"),
             name, MCodeFragment("",
-                MQuoteInclude("component.h"),
-                MQuoteInclude("portOut.h")
+                MQuoteInclude(PUBLIC(), "component.h"),
+                MQuoteInclude(PUBLIC(), "portOut.h")
             )
         ));
 
@@ -316,9 +316,9 @@ public class CPPBDLVisitor extends Visitor<NE> {
                 "Communicate with the #" + comp.name() + " core through this port."
             )), MModifiers(PUBLIC()), MType("dualPort<"+width+">"),
             name, MCodeFragment("",
-                MQuoteInclude("component.h"),
-                MQuoteInclude("portIn.h"), // TODO fix imports - superclass extending both...
-                MQuoteInclude("portOut.h")
+                MQuoteInclude(PUBLIC(), "component.h"),
+                MQuoteInclude(PUBLIC(), "portIn.h"), // TODO fix imports - superclass extending both...
+                MQuoteInclude(PUBLIC(), "portOut.h")
             )
         ));
 

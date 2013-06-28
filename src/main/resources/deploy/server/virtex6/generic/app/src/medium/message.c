@@ -45,12 +45,13 @@ void message_free(struct Message *m) {
 }
 
 void inline print_message(struct Message *m) {
-    loopy_print("\nsending message of size %d", m->headerSize + m->payloadSize);
-    loopy_print("\nheader int:  %d", m->header[0]);
+    log_fine("sending message with total size: %d", m->headerSize + m->payloadSize);
+    log_finer("header int:  %d", m->header[0]);
+    log_finer("payload size: %d", m->payloadSize);
 
-    loopy_print(" (Payload: ", m->payloadSize);
+    // print the values of the payload
+    log_finest("payload values: ");
     int i;
-    for(i = 0; i < m->payloadSize-1; i++) loopy_print("%d, ", m->payload[i]);
-    loopy_print("%d", m->payload[m->payloadSize-1]);
-    loopy_print(" )");
+    for(i = 0; i < m->payloadSize; i++)
+        log_finest("%d", m->payload[i]);
 }

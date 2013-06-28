@@ -26,18 +26,17 @@
  */
 int decode_header( int first ) {
 	unsigned char version = floor(first / pow(2,24));
-	if(DEBUG) xil_printf("\nInteger received. Trying to interpret as message header (protocol version %d)", version);
+	log_fine("Integer received. Trying to interpret as message header (protocol version %d)", version);
 	switch(version) {
-	case 1: decode_header_v1(first); break;
-	case 2: decode_header_v2(first); break;
+	case 1: return decode_header_v1(first); break;
+	case 2: return decode_header_v2(first); break;
 	default:
-		if(DEBUG) {
-			xil_printf("\nWARNING: Protocol version %d is unknown to this driver version. The byte will be ignored.", version);
-			xil_printf("\nWARNING: Ignoring byte can lead to later bytes being interpreted as message headers!");
-		}
+#if SEVERITY >= SEVERITY_WARNING
+	    xil_printf("\nWARNING: Protocol version %d is unknown to this driver version. The byte will be ignored.", version);
+	    xil_printf("\nWARNING: Ignoring byte can lead to later bytes being interpreted as message headers!");
+#endif
+		return 0;
 	}
-	if(DEBUG) xil_printf("\n");
-	return 0;
 }
 
 struct Message* encode_ack(unsigned char pid, unsigned int count) {
@@ -45,7 +44,9 @@ struct Message* encode_ack(unsigned char pid, unsigned int count) {
 	case 1: return encode_ack_v1(pid, count);
 	case 2: return encode_ack_v2(pid, count);
 	default:
-		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#if SEVERITY >= SEVERITY_WARNING
+	    xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#endif
 		return encode_ack_v1(pid, count);
 	}
 }
@@ -55,7 +56,9 @@ struct Message* encode_poll(unsigned char pid) {
 	case 1: return encode_poll_v1(pid);
 	case 2: return encode_poll_v2(pid);
 	default:
-		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#if SEVERITY >= SEVERITY_WARNING
+	    xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#endif
 		return encode_poll_v1(pid);
 	}
 }
@@ -65,7 +68,9 @@ struct Message* encode_gpio(unsigned char gid, unsigned char val) {
 		case 1: return encode_gpio_v1(gid, val);
 		case 2: return encode_data_v2(gid, val);
 		default:
-			if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#if SEVERITY >= SEVERITY_WARNING
+		    xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#endif
 			return encode_gpio_v1(gid, val);
 		}
 }
@@ -75,7 +80,9 @@ struct Message* encode_data(unsigned char pid, unsigned int size) {
 	case 1: return encode_data_v1(pid, size);
 	case 2: return encode_data_v2(pid, size);
 	default:
-		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#if SEVERITY >= SEVERITY_WARNING
+	    xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#endif
 		return encode_data_v1(pid, size);
 	}
 }
@@ -85,7 +92,9 @@ struct Message* encode_debug(unsigned char type, unsigned int size) {
 	case 1: return encode_debug_v1(type, size);
 	case 2: return encode_debug_v2(type, size);
 	default:
-		if(DEBUG) xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#if SEVERITY >= SEVERITY_WARNING
+	    xil_printf("\nWARNING: Unknown protocol version %d. Will use default protocol %d.", PROTO_VERSION, 1);
+#endif
 		return encode_debug_v1(type, size);
 	}
 }

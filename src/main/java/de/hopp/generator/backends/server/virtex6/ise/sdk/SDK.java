@@ -176,7 +176,21 @@ public class SDK extends Visitor<NE> {
         constants  = MFile(MDocumentation(Strings(
                 "Defines several constants used by the server.",
                 "This includes medium-specific configuration."
-            )), "constants", targetSrc.getPath(), MPreProcDirs(),
+            )), "constants", targetSrc.getPath(), MPreProcDirs(
+                // TODO do this too, using the enum ;)
+                MDef(MDocumentation(Strings("Severity value of errors.")),
+                    MModifiers(PUBLIC()), "SEVERITY_ERROR", "0"),
+                MDef(MDocumentation(Strings("Severity value of warnings.")),
+                    MModifiers(PUBLIC()), "SEVERITY_WARN", "1"),
+                MDef(MDocumentation(Strings("Severity value of info messages.")),
+                    MModifiers(PUBLIC()), "SEVERITY_INFO", "2"),
+                MDef(MDocumentation(Strings("Severity value of debug messages.")),
+                    MModifiers(PUBLIC()), "SEVERITY_FINE", "3"),
+                MDef(MDocumentation(Strings("Severity value of finer debug messages.")),
+                    MModifiers(PUBLIC()), "SEVERITY_FINER", "4"),
+                MDef(MDocumentation(Strings("Severity value of finest debug messages.")),
+                    MModifiers(PUBLIC()), "SEVERITY_FINEST", "5", MBracketInclude(PUBLIC(), "stdio.h"))
+            ),
             MStructs(), MEnums(), MAttributes(), MProcedures(), MClasses());
     }
 
@@ -268,6 +282,7 @@ public class SDK extends Visitor<NE> {
         LogSeverity severity = getLogSeverity(board.logs().board());
 
         // add debug constant TODO something more detailed than this int...
+        // TODO do this using the enum
         int debug = severity.Switch(new LogSeverity.Switch<Integer, NE>() {
             public Integer CaseERROR(ERROR term)   { return 0; }
             public Integer CaseWARN(WARN term)     { return 1; }
@@ -320,18 +335,18 @@ public class SDK extends Visitor<NE> {
         ), MModifiers(PRIVATE()), MType("int"), "axi_write", MParameters(
             MParameter(VALUE(), MType("int"), "val"), MParameter(VALUE(), MType("int"), "target")
         ), MCode(Strings(
-          "loopy_print(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
+          "log_finer(\"\\nwriting to in-going port %d (value: %d) ...\", target, val);",
           "if(target > " + (axiStreamIdMaster-1) + ") {",
-          "    loopy_print(\"ERROR: unknown axi stream port %d\", target);",
+          "    log_error(\"unknown axi stream port %d\", target);",
           "    return 1;",
           "}",
           "putdfslx(val, target, FSL_NONBLOCKING);",
           "",
           "int rslt = 1;",
           "fsl_isinvalid(rslt);",
-          "loopy_print(\" (invalid: %d)\", rslt);",
+          "log_finer(\" (invalid: %d)\", rslt);",
           "return rslt;"
-        ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
+        ), MQuoteInclude(PRIVATE(), "fsl.h"), MQuoteInclude(PRIVATE(), "../constants.h")));
 
         MProcedure axi_read  = MProcedure(MDocumentation(Strings(
             "Read a value from an AXI stream."),
@@ -340,19 +355,19 @@ public class SDK extends Visitor<NE> {
         ), MModifiers(PRIVATE()), MType("int"), "axi_read", MParameters(
             MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
         ), MCode(Strings(
-            "loopy_print(\"\\nreading from out-going port %d ...\", target);",
+            "log_finer(\"\\nreading from out-going port %d ...\", target);",
             "if(target > 0) {",
-            "    loopy_print(\"ERROR: unknown axi stream port %d\", target);",
+            "    log_error(\"unknown axi stream port %d\", target);",
             "    return 1;",
             "}",
             "getdfslx(*val, target, FSL_NONBLOCKING);",
             "",
-            "loopy_print(\"\\n %d\", *val);",
+            "log_finer(\"\\n %d\", *val);",
             "int rslt = 1;",
             "fsl_isinvalid(rslt);",
-            "loopy_print(\" (invalid: %d)\", rslt);",
+            "log_finer(\" (invalid: %d)\", rslt);",
             "return rslt;"
-        ), MQuoteInclude("fsl.h"), MQuoteInclude("../constants.h")));
+        ), MQuoteInclude(PRIVATE(), "fsl.h"), MQuoteInclude(PRIVATE(), "../constants.h")));
 
         components = add(components, axi_write);
         components = add(components, axi_read);
@@ -365,9 +380,11 @@ public class SDK extends Visitor<NE> {
                   "finer info messages", "finest info messages" };
 
         for(int i = 0; i <= value; i++)
-            addConst("log_"+name[i]+"(...)", "xil_printf(__VA_ARGS__)",
+            // TODO do this using the ENUM!
+            addConst("log_"+name[i]+"(...)", "send_debug("+i+", __VA_ARGS__)",
                 "With the chosen debug level, "+plural[i]+
-                " will be reported to the host driver over Ethernet.");
+                " will be reported to the host driver over Ethernet.",
+                MForwardDecl(PRIVATE(), "void send_debug(unsigned char type, const char *format, ...)"));
         for(int i = value+1; i < name.length; i++)
             addConst("log_"+name[i]+"(...)", "",
                 "With the chosen debug level, "+plural[i]+
@@ -516,9 +533,9 @@ public class SDK extends Visitor<NE> {
 
         // add default methods for gpio communication
         body = body.replaceNeeded(MIncludes(
-            MForwardDecl("int gpio_read(int target)"),
-            MForwardDecl("int gpio_write(int target, int val)"),
-            MForwardDecl("void send_gpio(unsigned char gid, unsigned char val)")
+            MForwardDecl(PRIVATE(), "int gpio_read(int target)"),
+            MForwardDecl(PRIVATE(), "int gpio_write(int target, int val)"),
+            MForwardDecl(PRIVATE(), "void send_gpio(unsigned char gid, unsigned char val)")
         ));
 
         return MProcedure(MDocumentation(Strings(
@@ -556,7 +573,7 @@ public class SDK extends Visitor<NE> {
             "    xil_printf(\" done\");",
             "#endif /* DEBUG */",
             ""
-        ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
+        ), MQuoteInclude(PRIVATE(), "gpio.h"), MQuoteInclude(PRIVATE(), "xparameters.h"));
     }
 
     private MCode initGPO(GpioEnum gpio) throws ParserError {
@@ -577,7 +594,7 @@ public class SDK extends Visitor<NE> {
             "    xil_printf(\" done\");",
             "#endif /* DEBUG */",
             ""
-        ), MQuoteInclude("gpio.h"), MQuoteInclude("xparameters.h"));
+        ), MQuoteInclude(PRIVATE(), "gpio.h"), MQuoteInclude(PRIVATE(), "xparameters.h"));
     }
 
     private String hwVersion(GPIO gpio) throws ParserError {
@@ -635,7 +652,7 @@ public class SDK extends Visitor<NE> {
 
         init = addLines(init, MCode(
             Strings("inQueue[" + axiStreamIdMaster + "] = createQueue(" + getSWQueueSize32(axis) + ");"),
-            MQuoteInclude("../io.h")
+            MQuoteInclude(PRIVATE(), "../io.h")
         ));
         axiStreamIdMaster++;
     }
@@ -648,17 +665,17 @@ public class SDK extends Visitor<NE> {
 
         init = addLines(init, MCode(
             Strings("outQueueCap[" + axiStreamIdSlave + "] = " + getSWQueueSize32(axis) + ";"),
-            MQuoteInclude("../io.h")
+            MQuoteInclude(PRIVATE(), "../io.h")
         ));
 
         init = addLines(init, MCode(
             Strings("isPolling[" + axiStreamIdSlave + "] = " + (isPolling(axis) ? 1 : 0) + ";"),
-            MQuoteInclude("../io.h")
+            MQuoteInclude(PRIVATE(), "../io.h")
         ));
 
         init = addLines(init, MCode(
             Strings("pollCount[" + axiStreamIdSlave + "] = " + getPollingCount32(axis) + ";"),
-            MQuoteInclude("../io.h")
+            MQuoteInclude(PRIVATE(), "../io.h")
         ));
 
         axiStreamIdSlave++;
@@ -698,12 +715,12 @@ public class SDK extends Visitor<NE> {
                 MProcedure(
                     MDocumentation(Strings()), MModifiers(), MVoid(), "schedule", MParameters(), MCode(
                         Strings().addAll(((USER_DEFINED)term.code().term()).content()),
-                        MQuoteInclude("constants.h"),
-                        MQuoteInclude("queueUntyped.h"),
-                        MQuoteInclude("io.h"),
-                        MForwardDecl("int medium_read()"),
-                        MForwardDecl("int axi_write ( int val, int target )"),
-                        MForwardDecl("int axi_read ( int *val, int target )")
+                        MQuoteInclude(PRIVATE(), "constants.h"),
+                        MQuoteInclude(PRIVATE(), "queueUntyped.h"),
+                        MQuoteInclude(PRIVATE(), "io.h"),
+                        MForwardDecl(PRIVATE(), "int medium_read()"),
+                        MForwardDecl(PRIVATE(), "int axi_write ( int val, int target )"),
+                        MForwardDecl(PRIVATE(), "int axi_read ( int *val, int target )")
                     )
                 )
             )
@@ -729,9 +746,7 @@ public class SDK extends Visitor<NE> {
                 "            ",
                 "            // try to write, skip if the hw queue is full",
                 "            if(axi_write(peek(inQueue[pid]), pid)) {",
-                "                #if DEBUG",
-                "                  loopy_print(\"\\nfailed to write to AXI stream\");",
-                "                #endif /* DEBUG */",
+                "                  log_fine(\"failed to write to AXI stream\");",
                 "                break;",
                 "            }",
                 "            ",
@@ -761,6 +776,7 @@ public class SDK extends Visitor<NE> {
                 "        }",
                 "        // flush sw queue",
                 "        if(flush_queue(pid)) {",
+                "            // in this case, sending failed. Terminate (reasons have already been printed)",
                 "            xil_printf(\"\\nterminating...\");",
                 "            return;",
                 "        }",
@@ -768,12 +784,12 @@ public class SDK extends Visitor<NE> {
                 "    }",
                 "}"
             ),
-            MQuoteInclude("constants.h"),
-            MQuoteInclude("queueUntyped.h"),
-            MQuoteInclude("io.h"),
-            MForwardDecl("int medium_read()"),
-            MForwardDecl("int axi_write ( int val, int target )"),
-            MForwardDecl("int axi_read ( int *val, int target )")
+            MQuoteInclude(PRIVATE(), "constants.h"),
+            MQuoteInclude(PRIVATE(), "queueUntyped.h"),
+            MQuoteInclude(PRIVATE(), "io.h"),
+            MForwardDecl(PRIVATE(), "int medium_read()"),
+            MForwardDecl(PRIVATE(), "int axi_write ( int val, int target )"),
+            MForwardDecl(PRIVATE(), "int axi_read ( int *val, int target )")
         );
     }
 

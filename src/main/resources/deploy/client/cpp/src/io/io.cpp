@@ -116,7 +116,7 @@ void scheduleWriter() {
 
 			// TODO this should be set individually for each port binding! not global
 			unsigned int size = QUEUE_SIZE_SW;
-			unsigned int sendSize = std::min(size, proto->max_size())
+			unsigned int sendSize = std::min(size, proto->max_size());
 			// gather i values to be sent, where i the minimum of the maximal numbers of values
 			// receivable by the board and the maximal size of a message with the used protocol version
 			std::vector<int> val = take(inPorts[i]->writeTaskQueue, sendSize);
@@ -199,7 +199,7 @@ void send_poll(unsigned char pid, unsigned int count) {
  * @param val Value to be stored.
  */
 void read_unsafe(unsigned char pid, int val) {
-    logger_host << FINE << " storing value " << val << " ...");
+    logger_host << FINE << " storing value " << val << " ...";
 
 	std::cout.flush();
 
@@ -229,7 +229,7 @@ void read(unsigned char pid, int val[], int size) {
 	std::unique_lock<std::mutex> lock(outPorts[pid]->port_mutex);
 
 	logger_host << " done" << endl;
-	logger_host << FINE << " storing values (count: " << size << ") ..." << endl);
+	logger_host << FINE << " storing values (count: " << size << ") ..." << endl;
 
 	std::cout.flush();
 
@@ -245,7 +245,7 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 
 	// return, if the queue is empty (count == 0 or unexpected ack)
 	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
-	    logger_host << FINE << "queue is empty, count: " << count << endl);
+	    logger_host << FINE << "queue is empty, count: " << count << endl;
 		return;
 	}
 

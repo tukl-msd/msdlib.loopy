@@ -38,6 +38,7 @@ static void usleep(unsigned int useconds) {
     for (i=0;i<15;i++) asm("nop");
 }
 
+#if SEVERITY >= SEVERITY_FINEST
 /**
  * Prints a single ip address, prefixed with a message.
  * @msg The message to be printed before the address.
@@ -63,6 +64,7 @@ static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct i
     xil_printf(":%d\n", PORT);
 
 }
+#endif
 
 static inline void set_unaligned ( int *target, int *data ) {
     int offset, i;
@@ -166,17 +168,17 @@ int medium_read() {
  * since memory for Ethernet could not be allocated...
  */
 static int medium_freeMemory() {
-#if DEBUG
+#if SEVERITY >= SEVERITY_WARN
     xil_printf("\nWARNING: Out of memory - trying to free memory with reading...");
-#endif /* DEBUG */
+#endif
     // try to read a message, which should free memory
 
     int attempts = TIMEOUT * 4;
     while(medium_read() == 0) {
         // in this case, there was no message to consume ):
-#if DEBUG
+#if SEVERITY >= SEVERITY_WARN
         xil_printf("\nWARNING: No message. %d more attempts", attempts);
-#endif /* DEBUG */
+#endif
 
         if(attempts == 0) {
             // if the timeout has been reached, give up
@@ -225,10 +227,10 @@ static inline int tcp_enque(int* vals, int size) {
         	// FREEING MEMORY BY READING HERE IS A VERY BAD IDEA
         	//it can result in application acks and polls to be interleaved with data message headers and payloads
         	//i.e. send header, not enough space for payload --> recv some messages and send acks --> send palyoad
-//            if(medium_freeMemory()) {
-                xil_printf("\n ERROR: Could not send message due to memory shortage.");
+            if(medium_freeMemory()) {
+                xil_printf("\nERROR: Could not send message due to memory shortage.");
                 return 1;
-//            }
+            }
         } else if(err != ERR_OK) {
             // Other errors directly kill the driver
             xil_printf("\nERROR: Could not write tcp message (%d)", err);
@@ -241,23 +243,19 @@ static inline int tcp_enque(int* vals, int size) {
 }
 
 int medium_send(struct Message *m) {
-    #if DEBUG
-        print_message(m);
-    #endif /* DEBUG */
-
     // TODO setup an individual connection to the host for data (or check if it's still connected)
 //  err = tcp_connect(data_pcb, &host, 8848, test);
 //  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
 
     // abort, if no connection was made so far
     if(con == NULL) {
-        xil_printf("ERROR: no connection detected");
+        xil_printf("\nERROR: no connection detected");
         return 1;
     }
 
     // abort, if the connection is not in an established state
     if(con->state != ESTABLISHED) {
-        xil_printf("ERROR: connection not in an established state! (%d)", con->state);
+        xil_printf("\nERROR: connection not in an established state! (%d)", con->state);
         return 1;
     }
 
@@ -284,10 +282,6 @@ int medium_send(struct Message *m) {
         xil_printf("\nERROR: Could not flush tcp buffer (%d)", err);
         return 1;
     }
-
-#if DEBUG
-    xil_printf("done");
-#endif /* DEBUG */
 
     return 0;
 //  tcp_sent(data_pcb, test2);
@@ -349,23 +343,23 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 int start_application() {
 
-#if DEBUG
+#if SEVERITY >= SEVERITY_INFO
     xil_printf("Starting server application ...");
-#endif /* DEBUG */
+#endif
 
     err_t err;
 
     // create new TCP PCB structure
     pcb = tcp_new();
     if (!pcb) {
-        xil_printf("Error creating PCB. Out of Memory\n\r");
+        xil_printf("\nERROR: Could not create PCB. Out of Memory");
         return -1;
     }
 
     // bind to specified @port
     err = tcp_bind(pcb, IP_ADDR_ANY, PORT);
     if (err != ERR_OK) {
-        xil_printf("Unable to bind to port %d: err = %d\n\r", PORT, err);
+        xil_printf("\nERROR: Unable to bind to port %d (%d)", PORT, err);
         return -2;
     }
 
@@ -375,15 +369,15 @@ int start_application() {
     // listen for connections
     pcb = tcp_listen(pcb);
     if (!pcb) {
-        xil_printf("Out of memory while tcp_listen\n\r");
+        xil_printf("\nERROR: Out of memory while tcp_listen");
         return -3;
     }
 
     // specify callback to use for incoming connections
     tcp_accept(pcb, accept_callback);
-#if DEBUG
-    xil_printf(" done\n");
-#endif /* DEBUG */
+#if SEVERITY >= SEVERITY_INFO
+    xil_printf(" done");
+#endif
 
     // receive and process packets
 //    while (1) {
@@ -394,9 +388,9 @@ int start_application() {
 }
 
 void init_medium() {
-#if DEBUG
-    xil_printf("\nSetting up Ethernet interface ...\n");
-#endif /* DEBUG */
+#if SEVERITY >= SEVERITY_INFO
+    xil_printf("\nSetting up Ethernet interface ...");
+#endif
 
     // the mac address of the board. this should be unique per board
     unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
@@ -410,9 +404,9 @@ void init_medium() {
 
 //    IP4_ADDR(&host, 192, 168, 1, 23);
 
-    #if DEBUG
-        print_ip_settings(&ip, &mask, &gw);
-    #endif /* DEBUG */
+#if SEVERITY >= SEVERITY_INFO
+    print_ip_settings(&ip, &mask, &gw);
+#endif
 
     lwip_init();
 
@@ -420,7 +414,7 @@ void init_medium() {
     // Reason? Somewhere in here is the link speed auto-negotiation
       // Add network interface to the netif_list, and set it as default
     if (!xemac_add(netif_ptr, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
-        xil_printf("Error adding N/W interface\n\r");
+        xil_printf("\nERROR: Could not add network interface");
 //        return -1;
         return;
     }

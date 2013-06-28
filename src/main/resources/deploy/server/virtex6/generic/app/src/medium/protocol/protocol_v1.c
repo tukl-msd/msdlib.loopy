@@ -40,24 +40,23 @@ void xil_printf(const char *ctrl1, ...);
  * Reads parts of the message from the medium using recv_int().
  */
 int decode_header_v1(int first) {
-	if(DEBUG) xil_printf("\n  reading message type ...");
+	log_finer("decoding message header ...");
 
 	// set type as specified in protocol version 1
 	first = fmod(first, pow(2, 24));
 	int type = floor(first / pow(2, 20));
 
-	if(DEBUG) xil_printf(" %d\n  reading component id ...", type);
+	log_finest("message type: %d", type);
 
 	// set id as specified in protocol version 1
 	first = fmod(first, pow(2, 20));
 	int id = floor(first / pow(2, 16));
 
-	if(DEBUG) xil_printf(" %d\n  reading message size ...", id);
-
+	log_finest("target id   : %d", id);
 
 	// the last two bytes mark the size of this frame
 	int size = fmod(first, pow(2, 16));
-	if(DEBUG) xil_printf(" %d", size);
+	log_finest("payload size: %d", size);
 
 	// 8 bit protocol version
 	// 4 bit message type
@@ -81,13 +80,13 @@ int decode_header_v1(int first) {
 			// the size is given in byte
 			int payload[size];
 
-			if(DEBUG) xil_printf("\n  reading payload ...");
+			log_finer("reading payload ...");
 
 			// read <size> bytes
 			int i;
 			for(i = 0; i < size; i++) {
 				payload[i] = recv_int();
-				if(DEBUG) xil_printf("\n    %d", payload[i]);
+				log_finest("value %d: %d", i, payload[i]);
 			}
 
 			recv_message(id, payload, size);
@@ -105,11 +104,11 @@ int decode_header_v1(int first) {
 		      // Consequently, receiving such a message is an error ;)
 		break;
 	default:
-		if(DEBUG) xil_printf("\nWARNING: unknown type %d for protocol version 1. The frame will be ignored.", type);
+		log_warn("WARNING: unknown type %d for protocol version 1. The frame will be ignored.", type);
 		return 1;
 	}
 
-	if(DEBUG) xil_printf("\nfinished message interpretation");
+	log_finer("finished message interpretation");
 
 	return 0;
 }
@@ -136,14 +135,10 @@ struct Message* encode_gpio_v1(unsigned char gid, unsigned char val) {
 }
 
 struct Message* encode_data_v1(unsigned char pid, unsigned int size) {
-#if DEBUG
-	xil_printf("\nencoding data message %d %d %d", data, pid, size);
-#endif /* DEBUG */
+	log_fine("encoding data message %d %d %d", data, pid, size);
 	struct Message *m = message_new();
 	int header = (version << 24) + (data << 20) + (pid << 16) + size;
-#if DEBUG
-	xil_printf("\nencoded header: %d", header);
-#endif /* DEBUG */
+	log_fine("encoded header: %d", header);
 	message_header(m, &header, 1);
 	return m;
 }

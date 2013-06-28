@@ -1,6 +1,7 @@
 package de.hopp.generator.backends.unparser;
 
 import static de.hopp.generator.model.Model.CONSTANT;
+import static de.hopp.generator.model.Model.INLINE;
 import static de.hopp.generator.model.Model.MIncludes;
 import static de.hopp.generator.model.Model.PRIVATE;
 import static de.hopp.generator.model.Model.PUBLIC;
@@ -85,6 +86,15 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
         return rslt;
     }
+    protected MIncludes filter(MIncludes includes, final MVisibility vis) {
+        MIncludes rslt = includes;
+        for(MInclude include : includes)
+            if(! include.vis().equals(vis))
+                rslt = rslt.remove(include);
+
+        return rslt;
+    }
+
     protected boolean contains(MClassInFile mclass, MModifier mod) {
         for(MStructInFile struct : mclass.structs())
             if(struct.modifiers().term().contains(mod)) return true;
@@ -128,32 +138,30 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             if(pos instanceof MIncludeInFile) {
 
                 // get the type
-                MInclude include = (MInclude) pos.term();
+                MInclude include = ((MIncludeInFile)pos).termMInclude();
 
                 // do not import if is already imported
                 if(!importLines.contains(include)) importLines = importLines.add(include);
             }
         }
+
         return importLines;
     }
 
-    protected static MInclude[] sort(MInclude[] includes) {
+    protected static void sort(MInclude[] includes) {
         java.util.Arrays.sort(includes, new Comparator<MInclude>() {
             // basically, duplicate includes should not appear, so equality should not occur here
             public int compare(MInclude o1, MInclude o2) {
-                // compare the names, if they are unequal return the result
-                int i = o1.name().compareTo(o2.name());
-                if(i != 0) return i;
-                // in case of equal names, compare the include type
-                if(o1.getClass().equals(o2.getClass())) return 0;
-                // otherwise print first <>, then "", then fwd decl
+                // compare types
+                if(o1.getClass().equals(o2.getClass()))
+                    return o1.name().compareTo(o2.name());
                 if(o1 instanceof MBracketInclude) return -1;
-                else if(o1 instanceof MForwardDecl) return 1;
+                else if(o1 instanceof MBracketInclude) return 1;
+                // o1 is MQuoteInclude --> put brackets before that!
                 else if(o2 instanceof MBracketInclude) return 1;
                 else return -1;
             }
         });
-        return includes;
     }
 
     @Override
@@ -162,27 +170,31 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         // include file to documentation
         visit(file.doc());
 
-       // gather all imports
+        // protect header
+        buffer.append("#ifndef " + name.toUpperCase() + "_H_\n"
+            + "#define " + name.toUpperCase() + "_H_\n");
+
+        // gather all imports
         MIncludes importLines = gatherImports(file);
+
+        // filter by public for the header
+        importLines = filter(importLines, PUBLIC());
 
         if(!importLines.isEmpty()) {
 
-            // TODO is this possible / necessary in C? or only ++?
-            buffer.append("#ifndef " + name.toUpperCase() + "_H_\n"
-                        + "#define " + name.toUpperCase() + "_H_\n");
-
-            MInclude[] includes = sort(importLines.toArray());
+            MInclude[] includes = importLines.toArray();
+            sort(includes);
 
             for(final MInclude include : includes)
                 buffer.append(include.Switch(new MInclude.Switch<String, NE>() {
                     public String CaseMBracketInclude(MBracketInclude term) {
                         return "\n#include <"  + term.name() + '>';
                     }
-                    public String CaseMForwardDecl(MForwardDecl term) {
-                        return "";
-                    }
                     public String CaseMQuoteInclude(MQuoteInclude term) {
-                        return "\n#include \"" + term.name() + '\"';
+                        return "\n#include \""  + term.name() + '\"';
+                    }
+                    public String CaseMForwardDecl(MForwardDecl term) {
+                        return "\n" + term.name() + ";";
                     }
                 }));
         }
@@ -195,9 +207,8 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         visit(file.attributes());
         visit(file.procedures());
 
-        if(!importLines.isEmpty()) {
-            buffer.append("\n#endif /* " + name.toUpperCase() + "_H_ */");
-        }
+        buffer.append("\n#endif /* " + name.toUpperCase() + "_H_ */");
+
     }
 
     @Override
@@ -467,9 +478,9 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
         buffer.append('\n');
         visit(proc.doc());
-        if(proc.modifiers().term().contains(CONSTANT())) buffer.append("inline ");
-        if(proc.modifiers().term().contains(CONSTANT())) buffer.append("const ");
+        if(proc.modifiers().term().contains(INLINE()))   buffer.append("inline ");
         if(proc.modifiers().term().contains(STATIC()))   buffer.append("static ");
+        if(proc.modifiers().term().contains(CONSTANT())) buffer.append("const ");
         visit(proc.returnType());
         buffer.append(qualifiedName(proc));
         visit(proc.parameter());
@@ -620,7 +631,6 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     // should never go here
     public void visit(MModifiersInFile term)      { }
     public void visit(PRIVATEInFile term)         { buffer.append("private");   }
-    public void visit(PROTECTEDInFile term)       { buffer.append("protected"); }
     public void visit(PUBLICInFile term)          { buffer.append("public");    }
     public void visit(STATICInFile term)          { }
     public void visit(INLINEInFile term)          { }

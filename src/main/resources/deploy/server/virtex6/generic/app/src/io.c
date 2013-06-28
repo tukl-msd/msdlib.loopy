@@ -25,9 +25,7 @@ int outQueueSize = 0;
  *      -> input queue -> hw reset -> output queue
  */
 void reset_queues() {
-	#if DEBUG
-		loopy_print("reset queues ...\n");
-	#endif /* DEBUG */
+	log_info("reset queues ...");
 
 	// TODO set some reset flag
 	int i;
@@ -44,6 +42,7 @@ void reset_queues() {
  */
 static void send_ack(unsigned char pid, unsigned int count) {
 	struct Message *m = encode_ack(pid, count);
+	print_message(m);
 	medium_send(m);
 	message_free(m);
 }
@@ -57,9 +56,7 @@ void recv_message(unsigned char pid, int payload[], unsigned int size) {
 		} else break;
 	}
 
-	#if DEBUG
-		loopy_print("\nsend ack for pid %d with %d values", pid, i);
-	#endif /* DEBUG */
+	log_fine("send ack for pid %d with %d values", pid, i);
 
 	// acknowledge all stored values
 	send_ack(pid, i);
@@ -67,12 +64,14 @@ void recv_message(unsigned char pid, int payload[], unsigned int size) {
 
 void send_poll(unsigned char pid) {
 	struct Message *m = encode_poll(pid);
+    print_message(m);
 	medium_send(m);
 	message_free(m);
 }
 
 void send_gpio(unsigned char gid, unsigned char val) {
 	struct Message *m = encode_gpio(gid, val);
+    print_message(m);
 	medium_send(m);
 	message_free(m);
 }
@@ -95,28 +94,20 @@ void send_gpio(unsigned char gid, unsigned char val) {
 //}
 
 int flush_queue(unsigned char pid) {
-	#if DEBUG
-		loopy_print("\nflushing %d ...", pid);
-	#endif /* DEBUG */
+	log_fine("flushing %d ...", pid);
 
 	// return, if the queue is empty
 	if(outQueueSize == 0) {
-		#if DEBUG
-			loopy_print(" empty");
-		#endif /* DEBUG */
+		log_fine("empty");
 		return 0;
 	}
 
+	log_fine("count: %d", outQueueSize);
 
-	#if DEBUG
-		loopy_print(" count: %d", outQueueSize);
-	#endif /* DEBUG */
-	// otherwise, encode a data header
+	// otherwise, create a data message and send it
 	struct Message *m = encode_data(pid, outQueueSize);
-
-	// append the actual payload
 	message_payload(m, outQueue, outQueueSize);
-
+    print_message(m);
 	int rslt = medium_send(m);
 
 	message_free(m);
