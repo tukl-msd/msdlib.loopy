@@ -223,14 +223,13 @@ static inline int tcp_enque(int* vals, int size) {
 
         // Should not happen since we checked for the size earlier and it was sufficient...
         if(err == ERR_MEM) {
-            // again, not enough memory. try to free...
-        	// FREEING MEMORY BY READING HERE IS A VERY BAD IDEA
-        	//it can result in application acks and polls to be interleaved with data message headers and payloads
-        	//i.e. send header, not enough space for payload --> recv some messages and send acks --> send palyoad
-            if(medium_freeMemory()) {
-                xil_printf("\nERROR: Could not send message due to memory shortage.");
-                return 1;
-            }
+            // This can happen despite the sendbuffer check beforehand, since the sendbuffer
+            // only checks for enough space to copy all values. However, tcp_write requires
+            // more memory than that.
+            // FREEING MEMORY BY READING HERE IS A VERY BAD IDEA
+            // (may interleave debug messages in between header and values of data messages)
+            xil_printf("\nERROR: Could not send message due to memory shortage.");
+            return 1;
         } else if(err != ERR_OK) {
             // Other errors directly kill the driver
             xil_printf("\nERROR: Could not write tcp message (%d)", err);
@@ -274,6 +273,9 @@ int medium_send(struct Message *m) {
 
     // enqueue header and payload
     if(tcp_enque(m->header,  m->headerSize))  return 1;
+    // despite the sendbuffer check it is possible for
+    // the the header write to work and the payload write to fail.
+    // in this case, basically everything is broken, esp. when debugging is enabled.
     if(tcp_enque(m->payload, m->payloadSize)) return 1;
 
     // flush tcp buffer
