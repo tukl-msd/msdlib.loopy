@@ -94,12 +94,15 @@ vector<bitset<width> > read_file(const char *file, const char delim, ios_base& (
  */
 template <int width>
 void write_file(const char *file, const char delim, ios_base& (*f)(ios_base&), vector<bitset<width> > vals) {
-    ofstream ofs(file, ofstream::out);
+    ofstream ofs(file, ofstream::out | ofstream::app);
 
     for(unsigned int i = 0; i < vals.size(); i++) {
         ofs << f << vals.at(i).to_ullong();  // add number in provided format
         if(i < vals.size()-1) ofs << delim;  // add delimiter
     }
+
+    // append new line at the end
+    ofs << "\n";
 
     ofs.close();
 }

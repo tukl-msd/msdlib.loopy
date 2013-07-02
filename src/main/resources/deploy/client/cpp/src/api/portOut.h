@@ -211,7 +211,7 @@ public:
 	void read(int count, const char *file, const char delim, ios_base& (*f)(ios_base&)) {
 	    std::vector<std::bitset<width>> vals(count);
 	    read(vals);
-	    write_file(file, delim, f, vals);
+	    write_file<width>(file, delim, f, vals);
 	}
 
 	/**
