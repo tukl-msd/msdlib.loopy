@@ -19,7 +19,7 @@
 #include "../exceptions.h"
 
 // communication interface
-interface *intrfc = new ethernet(IP, PORT);
+interface *intrfc;
 
 // locks
 std::mutex writer_mutex;

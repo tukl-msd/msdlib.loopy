@@ -27,7 +27,11 @@
 #include "xuartns550_l.h"
 #endif
 
+#include "constants.h"
 #include "lwip/tcp.h"
+#if DHCP
+#include "lwip/dhcp.h"
+#endif /* DHCP */
 
 void tcp_fasttmr(void);
 void tcp_slowtmr(void);
@@ -36,12 +40,27 @@ void timer_callback() {
 	/* we need to call tcp_fasttmr & tcp_slowtmr at intervals specified by lwIP.
 	 * It is not important that the timing is absolutely accurate.
 	 */
+#if DHCP
+	static u32 second_tick = 0;
+#endif /* DHCP */
+
 	static int odd = 1;
 	tcp_fasttmr();
 
 	odd = !odd;
 	if (odd)
 		tcp_slowtmr();
+#if DHCP
+	else
+		dhcp_fine_tmr();
+
+	second_tick++;
+
+	if(second_tick >=240) {
+		dhcp_coarse_tmr();
+		second_tick = 0;
+	}
+#endif /* DHCP */
 }
 
 void platform_setup_interrupts() {
@@ -143,3 +162,4 @@ void cleanup_platform() {
 	disable_caches();
 }
 #endif
+

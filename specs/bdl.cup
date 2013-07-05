@@ -64,7 +64,7 @@ terminal String CEND;
 terminal IMPORT;
 terminal BACKEND;
 terminal SWQUEUE, HWQUEUE, LOG, WIDTH, POLL;
-terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT;
+terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT, DHCP;
 terminal CORE, SOURCE, PORT;
 terminal CLK, RST;
 terminal IN, OUT, DUAL;
@@ -587,6 +587,14 @@ medium_option ::=
   |  TIMEOUT:key DEC:val
      {:
          RESULT = BDL.TOUT(pos(keyleft),val);
+     :}
+  |  DHCP:key
+     {:
+         RESULT = BDL.DHCP(pos(keyleft),-1);
+     :}
+  |  DHCP:key DEC:tout
+     {:
+         RESULT = BDL.DHCP(pos(keyleft),tout);
      :}
   ;
 

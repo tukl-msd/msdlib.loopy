@@ -104,6 +104,7 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "gate"          { return symbol(BDLFileSymbols.GATE); }
 "port"          { return symbol(BDLFileSymbols.PORT); }
 "timeout"       { return symbol(BDLFileSymbols.TIMEOUT); }
+"dhcp"          { return symbol(BDLFileSymbols.DHCP); }
 
 /* core related */
 "core"          { return symbol(BDLFileSymbols.CORE); }

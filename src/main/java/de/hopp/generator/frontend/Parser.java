@@ -295,7 +295,7 @@ public class Parser {
 //        // check options of Ethernet medium for validity
         if(bdf.medium() instanceof ETHERNET) {
             ETHERNET medium = (ETHERNET)bdf.medium();
-            boolean mac = false, ip = false, mask = false, gate = false, port = false;
+            boolean mac = false, ip = false, mask = false, gate = false, port = false, dhcp = false;
             for(MOption opt : medium.opts()) {
                 if(opt instanceof MAC) {
                     if(mac) {
@@ -331,18 +331,31 @@ public class Parser {
                         continue;
                     } port = true;
 //                    PORTID o = (PORTID)opt;
+                } else if(opt instanceof DHCP) {
+                    if(dhcp) {
+                        errors.addError(new ParserError("duplicate dhcp attribute", opt.pos()));
+                        continue;
+                    } dhcp = true;
                 }
             }
             if(!mac)  errors.addError(
                 new ParserError("Ethernet specification is missing mac address attribute", medium.pos()));
-            if(!ip)   errors.addError(
-                new ParserError("Ethernet specification is missing ip address attribute", medium.pos()));
-            if(!mask) errors.addError(
-                new ParserError("Ethernet specification is missing network mask attribute", medium.pos()));
-            if(!gate) errors.addError(
-                new ParserError("Ethernet specification is missing gateway attribute", medium.pos()));
             if(!port) errors.addError(
                 new ParserError("Ethernet specification is missing port attribute", medium.pos()));
+            if(dhcp) {
+                if(ip) errors.addError(
+                    new ParserError("Ethernet specification contains dhcp and ip address attributes", medium.pos()));
+                if(mask) errors.addError(
+                    new ParserError("Ethernet specification contains dhcp and network mask attributes", medium.pos()));
+                if(gate) errors.addError(
+                    new ParserError("Ethernet specification contains dhcp and gateway attributes", medium.pos()));
+            }
+            if(!ip && !dhcp)   errors.addError(
+                new ParserError("Ethernet specification is missing ip address attribute", medium.pos()));
+            if(!mask && !dhcp) errors.addError(
+                new ParserError("Ethernet specification is missing network mask attribute", medium.pos()));
+            if(!gate && !dhcp) errors.addError(
+                new ParserError("Ethernet specification is missing gateway attribute", medium.pos()));
         }
    }
 

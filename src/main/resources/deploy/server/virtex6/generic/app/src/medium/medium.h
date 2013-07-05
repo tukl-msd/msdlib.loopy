@@ -12,7 +12,7 @@
 #include "message.h"
 
 /** initialise the communication medium */
-void init_medium();
+int init_medium();
 
 /**
  * Start listening for in-going packages
@@ -22,7 +22,10 @@ void init_medium();
 int start_application();
 
 /**
- * Sends a message over the medium.
+ * Sends a message over the medium. Does not de-allocate the message nor its contents in the process.
+ *
+ * May fail due to problems with the medium or insufficient memory for sending.
+ *
  * @param m The message to be sent.
  * @return 0 if successful, 1 if failed.
  */
@@ -35,3 +38,4 @@ int medium_send(struct Message *m);
 int medium_read();
 
 #endif /* MEDIUM_H_ */
+

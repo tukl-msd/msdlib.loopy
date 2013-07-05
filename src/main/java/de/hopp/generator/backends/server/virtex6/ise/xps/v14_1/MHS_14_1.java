@@ -278,6 +278,7 @@ public class MHS_14_1 extends MHSGenerator {
     public void visit(MASKPos     term) { }
     public void visit(GATEPos     term) { }
     public void visit(PORTIDPos   term) { }
+    public void visit(DHCPPos     term) { }
     public void visit(TOUTPos     term) { }
     public void visit(AXIPos      term) { }
     public void visit(CLKPos      term) { }

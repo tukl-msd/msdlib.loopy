@@ -102,6 +102,7 @@ public class BoardUtils {
                         public String CaseGATE(GATE term)     { return "gate    " + term.val(); }
                         public String CasePORTID(PORTID term) { return "port    " + term.val(); }
                         public String CaseTOUT(TOUT term)     { return "timeout " + term.val(); }
+                        public String CaseDHCP(DHCP term)     { return "dhcp (timeout: " + term.tout() + ")"; }
                     });
                 }
                 return rslt;
@@ -396,6 +397,12 @@ public class BoardUtils {
 
         // otherwise return the default value
         return 2;
+    }
+
+    public static boolean hasDHCP(ETHERNETPos term) {
+        for(MOption opt : term.opts().term()) if(opt instanceof DHCP) return true;
+
+        return false;
     }
 
     /**

@@ -8,18 +8,22 @@
 #include "xparameters.h"
 #include "netif/xadapter.h"
 
+#include "protocol/protocol.h"
+
+#include "../constants.h"
+#include "../platform.h"
+#include "../queueUntyped.h"
+
 #include "lwip/init.h"
 #include "lwip/tcp.h"
 #include "lwip/err.h"
+#if DHCP
+#include "lwip/dhcp.h"
+#endif
 
-#include "protocol/protocol.h"
-#include "../platform.h"
-#include "../constants.h"
-#include "../queueUntyped.h"
 #include <math.h>
 
 // attributes of Driver
-struct ip_addr ip, mask, gw;
 struct netif *netif_ptr, server_netif;
 struct tcp_pcb *pcb;
 struct tcp_pcb *con;
@@ -32,37 +36,33 @@ struct tcp_pcb *con;
  *
  * @param useconds How many microseconds to wait (roughly)
  */
-static void usleep(unsigned int useconds) {
+static inline void usleep(unsigned int useconds) {
   int i,j;
   for (j=0;j<useconds;j++)
     for (i=0;i<15;i++) asm("nop");
 }
 
-#if SEVERITY >= SEVERITY_FINEST
+#if SEVERITY >= SEVERITY_INFO
 /**
- * Prints a single ip address, prefixed with a message.
- * @msg The message to be printed before the address.
+ * Prints a single ip address.
  * @ip The ip address to be printed.
  */
-static void print_ip ( char *msg, struct ip_addr *ip ) {
-    xil_printf(msg);
-    xil_printf("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
+static inline void print_ip ( struct ip_addr *ip ) {
+    if(ip == NULL) xil_printf("0.0.0.0");
+    else xil_printf("%d.%d.%d.%d", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
 
 /**
- * prints the provided ip settings.
- * @param ip The ip address of this device.
- * @param mask The subnet mask.
- * @param gw The standard gateway.
+ * Prints the ip settings of the provided interface.
+ * Will also print the port to be bound. The port is not stored within the interface,
+ * but in the drivers constants.h file.
+ * @param netif The network interface to be printed.
  */
-static void print_ip_settings(struct ip_addr *ip, struct ip_addr *mask, struct ip_addr *gw) {
-    print_ip("  Board IP : ", ip);
-    xil_printf(":%d", PORT);
-    print_ip("\n  Netmask  : ", mask);
-    print_ip("\n  Gateway  : ", gw);
-//    print_ip("\n  Host IP  : ", host);
-    xil_printf(":%d\n", PORT);
-
+static inline void print_ip_settings(struct netif *netif_ptr) {
+	xil_printf("\nINFO:   Board IP : "); print_ip(&netif_ptr->ip_addr);
+	xil_printf("\nINFO:   Netmask  : "); print_ip(&netif_ptr->netmask);
+	xil_printf("\nINFO:   Gateway  : "); print_ip(&netif_ptr->gw);
+    xil_printf("\nINFO:   Port     : %d", PORT);
 }
 #endif
 
@@ -286,12 +286,6 @@ int medium_send(struct Message *m) {
     }
 
     return 0;
-//  tcp_sent(data_pcb, test2);
-//  loopy_print("\nclosing connection");
-
-    // close the data connection? (since no ack is required here)
-//  err = tcp_close(data_pcb);
-//  if (err != ERR_OK) xil_printf("Err: %d\r\n", err);
 }
 
 /**
@@ -346,7 +340,7 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
 int start_application() {
 
 #if SEVERITY >= SEVERITY_INFO
-    xil_printf("Starting server application ...");
+    xil_printf("\nINFO: Starting server application ...");
 #endif
 
     err_t err;
@@ -381,34 +375,30 @@ int start_application() {
     xil_printf(" done");
 #endif
 
-    // receive and process packets
-//    while (1) {
-//        xemacif_input(netif_ptr);
-//    }
-
     return 0;
 }
 
-void init_medium() {
+int init_medium() {
 #if SEVERITY >= SEVERITY_INFO
-    xil_printf("\nSetting up Ethernet interface ...");
+    xil_printf("\nINFO: Setting up Ethernet interface ...");
 #endif
+
+    // allocate some stack memory for ip addresses
+    struct ip_addr ip, mask, gw;
 
     // the mac address of the board. this should be unique per board
     unsigned char mac_ethernet_address[] = { MAC_1, MAC_2, MAC_3, MAC_4, MAC_5, MAC_6 };
 
     netif_ptr = &server_netif;
 
+#ifndef DHCP
     // initialize IP addresses to be used
     IP4_ADDR(&ip,   IP_1,   IP_2,   IP_3,   IP_4);
     IP4_ADDR(&mask, MASK_1, MASK_2, MASK_3, MASK_4);
     IP4_ADDR(&gw,   GW_1,   GW_2,   GW_3,   GW_4);
+#endif /* DHCP */
 
 //    IP4_ADDR(&host, 192, 168, 1, 23);
-
-#if SEVERITY >= SEVERITY_INFO
-    print_ip_settings(&ip, &mask, &gw);
-#endif
 
     lwip_init();
 
@@ -417,16 +407,43 @@ void init_medium() {
       // Add network interface to the netif_list, and set it as default
     if (!xemac_add(netif_ptr, &ip, &mask, &gw, mac_ethernet_address, XPAR_ETHERNET_LITE_BASEADDR)) {
         xil_printf("\nERROR: Could not add network interface");
-//        return -1;
-        return;
+        return -1;
     }
     netif_set_default(netif_ptr);
 
-    /* Create a new DHCP client for this interface.
-     * Note: you must call dhcp_fine_tmr() and dhcp_coarse_tmr() at
-     * the predefined regular intervals after starting the client.
-     */
-    /* dhcp_start(netif_ptr); */
+#if DHCP
+    // Create a new DHCP client for this interface.
+#if SEVERITY >= SEVERITY_INFO
+    xil_printf("\nINFO: Starting DHCP client ...");
+#endif /* SEVERITY */
+    dhcp_start(netif_ptr);
+
+    unsigned int dhcp_attempts = 0;
+    while(1) {
+      // continue, if we have acquired an ip
+      if(netif_ptr->ip_addr.addr) {
+#if SEVERITY >= SEVERITY_INFO
+        xil_printf("\nFINE: Successfully configured IP settings via DHCP to "); print_ip(&netif_ptr->ip_addr);
+#endif /* SEVERITY */
+        break;
+      }
+
+      // stop after a number of attempts
+      dhcp_attempts++;
+      if(dhcp_attempts >= (DHCP_MAX_ATTEMPTS * 4)) {
+        xil_printf("\nERROR: DCHP request timed out after %d seconds", dhcp_attempts * 4);
+        return -2;
+      }
+
+      // if no ip was assigned but attempts remain, wait a while, read a message and try again
+      usleep(DHCP_FINE_TIMER_MSECS * 250);
+      xemacif_input(netif_ptr);
+    }
+#endif /* DHCP */
+
+#if SEVERITY >= SEVERITY_INFO
+    print_ip_settings(netif_ptr);
+#endif
 
     // enable interrupts
     // TODO This is basically a platform-dependent call... (we're on a microblaze, but there is also an implementation for ppc and zynq, maybe more)
@@ -437,5 +454,7 @@ void init_medium() {
 
     // specify that the network if is up
     netif_set_up(netif_ptr);
+
+    return 0;
 }
 

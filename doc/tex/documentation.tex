@@ -218,10 +218,10 @@ In order to generate a \texttt{.bit} and an \texttt{.elf} file that can is used 
 
 Interaction with these tools is reduced to a minimum by using the command line interface provided by Xilinx whenever possible. This in turn also implies, that the tools can not be used for the actual board design, but only for the synthesis process.
 
- \textcolor{red}{Currently, the user is still required to execute these cli commands manually (or do it with the gui again...).}
+Both XPS and the Xilinx SDK have to be accessible from console using the commands \texttt{xps} and \texttt{xsdk} respectively.
 
 \paragraph{\texttt{C/C++11} Compiler}
-The currently provided host-side driver is written in \texttt{C++11}. Hence, a \texttt{C/C++11} compiler is required as well.
+The currently provided host-side driver is written in \texttt{C++11}. Hence, a \texttt{C/C++11} compiler is required as well. For design of the host-side application build on top of the api, a development environment might also be desirable.
 
 \section{Board Description Language}
 \label{sec:bdl}
@@ -399,9 +399,9 @@ If the tools described in \Cref{sec:setup} are correctly installed, the followin
 
 
 \subsection{Checking out the Generator}
-First of all, the project has to be checked out (if you are reading this document, you have probably done that already). As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.} The the complete command for the initial checkout is:\\
+First of all, the project has to be checked out (if you are reading this document, you have probably done that already). As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/public/loopy/}.} The the complete command for the initial checkout is:\\
 
-\texttt{hg clone https://softech.informatik.uni-kl.de/hg/ag/hopp <target dir>}
+\texttt{hg clone https://softech.informatik.uni-kl.de/hg/public/loopy/\\<target dir>}\\
 
 Later updates can be performed using \texttt{hg pull -u} (which will pull and immediately update the local copy afterwards.
 %\begin{figure}

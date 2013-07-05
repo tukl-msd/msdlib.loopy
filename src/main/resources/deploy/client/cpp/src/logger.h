@@ -26,7 +26,7 @@ typedef std::ostream& (*STRFUNC)(std::ostream&);
 class logger : public ostream::basic_ostream {
 private:
     ostream *stream_ptr;
-    severity sev;
+    severity cur_sev, max_sev;
     string prefix;
 
     /**
@@ -34,7 +34,7 @@ private:
      * @return A string representing the current severity of the logger.
      */
     string print_severity() {
-        switch(sev) {
+        switch(cur_sev) {
         case ERROR:  return "ERROR  : ";
         case WARN:   return "WARNING: ";
         case INFO:   return "INFO   : ";
@@ -46,8 +46,9 @@ private:
     }
 
 public:
-    logger(ostream *stream_ptr, string prefix) : sev(INFO) {
+    logger(ostream *stream_ptr, severity max_severity, string prefix) : cur_sev(INFO) {
         this->stream_ptr = stream_ptr;
+        this->max_sev    = max_severity;
         this->prefix     = prefix;
     }
 
@@ -60,20 +61,20 @@ public:
      */
     friend logger& operator <<(logger &i, const severity s) {
         if(i.stream_ptr == NULL) return i;
-        i.sev = s;
+        i.cur_sev = s;
         i << i.prefix << i.print_severity();
         return i;
     }
     friend logger& operator <<(logger &i, STRFUNC func) {
         if(i.stream_ptr == NULL) return i;
-        if(i.sev <= current_severity) func(*i.stream_ptr);
+        if(i.cur_sev <= i.max_sev) func(*i.stream_ptr);
         return i;
     }
     // for some reason making this a friend as well breaks endl ):
     template<typename T>
     friend logger& operator <<(logger &i, const T t) {
         if(i.stream_ptr == NULL) return i;
-        if(i.sev <= current_severity) *i.stream_ptr << t;
+        if(i.cur_sev <= i.max_sev) *i.stream_ptr << t;
         return i;
     }
 };
@@ -85,4 +86,5 @@ extern logger logger_host;
 extern logger logger_board;
 
 #endif /* LOGGER_H_ */
+
 

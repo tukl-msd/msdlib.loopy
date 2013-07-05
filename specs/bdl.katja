@@ -74,6 +74,7 @@ MOption = MAC    (Position pos, String val)
         | GATE   (Position pos, String val)
         | PORTID (Position pos, Integer val)
         | TOUT   (Position pos, Integer val)
+        | DHCP   (Position pos, Integer tout)
 
 Scheduler (Position pos, Code code)
 

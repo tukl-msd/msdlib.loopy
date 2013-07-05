@@ -10,7 +10,7 @@
 
 // forward declarations
 void init_platform();
-void init_medium();
+int  init_medium();
 void init_components();
 void init_queue();
 
@@ -42,7 +42,7 @@ int main() {
 	init_components();
 
 	// initialise Ethernet
-	init_medium();
+	if(init_medium() < 0) return 1;
 
 	// perform medium-specific startup operations (TODO merge with init?)
 	start_application();

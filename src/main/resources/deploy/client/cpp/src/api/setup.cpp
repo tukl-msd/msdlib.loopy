@@ -14,10 +14,25 @@ using namespace std;
 thread *writerThread;
 thread *readerThread;
 
-void startup() {
+/**
+ * Starts writer and reader threads
+ */
+static void startThreads() {
 	writerThread = new thread(scheduleWriter);
 	readerThread = new thread(scheduleReader);
 }
+
+#ifdef IP
+void startup() {
+	intrfc = new ethernet(IP, PORT);
+	startThreads();
+}
+#else
+void startup(string ip) {
+	intrfc = new ethernet(ip.c_str(), PORT);
+	startThreads();
+}
+#endif
 
 void shutdownWriteLoop() {
 	// acquire writer lock
@@ -37,6 +52,7 @@ void shutdown() {
 	writerThread->join(); writerThread = NULL;
 	readerThread->join(); readerThread = NULL;
 }
+
 
 
 

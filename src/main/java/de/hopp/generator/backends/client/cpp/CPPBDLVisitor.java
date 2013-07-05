@@ -116,24 +116,21 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(BackendsPos term)  { }
 
     public void visit(LogsPos term) {
-        final String hostPrefix = "Host:  ", boardPrefix = "Board: ";
-        final String hostName   = "logger_host", boartName = "logger_board";
-
-        addLogger("logger_host",  "Host:  ", term.host());
-        addLogger("logger_board", "Board: ", term.board());
+        addLogger("logger_host",  "Host:  ", term.host().termLog());
+        addLogger("logger_board", "Board: ", term.board().termLog());
     }
 
-    private void addLogger(final String name, final String prefix, LogPos log) {
-        MInitList initList = log.termLog().Switch(new Log.Switch<MInitList, NE>() {
+    private void addLogger(final String name, final String prefix, final Log log) {
+        MInitList initList = log.Switch(new Log.Switch<MInitList, NE>() {
             public MInitList CaseNOLOG(NOLOG term) {
-                return MInitList(Strings("NULL", "\"" + prefix + "\""));
+                return MInitList(Strings("NULL", "0", "\"" + prefix + "\""));
             }
             public MInitList CaseCONSOLE(CONSOLE term) {
-                return MInitList(Strings("&cout", "\"" + prefix + "\""));
+                return MInitList(Strings("&cout", term.sev().sortName(), "\"" + prefix + "\""));
             }
             public MInitList CaseFILE(FILE term) {
                 return MInitList(Strings("new ofstream(\"" + term.file() + "\")",
-                    "\"" + prefix + "\""));
+                    term.sev().sortName(), "\"" + prefix + "\""));
             }
 
         });
@@ -377,6 +374,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(MASKPos   term) { }
     public void visit(GATEPos   term) { }
     public void visit(TOUTPos   term) { }
+    public void visit(DHCPPos   term) { }
     public void visit(PORTIDPos term) { }
 
     // cores

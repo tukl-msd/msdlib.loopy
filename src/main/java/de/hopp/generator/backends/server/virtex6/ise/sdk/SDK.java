@@ -82,6 +82,8 @@ public class SDK extends Visitor<NE> {
     private int gpiCount = 0;
     private int gpoCount = 0;
 
+    private final int DHCP_MAX_ATTEMPTS = 10;
+
     // version strings
     protected String version;
 
@@ -381,7 +383,12 @@ public class SDK extends Visitor<NE> {
 
         for(int i = 0; i <= value; i++)
             // TODO do this using the ENUM!
-            addConst("log_"+name[i]+"(...)", "send_debug("+i+", __VA_ARGS__)",
+            addConst("log_"+name[i]+"(...)",
+                // TODO this is currently very annoying,
+                // since it tries to send debug messages despite no open connection,
+                // spams connection errors and timeouts icmp messages...
+                //"send_debug("+i+", __VA_ARGS__)",
+                "xil_printf(\"\\n\"); xil_printf(__VA_ARGS__)",
                 "With the chosen debug level, "+plural[i]+
                 " will be reported to the host driver over Ethernet.",
                 MForwardDecl(PRIVATE(), "void send_debug(unsigned char type, const char *format, ...)"));
@@ -417,6 +424,18 @@ public class SDK extends Visitor<NE> {
                 public String CaseTOUTPos(TOUTPos term) {
                     return null;
                 }
+                public String CaseDHCPPos(DHCPPos term) {
+                    // set ip config to 0
+//                    addIP("IP",   "0", "IP address");
+//                    addIP("MASK", "0", "network mask");
+//                    addIP("GW",   "0, "standard gateway");
+                    // set dhcp flag
+                    addConst("DHCP", "1", "DHCP flag");
+                    addConst("DHCP_MAX_ATTEMPTS",
+                        term.tout().term().intValue() == -1 ? String.valueOf(DHCP_MAX_ATTEMPTS) : term.tout().term().toString(),
+                        "DHCP timeout (in seconds)");
+                    return null;
+                }
             });
         addConst("TIMEOUT", String.valueOf(getTimeout(term)), "Reception timeout for an attempt to free memory.");
 
@@ -427,12 +446,21 @@ public class SDK extends Visitor<NE> {
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("HW_INSTANCE", MHS.Ident("ethernet_lite")))
         ));
 
-        mssFile = addBlock(mssFile, MHS.Block("LIBRARY",
+        Block lwip = MHS.Block("LIBRARY",
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_NAME", MHS.Ident(version_lwip_lib_name))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LIBRARY_VER", MHS.Ident(version_lwip_lib))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0"))),
             MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("TCP_SND_BUF", MHS.Number(tcp_sndbufSize(term)*4)))
-        ));
+        );
+
+        if(hasDHCP(term)) {
+          lwip = lwip.replaceAttributes(lwip.attributes()
+              .add(MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("LWIP_DHCP", MHS.Ident("true"))))
+              .add(MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("DHCP_DOES_ARP_CHECK", MHS.Ident("true"))))
+          );
+        }
+
+        mssFile = addBlock(mssFile, lwip);
     }
 
     public void visit(UARTPos term) {
@@ -825,6 +853,7 @@ public class SDK extends Visitor<NE> {
     public void visit(MASKPos   term) { }
     public void visit(GATEPos   term) { }
     public void visit(TOUTPos   term) { }
+    public void visit(DHCPPos   term) { }
     public void visit(PORTIDPos term) { }
 
     // cores
