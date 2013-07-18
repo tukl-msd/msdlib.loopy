@@ -72,7 +72,7 @@ public:
  */
 class protocol_v1 : public protocol {
 private:
-	static const unsigned int MAX_SIZE = 65536;
+	static const unsigned int MAX_SIZE = 65535;
 	int construct_header(unsigned char type, unsigned char id, unsigned int size);
 public:
 	protocol_v1();
