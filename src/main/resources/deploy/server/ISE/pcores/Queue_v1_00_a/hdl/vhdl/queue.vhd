@@ -75,7 +75,7 @@ architecture rtl of queue is
 	----------------------------------------------------------------------------
 	
 	signal memory : data_array_type := (others => (others => '0'));
-	signal num_data : natural range 0 to G_DEPTH-1 := 0;
+	signal num_data : natural range 0 to G_DEPTH := 0;
 	
 	signal tlast_flag : stdl_array_type := (others => '0');
 	

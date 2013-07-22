@@ -175,8 +175,8 @@ public abstract class MHSGenerator extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
             Attribute(BUS_IF(), Assignment("in", Ident(d ? currentAxis : queueAxis))),
             Attribute(BUS_IF(), Assignment("out", Ident(d ? queueAxis : currentAxis))),
-            Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_reset")))
+            Attribute(PORT(), Assignment("clk", Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("rst", Ident("proc_sys_reset_0_Peripheral_reset")))
             ));
 
         // return the axis identifier of the queues port, that should be attached to the components port
@@ -530,29 +530,29 @@ public abstract class MHSGenerator extends Visitor<NE> {
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_microblaze))),
             Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
             Attribute(PARAMETER(), Assignment("C_USE_BARREL", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_USE_FPU", Number(2))), // default: 0
+            Attribute(PARAMETER(), Assignment("C_USE_FPU", Number(0))), // default: 0 speed 2
             Attribute(PARAMETER(), Assignment("C_DEBUG_ENABLED", Number(1))),
             Attribute(PARAMETER(), Assignment("C_ICACHE_BASEADDR", MemAddr("0xa4000000"))),
             Attribute(PARAMETER(), Assignment("C_ICACHE_HIGHADDR", MemAddr("0xa7ffffff"))),
             Attribute(PARAMETER(), Assignment("C_USE_ICACHE", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_CACHE_BYTE_SIZE", Number(32768))), // default: 65536
+            Attribute(PARAMETER(), Assignment("C_CACHE_BYTE_SIZE", Number(65536))), // default: 65536 speed: 32768
             Attribute(PARAMETER(), Assignment("C_ICACHE_ALWAYS_USED", Number(1))),
             Attribute(PARAMETER(), Assignment("C_DCACHE_BASEADDR", MemAddr("0xa4000000"))),
             Attribute(PARAMETER(), Assignment("C_DCACHE_HIGHADDR", MemAddr("0xa7ffffff"))),
             Attribute(PARAMETER(), Assignment("C_USE_DCACHE", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_BYTE_SIZE", Number(32768))), // default: 65536
+            Attribute(PARAMETER(), Assignment("C_DCACHE_BYTE_SIZE", Number(65536))), // default: 65536 speed: 32768
             Attribute(PARAMETER(), Assignment("C_DCACHE_ALWAYS_USED", Number(1))),
             Attribute(PARAMETER(), Assignment("C_STREAM_INTERCONNECT", Number(1))),
             // new stuff
-            Attribute(PARAMETER(), Assignment("C_ICACHE_LINE_LEN", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_ICACHE_STREAMS", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_ICACHE_VICTIMS", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_LINE_LEN", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_USE_WRITEBACK", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_VICTIMS", Number(8))),
-            Attribute(PARAMETER(), Assignment("C_USE_HW_MUL", Number(2))),
-            Attribute(PARAMETER(), Assignment("C_USE_DIV", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_USE_BRANCH_TARGET_CACHE", Number(1))),
+            //Attribute(PARAMETER(), Assignment("C_ICACHE_LINE_LEN", Number(8))),
+            //Attribute(PARAMETER(), Assignment("C_ICACHE_STREAMS", Number(1))),
+            //Attribute(PARAMETER(), Assignment("C_ICACHE_VICTIMS", Number(8))),
+            //Attribute(PARAMETER(), Assignment("C_DCACHE_LINE_LEN", Number(8))),
+            //Attribute(PARAMETER(), Assignment("C_DCACHE_USE_WRITEBACK", Number(1))),
+            //Attribute(PARAMETER(), Assignment("C_DCACHE_VICTIMS", Number(8))),
+            //Attribute(PARAMETER(), Assignment("C_USE_HW_MUL", Number(2))),
+            //Attribute(PARAMETER(), Assignment("C_USE_DIV", Number(1))),
+            //Attribute(PARAMETER(), Assignment("C_USE_BRANCH_TARGET_CACHE", Number(1))),
             Attribute(PARAMETER(), Assignment("C_USE_EXTENDED_FSL_INSTR", Number(1))),
             Attribute(BUS_IF(), Assignment("M_AXI_DP", Ident("axi4lite_0"))),
             Attribute(BUS_IF(), Assignment("M_AXI_DC", Ident("axi4_0"))),
