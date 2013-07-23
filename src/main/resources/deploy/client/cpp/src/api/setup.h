@@ -11,8 +11,6 @@
 #include "../constants.h"
 #include <string>
 
-using namespace std;
-
 /**
  * Starts up the client-side driver by starting
  * writer and reader threads and setting up ethernet-specific

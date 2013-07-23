@@ -4,11 +4,9 @@
 #include <bitset>
 #include <iostream>
 
-using namespace std;
-
 void led_test() {
-  cout << "starting loopy gpio example led test" << endl;
-  cout << "watch your board's leds carefully (;" << endl;
+  std::cout << "starting loopy gpio example led test" << std::endl;
+  std::cout << "watch your board's leds carefully (;" << std::endl;
 
   // run gpo test
   gpio_leds.test();
@@ -16,19 +14,19 @@ void led_test() {
   gpio_leds.test();
 
   // reset led state to 0
-  gpio_leds.writeState(bitset<8>(0));
+  gpio_leds.writeState(std::bitset<8>(0));
 
-  cout << "test has been completed" << endl;
+  std::cout << "test has been completed" << std::endl;
 }
 
 void gpi_test() {
-  cout << "starting loopy gpio example input test" << endl;
-  cout << "press button 1 to increment the led state" << endl;
-  cout << "press button 2 to reset the led state" << endl;
-  cout << "press button 3 to print the count of these test executed so far" << endl;
-  cout << "press button 4 to lock client until it is pressed again" << endl;
-  cout << "press button 5 to terminate example application" << endl;
-  cout << "press several buttons at once for a suprise" << endl;
+  std::cout << "starting loopy gpio example input test" << std::endl;
+  std::cout << "press button 1 to increment the led state" << std::endl;
+  std::cout << "press button 2 to reset the led state" << std::endl;
+  std::cout << "press button 3 to print the count of these test executed so far" << std::endl;
+  std::cout << "press button 4 to lock client until it is pressed again" << std::endl;
+  std::cout << "press button 5 to terminate example application" << std::endl;
+  std::cout << "press several buttons at once for a suprise" << std::endl;
 
   bool var = true;
   int ledState = 0;
@@ -36,46 +34,46 @@ void gpi_test() {
   while(var) {
     gpio_buttons.waitForChange();
 
-    bitset<5> state = gpio_buttons.readState();
+    std::bitset<5> state = gpio_buttons.readState();
 
     switch(state.to_ulong()) {
     case 0: break; // changing the state back to 0 also triggers an event
     case 1: count++;
-      cout << "you pressed button 1!" << endl;
+    std::cout << "you pressed button 1!" << std::endl;
       ledState++;
       ledState = ledState % 256;
-      gpio_leds.writeState(bitset<8>(ledState));
+      gpio_leds.writeState(std::bitset<8>(ledState));
       break;
     case 2: count++;
-      cout << "you pressed button 2!" << endl;
-      gpio_leds.writeState(bitset<8>(0));
+    std::cout << "you pressed button 2!" << std::endl;
+      gpio_leds.writeState(std::bitset<8>(0));
       break;
     case 4: count++;
-      cout << "you pressed button 3!" << endl;
-      cout << "in total, you've executed " << count << " button examples so far" << endl;
+    std::cout << "you pressed button 3!" << std::endl;
+    std::cout << "in total, you've executed " << count << " button examples so far" << std::endl;
       break;
     case 8: count++;
-      cout << "you pressed button 4!" << endl;
+      cout << "you pressed button 4!" << std::endl;
       do {
     	  gpio_buttons.waitForChange();
       } while(gpio_buttons.readState() != 8);
-      cout << "you pressed button 4 again!" << endl;
+      std::cout << "you pressed button 4 again!" << std::endl;
       break;
     case 16: count++;
-      cout << "you pressed button 5! terminating" << endl;
+    std::cout << "you pressed button 5! terminating" << std::endl;
       var = false;
       break;
     default: count++;
-      cout << "you pressed multiple buttons at once!" << endl;
-      gpio_leds.writeState(bitset<8>("10101010"));
+    std::cout << "you pressed multiple buttons at once!" << std::endl;
+      gpio_leds.writeState(std::bitset<8>("10101010"));
       sleep(1);
-      gpio_leds.writeState(bitset<8>("01010101"));
+      gpio_leds.writeState(std::bitset<8>("01010101"));
       sleep(1);
-      gpio_leds.writeState(bitset<8>("10101010"));
+      gpio_leds.writeState(std::bitset<8>("10101010"));
       sleep(1);
-      gpio_leds.writeState(bitset<8>("01010101"));
+      gpio_leds.writeState(std::bitset<8>("01010101"));
       sleep(1);
-      gpio_leds.writeState(bitset<8>(0));
+      gpio_leds.writeState(std::bitset<8>(0));
       break;
     }
   }

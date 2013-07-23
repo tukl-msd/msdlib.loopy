@@ -9,17 +9,15 @@
 
 #include <thread>
 
-using namespace std;
-
-thread *writerThread;
-thread *readerThread;
+std::thread *writerThread;
+std::thread *readerThread;
 
 /**
  * Starts writer and reader threads
  */
 static void startThreads() {
-	writerThread = new thread(scheduleWriter);
-	readerThread = new thread(scheduleReader);
+	writerThread = new std::thread(scheduleWriter);
+	readerThread = new std::thread(scheduleReader);
 }
 
 #ifdef IP
@@ -36,7 +34,7 @@ void startup(string ip) {
 
 void shutdownWriteLoop() {
 	// acquire writer lock
-	unique_lock<mutex> lock(writer_mutex);
+    std::unique_lock<std::mutex> lock(writer_mutex);
 
 	// flag as inactive
 	is_active = false;
@@ -46,7 +44,7 @@ void shutdownWriteLoop() {
 }
 
 void shutdown() {
-	logger_host << "killing I/O threads" << endl;
+	logger_host << "killing I/O threads" << std::endl;
 
 	shutdownWriteLoop();
 	writerThread->join(); writerThread = NULL;

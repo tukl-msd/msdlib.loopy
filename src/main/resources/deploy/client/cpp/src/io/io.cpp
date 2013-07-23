@@ -63,7 +63,7 @@ std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsign
 }
 
 void scheduleWriter() {
-	logger_host << INFO << "begin write loop" << endl;
+	logger_host << INFO << "begin write loop" << std::endl;
 
 	// terminate if not active
 	while(is_active) {
@@ -71,7 +71,7 @@ void scheduleWriter() {
 
 	    std::unique_lock<std::mutex> lock(writer_mutex);
 
-	    logger_host << " locked" << endl;
+	    logger_host << " locked" << std::endl;
 
 		// gpi values are not acknowledged. They are not queued on the board, since there
 		// is virtually now processing time. The value is simply written into memory.
@@ -103,8 +103,8 @@ void scheduleWriter() {
 			// try to lock the port
 			std::unique_lock<std::mutex> port_lock(inPorts[i]->port_mutex, std::try_to_lock);
 
-			if(port_lock.owns_lock()) logger_host << " success" << endl;
-			else logger_host << " failed" << endl;
+			if(port_lock.owns_lock()) logger_host << " success" << std::endl;
+			else logger_host << " failed" << std::endl;
 
 			// if we could not acquire the lock, continue with the next port
 			if(! port_lock.owns_lock()) continue;
@@ -151,19 +151,19 @@ void scheduleWriter() {
 		//     i.e. nothing in transit and a previously empty queue)
 		//  - server-side ack or poll (received by reader thread)
 		//  - shutdown
-		logger_host << FINE << "writer will wait now ..." << endl;
+		logger_host << FINE << "writer will wait now ..." << std::endl;
 
 		can_write.wait(lock);
 	}
 
-	logger_host << INFO << "stopped write loop" << endl;
+	logger_host << INFO << "stopped write loop" << std::endl;
 }
 
 void scheduleReader() {
-    logger_host << INFO << "begin read loop" << endl;
+    logger_host << INFO << "begin read loop" << std::endl;
 
 	while(is_active) {
-	    logger_host << FINE << "trying to read ..." << endl;
+	    logger_host << FINE << "trying to read ..." << std::endl;
 
 	    // wait 2 seconds for input
 		if(intrfc->waitForData(2,0)) {
@@ -216,7 +216,7 @@ void recv_data_unsafe(unsigned char pid, int val) {
 		if(s->finished()) outPorts[pid]->readTaskQueue->take();
 	}
 
-	logger_host << " done" << endl;
+	logger_host << " done" << std::endl;
 }
 
 void recv_data(unsigned char pid, int val[], int size) {
@@ -228,8 +228,8 @@ void recv_data(unsigned char pid, int val[], int size) {
 	// acquire the port lock
 	std::unique_lock<std::mutex> lock(outPorts[pid]->port_mutex);
 
-	logger_host << " done" << endl;
-	logger_host << FINE << " storing values (count: " << size << ") ..." << endl;
+	logger_host << " done" << std::endl;
+	logger_host << FINE << " storing values (count: " << size << ") ..." << std::endl;
 
 	std::cout.flush();
 
@@ -245,7 +245,7 @@ void recv_ack_unsafe(unsigned char pid, unsigned int count) {
 
 	// return, if the queue is empty (count == 0 or unexpected ack)
 	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
-	    logger_host << FINE << "queue is empty, count: " << count << endl;
+	    logger_host << FINE << "queue is empty, count: " << count << std::endl;
 		return;
 	}
 

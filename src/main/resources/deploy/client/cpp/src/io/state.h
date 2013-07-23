@@ -262,7 +262,7 @@ private:
 		while(put < count) {
 			if(put + done == size) break;
 
-			logger_host << FINE << "storing value @ state: " << val[put] << endl;
+			logger_host << FINE << "storing value @ state: " << val[put] << std::endl;
 
 			// leftshift current value
 			currentValue = currentValue << (sizeof(int) * 8);

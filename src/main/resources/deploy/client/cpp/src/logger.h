@@ -11,8 +11,6 @@
 
 #include "constants.h"
 
-using namespace std;
-
 /** severity enum */
 enum severity { ERROR, WARN, INFO, FINE, FINER, FINEST };
 
@@ -23,17 +21,17 @@ typedef std::ostream& (*STRFUNC)(std::ostream&);
  * The logger is used to log significant events occurring in the driver.
  * It is implemented as a stream - events should be printed using the shift operation.
  */
-class logger : public ostream::basic_ostream {
+class logger : public std::ostream::basic_ostream {
 private:
-    ostream *stream_ptr;
+    std::ostream *stream_ptr;
     severity cur_sev, max_sev;
-    string prefix;
+    std::string prefix;
 
     /**
      * Converts the current severity of the logger to a string.
      * @return A string representing the current severity of the logger.
      */
-    string print_severity() {
+    std::string print_severity() {
         switch(cur_sev) {
         case ERROR:  return "ERROR  : ";
         case WARN:   return "WARNING: ";
@@ -46,7 +44,7 @@ private:
     }
 
 public:
-    logger(ostream *stream_ptr, severity max_severity, string prefix) : cur_sev(INFO) {
+    logger(std::ostream *stream_ptr, severity max_severity, std::string prefix) : cur_sev(INFO) {
         this->stream_ptr = stream_ptr;
         this->max_sev    = max_severity;
         this->prefix     = prefix;

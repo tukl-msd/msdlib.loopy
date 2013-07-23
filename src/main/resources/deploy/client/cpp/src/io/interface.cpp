@@ -134,7 +134,7 @@ void ethernet::setup() {
 
 	//everything else --> listening loop...
 
-	logger_host << " done" << endl;
+	logger_host << " done" << std::endl;
 }
 
 void ethernet::teardown() {
@@ -167,7 +167,7 @@ void ethernet::send(int buf[], int size) {
 			strerror(errno) + " (" + std::to_string(errno) + ")");
 
 	// print finishing debug message
-	logger_host << " done" << endl;
+	logger_host << " done" << std::endl;
 }
 
 void ethernet::send(std::vector<int> val) {

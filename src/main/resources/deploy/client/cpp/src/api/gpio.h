@@ -194,7 +194,7 @@ public:
      * For example, for a LED component, this should result into a moving pattern of enabled LEDs.
      */
     void test() {
-        logger_host << INFO << "running loopy GPO test for GPO component " << gpo_id << endl;
+        logger_host << INFO << "running loopy GPO test for GPO component " << gpo_id << std::endl;
         bool direction = false;
         int state = MIN_VALUE;
 
@@ -206,7 +206,7 @@ public:
             usleep(175000);
         }
 
-        logger_host << INFO << "finished GPO test for GPO component " << gpo_id << endl;
+        logger_host << INFO << "finished GPO test for GPO component " << gpo_id << std::endl;
     }
 };
 

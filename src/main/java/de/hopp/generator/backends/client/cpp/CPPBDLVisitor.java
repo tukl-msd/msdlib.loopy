@@ -126,10 +126,10 @@ public class CPPBDLVisitor extends Visitor<NE> {
                 return MInitList(Strings("NULL", "0", "\"" + prefix + "\""));
             }
             public MInitList CaseCONSOLE(CONSOLE term) {
-                return MInitList(Strings("&cout", term.sev().sortName(), "\"" + prefix + "\""));
+                return MInitList(Strings("&std::cout", term.sev().sortName(), "\"" + prefix + "\""));
             }
             public MInitList CaseFILE(FILE term) {
-                return MInitList(Strings("new ofstream(\"" + term.file() + "\")",
+                return MInitList(Strings("new std::ofstream(\"" + term.file() + "\")",
                     term.sev().sortName(), "\"" + prefix + "\""));
             }
 

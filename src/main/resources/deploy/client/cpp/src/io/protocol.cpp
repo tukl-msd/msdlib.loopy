@@ -58,11 +58,11 @@ void protocol_v1::decode(int first) {
 	// the last two bytes mark the size of this frame
 	unsigned int size = fmod(first, pow(2, 16));
 
-	logger_host << FINE << "decoded the following message header: " << first << endl;
-	logger_host << FINE << "  version : " << version << endl;
-	logger_host << FINE << "  type    : " << type << endl;
-	logger_host << FINE << "  target  : " << id << endl;
-    logger_host << FINE << "  size    : " << size << endl;
+	logger_host << FINE << "decoded the following message header: " << first << std::endl;
+	logger_host << FINE << "  version : " << version << std::endl;
+	logger_host << FINE << "  type    : " << type << std::endl;
+	logger_host << FINE << "  target  : " << id << std::endl;
+	logger_host << FINE << "  size    : " << size << std::endl;
 
 	// 8 bit protocol version
 	// 4 bit message type
@@ -111,13 +111,13 @@ void protocol_v1::decode(int first) {
                 try {
                     if(intrfc->waitForData(0, 250000)) intrfc->readInt(payload + i);
                 } catch(mediumException &e) {
-                    logger_host << ERROR << e.what() << endl;
+                    logger_host << ERROR << e.what() << std::endl;
                     intrfc->waitForData(0, 250000);
                 }
             }
 
             // stream severity to logger
-            logger_board << (severity)id << (char*)payload << endl;
+            logger_board << (severity)id << (char*)payload << std::endl;
         }
 
         break;
@@ -155,7 +155,7 @@ void protocol_v1::decode(int first) {
                     // c) broken board-side driver didn't send all the values specified in the size field...
                     // d) broken medium (lost connection for some reason)
                     // while a) and b) fix themselves by ignoring this message, c) and d) do not...
-                    logger_host << ERROR << e.what() << endl;
+                    logger_host << ERROR << e.what() << std::endl;
                     // SOLUTION for d): perform a short wait and die over there, if something is wrong with the medium
                     // this however does NOT solve c) - buggy drivers will not send enough values...
                     //  this probably is a stupid use-case though. We do not look at attackers...
@@ -190,7 +190,7 @@ void protocol_v1::decode(int first) {
 		        std::to_string(type) + ") for protocol version 1");
 	}
 
-	logger_host << FINE << "finished message interpretation" << endl;
+	logger_host << FINE << "finished message interpretation" << std::endl;
 }
 
 std::vector<int> protocol_v1::encode_data(unsigned char pid, std::vector<int> val) {
