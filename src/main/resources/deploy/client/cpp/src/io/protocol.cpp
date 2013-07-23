@@ -165,7 +165,7 @@ void protocol_v1::decode(int first) {
 //			intrfc->readInts(payload, size);
 
 			// shift read values to the respective queue
-			read(id, payload, size);
+			recv_data(id, payload, size);
 		}
 		break;
 	case poll: // This is a non-blocking poll.
@@ -182,7 +182,7 @@ void protocol_v1::decode(int first) {
 		if(id > IN_PORT_COUNT-1) throw protocolException(std::string("pid value (") +
 				std::to_string(id) + ") of received acknowledgment exceeded count of in-going ports (" +
 				std::to_string(IN_PORT_COUNT) + ")");
-		acknowledge(id, size);
+		recv_ack(id, size);
 		break;
 	default:
 		throw protocolException(

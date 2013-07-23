@@ -33,7 +33,7 @@ void randomTest() {
   rng_a.m_axis.read(vals);
 
   // print values
-  for(int i = 0; i < vals.size(); i++)
+  for(unsigned int i = 0; i < vals.size(); i++)
       cout << endl << "value: " << vals[i].to_ulong();
 }
 

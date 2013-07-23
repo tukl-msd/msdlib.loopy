@@ -30,8 +30,8 @@ extern std::condition_variable can_write;
  */
 class abstractInPort {
 friend void scheduleWriter();
-friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
-friend void acknowledge(unsigned char pid, unsigned int count);
+friend void recv_ack_unsafe(unsigned char pid, unsigned int count);
+friend void recv_ack(unsigned char pid, unsigned int count);
 friend void recv_poll(unsigned char pid);
 protected:
 	/** ID of the port. */

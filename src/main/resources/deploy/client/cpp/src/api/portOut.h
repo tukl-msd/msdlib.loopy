@@ -31,8 +31,8 @@ void send_poll(unsigned char pid, unsigned int count);
  */
 class abstractOutPort {
 friend void scheduleReader();
-friend void read_unsafe(unsigned char pid, int val);
-friend void read(unsigned char pid, int val[], int size);
+friend void recv_data_unsafe(unsigned char pid, int val);
+friend void recv_data(unsigned char pid, int val[], int size);
 protected:
 	/** ID of the port. */
 	int pid;

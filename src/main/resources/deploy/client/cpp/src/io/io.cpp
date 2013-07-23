@@ -198,7 +198,7 @@ void send_poll(unsigned char pid, unsigned int count) {
  * @param pid Id of the target port.
  * @param val Value to be stored.
  */
-void read_unsafe(unsigned char pid, int val) {
+void recv_data_unsafe(unsigned char pid, int val) {
     logger_host << FINE << " storing value " << val << " ...";
 
 	std::cout.flush();
@@ -219,7 +219,7 @@ void read_unsafe(unsigned char pid, int val) {
 	logger_host << " done" << endl;
 }
 
-void read(unsigned char pid, int val[], int size) {
+void recv_data(unsigned char pid, int val[], int size) {
 
     logger_host << FINE << " locking port " << pid << " ...";
 
@@ -234,14 +234,14 @@ void read(unsigned char pid, int val[], int size) {
 	std::cout.flush();
 
 	// store the read value without recursive locking
-	for(int i = 0; i < size; i++) read_unsafe(pid, val[i]);
+	for(int i = 0; i < size; i++) recv_data_unsafe(pid, val[i]);
 
 	// if the task queue is empty now, notify the application
 	if(outPorts[pid]->readTaskQueue->empty()) outPorts[pid]->task_empty.notify_one();
 }
 
 // acknowledge without locking or notifications
-void acknowledge_unsafe(unsigned char pid, unsigned int count) {
+void recv_ack_unsafe(unsigned char pid, unsigned int count) {
 
 	// return, if the queue is empty (count == 0 or unexpected ack)
 	if(inPorts[pid]->writeTaskQueue->peek() == NULL) {
@@ -261,7 +261,7 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 		               s->done  = s->size;
 
 		// acknowledge further values
-		acknowledge_unsafe(pid, count);
+		recv_ack_unsafe(pid, count);
 	} else {
 		// update state (if count == 0, nothing happens;)
 		inPorts[pid]->writeTaskQueue->peek()->done += count;
@@ -273,12 +273,12 @@ void acknowledge_unsafe(unsigned char pid, unsigned int count) {
 }
 
 // acquire locks, notify and call acknowledge_unsafe
-void acknowledge(unsigned char pid, unsigned int count) {
+void recv_ack(unsigned char pid, unsigned int count) {
 	// acquire port lock
 	std::unique_lock<std::mutex> port_lock(inPorts[pid]->port_mutex);
 
 	// acknowledge the data without recursive locking
-	acknowledge_unsafe(pid, count);
+	recv_ack_unsafe(pid, count);
 
 	// if task queue is empty, notify the port cv and return
 	if(inPorts[pid]->writeTaskQueue->empty()) {

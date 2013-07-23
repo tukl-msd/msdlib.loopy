@@ -5,9 +5,10 @@
  * @since 16.04.2013
  */
 
-#ifndef CONTROL_H_
-#define CONTROL_H_
+#ifndef SETUP_H_
+#define SETUP_H_
 
+#include "../constants.h"
 #include <string>
 
 using namespace std;
@@ -30,5 +31,5 @@ void startup(string ip);
  */
 void shutdown();
 
-#endif /* CONTROL_H_ */
+#endif /* SETUP_H_ */
 
