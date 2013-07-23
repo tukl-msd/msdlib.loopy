@@ -279,20 +279,11 @@ public class Parser {
         if(bdf.scheduler().code() instanceof USER_DEFINED) errors.addWarning(new ParserWarning(
                 "Default scheduler was overridden. Note that no guarantees can be made for user-defined schedulers.",
                 bdf.scheduler().pos()));
-        // TODO what exactly do we override here? board-side or host-side gpio behaviour?
-        // TODO what exactly IS default behaviour?
-        //       host-side: none
-        //       board-side: send value to host. Host does "something" with it...
-        //     --> I GUESS, we want to override board-side behaviour... e.g. reset on click or write the value
-        //         into some component
-        //     This CAN be done via a host-side thread, but is REALLY inefficient due to a complete communication cycle
-        //      plus potential queue overhead...
+
         for(GPIO gpio : bdf.gpios()) if(gpio.callback() instanceof USER_DEFINED)
             errors.addWarning(new ParserWarning("Default gpio callback behaviour was overridden", gpio.pos()));
 
-
-
-//        // check options of Ethernet medium for validity
+        // check options of Ethernet medium for validity
         if(bdf.medium() instanceof ETHERNET) {
             ETHERNET medium = (ETHERNET)bdf.medium();
             boolean mac = false, ip = false, mask = false, gate = false, port = false, dhcp = false;

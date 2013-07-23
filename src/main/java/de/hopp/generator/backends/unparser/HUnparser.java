@@ -459,10 +459,6 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
             // set the type declaration to the attribute name and unparse the type
             typeDecl = attribute.name().term();
             visit(attribute.type());
-
-            // for class attributes, the initial value is set in the header
-            // TODO wait... WHAT??? WHY??? This should (at best) make sense for static, but not always!
-//            visit(attribute.initial());
         }
 
         // append colon and newline
@@ -490,8 +486,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
     @Override
     public void visit(MClassInFile mclass) throws InvalidConstruct {
 
-        // do not put "private" global classes in the header
-        // TODO dafuq... such things should not exist in C++...
+        // do not put "private" classes in the header
         if(mclass.parent().parent() instanceof MFileInFile
                 && mclass.modifiers().term().contains(PRIVATE())) return;
 

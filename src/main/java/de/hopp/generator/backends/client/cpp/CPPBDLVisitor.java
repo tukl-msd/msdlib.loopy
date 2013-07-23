@@ -314,7 +314,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
             )), MModifiers(PUBLIC()), MType("dualPort<"+width+">"),
             name, MCodeFragment("",
                 MQuoteInclude(PUBLIC(), "component.h"),
-                MQuoteInclude(PUBLIC(), "portIn.h"), // TODO fix imports - superclass extending both...
+                MQuoteInclude(PUBLIC(), "portIn.h"), // TODO reduce imports - port header including both
                 MQuoteInclude(PUBLIC(), "portOut.h")
             )
         ));

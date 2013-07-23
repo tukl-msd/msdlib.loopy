@@ -90,10 +90,8 @@ public class Main {
         } catch(ExecutionFailed e) {
             System.exit(1);
 //        } catch (IOException e) {
-//            // TODO Auto-generated catch block
 //            e.printStackTrace();
 //        } catch (VhdlParserException e) {
-//            // TODO Auto-generated catch block
 //            e.printStackTrace();
         }
     }
@@ -391,7 +389,7 @@ public class Main {
                     throw new ExecutionFailed();
                 }
 
-            // DESTDIR flags TODO push these into backends
+            // DESTDIR flags TODO push these into backends?
             } else if(args[i].equals("-C") || args[i].equals("--clientDir") || args[i].equals("--hostDir")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);

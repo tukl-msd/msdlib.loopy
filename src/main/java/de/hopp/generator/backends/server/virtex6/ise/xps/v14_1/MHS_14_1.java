@@ -172,11 +172,11 @@ public class MHS_14_1 extends MHSGenerator {
     }
 
     public void visit(UARTPos term) {
-
+        errors.addError(new ParserError("USB/UART is not supported as communication interface yet", term.pos().term()));
     }
 
     public void visit(PCIEPos term) {
-        // TODO Auto-generated method stub
+        errors.addError(new ParserError("PCIE is not supported as communication interface yet", term.pos().term()));
     }
 
     public void visit(GPIOPos term) {

@@ -179,7 +179,7 @@ public class SDK extends Visitor<NE> {
                 "Defines several constants used by the server.",
                 "This includes medium-specific configuration."
             )), "constants", targetSrc.getPath(), MPreProcDirs(
-                // TODO do this too, using the enum ;)
+                // TODO do this too, using the debug enum
                 MDef(MDocumentation(Strings("Severity value of errors.")),
                     MModifiers(PUBLIC()), "SEVERITY_ERROR", "0"),
                 MDef(MDocumentation(Strings("Severity value of warnings.")),
@@ -283,8 +283,8 @@ public class SDK extends Visitor<NE> {
 
         LogSeverity severity = getLogSeverity(board.logs().board());
 
-        // add debug constant TODO something more detailed than this int...
-        // TODO do this using the enum
+        // add debug constant FIXME has to be more complex than a single int. Need to encode where to send debug messages
+        // TODO do this too, using the debug enum
         int debug = severity.Switch(new LogSeverity.Switch<Integer, NE>() {
             public Integer CaseERROR(ERROR term)   { return 0; }
             public Integer CaseWARN(WARN term)     { return 1; }
@@ -382,7 +382,7 @@ public class SDK extends Visitor<NE> {
                   "finer info messages", "finest info messages" };
 
         for(int i = 0; i <= value; i++)
-            // TODO do this using the ENUM!
+            // TODO do this too, using the debug enum
             addConst("log_"+name[i]+"(...)",
                 // TODO this is currently very annoying,
                 // since it tries to send debug messages despite no open connection,

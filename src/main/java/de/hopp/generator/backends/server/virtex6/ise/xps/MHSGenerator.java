@@ -37,11 +37,6 @@ import de.hopp.generator.parser.MHSFile;
 public abstract class MHSGenerator extends Visitor<NE> {
     protected ErrorCollection errors;
 
-    // TODO a better separation of the files seems desirable...
-    // - core folder generation in its own class (only needs cores, not the complete bdf)
-    // - data folder generation in its own class ()
-    // - only mhs here (rename this visitor accordingly)
-
     // the generated mhs file
     protected MHSFile mhs;
 
