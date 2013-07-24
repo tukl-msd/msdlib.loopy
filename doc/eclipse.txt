@@ -12,15 +12,19 @@ Unfortunately, C++11 support is still experimental within the gcc c++ compiler a
 To make it even worse, this setup is project-specific and has to be performed for each new project.
 
 - navigate to project -> properties -> C/C++ Build -> Settings
-- add "__GXX_EXPERIMENTAL_CXX0X__" (with the double underscore, without quotes) to
-    GCC C++ Compiler -> Preprocessor -> Defined symbols
-- enable GCC C++ Compiler -> Miscellanesous -> Position Independent Code (-fPIC)
-- add "-std=c++0x -pthread" (without quotes)
+- add "-std=c++11" (without quotes)
     to GCC C++ Compiler -> Miscellaneous -> Other flags
     and GCC C++ Linker -> Miscellaneous -> Linker flags
 
 Make sure, to hit the apply button AFTER EVERY CHANGE! There seems to be some bug not correctly storing multiple changed preferences on several pages at once.
-If this did not work so far, restart eclipse.
+
+- rebuild the project
+- if this didn't help clean and rebuild again
+- if this didn't help either, navigate to project -> properties -> C/C++ General -> Preprocessor Include Paths -> Providers
+- disable everything but CDT GCC Builtin Compiler Settings
+- uncheck the "Share setting entries" checkbox for Builtin Compiler Settings
+- add "-std=c++11" also to the command in the now active textfield
+- apply and rebuild 
 
 It is possible, that you STILL get errors in the generated code. These are not actual compiler errors but rather errors from a bugged eclipse analysis step. These can be disabled in Project -> Properties -> C/C++ General -> Code Analysis -> Use project settings. Disable whatever Warning you're getting (a re-occuring issue is std::to_string(errno) in interface.cpp - a function, that supposedly is not found). Note, that this only disables eclipse code analysis. Actual compiler errors are still reported when building the project. You may also try to re-enable this analysis afterwards and check, if the error disappeared.
 
