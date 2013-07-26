@@ -1,0 +1,8 @@
+v0.1.1
+- DHCP support
+- non-verbose runs should now finish correctly
+- introduced logfiles for xps and sdk builds
+- introduced sdkonly flag which skips hw synthesis completely
+
+known issues:
+- although being non-verbose, output is still printed on console (sourced in underlying Xilinx tools)

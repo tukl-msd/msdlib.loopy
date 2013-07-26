@@ -148,8 +148,9 @@ public class Main {
         IO.println(" ---------- miscellaneous ----------");
         IO.println(" -o --parseonly        check only for parser errors");
         IO.println(" -n --dryrun           don't execute the generator phase of");
-        IO.println("                       the backends, i.e. analyze only");
-        IO.println("    --noBitGen         disable bitfile generation");
+        IO.println("                       the backends, i.e. analyze only.");
+        IO.println("    --noGen            disable generation of .bit and .elf files.");
+        IO.println("    --sdkonly          disable generation of .bit file and sources.");
         IO.println("    --config <file>    supplies the generator with a config file containing");
         IO.println("                       all information configurable with cli parameters.");
         IO.println("                       This will immediately start the generator ignoring all");
@@ -425,7 +426,9 @@ public class Main {
             } else if(args[i].equals("-n") || args[i].equals("--dryrun")) {
                 config.enableDryrun();
             } else if(args[i].equals("--noBitGen")) {
-                config.enableNoBitGen();
+                config.enableNoGen();
+            } else if(args[i].equals("--sdkonly")) {
+                config.enableSDKOnly();
 
             } else if(args[i].equals("-c") || args[i].equals("--config")) {
                 // TODO run generator with the provided config

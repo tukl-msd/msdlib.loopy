@@ -283,7 +283,8 @@ public class SDK extends Visitor<NE> {
 
         LogSeverity severity = getLogSeverity(board.logs().board());
 
-        // add debug constant FIXME has to be more complex than a single int. Need to encode where to send debug messages
+        // add debug constant
+        // FIXME has to be more complex than a single int. Need to encode where to send debug messages
         // TODO do this too, using the debug enum
         int debug = severity.Switch(new LogSeverity.Switch<Integer, NE>() {
             public Integer CaseERROR(ERROR term)   { return 0; }
@@ -303,6 +304,8 @@ public class SDK extends Visitor<NE> {
 
         addLoggingMacros(debug);
 
+        // FIXME this does NOT regard the maximal protocol size. The size is also ignored within the board-side driver.
+        // It is however essential to handle this somehow (maybe that also was the RNG issue with requests above 60k).
         // add queue size constant
         addConst("MAX_OUT_SW_QUEUE_SIZE", String.valueOf(maxOutQueueSize(board)),
                 "Maximal size of out-going software queues.");

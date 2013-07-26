@@ -39,7 +39,8 @@ public class Configuration {
     // progress flags
     private boolean parseonly = false;
     private boolean dryrun    = false;
-    private boolean noBitGen  = false;
+    private boolean noGen     = false;
+    private boolean sdkOnly   = false;
 
     private boolean startGUI  = false;
 
@@ -86,9 +87,13 @@ public class Configuration {
     public void enableDryrun() {
         dryrun = true;
     }
-    /** disable bitfile generation */
-    public void enableNoBitGen() {
-        noBitGen = true;
+    /** disable generation */
+    public void enableNoGen() {
+        noGen = true;
+    }
+    /** disable xps */
+    public void enableSDKOnly() {
+        sdkOnly = true;
     }
 
     public void enableGUI() {
@@ -125,8 +130,10 @@ public class Configuration {
     public boolean parseonly() { return parseonly; }
     /** check if this is only a dryrun, meaning that code deployment is skipped */
     public boolean dryrun()    { return dryrun; }
-    /** check if bitfile generation should be skipped */
-    public boolean noBitGen()  { return noBitGen; }
+    /** check if generation should be skipped */
+    public boolean noGen()     { return noGen; }
+    /** check if xps should be skipped */
+    public boolean sdkOnly()   { return sdkOnly; }
 
     public boolean startGUI()  { return startGUI; }
 

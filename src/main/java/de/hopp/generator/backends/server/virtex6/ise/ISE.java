@@ -11,19 +11,18 @@ import static de.hopp.generator.backends.server.virtex6.ise.xps.UCF.deployUCF;
 import static de.hopp.generator.utils.Files.copy;
 import static org.apache.commons.io.FileUtils.copyFileToDirectory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
+import de.hopp.generator.backends.SDKGenerationFailed;
+import de.hopp.generator.backends.XPSGenerationFailed;
 import de.hopp.generator.backends.server.virtex6.ProjectBackendIF;
 import de.hopp.generator.backends.server.virtex6.ise.sdk.SDK;
 import de.hopp.generator.backends.server.virtex6.ise.xps.IPCores;
@@ -76,20 +75,27 @@ public abstract class ISE implements ProjectBackendIF {
     @Override
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
         // deploy the necessary sources
-        deployBITSources(board, config, errors);
+        if(!config.sdkOnly()) deployBITSources(board, config, errors);
         deployELFSources(board, config, errors);
+        // abort, if errors occurred
+        if(errors.hasErrors()) return;
 
         // stop here, if it was only a dryrun
         // deployment phases also do not generate but only generate models...
         if(config.dryrun()) return;
-
         // stop also, if bitfile generation should be skipped
         // in this case, deployment phases ran through
-        if(config.noBitGen()) return;
+        if(config.noGen()) return;
 
-        // generate .bit and .elf files
-        generateBITFile(config, errors);
+        // generate .bit file (if sdk only flag is not set)
+        if(!config.sdkOnly()) generateBITFile(config, errors);
+        // abort, if errors occurred
+        if(errors.hasErrors()) return;
+
+        // generate .elf file
         generateELFFile(config, errors);
+        // abort, if errors occurred
+        if(errors.hasErrors()) return;
 
         // deploy bit and elf files
         try {
@@ -241,14 +247,27 @@ public abstract class ISE implements ProjectBackendIF {
                 "run exporttosdk",
                 "exit"
             };
-            runProcess(pb, args, config, errors);
 
-        } catch (GenerationFailed e) {
-            errors.addWarning(new Warning("failed to correctly terminate xps process"));
+            // start XPS process
+            Process p = startProcess(pb.redirectErrorStream(true), args);
+
+            // start stream reader threads for this process
+            PrintStream[] writers = writers(config, "xps.log");
+            Thread output = new Thread(new XPSReader(errors, p.getInputStream(), writers));
+            output.start();
+
+            // wait for the process to terminate and store the result
+            int rslt = p.waitFor();
+
+            // if something went wrong, print a warning
+            if(p.waitFor() != 0) errors.addWarning(
+                new Warning("failed to correctly terminate XPS process (returned " + rslt + ")")
+            );
+
         } catch (IOException e) {
-            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
+            errors.addError(new XPSGenerationFailed("failed to generate execute XPS build\n" + e.getMessage()));
         } catch (InterruptedException e) {
-            errors.addWarning(new Warning("failed to generate .bit file\n" + e.getMessage()));
+            errors.addError(new XPSGenerationFailed("failed to execute XPS build thread listener\n" + e.getMessage()));
         }
     }
 
@@ -257,13 +276,28 @@ public abstract class ISE implements ProjectBackendIF {
         config.IOHANDLER().println("running sdk to generate elf file (this may take some time) ...");
 
         try {
-            // import & build all required projects
-          runProcess(new ProcessBuilder(sdkCommand).directory(sdkDir(config)),
-          new String[0], config, errors);
-        } catch(GenerationFailed e) {
-            errors.addError(e);
+          // start XSDK process -> import & build all required projects
+          Process p = startProcess(new ProcessBuilder(sdkCommand).directory(sdkDir(config)));
+
+          // start stream reader threads for this process
+          PrintStream[] writers = writers(config, "xsdk.log");
+          Thread output = new Thread(new      StreamReader(errors, p.getInputStream(), writers));
+          Thread error  = new Thread(new ErrorStreamReader(errors, p.getErrorStream(), writers));
+          output.start();
+          error.start();
+
+          // wait for the reader threads to terminate (since the build seems to run asynchronously...)
+          while(output.isAlive()) Thread.sleep(100);
+          while(error.isAlive())  Thread.sleep(100);
+
+          // the build process should also be terminated now
+          int rslt = p.waitFor();
+
+          // if something went wrong, print a warning
+          if(p.waitFor() != 0) errors.addError(new SDKGenerationFailed("XSDK process terminated with result " + rslt));
+
         } catch(Exception e) {
-            errors.addError(new GenerationFailed("Failed to generate .elf file: " + e.getMessage()));
+            errors.addError(new SDKGenerationFailed("Failed to generate .elf file: " + e.getMessage()));
         }
     }
 
@@ -285,52 +319,39 @@ public abstract class ISE implements ProjectBackendIF {
                 "-pe", "microblaze_0", "../sdk/app/Debug/app.elf",
                 "-o", config.serverDir().getCanonicalPath() + "/download.bit"
             ).directory(edkDir(config));
-            runProcess(pb, new String[0], config, errors);
-        } catch (GenerationFailed e) {
-            errors.addError(e);
+//            runProcess(pb, config, errors);
+//        } catch (GenerationFailed e) {
+//            errors.addError(e);
         } catch (Exception e) {
             errors.addError(new GenerationFailed("Could not initialise bit file with elf file: " + e.getMessage()));
         }
     }
 
-    private static void runProcess(ProcessBuilder pb, String[] args, Configuration config, ErrorCollection errors)
-            throws IOException, InterruptedException, GenerationFailed{
-
-        BufferedReader input = null;
-
-        // if the run is verbose, merge error and input streams
-        if(config.VERBOSE()) pb = pb.redirectErrorStream(true);
-
-        try {
-            // start the process
-            Process p = pb.start();
-
-            // get output stream of the process (which is an input stream for this program)
-            if(config.VERBOSE())
-                input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            else
-                input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-            // feed the required commands to the spawned process
-            PrintWriter pWriter = new PrintWriter(p.getOutputStream());
-            for(String s : args) pWriter.println(s);
-            pWriter.close();
-
-            // print the output stream of the process
-            String line;
-            while((line = input.readLine()) != null)
-                config.IOHANDLER().println(line);
-
-            // wait for the process to terminate and store the result
-            int rslt = p.waitFor();
-
-            // if something went wrong, print a warning
-            if(rslt != 0) throw new GenerationFailed("Process terminated with result " + rslt);
-        } finally {
-            try {
-                if(input != null) input.close();
-            } catch(IOException e) { /* well... memory leak... */ }
+    private PrintStream[] writers(Configuration config, String log) throws FileNotFoundException {
+        if(config.VERBOSE()) {
+            return new PrintStream[] {
+                System.out,
+                new PrintStream(new File(config.tempDir(), log))
+            };
+        } else {
+            return new PrintStream[] {
+                new PrintStream(new File(config.tempDir(), log))
+            };
         }
+    }
+
+    private Process startProcess(ProcessBuilder pb, String... args) throws IOException {
+        // start the process
+        Process p = pb.start();
+
+        // feed the required commands to the spawned process
+        if(args.length > 0) {
+            PrintWriter argWriter = new PrintWriter(p.getOutputStream());
+            for(String s : args) argWriter.println(s);
+            argWriter.close();
+        }
+
+        return p;
     }
 
     private static String[] sdkCommand = new String[] {
@@ -347,6 +368,71 @@ public abstract class ISE implements ProjectBackendIF {
         "all",
         "--launcher.suppressErrors",
         "-vmargs",
-        "-Dorg.eclipse.cdt.core.console=org.eclipse.cdt.core.systemConsole"
+        "-Declipse.exitdata=\"XSDK build encountered errors.\""
+//        "-Dorg.eclipse.cdt.core.console=org.eclipse.cdt.core.systemConsole"
     };
+
+    class StreamReader implements Runnable {
+        InputStream in;
+        PrintStream[] out;
+        ErrorCollection errors;
+        public StreamReader(ErrorCollection errors, InputStream in, PrintStream... out) {
+            this.in  = in;
+            this.out = out;
+            this.errors = errors;
+        }
+
+        protected void read(String line) throws de.hopp.generator.exceptions.Error {
+            for(PrintStream s : out) s.println(line);
+        }
+
+        public void run() {
+            if(in == null) return;
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(in));
+            try {
+                String line;
+                while((line = input.readLine()) != null)
+                    try {
+                        read(line);
+                    } catch (de.hopp.generator.exceptions.Error e) {
+                        if(!errors.hasErrors()) errors.addError(e);
+                    }
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage());
+            } finally {
+                IOUtils.closeQuietly(input);
+            }
+        }
+    }
+
+    class ErrorStreamReader extends StreamReader {
+        public ErrorStreamReader(ErrorCollection errors, InputStream in, PrintStream... out) {
+            super(errors, in, out);
+        }
+
+        @Override
+        protected void read(String line) throws de.hopp.generator.exceptions.Error {
+            super.read(line);
+            throw new SDKGenerationFailed(
+                "Could not generate .elf file, since SDK build encountered errors. " +
+                "Check the SDK log for details."
+            );
+        }
+    }
+
+    class XPSReader extends StreamReader {
+        public XPSReader(ErrorCollection errors, InputStream in, PrintStream... out) {
+            super(errors, in, out);
+        }
+
+        @Override
+        protected void read(String line) throws de.hopp.generator.exceptions.Error {
+            super.read(line);
+            if(line.startsWith("ERROR:")) throw new XPSGenerationFailed(
+                "Could not generate .bit file, since XPS build encountered errors. " +
+                "Check the XPS log for details."
+            );
+        }
+    }
 }

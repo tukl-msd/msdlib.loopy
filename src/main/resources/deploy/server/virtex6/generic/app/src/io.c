@@ -41,7 +41,14 @@ void reset_queues() {
  * @param count Number of values that is acknowledged
  */
 static void send_ack(unsigned char pid, unsigned int count) {
-	struct Message *m = encode_ack(pid, count);
+    // send several acknowledges, if the protocol cannot fit a full ack
+    // this should not be the case with the current protocol impl, since data and ack messages have equal maxsize.
+    while(count > PROTO_ACK_SIZE) {
+        send_ack(pid, PROTO_ACK_SIZE);
+        count -= PROTO_ACK_SIZE;
+    }
+
+    struct Message *m = encode_ack(pid, count);
 	print_message(m);
 	medium_send(m);
 	message_free(m);
@@ -105,6 +112,8 @@ int flush_queue(unsigned char pid) {
 	log_fine("count: %d", outQueueSize);
 
 	// otherwise, create a data message and send it
+	// FIXME ensure, that outQueueSize < proto_data_size
+	// or rather: split into several packages, if this is the case
 	struct Message *m = encode_data(pid, outQueueSize);
 	message_payload(m, outQueue, outQueueSize);
     print_message(m);
@@ -129,7 +138,8 @@ void send_debug(unsigned char type, const char *format, ...) {
     #define cpi (sizeof(int) / sizeof(char))
     size += (cpi - (size % cpi)) % cpi;
 
-    // TODO check, that the resulting size is smaller than the maxsize of the protocol!?
+    // FIXME check, that the resulting size is smaller than the maxsize of the protocol!?
+//    if(size > )
 
     // allocate memory and store the formatted string
     char *c = malloc(sizeof(char) * size);

@@ -3,12 +3,21 @@
  * @since 01.02.2013
  */
 
+#include "protocol.h"
+
+#if PROTO_VERSION == 1
+
 #include <math.h>
 #include <stdlib.h>
 #include "xbasic_types.h"
-#include "protocol_v1.h"
-#include "../../constants.h"
+
 #include "../../io.h"
+
+#define PROTO_MAX_SIZE 65535
+
+#define PROTO_ACK_SIZE   PROTO_MAX_SIZE
+#define PROTO_DATA_SIZE  PROTO_MAX_SIZE
+#define PROTO_DEBUG_SIZE PROTO_MAX_SIZE
 
 // medium communication
 int recv_int();
@@ -39,7 +48,7 @@ void xil_printf(const char *ctrl1, ...);
  * Decode a header version 1.
  * Reads parts of the message from the medium using recv_int().
  */
-int decode_header_v1(int first) {
+int decode_header(int first) {
 	log_finer("decoding message header ...");
 
 	// set type as specified in protocol version 1
@@ -113,28 +122,28 @@ int decode_header_v1(int first) {
 	return 0;
 }
 
-struct Message* encode_ack_v1(unsigned char pid, unsigned int count) {
+struct Message* encode_ack(unsigned char pid, unsigned int count) {
 	struct Message *m = message_new();
 	int header = (version << 24) + (ack << 20) + (pid << 16) + count;
 	message_header(m, &header, 1);
 	return m;
 }
 
-struct Message* encode_poll_v1(unsigned char pid) {
+struct Message* encode_poll(unsigned char pid) {
 	struct Message *m = message_new();
 	int header = (version << 24) + (poll << 20) + (pid << 16);
 	message_header(m, &header, 1);
 	return m;
 }
 
-struct Message* encode_gpio_v1(unsigned char gid, unsigned char val) {
+struct Message* encode_gpio(unsigned char gid, unsigned char val) {
 	struct Message *m = message_new();
 	int header = (version << 24) + (gpio << 20) + (gid << 16) + val;
 	message_header(m, &header, 1);
 	return m;
 }
 
-struct Message* encode_data_v1(unsigned char pid, unsigned int size) {
+struct Message* encode_data(unsigned char pid, unsigned int size) {
 	log_fine("encoding data message %d %d %d", data, pid, size);
 	struct Message *m = message_new();
 	int header = (version << 24) + (data << 20) + (pid << 16) + size;
@@ -143,9 +152,11 @@ struct Message* encode_data_v1(unsigned char pid, unsigned int size) {
 	return m;
 }
 
-struct Message* encode_debug_v1(unsigned char type, unsigned int size) {
+struct Message* encode_debug(unsigned char type, unsigned int size) {
 	struct Message *m = message_new();
 	int header = (version << 24) + (debug << 20) + (type << 16) + size;
 	message_header(m, &header, 1);
 	return m;
 }
+
+#endif /* PROTO_VERSION */
