@@ -20,7 +20,7 @@ public class BoardUtils {
     /** The default bitwidth of ports. */
     public static final int defaultWidth = 32;
     /** The default size for the TCP sendbuffer. */
-    public static final int defaultTCPSendBuffer = 8192;
+    public static final int defaultTCPSendBuffer = 2048;
 //    public static boolean hasLEDs(Board board) {
 //        for(Component comp : board.components())
 //            if(comp instanceof LEDS) return true;
@@ -420,14 +420,14 @@ public class BoardUtils {
     private static int totalQueueSize(BDLFilePos file) {
         int size = 0;
 
-        // add queue lenghts of all in-going ports
+        // add queue lengths of all in-going ports
         for(InstancePos inst : file.insts())
             for(BindingPos bind : inst.bind())
                 if(bind instanceof CPUAxisPos)
                     if(getPort(bind).direction() instanceof INPos)
                         size += getSWQueueSize((CPUAxisPos)bind);
 
-        // add maximal queue lenght of all out-going ports
+        // add maximal queue length of all out-going ports
         size += maxOutQueueSize(file);
 
         return size;

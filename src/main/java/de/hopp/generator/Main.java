@@ -149,7 +149,7 @@ public class Main {
         IO.println(" -o --parseonly        check only for parser errors");
         IO.println(" -n --dryrun           don't execute the generator phase of");
         IO.println("                       the backends, i.e. analyze only.");
-        IO.println("    --noGen            disable generation of .bit and .elf files.");
+        IO.println("    --nogen            disable generation of .bit and .elf files.");
         IO.println("    --sdkonly          disable generation of .bit file and sources.");
         IO.println("    --config <file>    supplies the generator with a config file containing");
         IO.println("                       all information configurable with cli parameters.");
@@ -425,7 +425,7 @@ public class Main {
                 config.enableParseonly();
             } else if(args[i].equals("-n") || args[i].equals("--dryrun")) {
                 config.enableDryrun();
-            } else if(args[i].equals("--noBitGen")) {
+            } else if(args[i].equals("--nogen")) {
                 config.enableNoGen();
             } else if(args[i].equals("--sdkonly")) {
                 config.enableSDKOnly();
