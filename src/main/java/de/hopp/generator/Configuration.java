@@ -2,8 +2,9 @@ package de.hopp.generator;
 
 import java.io.File;
 
-import de.hopp.generator.backends.client.ClientBackend;
-import de.hopp.generator.backends.server.ServerBackend;
+import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.host.HostBackend;
+import de.hopp.generator.backends.workflow.WorkflowIF;
 
 /**
  * Configuration of the generator run itself.
@@ -16,17 +17,18 @@ public class Configuration {
     private String[] args;
 
     // backends
-    private ClientBackend client;
-    private ServerBackend server;
+    private HostBackend client;
+    private BoardIF board;
+    private WorkflowIF flow;
 
     // destination folders
-    public final static String defaultServerDir = "server";
-    public final static String defaultClientDir = "client";
-    public final static String defaultTempDir   = "temp";
+    public final static String defaultBoardDir = "board";
+    public final static String defaultHostDir  = "host";
+    public final static String defaultTempDir  = "temp";
 
-    private File serverDir = new File(defaultServerDir);
-    private File clientDir = new File(defaultClientDir);
-    private File tempDir   = new File(defaultTempDir);
+    private File boardDir = new File(defaultBoardDir);
+    private File hostDir  = new File(defaultHostDir);
+    private File tempDir  = new File(defaultTempDir);
 
     // logging related properties
     public static final int LOG_QUIET   = 0;
@@ -49,17 +51,18 @@ public class Configuration {
         IO = new IOHandler(this);
     }
 
-    public void setServer(ServerBackend server) { this.server = server; }
-    public void setClient(ClientBackend client) { this.client = client; }
+    public void setClient(HostBackend client) { this.client = client; }
+    public void setBoard(BoardIF board)         { this.board  = board; }
+    public void setFlow(WorkflowIF flow)        { this.flow   = flow; }
 
-    /** set the directory, into which the client-side files of the driver should be generated */
-    public void setClientDir(File dir) {
-        this.clientDir = dir;
+    /** set the directory, into which the host-side files of the driver should be generated */
+    public void setHostDir(File dir) {
+        this.hostDir = dir;
     }
 
-    /** set the directory, into which the server-side files of the driver should be generated */
-    public void setServerDir(File dir) {
-        this.serverDir = dir;
+    /** set the directory, into which the board-side files of the driver should be generated */
+    public void setBoardDir(File dir) {
+        this.boardDir = dir;
     }
 
     public void setTempDir(File dir) {
@@ -116,13 +119,15 @@ public class Configuration {
 
     public String[] UNUSED() { return args; }
 
-    public ServerBackend server() { return server; }
-    public ClientBackend client() { return client; }
+    public HostBackend client() { return client; }
+    public BoardIF board() { return board; }
+    public WorkflowIF flow() { return flow; }
 
-    /** get the directory, into which the server files should be generated */
-    public File serverDir()  { return serverDir; }
-    /** get the directory, into which the client files should be generated */
-    public File clientDir()  { return clientDir; }
+
+    /** get the directory, into which the board-side files should be generated */
+    public File boardDir()  { return boardDir; }
+    /** get the directory, into which the host-side files should be generated */
+    public File hostDir()  { return hostDir; }
     /** get the directory, into which temporary files should be generated */
     public File tempDir()    { return tempDir; }
 
@@ -148,11 +153,12 @@ public class Configuration {
 
     /** print this config on console */
     public void printConfig() {
-        IO.println("- host backend    : " + (client == null ? "none" : client().getName()));
-        IO.println("- board backend   : " + (server == null ? "none" : server().getName()));
-        IO.println("- host folder     : " + clientDir().getAbsolutePath());
-        IO.println("- board folder    : " + serverDir().getAbsolutePath());
-        IO.println("- temp folder     : " + tempDir().getAbsolutePath());
+        IO.println("- host backend    : " + (client == null ? "none" : client.getName()));
+        IO.println("- board backend   : " + (board  == null ? "none" : board.getName()));
+        IO.println("- workflow backend: " + (flow   == null ? "none" : flow.getName()));
+        IO.println("- host folder     : " + hostDir.getAbsolutePath());
+        IO.println("- board folder    : " + boardDir.getAbsolutePath());
+        IO.println("- temp folder     : " + tempDir.getAbsolutePath());
 
         IO.print  ("- log level       : ");
         switch(loglevel) {
