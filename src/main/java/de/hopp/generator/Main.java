@@ -10,7 +10,7 @@ import java.util.List;
 import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.frontend.BDLFilePos;
 import de.hopp.generator.frontend.Board;
-import de.hopp.generator.frontend.HostBackend;
+import de.hopp.generator.frontend.Host;
 import de.hopp.generator.frontend.Parser;
 //import static de.upb.hni.vmagic.parser.VhdlParser.parseFile;
 //import de.upb.hni.vmagic.VhdlFile;
@@ -163,7 +163,7 @@ public class Main {
         // TODO parameterized help for valid workflow / board combinations?
         IO.println();
 
-        for(HostBackend backend : HostBackend.values()) {
+        for(Host backend : Host.values()) {
 
             // show backend name
             IO.println("Host Backend: " + backend.getInstance().getName());
@@ -376,7 +376,7 @@ public class Main {
                     throw new ExecutionFailed();
                 }
                 try {
-                    config.setClient(HostBackend.fromName(args[++i]).getInstance());
+                    config.setClient(Host.fromName(args[++i]).getInstance());
                 } catch(IllegalArgumentException e) {
                     IO.error(e.getMessage());
                     throw new ExecutionFailed();

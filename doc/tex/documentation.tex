@@ -1794,19 +1794,20 @@ The is no real programmatic difference between idents, memory addresses, and num
 \section{Extensions}
 So far, the driver generator can only generate \texttt{C++} host APIs and only works with a virtex 6 board. To support more languages on the host side or different boards, extensions are necessary. The driver generator is designed with such extensibility in mind. Steps necessary for generation of a specific driver (be it host or board side) are wrapped inside a \textit{backend}. These backends usually incorporate translation of the board model into some output model and unparsing of said output model. An example for such a backend ist the \texttt{C++} host backend. This section describes the steps necessary to extend the driver generator with additional backends and introduces some utility classes that can make this task easier. 
 
-There are three kinds of backends in the driver generator: host backends, board backends and project backends.
+There are three kinds of backends in the driver generator: host backends, board backends and workflow backends.
 Host backends, like the \texttt{C++} host backend, generates a host-side driver, which only depends on the interface of the board, but not the architecture. Additional host backends can provide a different user API, which can also be written in another language.
-Board backends are responsible for generation of the .bit file, with which the FPGA is programmed. An example is the Virtex6 board backend. This backend is restricted to creating files for a Virtex 6 board. To support other architectures, new board backends have to be defined.
-The third group of backends, i.e. project backends, support board backends in their generation process. Generation of .bit files is not done by the driver generator itself, but an external tool, which is referenced by the project backend. The Virtex 6 board backend for example contains the project backends for ISE 14.1 or 14.4.
+Workflow backends are responsible for generationb of the .bit file, with which the FPGA is programmed. An example is the ISE 14.1 workflow backend. This backend uses the Xilinx ISE workflow to create the .bit file. In order to use other workflows, additional backends have to be defined.
+The third group of backends, i.e. board backends, support the workflow backends in their generation process by providing board-specific information required by the chosen workflow. A board backend may provide information for multiple, compatible workflows. For example, a .bit file for the ZedBoard can be generated using an ISE workflow as well as a Vivado workflow. Consequently, the ZedBoard backend should provide information for both workflows. To support additional boards, new board backends providing this board-specific information and files have to be created.
 
 
-\subsection{Adding Backends}
-To add a host backend to the generator, the backend class is required to implement the respective interface (\texttt{de.hopp.generator.client.ClientBackend}). The interface declares all methods necessary for project generation and clean integration of the backend. The recommended way to do this is extending the \texttt{AbstractClientBackend}, which describes a backend without parameters. If additional parameters are required, the provided methods can be overridden.
 
-\texttt{getName()} simply should return the name of the backend. This name will be used as identifier for backend selection in the command line interface of the generator. \texttt{printUsage} is used for printing cli parameters which are used to configure the backend. \texttt{parseParameters} is called by the generator during parameter parsing and can take away parameters from the list. Remaining parameters have to be stored in the configuration before returning it. This is done in the abstract client backend. Finally, \texttt{generate} transforms the model and generates files. It is recommended, to split transformation and generation into separate classes.
+\subsection{Adding Host Drivers}
+To add a host backend to the generator, the backend class is required to implement the respective interface (\texttt{de.hopp.generator.host.HostBackend}). The interface declares all methods necessary for project generation and clean integration of the backend. The recommended way to do this is extending the \texttt{AbstractHostBackend}, which describes a backend without parameters. If additional parameters are required, the provided methods can be overridden.
+
+The \texttt{getName()} method simply should return the name of the backend. This name will be used as identifier for backend selection in the command line interface of the generator. \texttt{printUsage} is used for printing cli parameters which are used to configure the backend. \texttt{parseParameters} is called by the generator during parameter parsing and can take away parameters from the list. Remaining parameters have to be stored in the configuration before returning it. This is done in the abstract client backend. Finally, \texttt{generate} transforms the model and generates files. It is recommended, to split transformation and generation into separate classes.
 
 \begin{lstlisting}[language=java]
-public class Java extends AbstractClientBackend {
+public class Java extends AbstractHostBackend {
   public String getName() {
     return "java";
   }
@@ -1819,10 +1820,10 @@ public class Java extends AbstractClientBackend {
 
 The above code fragment describes a possible Java client backend. For actual implementation of model translation and file generation, refer to the code of the provided backends.
 
-After defining the backend, it has to be added to the list of backends known to the generator. This is done by adding an instance of the backend to the client backend enum (\texttt{de.hopp.generator.frontend.ClientBackend}).
+After defining the backend, it has to be added to the list of backends known to the generator. This is done by adding an instance of the backend to the client backend enum (\texttt{de.hopp.generator.frontend.Host}).
 
 \begin{lstlisting}[language=java]
-public enum ClientBackend {
+public enum Host {
     CPP(new CPP()),
     Java(new Java());
 
@@ -1833,19 +1834,28 @@ public enum ClientBackend {
 
 The above code adds the defined Java backend to the enum.
 
-Addition of other backend types is very similar to host backends. The plugin interfaces and enums differ, and are described in
-\Cref{tab:gen:hook}. Note that project backends are specific for a board backend and addition of new board backends also requires implementation of project backends for these (if multiple workflows are to be supported).
+\subsection{Adding Workflows and Boards}
+
+Introduction of a new board backend is different from introduction of host or workflow backends. While there exists a generic interface for board backends, this should not directly be implemented by board backends. Rather, the a workflow should provide a board interface specifically designed to provide information required by the workflow. A concrete board backend can then implement interface of all workflows that are supported. These board interfaces are also used to evaluate compatibility of the selected board and workflow. Integration in a board enum is equivalent to host backends.
+
+% TODO Class diagram for this ??
+
+Addition of workflow backends is nearly identical to host backends. Naturally, the enum an interface to subtype differ. Furthermore, as described above, a specialised board interface should be introduced for each new workflow, that provides all information required for the workflow. 
+
+All provided interfaces and enums and are summed up in \Cref{tab:gen:hook}.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{ c | c | c }
 Backend & Type & Class \\ \hline\hline
-\multirow{2}{*}{Host} & Interface & de.hopp.generator.backends.client.ClientBackend \\
-& Enum & de.hopp.generator.frontend.ClientBackend\\ \hline
-\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.server.ServerBackend\\
-& Enum & de.hopp.generator.frontend.ServerBackend\\ \hline
-\multirow{2}{*}{Project} & Interface & ...backends.server.virtex6.ProjectBackendIF\\
-& Enum & ...backends.server.virtex6.ProjectBackend\\
+\multirow{2}{*}{Host} & Interface & de.hopp.generator.backends.host.HostBackend \\
+& Enum & de.hopp.generator.frontend.Host\\ \hline
+\multirow{2}{*}{Workflow} & Interface & de.hopp.generator.backends.workflow.WorkflowIF\\
+& Enum & de.hopp.generator.frontend.Workflow\\ \hline
+\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.board.BoardIF\\
+& Enum & de.hopp.generator.frontend.Board\\ \hline
+ISE Board & Interface & de.hopp.generator.workflow.ise.ISEBoard\\ \hline
+Vivado Board & Interface & de.hopp.generator.workflow.vivado.VivadoBoard \\
 \end{tabular}
 \caption{Overview of Classes and Enums required for Backend Extension}
 \label{tab:gen:hook}
