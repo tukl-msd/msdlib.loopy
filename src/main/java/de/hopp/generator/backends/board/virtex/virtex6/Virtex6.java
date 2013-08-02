@@ -36,11 +36,11 @@ public class Virtex6 implements ISEBoard {
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }
 
     public MHS_14_1 getMHS_14_1(ErrorCollection errors) {
-        return new MHS(errors);
+        return new MHS(this, errors);
     }
 
     public MHS_14_4 getMHS_14_4(ErrorCollection errors) {
-        return new MHS(errors);
+        return new MHS(this, errors);
     }
 
     /**

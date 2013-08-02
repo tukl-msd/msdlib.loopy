@@ -1,6 +1,7 @@
 package de.hopp.generator.backends.workflow.ise.xps;
 
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.workflow.ise.ISEBoard;
 
 /**
  * Generation backend for a project for Xilinx XPS version 14.4. This includes
@@ -16,10 +17,11 @@ public abstract class MHS_14_4 extends MHS_14_1 {
      *
      * Initialises version strings of components from the Xilinx catalogue.
      *
+     * @param board ISE compatible board model of the selected board
      * @param errors ErrorCollection for this backend and the related generator run.
      */
-    public MHS_14_4(ErrorCollection errors) {
-        super(errors);
+    public MHS_14_4(ISEBoard board, ErrorCollection errors) {
+        super(board, errors);
 
         // not sure if these are 14.4 changes or if they are available in an
         // earlier version

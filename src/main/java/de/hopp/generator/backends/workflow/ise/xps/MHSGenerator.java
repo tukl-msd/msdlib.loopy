@@ -14,10 +14,13 @@ import java.util.Set;
 
 import katja.common.NE;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.GenerationFailed;
+import de.hopp.generator.backends.workflow.ise.ISEBoard;
+import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
+import de.hopp.generator.parser.AndExp;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHSFile;
@@ -39,6 +42,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
     // the generated mhs file
     protected MHSFile mhs;
+    protected ISEBoard board;
 
     // temporary variables used to build up the mhs file
     protected Block curBlock;
@@ -76,6 +80,8 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
     protected Set<Integer> frequencies = new HashSet<Integer>();
 
+    protected AndExp intrCntrlPorts = AndExp();
+
     public MHSFile generateMHSFile(BDLFilePos file) {
         // initialise / reset variables
         mhs = MHSFile(Attributes());
@@ -106,13 +112,29 @@ public abstract class MHSGenerator extends Visitor<NE> {
         // addINTC();
 
         // add timer instance?
-        mhs = add(mhs, getTimer());
+        mhs = add(mhs, getClk());
 
         // add default blocks
         mhs = add(mhs, getProcessorConnection());
 
         // add default blocks
         mhs = add(mhs, getDefaultParts());
+    }
+
+    public void visit(GPIOPos term) {
+        GpioComponent gpio;
+
+        try {
+            gpio = board.getGpio(term.name().term());
+        } catch (IllegalArgumentException e) {
+            errors.addError(new ParserError(e.getMessage(), term.pos().term()));
+            return;
+        }
+
+        mhs = add(mhs, gpio.getMHSAttribute());
+        mhs = add(mhs, gpio.getMHSBlock(version_gpio_leds));
+
+        addPortToInterruptController(gpio.getINTCPort());
     }
 
     public void visit(InstancePos term) {
@@ -146,8 +168,6 @@ public abstract class MHSGenerator extends Visitor<NE> {
         try {
             curBlock = add(curBlock, createCPUAxisBinding(axis));
         } catch (UsageError e) {
-            errors.addError(e);
-        } catch (GenerationFailed e) {
             errors.addError(e);
         }
     }
@@ -250,7 +270,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
      * @return The generated attribute representing the binding.
      * @throws UsageError If a parameter of the port is invalid for this context.
      */
-    protected Attribute createCPUAxisBinding(final CPUAxisPos axis) throws GenerationFailed, UsageError {
+    protected Attribute createCPUAxisBinding(final CPUAxisPos axis) throws UsageError {
 
         boolean direct = direction(getDirection(axis).termDirection());
         int width = getWidth(axis);
@@ -354,6 +374,15 @@ public abstract class MHSGenerator extends Visitor<NE> {
     }
 
     /**
+     * Adds a port descriptor to the interrupt controller port list.
+     * This list is later used add the interrupt controller core.
+     * @param port Port to be added
+     */
+    protected void addPortToInterruptController(String port) {
+        intrCntrlPorts = intrCntrlPorts.add(Ident(port));
+    }
+
+    /**
      * Generates the default parameters and blocks always required by the design.
      * These are typically board specific and should therefore be provided by the
      * board visitors.
@@ -382,6 +411,8 @@ public abstract class MHSGenerator extends Visitor<NE> {
      *
      * The BDL allows all positive integer frequencies (though XPS will probably fail with some
      * higher frequencies...).
+     *
+     * @return Board-specific clock attributes and blocks
      */
-    protected abstract MHSFile getTimer();
+    protected abstract MHSFile getClk();
 }

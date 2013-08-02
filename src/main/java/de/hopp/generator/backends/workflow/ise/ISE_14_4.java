@@ -2,8 +2,6 @@ package de.hopp.generator.backends.workflow.ise;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.workflow.WorkflowIF;
-import de.hopp.generator.backends.workflow.ise.xps.MHS_14_4;
 import de.hopp.generator.frontend.BDLFilePos;
 
 /**

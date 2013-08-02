@@ -3,14 +3,12 @@ package de.hopp.generator.backends.board.virtex.virtex6;
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
-import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.backends.workflow.ise.ISEBoard;
+import de.hopp.generator.backends.workflow.ise.xps.MHS_14_4;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.ETHERNETPos;
-import de.hopp.generator.frontend.GPIOPos;
 import de.hopp.generator.frontend.PCIEPos;
 import de.hopp.generator.frontend.UARTPos;
-import de.hopp.generator.parser.AndExp;
 import de.hopp.generator.parser.Attributes;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.Blocks;
@@ -21,10 +19,10 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 2.8.2013
  */
-public class MHS extends de.hopp.generator.backends.workflow.ise.xps.MHS_14_4 {
+public class MHS extends MHS_14_4 {
 
-    public MHS(ErrorCollection errors) {
-        super(errors);
+    public MHS(ISEBoard board, ErrorCollection errors) {
+        super(board, errors);
 
         frequencies.add(100);
         frequencies.add(200);
@@ -109,34 +107,6 @@ public class MHS extends de.hopp.generator.backends.workflow.ise.xps.MHS_14_4 {
 
     public void visit(PCIEPos term) {
         errors.addError(new ParserError("PCIE is not supported as communication interface yet", term.pos().term()));
-    }
-
-    public void visit(GPIOPos term) {
-        GpioComponent gpio;
-
-        try {
-            gpio = Gpio.fromString(term.name().term()).getInstance();
-        } catch (IllegalArgumentException e) {
-            errors.addError(new ParserError(e.getMessage(), term.pos().term()));
-            return;
-        }
-
-        mhs = add(mhs, gpio.getMHSAttribute());
-        mhs = add(mhs, gpio.getMHSBlock(version_gpio_leds));
-
-        addPortToInterruptController(gpio.getINTCPort());
-    }
-
-
-    protected AndExp intrCntrlPorts = AndExp();
-
-    /**
-     * Adds a port descriptor to the interrupt controller port list.
-     * This list is later used add the interrupt controller core.
-     * @param port Port to be added
-     */
-    protected void addPortToInterruptController(String port) {
-        intrCntrlPorts = intrCntrlPorts.add(Ident(port));
     }
 
     @Override
@@ -227,7 +197,10 @@ public class MHS extends de.hopp.generator.backends.workflow.ise.xps.MHS_14_4 {
         );
     }
 
-    /** Adds all basic components to the design, that are independent from the board. */
+    /**
+     * Adds all basic components to the design, that are independent from the board.
+     * @return all default blocks for a Virtex 6 board.
+     */
     protected Blocks defaultBlocks() {
         intrCntrlPorts = intrCntrlPorts.add(Ident("RS232_Uart_1_Interrupt"));
 
@@ -435,7 +408,7 @@ public class MHS extends de.hopp.generator.backends.workflow.ise.xps.MHS_14_4 {
     }
 
     @Override
-    protected MHSFile getTimer() {
+    protected MHSFile getClk() {
         // TODO add information about this buf and varphase... find out what it means...
         Block timer = Block("clock_generator",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),

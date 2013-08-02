@@ -10,7 +10,7 @@ public enum Host {
 
     /**
      * Each backend token has one instance of the backend, backends should be stateless
-     * @param object one instance of the backend
+     * @param instance one instance of the backend
      */
     Host(de.hopp.generator.backends.host.HostBackend instance) {
         this.instance = instance;

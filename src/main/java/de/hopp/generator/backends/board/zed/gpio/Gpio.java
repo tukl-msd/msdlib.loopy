@@ -1,4 +1,4 @@
-package de.hopp.generator.backends.board.virtex.virtex6.gpio;
+package de.hopp.generator.backends.board.zed.gpio;
 
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 

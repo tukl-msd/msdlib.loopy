@@ -35,11 +35,19 @@ public class GpioSwitches implements GpioComponent {
         );
     }
 
+    public String hwInstance() {
+        return "dip_switches_8bits";
+    }
+
+    public String getINTCPort() {
+        return "DIP_Switches_8Bits_IP2INTC_Irpt";
+    }
+
     public Block getMHSBlock(String version) {
         return Block("axi_gpio",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DIP_Switches_8Bits"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(version))),
-            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(8))),
+            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
             Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
@@ -48,12 +56,8 @@ public class GpioSwitches implements GpioComponent {
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
             Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
             Attribute(PORT(), Assignment("GPIO_IO_I", Ident("DIP_Switches_8Bits_TRI_I"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("DIP_Switches_8Bits_IP2INTC_Irpt")))
+            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(getINTCPort())))
         );
-    }
-
-    public String getINTCPort() {
-        return "DIP_Switches_8Bits_IP2INTC_Irpt";
     }
 
     public String getUCFConstraints() {
@@ -65,10 +69,6 @@ public class GpioSwitches implements GpioComponent {
                "\nNET DIP_Switches_8Bits_TRI_I[5] LOC = \"B18\"  |  IOSTANDARD = \"LVCMOS15\";" +
                "\nNET DIP_Switches_8Bits_TRI_I[6] LOC = \"K22\"  |  IOSTANDARD = \"LVCMOS15\";" +
                "\nNET DIP_Switches_8Bits_TRI_I[7] LOC = \"K21\"  |  IOSTANDARD = \"LVCMOS15\";\n";
-    }
-
-    public String hwInstance() {
-        return "dip_switches_8bits";
     }
 
     public String deviceID() {

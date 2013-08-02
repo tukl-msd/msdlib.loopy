@@ -469,7 +469,7 @@ public class Main {
 
     /**
      * Show the current status, end program if there were errors
-     * @param checkpoint whether to show the status for a checkpoint only or to summarize all we can
+     * @param done whether to show the status for a checkpoint only or to summarize all we can
      * @throws ExecutionFailed if the error collection contains error, this method will abort execution
      */
     private void showStatus(boolean done) throws ExecutionFailed {

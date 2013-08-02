@@ -15,6 +15,7 @@ public class CppUnparser extends CUnparser {
     /**
      * Create a MFile unparser
      * @param buffer the buffer to unparse into
+     * @param name file name where the buffer should be unparsed to
      */
     public CppUnparser(StringBuffer buffer, String name) {
         super(buffer, name);

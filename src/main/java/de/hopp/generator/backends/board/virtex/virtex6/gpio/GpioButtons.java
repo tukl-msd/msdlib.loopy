@@ -35,23 +35,19 @@ public class GpioButtons implements GpioComponent {
         );
     }
 
-    public String getINTCPort() {
-        return "Push_Buttons_5Bits_IP2INTC_Irpt";
+    public String hwInstance() {
+        return "push_buttons_5bits";
     }
 
-    public String getUCFConstraints() {
-        return "\nNET Push_Buttons_5Bits_TRI_I[0] LOC = \"G26\"  |  IOSTANDARD = \"LVCMOS15\";" +
-               "\nNET Push_Buttons_5Bits_TRI_I[1] LOC = \"A19\"  |  IOSTANDARD = \"LVCMOS15\";" +
-               "\nNET Push_Buttons_5Bits_TRI_I[2] LOC = \"G17\"  |  IOSTANDARD = \"LVCMOS15\";" +
-               "\nNET Push_Buttons_5Bits_TRI_I[3] LOC = \"A18\"  |  IOSTANDARD = \"LVCMOS15\";" +
-               "\nNET Push_Buttons_5Bits_TRI_I[4] LOC = \"H17\"  |  IOSTANDARD = \"LVCMOS15\";\n";
+    public String getINTCPort() {
+        return "Push_Buttons_5Bits_IP2INTC_Irpt";
     }
 
     public Block getMHSBlock(String version) {
         return Block("axi_gpio",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Push_Buttons_5Bits"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(version))),
-            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(5))),
+            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
             Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
@@ -60,12 +56,16 @@ public class GpioButtons implements GpioComponent {
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
             Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
             Attribute(PORT(), Assignment("GPIO_IO_I", Ident("Push_Buttons_5Bits_TRI_I"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident("Push_Buttons_5Bits_IP2INTC_Irpt")))
+            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(getINTCPort())))
         );
     }
 
-    public String hwInstance() {
-        return "push_buttons_5bits";
+    public String getUCFConstraints() {
+        return "\nNET Push_Buttons_5Bits_TRI_I[0] LOC = \"G26\"  |  IOSTANDARD = \"LVCMOS15\";" +
+               "\nNET Push_Buttons_5Bits_TRI_I[1] LOC = \"A19\"  |  IOSTANDARD = \"LVCMOS15\";" +
+               "\nNET Push_Buttons_5Bits_TRI_I[2] LOC = \"G17\"  |  IOSTANDARD = \"LVCMOS15\";" +
+               "\nNET Push_Buttons_5Bits_TRI_I[3] LOC = \"A18\"  |  IOSTANDARD = \"LVCMOS15\";" +
+               "\nNET Push_Buttons_5Bits_TRI_I[4] LOC = \"H17\"  |  IOSTANDARD = \"LVCMOS15\";\n";
     }
 
     public String deviceID() {

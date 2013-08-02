@@ -79,12 +79,9 @@ public abstract class ISE implements WorkflowIF {
             return;
         }
 
-        // the selected board (do we need it? guess so, but do we need it HERE?)
-        ISEBoard iseBoard = (ISEBoard)config.board();
-
         // deploy the necessary sources
-        if(!config.sdkOnly()) deployBITSources(board, iseBoard, config, errors);
-        deployELFSources(board, iseBoard, config, errors);
+        if(!config.sdkOnly()) deployBITSources(board, config, errors);
+        deployELFSources(board, config, errors);
         // abort, if errors occurred
         if(errors.hasErrors()) return;
 
@@ -96,7 +93,7 @@ public abstract class ISE implements WorkflowIF {
         if(config.noGen()) return;
 
         // generate .bit file (if sdk only flag is not set)
-        if(!config.sdkOnly()) generateBITFile(iseBoard, config, errors);
+        if(!config.sdkOnly()) generateBITFile(config, errors);
         // abort, if errors occurred
         if(errors.hasErrors()) return;
 
@@ -125,8 +122,12 @@ public abstract class ISE implements WorkflowIF {
 
     /**
      * Generates necessary Sources for generation of the BIT file
+     * @param board bdl file for which .bit sources should be generated
+     * @param config the configuration for this generator run
+     * @param errors the error collection of this generator run
      */
-    protected void deployBITSources(BDLFilePos board, ISEBoard iseBoard, Configuration config, ErrorCollection errors) {
+    protected void deployBITSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
+        ISEBoard iseBoard = (ISEBoard)config.board();
         IOHandler IO = config.IOHANDLER();
 
         StringBuffer buffer  = new StringBuffer();
@@ -192,8 +193,12 @@ public abstract class ISE implements WorkflowIF {
 
     /**
      * Generates necessary Sources for generation of the ELF file
+     * @param board bdl file for which .elf sources should be generated
+     * @param config the configuration for this generator run
+     * @param errors the error collection of this generator run
      */
-    protected void deployELFSources(BDLFilePos board, ISEBoard iseBoard, Configuration config, ErrorCollection errors) {
+    protected void deployELFSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
+        ISEBoard iseBoard = (ISEBoard)config.board();
         IOHandler IO = config.IOHANDLER();
 
 
@@ -259,8 +264,11 @@ public abstract class ISE implements WorkflowIF {
     }
     /**
      * Starts whatever external tool is responsible for generation of the BIT file
+     * @param config the configuration for this generator run
+     * @param errors the error collection of this generator run
      */
-    protected void generateBITFile(ISEBoard board, Configuration config, ErrorCollection errors) {
+    protected void generateBITFile(Configuration config, ErrorCollection errors) {
+        ISEBoard board = (ISEBoard)config.board();
         config.IOHANDLER().println("running xps synthesis (this may take some time) ...");
 
         try {
@@ -300,7 +308,11 @@ public abstract class ISE implements WorkflowIF {
         }
     }
 
-    /** Starts whatever external tool is responsible for generation of the ELF file */
+    /**
+     * Starts whatever external tool is responsible for generation of the ELF file
+     * @param config the configuration for this generator run
+     * @param errors the error collection of this generator run
+     */
     protected void generateELFFile(Configuration config, ErrorCollection errors) {
         config.IOHANDLER().println("running sdk to generate elf file (this may take some time) ...");
 
@@ -348,8 +360,11 @@ public abstract class ISE implements WorkflowIF {
 
     /**
      * Initialises the bitfile with the elf file
+     * @param config the configuration for this generator run
+     * @param errors the error collection of this generator run
      */
-    private void runBitInit(ISEBoard board, Configuration config, ErrorCollection errors) {
+    private void runBitInit(Configuration config, ErrorCollection errors) {
+        ISEBoard board = (ISEBoard)config.board();
         try {
             // create required directories
             if(!config.boardDir().exists() && !config.boardDir().mkdirs())

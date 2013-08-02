@@ -2,8 +2,14 @@ package de.hopp.generator.backends.board.zed;
 
 import java.io.File;
 
+import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
+import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.backends.workflow.ise.xps.MHS_14_1;
+import de.hopp.generator.backends.workflow.ise.xps.MHS_14_4;
 import de.hopp.generator.backends.workflow.vivado.VivadoBoard;
+import de.hopp.generator.exceptions.ParserError;
+import de.hopp.generator.frontend.BDLFile;
 
 /**
  *
@@ -25,4 +31,20 @@ public class Zed implements ISEBoard, VivadoBoard {
 
     public File xpsSources() { return new File(folder + File.separator + "xps"); }
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }
+
+    public MHS_14_1 getMHS_14_1(ErrorCollection errors) {
+        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+    }
+
+    public MHS_14_4 getMHS_14_4(ErrorCollection errors) {
+        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+    }
+
+    public String getUCF(BDLFile bdlFile) throws ParserError {
+        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+    }
+
+    public GpioComponent getGpio(String name) {
+        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+    }
 }

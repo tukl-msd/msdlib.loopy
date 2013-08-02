@@ -65,6 +65,7 @@ public class Configuration {
         this.boardDir = dir;
     }
 
+    /** set the directory, into which the temporary files of the driver should be generated */
     public void setTempDir(File dir) {
         this.tempDir = dir;
     }
