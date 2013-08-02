@@ -35,4 +35,8 @@ public class MHSUtils {
     public static Block add(Block block, Attribute attr) {
         return block.replaceAttributes(block.attributes().add(attr));
     }
+    public static MHSFile add(MHSFile a, MHSFile b) {
+        return a.replaceAttributes(a.attributes().addAll(b.attributes()))
+                .replaceBlocks(a.blocks().addAll(b.blocks()));
+    }
 }

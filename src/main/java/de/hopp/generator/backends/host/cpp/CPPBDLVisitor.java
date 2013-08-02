@@ -16,7 +16,8 @@ import java.io.File;
 import katja.common.NE;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.board.virtex.virtex6.gpio.GpioEnum;
+import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.board.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
@@ -29,6 +30,7 @@ import de.hopp.generator.model.MInitList;
 
 public class CPPBDLVisitor extends Visitor<NE> {
 
+    BoardIF board;
     ErrorCollection errors;
 
     // generated files
@@ -49,6 +51,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
 //  private MMethod clean;
 
     public CPPBDLVisitor(Configuration config, ErrorCollection errors) {
+        this.board = config.board();
         this.errors = errors;
         String clientSrc = new File(config.hostDir(), "src").getPath();
         String clientApi = new File(clientSrc, "api").getPath();
@@ -162,9 +165,9 @@ public class CPPBDLVisitor extends Visitor<NE> {
         // construct init block according to GPIO direction
         MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude(PRIVATE(), "gpio.h")));
 
-        GpioEnum gpio;
+        GpioComponent gpio;
         try {
-            gpio = GpioEnum.fromString(term.name().term());
+            gpio = board.getGpio(term.name().term());
         } catch (IllegalArgumentException e) {
             errors.addError(new ParserError(e.getMessage(), term.pos().term()));
             return;

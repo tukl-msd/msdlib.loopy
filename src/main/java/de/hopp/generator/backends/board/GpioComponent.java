@@ -1,8 +1,10 @@
-package de.hopp.generator.backends.board.virtex.virtex6.gpio;
+package de.hopp.generator.backends.board;
 
-import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Block;
-
+/**
+ *
+ * @author Thomas Fischer
+ * @since 2.8.2013
+ */
 public interface GpioComponent {
     /**
      * Returns the identifier used to create this GPIO component.
@@ -13,7 +15,7 @@ public interface GpioComponent {
      *
      * @return The identifier used to create this GPIO component.
      */
-    public String id();
+    public abstract String id();
 
     /**
      * Returns the number of bits required to represent this components state.
@@ -24,23 +26,9 @@ public interface GpioComponent {
      *
      * @return The number of bits required to represent this components state.
      */
-    public int width();
+    public abstract int width();
 
-    public boolean isGPI();
+    public abstract boolean isGPI();
 
-    public boolean isGPO();
-
-    public Attribute getMHSAttribute();
-
-    public Block getMHSBlock(String version);
-
-    public String getINTCPort();
-
-    public String getUCFConstraints();
-
-    public String hwInstance();
-
-    public String deviceID();
-
-    public String deviceIntrChannel();
+    public abstract boolean isGPO();
 }

@@ -1,9 +1,15 @@
 package de.hopp.generator.backends.board.virtex.virtex6.gpio;
 
 import static de.hopp.generator.parser.MHS.*;
+import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 
+/**
+ *
+ * @author Thomas Fischer
+ * @since 10.6.2013
+ */
 public class GpioSwitches implements GpioComponent {
 
     /**
@@ -15,22 +21,12 @@ public class GpioSwitches implements GpioComponent {
      *
      * @return The identifier used to create this GPIO component.
      */
-    public String id() {
-        return "switches";
-    }
+    public String id()     { return "switches"; }
+    public int width()     { return 8; }
+    public boolean isGPI() { return true; }
+    public boolean isGPO() { return false; }
 
-    public int width() {
-        return 8;
-    }
-
-    public boolean isGPI() {
-        return true;
-    }
-
-    public boolean isGPO() {
-        return false;
-    }
-
+    // ISE
     public Attribute getMHSAttribute() {
         return Attribute(PORT(),
             Assignment("DIP_Switches_8Bits_TRI_I", Ident("DIP_Switches_8Bits_TRI_I")),

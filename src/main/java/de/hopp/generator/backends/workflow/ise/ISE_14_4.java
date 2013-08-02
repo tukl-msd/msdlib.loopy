@@ -20,8 +20,7 @@ public class ISE_14_4 extends ISE_14_1 {
     }
     @Override
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-        xps = new MHS_14_4(config, errors);
-
+        xps = ((ISEBoard)config.board()).getMHS_14_1(errors);
         super.generate(board, config, errors);
     }
 }

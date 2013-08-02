@@ -6,7 +6,6 @@ import static de.hopp.generator.backends.workflow.ise.ISEUtils.edkDir;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkBSPDir;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkDir;
-import static de.hopp.generator.backends.workflow.ise.xps.UCF.deployUCF;
 import static de.hopp.generator.utils.BoardUtils.totalMemorySize;
 import static de.hopp.generator.utils.Files.copy;
 import static de.hopp.generator.utils.Files.getResouce;
@@ -73,7 +72,7 @@ public abstract class ISE implements WorkflowIF {
 
     @Override
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-        // check if the supplied board is compatible with this workflow
+        // check if the supplied board is compatible with this workflow (currently this means ISE 14)
         if( !(config.board() instanceof ISEBoard)) {
             errors.addError(new GenerationFailed(config.board().getName() +
                 " board incompatible with " + config.flow().getName() + " workflow"));
@@ -172,7 +171,8 @@ public abstract class ISE implements WorkflowIF {
         // FIXME merge these two blocks for better readability...
         // deploy design-dependent files
         try {
-            deployUCF(board.term(), config);
+            // deploy ucf file(s)?
+            write(new File(new File(edkDir(config), "data"), "system.ucf"), iseBoard.getUCF(board.term()));
         } catch (ParserError e) {
             errors.addError(e);
         } catch (IOException e) {

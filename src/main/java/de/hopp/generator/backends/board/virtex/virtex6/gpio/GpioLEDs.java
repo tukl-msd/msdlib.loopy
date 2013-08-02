@@ -1,9 +1,15 @@
 package de.hopp.generator.backends.board.virtex.virtex6.gpio;
 
 import static de.hopp.generator.parser.MHS.*;
+import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 
+/**
+ *
+ * @author Thomas Fischer
+ * @since 10.6.2013
+ */
 public class GpioLEDs implements GpioComponent {
 
     /**
@@ -15,22 +21,12 @@ public class GpioLEDs implements GpioComponent {
      *
      * @return The identifier used to create this GPIO component.
      */
-    public String id() {
-        return "leds";
-    }
+    public String id()     { return "leds";  }
+    public int width()     { return 8; }
+    public boolean isGPI() { return false; }
+    public boolean isGPO() { return true; }
 
-    public int width() {
-        return 8;
-    }
-
-    public boolean isGPI() {
-        return false;
-    }
-
-    public boolean isGPO() {
-        return true;
-    }
-
+    // ISE
     public Attribute getMHSAttribute() {
         return Attribute(PORT(),
             Assignment("LEDs_8Bits_TRI_O", Ident("LEDs_8Bits_TRI_O")),

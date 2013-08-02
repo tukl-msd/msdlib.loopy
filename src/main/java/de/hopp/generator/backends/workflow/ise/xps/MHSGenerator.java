@@ -3,8 +3,10 @@ package de.hopp.generator.backends.workflow.ise.xps;
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getClockPort;
+import static de.hopp.generator.utils.BoardUtils.getCore;
 import static de.hopp.generator.utils.BoardUtils.getDirection;
 import static de.hopp.generator.utils.BoardUtils.getHWQueueSize;
+import static de.hopp.generator.utils.BoardUtils.getResetPort;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 
 import java.util.HashSet;
@@ -16,9 +18,7 @@ import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.parser.AndExp;
 import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Attributes;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHSFile;
 
@@ -41,12 +41,17 @@ public abstract class MHSGenerator extends Visitor<NE> {
     protected MHSFile mhs;
 
     // temporary variables used to build up the mhs file
-    protected AndExp intrCntrlPorts;
+    protected Block curBlock;
 
     // counter variables
     protected int axiStreamIdMaster;
     protected int axiStreamIdSlave;
 
+    // queue sizes
+    protected int globalHWQueueSize;
+    protected int globalSWQueueSize;
+
+    // version strings
     protected String version;
 
     protected String version_microblaze;
@@ -69,11 +74,11 @@ public abstract class MHSGenerator extends Visitor<NE> {
     protected String version_gpio_buttons;
     protected String version_gpio_switches;
 
+    protected Set<Integer> frequencies = new HashSet<Integer>();
+
     public MHSFile generateMHSFile(BDLFilePos file) {
         // initialise / reset variables
         mhs = MHSFile(Attributes());
-
-        intrCntrlPorts = AndExp();
 
         axiStreamIdMaster = 0;
         axiStreamIdSlave  = 0;
@@ -85,7 +90,142 @@ public abstract class MHSGenerator extends Visitor<NE> {
         return mhs;
     }
 
-    // (static) helpers creating parts of the file
+    public void visit(BDLFilePos term) {
+        for(OptionPos opt : term.opts())
+            if(opt instanceof HWQUEUEPos)
+                globalHWQueueSize = ((HWQUEUEPos)opt).qsize().term();
+            else if(opt instanceof SWQUEUEPos)
+                globalSWQueueSize = ((SWQUEUEPos)opt).qsize().term();
+
+        // visit boards components
+        visit(term.gpios());
+        visit(term.insts());
+        visit(term.medium());
+
+        // TODO independent interrupt controller?
+        // addINTC();
+
+        // add timer instance?
+        mhs = add(mhs, getTimer());
+
+        // add default blocks
+        mhs = add(mhs, getProcessorConnection());
+
+        // add default blocks
+        mhs = add(mhs, getDefaultParts());
+    }
+
+    public void visit(InstancePos term) {
+        // begin a new instance using the instances name
+        curBlock = Block(term.core().term());
+
+        // reference core and version
+        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("INSTANCE", Ident(term.name().term()))));
+        curBlock = add(curBlock, Attribute(PARAMETER(), Assignment("HW_VER",   Ident(term.version().term()))));
+
+        // define bus interfaces
+        visit(term.bind());
+
+        // append clock and reset ports
+        CLK clk = getClockPort(getCore(term));
+        curBlock = add(curBlock, Attribute(PORT(), Assignment(
+                clk.name(), Ident("clk_" + clk.frequency() + "_0000MHzMMCM0"))));
+        RST rst = getResetPort(getCore(term));
+        curBlock = add(curBlock, Attribute(PORT(), Assignment(
+                rst.name(), Ident("proc_sys_reset_0_Peripheral_" + (rst.polarity() ? "reset": "aresetn")))));
+
+        // add the block to the file
+        mhs = add(mhs, curBlock);
+    }
+
+    public void visit(AxisPos term) {
+        curBlock = add(curBlock, Attribute(BUS_IF(), Assignment(term.port().term(), Ident(term.axis().term()))));
+    }
+
+    public void visit(CPUAxisPos axis) {
+        try {
+            curBlock = add(curBlock, createCPUAxisBinding(axis));
+        } catch (UsageError e) {
+            errors.addError(e);
+        } catch (GenerationFailed e) {
+            errors.addError(e);
+        }
+    }
+
+    // loops for relevant list types
+    public void visit(GPIOsPos     term) { for(GPIOPos     g : term) visit(g); }
+    public void visit(CoresPos     term) { for(CorePos     c : term) visit(c); }
+    public void visit(PortsPos     term) { for(PortPos     p : term) visit(p); }
+    public void visit(InstancesPos term) { for(InstancePos i : term) visit(i); }
+    public void visit(BindingsPos  term) { for(BindingPos  b : term) visit(b); }
+
+    // clock frequencies
+    public void visit(CorePos  term) { visit(term.ports()); }
+    public void visit(CLKPos   term) { frequencies.add(term.frequency().term()); }
+
+    // imports and backends should be handled before this visitor
+    public void visit(ImportsPos  term) { }
+    public void visit(ImportPos   term) { }
+    public void visit(BackendsPos term) { }
+    public void visit(BackendPos  term) { }
+
+    // positions and directions are handled in their surrounding blocks
+    public void visit(PositionPos term) { }
+    public void visit(INPos       term) { }
+    public void visit(OUTPos      term) { }
+    public void visit(DUALPos     term) { }
+
+    // nothing to add for no selected medium (should be an error anyway)
+    public void visit(NONEPos term) { }
+
+    // The following types are only relevant for SDK generation, not XPS.
+
+    // ports
+    public void visit(AXIPos   term) { }
+    public void visit(RSTPos   term) { }
+
+    // options
+    public void visit(OptionsPos  term) { }
+    public void visit(HWQUEUEPos  arg0) { }
+    public void visit(SWQUEUEPos  arg0) { }
+    public void visit(BITWIDTHPos term) { }
+    public void visit(POLLPos     term) { }
+
+    // logger options
+    public void visit(LogsPos    term) { }
+    public void visit(NOLOGPos   term) { }
+    public void visit(CONSOLEPos term) { }
+    public void visit(FILEPos    term) { }
+
+    public void visit(ERRORPos   term) { }
+    public void visit(WARNPos    term) { }
+    public void visit(INFOPos    term) { }
+    public void visit(FINEPos    term) { }
+    public void visit(FINERPos   term) { }
+    public void visit(FINESTPos  term) { }
+
+    // Ethernet options
+    public void visit(MOptionsPos term) { }
+    public void visit(MACPos      term) { }
+    public void visit(IPPos       term) { }
+    public void visit(MASKPos     term) { }
+    public void visit(GATEPos     term) { }
+    public void visit(PORTIDPos   term) { }
+    public void visit(DHCPPos     term) { }
+    public void visit(TOUTPos     term) { }
+
+    // code blocks
+    public void visit(DEFAULTPos      term) { }
+    public void visit(USER_DEFINEDPos term) { }
+    public void visit(SchedulerPos    term) { }
+
+    // literals
+    public void visit(IntegerPos term) { }
+    public void visit(BooleanPos term) { }
+    public void visit(StringsPos term) { }
+    public void visit(StringPos  term) { }
+
+    // helpers creating parts of the file
     /**
      * Translates the direction attribute of the port in a boolean value.
      * @param direction Direction attribute of the port.
@@ -127,15 +267,6 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
         // connect the component to the last axis
         return Attribute(BUS_IF(), Assignment(axis.port().term(), Ident(currentAxis)));
-    }
-
-    /**
-     * Adds a port descriptor to the interrupt controller port list.
-     * This list is later used add the interrupt controller core.
-     * @param port Port to be added
-     */
-    protected void addPortToInterruptController(String port) {
-        intrCntrlPorts = intrCntrlPorts.add(Ident(port));
     }
 
     /**
@@ -222,235 +353,26 @@ public abstract class MHSGenerator extends Visitor<NE> {
         return muxAxis;
     }
 
-    protected void addDefaultParameters() {
-        mhs = add(mhs, Attributes(
-            Attribute(PARAMETER(), Assignment("VERSION", Ident(version))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_we_n", Ident("ddr_memory_we_n")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_ras_n", Ident("ddr_memory_ras_n")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_odt", Ident("ddr_memory_odt")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_dqs_n", Ident("ddr_memory_dqs_n")),
-                Assignment("DIR", Ident("IO")),
-                Assignment("VEC", Range(0, 0))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_dqs", Ident("ddr_memory_dqs")),
-                Assignment("DIR", Ident("IO")),
-                Assignment("VEC", Range(0, 0))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_dq", Ident("ddr_memory_dq")),
-                Assignment("DIR", Ident("IO")),
-                Assignment("VEC", Range(7, 0))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_dm", Ident("ddr_memory_dm")),
-                Assignment("DIR", Ident("O")),
-                Assignment("VEC", Range(0, 0))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_ddr3_rst", Ident("ddr_memory_ddr3_rst")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_cs_n", Ident("ddr_memory_cs_n")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_clk_n", Ident("ddr_memory_clk_n")),
-                Assignment("DIR", Ident("O")),
-                Assignment("SIGIS", Ident("CLK"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_clk", Ident("ddr_memory_clk")),
-                Assignment("DIR", Ident("O")),
-                Assignment("SIGIS", Ident("CLK"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_cke", Ident("ddr_memory_cke")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_cas_n", Ident("ddr_memory_cas_n")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_ba", Ident("ddr_memory_ba")),
-                Assignment("DIR", Ident("O")),
-                Assignment("VEC", Range(2, 0))
-            ), Attribute(PORT(),
-                Assignment("ddr_memory_addr", Ident("ddr_memory_addr")),
-                Assignment("DIR", Ident("O")),
-                Assignment("VEC", Range(12, 0))
-            ), Attribute(PORT(),
-                Assignment("RS232_Uart_1_sout", Ident("RS232_Uart_1_sout")),
-                Assignment("DIR", Ident("O"))
-            ), Attribute(PORT(),
-                Assignment("RS232_Uart_1_sin", Ident("RS232_Uart_1_sin")),
-                Assignment("DIR", Ident("I"))
-            ), Attribute(PORT(),
-                Assignment("RESET", Ident("RESET")),
-                Assignment("DIR", Ident("I")),
-                Assignment("SIGIS", Ident("RST")),
-                Assignment("RST_POLARITY", Number(1))
-            ), Attribute(PORT(),
-                Assignment("CLK_P", Ident("CLK")),
-                Assignment("DIR", Ident("I")),
-                Assignment("DIFFERENTIAL_POLARITY", Ident("P")),
-                Assignment("SIGIS", Ident("CLK")),
-                Assignment("CLK_FREQ", Number(200000000))
-            ), Attribute(PORT(),
-                Assignment("CLK_N", Ident("CLK")),
-                Assignment("DIR", Ident("I")),
-                Assignment("DIFFERENTIAL_POLARITY", Ident("N")),
-                Assignment("SIGIS", Ident("CLK")),
-                Assignment("CLK_FREQ", Number(200000000))
-            )
-        ));
-    }
+    /**
+     * Generates the default parameters and blocks always required by the design.
+     * These are typically board specific and should therefore be provided by the
+     * board visitors.
+     *
+     * This procedure is called last of the generation phase. All variables provided
+     * by the default generator are completely instantiated at this point.
+     * @return Board-specific default parameters and blocks
+     */
+    protected abstract MHSFile getDefaultParts();
 
-    /** Adds all basic components to the design, that are independent from the board. */
-    protected void addDefaultBlocks() {
-        intrCntrlPorts = intrCntrlPorts.add(Ident("RS232_Uart_1_Interrupt"));
+    /**
+     * Generates attributes and blocks required to connect components to the boards
+     * processor. If the board has no processor integrated, this will also have to
+     * generate a soft-processor.
+     * @return Board-specific processor connection attributes and blocks
+     */
+    // TODO exceptions?
+    protected abstract MHSFile getProcessorConnection();
 
-        mhs = add(mhs, Blocks(
-            Block("proc_sys_reset",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("proc_sys_reset_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_proc_sys_reset))),
-                Attribute(PARAMETER(), Assignment("C_EXT_RESET_HIGH", Number(1))),
-                Attribute(PORT(), Assignment("MB_Debug_Sys_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))),
-                Attribute(PORT(), Assignment("Dcm_locked", Ident("proc_sys_reset_0_Dcm_locked"))),
-                Attribute(PORT(), Assignment("MB_Reset", Ident("proc_sys_reset_0_MB_Reset"))),
-                Attribute(PORT(), Assignment("Slowest_sync_clk", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("Interconnect_aresetn", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
-                Attribute(PORT(), Assignment("Ext_Reset_In", Ident("RESET"))),
-                Attribute(PORT(), Assignment("BUS_STRUCT_RESET", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
-                Attribute(PORT(), Assignment("Peripheral_reset", Ident("proc_sys_reset_0_Peripheral_reset"))),
-                Attribute(PORT(), Assignment("Peripheral_aresetn", Ident("proc_sys_reset_0_Peripheral_aresetn")))
-            ), Block("axi_intc",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_intc))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41200000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4120ffff"))),
-                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(BUS_IF(), Assignment("INTERRUPT", Ident("microblaze_0_interrupt"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("INTR", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
-            ), Block("lmb_v10",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_ilmb"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_v10))),
-                Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
-                Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
-            ), Block("lmb_bram_if_cntlr",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_i_bram_ctrl"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_bram_if_cntlr))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
-                Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_ilmb"))),
-                Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block")))
-            ), Block("lmb_v10",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_dlmb"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_v10))),
-                Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
-                Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
-            ), Block("lmb_bram_if_cntlr",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_d_bram_ctrl"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_bram_if_cntlr))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
-                Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_dlmb"))),
-                Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
-            ), Block("bram_block",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_bram_block"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_bram_block))),
-                Attribute(BUS_IF(), Assignment("PORTA", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block"))),
-                Attribute(BUS_IF(), Assignment("PORTB", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
-            ), Block("mdm",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("debug_module"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_mdm))),
-                Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
-                Attribute(PARAMETER(), Assignment("C_USE_UART", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41400000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4140ffff"))),
-                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(BUS_IF(), Assignment("MBDEBUG_0", Ident("microblaze_0_debug"))),
-                Attribute(PORT(), Assignment("Debug_SYS_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0")))
-            ), Block("axi_timer",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi_timer_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_timer))),
-                Attribute(PARAMETER(), Assignment("C_COUNT_WIDTH", Number(32))),
-                Attribute(PARAMETER(), Assignment("C_ONE_TIMER_ONLY", Number(0))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41c00000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x41c0ffff"))),
-                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("Interrupt", Ident("axi_timer_0_Interrupt")))
-            ), Block("axi_interconnect",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4lite_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_interconnect))),
-                Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(0))),
-                Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
-                Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident("clk_100_0000MHzMMCM0")))
-            ), Block("axi_interconnect",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_interconnect))),
-                Attribute(PORT(), Assignment("interconnect_aclk", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn")))
-            ), Block("axi_v6_ddrx",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DDR3_SDRAM"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_v6_ddrx))),
-                Attribute(PARAMETER(), Assignment("C_MEM_PARTNO", Ident("MT41J64M16XX-15E"))),
-                Attribute(PARAMETER(), Assignment("C_DM_WIDTH", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_DQS_WIDTH", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_DQ_WIDTH", Number(8))),
-                Attribute(PARAMETER(), Assignment("C_INTERCONNECT_S_AXI_MASTERS",
-                AndExp(
-                    Ident("microblaze_0.M_AXI_DC"),
-                    Ident("microblaze_0.M_AXI_IC")
-                    )
-                )),
-                Attribute(PARAMETER(), Assignment("C_MMCM_EXT_LOC", Ident("MMCM_ADV_X0Y8"))),
-                Attribute(PARAMETER(), Assignment("C_NDQS_COL0", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_NDQS_COL1", Number(0))),
-                Attribute(PARAMETER(), Assignment("C_S_AXI_BASEADDR", MemAddr("0xa4000000"))),
-                Attribute(PARAMETER(), Assignment("C_S_AXI_HIGHADDR", MemAddr("0xa7ffffff"))),
-                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4_0"))),
-                Attribute(PORT(), Assignment("ddr_we_n", Ident("ddr_memory_we_n"))),
-                Attribute(PORT(), Assignment("ddr_ras_n", Ident("ddr_memory_ras_n"))),
-                Attribute(PORT(), Assignment("ddr_odt", Ident("ddr_memory_odt"))),
-                Attribute(PORT(), Assignment("ddr_dqs_n", Ident("ddr_memory_dqs_n"))),
-                Attribute(PORT(), Assignment("ddr_dqs_p", Ident("ddr_memory_dqs"))),
-                Attribute(PORT(), Assignment("ddr_dq", Ident("ddr_memory_dq"))),
-                Attribute(PORT(), Assignment("ddr_dm", Ident( "ddr_memory_dm"))),
-                Attribute(PORT(), Assignment("ddr_reset_n", Ident("ddr_memory_ddr3_rst"))),
-                Attribute(PORT(), Assignment("ddr_cs_n", Ident("ddr_memory_cs_n"))),
-                Attribute(PORT(), Assignment("ddr_ck_n", Ident("ddr_memory_clk_n"))),
-                Attribute(PORT(), Assignment("ddr_ck_p", Ident("ddr_memory_clk"))),
-                Attribute(PORT(), Assignment("ddr_cke", Ident("ddr_memory_cke"))),
-                Attribute(PORT(), Assignment("ddr_cas_n", Ident("ddr_memory_cas_n"))),
-                Attribute(PORT(), Assignment("ddr_ba", Ident("ddr_memory_ba"))),
-                Attribute(PORT(), Assignment("ddr_addr", Ident("ddr_memory_addr"))),
-                Attribute(PORT(), Assignment("clk_rd_base", Ident("clk_400_0000MHzMMCM0_nobuf_varphase"))),
-                Attribute(PORT(), Assignment("clk_mem", Ident("clk_400_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("clk", Ident("clk_200_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("clk_ref", Ident("clk_200_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("PD_PSEN", Ident("psen"))),
-                Attribute(PORT(), Assignment("PD_PSINCDEC", Ident("psincdec"))),
-                Attribute(PORT(), Assignment("PD_PSDONE", Ident("psdone")))
-            ), Block("axi_uartlite",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("RS232_Uart_1"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_uartlite))),
-                Attribute(PARAMETER(), Assignment("C_BAUDRATE", Number(9600))),
-                Attribute(PARAMETER(), Assignment("C_DATA_BITS", Number(8))),
-                Attribute(PARAMETER(), Assignment("C_USE_PARITY", Number(0))),
-                Attribute(PARAMETER(), Assignment("C_ODD_PARITY", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40600000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4060ffff"))),
-                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("TX", Ident("RS232_Uart_1_sout"))),
-                Attribute(PORT(), Assignment("RX", Ident("RS232_Uart_1_sin"))),
-                Attribute(PORT(), Assignment("Interrupt", Ident("RS232_Uart_1_Interrupt")))
-            )
-        ));
-    }
 
     /**
      * Adds the clock generator to the design.
@@ -460,120 +382,6 @@ public abstract class MHSGenerator extends Visitor<NE> {
      *
      * The BDL allows all positive integer frequencies (though XPS will probably fail with some
      * higher frequencies...).
-     * @param file The BDL file representing the board.
      */
-    protected void addTimer(BDLFilePos file) {
-        Block timer = Block("clock_generator",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_clock_generator))),
-            Attribute(PARAMETER(), Assignment("C_CLKIN_FREQ", Number(200000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT0_FREQ", Number(100000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT0_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT1_FREQ", Number(200000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT1_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT2_FREQ", Number(400000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT2_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_FREQ", Number(400000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_BUF", Ident("FALSE"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_VARIABLE_PHASE", Ident("TRUE")))
-            );
-
-        Attributes ports = Attributes(
-            Attribute(PORT(), Assignment("LOCKED", Ident("proc_sys_reset_0_Dcm_locked"))),
-            Attribute(PORT(), Assignment("CLKIN", Ident("CLK"))),
-            Attribute(PORT(), Assignment("PSCLK", Ident("clk_200_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("PSEN", Ident("psen"))),
-            Attribute(PORT(), Assignment("PSINCDEC", Ident("psincdec"))),
-            Attribute(PORT(), Assignment("PSDONE", Ident("psdone"))),
-            Attribute(PORT(), Assignment("RST", Ident("RESET"))),
-            Attribute(PORT(), Assignment("CLKOUT0", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT1", Ident("clk_200_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT2", Ident("clk_400_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT3", Ident("clk_400_0000MHzMMCM0_nobuf_varphase")))
-            );
-
-        Set<Integer> frequencies = new HashSet<Integer>();
-        frequencies.add(100);
-        frequencies.add(200);
-        frequencies.add(400);
-
-        int freqCounter = 4;
-
-        for(CorePos core : file.cores()) {
-            CLK clk = getClockPort(core);
-            if(!frequencies.contains(clk.frequency())) {
-                frequencies.add(clk.frequency());
-                timer = add(timer, Attribute(PARAMETER(),
-                    Assignment("C_CLKOUT" + freqCounter + "_FREQ", Number(clk.frequency() * 1000000))));
-                timer = add(timer, Attribute(PARAMETER(),
-                    Assignment("C_CLKOUT" + freqCounter + "_GROUP", Ident("MMCMC0"))));
-                ports.add(Attribute(PORT(),
-                    Assignment("CLKOUT" + freqCounter, Ident("clk_" + clk.frequency() + "_0000MHzMMCM0"))));
-                freqCounter++;
-            }
-        }
-
-        timer = timer.replaceAttributes(timer.attributes().addAll(ports));
-        mhs = add(mhs, timer);
-    }
-
-    /** Adds the microblaze to the design. */
-    protected void addMicroblaze() {
-        Block microblaze = Block("microblaze",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_microblaze))),
-            Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
-            Attribute(PARAMETER(), Assignment("C_USE_BARREL", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_USE_FPU", Number(0))), // default: 0 speed 2
-            Attribute(PARAMETER(), Assignment("C_DEBUG_ENABLED", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_ICACHE_BASEADDR", MemAddr("0xa4000000"))),
-            Attribute(PARAMETER(), Assignment("C_ICACHE_HIGHADDR", MemAddr("0xa7ffffff"))),
-            Attribute(PARAMETER(), Assignment("C_USE_ICACHE", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_CACHE_BYTE_SIZE", Number(65536))), // default: 65536 speed: 32768
-            Attribute(PARAMETER(), Assignment("C_ICACHE_ALWAYS_USED", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_BASEADDR", MemAddr("0xa4000000"))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_HIGHADDR", MemAddr("0xa7ffffff"))),
-            Attribute(PARAMETER(), Assignment("C_USE_DCACHE", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_BYTE_SIZE", Number(65536))), // default: 65536 speed: 32768
-            Attribute(PARAMETER(), Assignment("C_DCACHE_ALWAYS_USED", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_STREAM_INTERCONNECT", Number(1))),
-            // new stuff
-            //Attribute(PARAMETER(), Assignment("C_ICACHE_LINE_LEN", Number(8))),
-            //Attribute(PARAMETER(), Assignment("C_ICACHE_STREAMS", Number(1))),
-            //Attribute(PARAMETER(), Assignment("C_ICACHE_VICTIMS", Number(8))),
-            //Attribute(PARAMETER(), Assignment("C_DCACHE_LINE_LEN", Number(8))),
-            //Attribute(PARAMETER(), Assignment("C_DCACHE_USE_WRITEBACK", Number(1))),
-            //Attribute(PARAMETER(), Assignment("C_DCACHE_VICTIMS", Number(8))),
-            //Attribute(PARAMETER(), Assignment("C_USE_HW_MUL", Number(2))),
-            //Attribute(PARAMETER(), Assignment("C_USE_DIV", Number(1))),
-            //Attribute(PARAMETER(), Assignment("C_USE_BRANCH_TARGET_CACHE", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_USE_EXTENDED_FSL_INSTR", Number(1))),
-            Attribute(BUS_IF(), Assignment("M_AXI_DP", Ident("axi4lite_0"))),
-            Attribute(BUS_IF(), Assignment("M_AXI_DC", Ident("axi4_0"))),
-            Attribute(BUS_IF(), Assignment("M_AXI_IC", Ident("axi4_0"))),
-            Attribute(BUS_IF(), Assignment("DEBUG", Ident("microblaze_0_debug"))),
-            Attribute(BUS_IF(), Assignment("INTERRUPT", Ident("microblaze_0_interrupt"))),
-            Attribute(BUS_IF(), Assignment("DLMB", Ident("microblaze_0_dlmb"))),
-            Attribute(BUS_IF(), Assignment("ILMB", Ident("microblaze_0_ilmb")))
-            );
-
-        // add master and slave interfaces for user-attached cores
-        microblaze = add(microblaze, Attribute(PARAMETER(),
-            Assignment("C_FSL_LINKS", Number(Math.max(axiStreamIdMaster, axiStreamIdSlave)))
-            ));
-
-        for(int i = 0; i < axiStreamIdMaster; i++)
-            microblaze = add(microblaze, Attribute(BUS_IF(),
-                Assignment("M" + i + "_AXIS", Ident("M" + i + "_AXIS"))));
-        for(int i = 0; i < axiStreamIdSlave; i++)
-            microblaze = add(microblaze, Attribute(BUS_IF(),
-                Assignment("S" + i + "_AXIS", Ident("S" + i + "_AXIS"))));
-
-        // add reset and clock ports
-        microblaze = add(microblaze, Attribute(PORT(), Assignment("MB_RESET", Ident("proc_sys_reset_0_MB_Reset"))));
-        microblaze = add(microblaze, Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))));
-
-        mhs = add(mhs, microblaze);
-    }
+    protected abstract MHSFile getTimer();
 }

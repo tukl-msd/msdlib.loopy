@@ -4,7 +4,6 @@ import de.hopp.generator.backends.workflow.WorkflowIF;
 import de.hopp.generator.backends.workflow.ise.ISE_14_1;
 import de.hopp.generator.backends.workflow.ise.ISE_14_4;
 
-
 public enum Workflow {
     ISE_14_1(new ISE_14_1()),
     ISE_14_4(new ISE_14_4());

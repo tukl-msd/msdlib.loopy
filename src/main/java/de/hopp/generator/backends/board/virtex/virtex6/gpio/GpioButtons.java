@@ -1,9 +1,15 @@
 package de.hopp.generator.backends.board.virtex.virtex6.gpio;
 
 import static de.hopp.generator.parser.MHS.*;
+import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 
+/**
+ *
+ * @author Thomas Fischer
+ * @since 10.6.2013
+ */
 public class GpioButtons implements GpioComponent {
 
     /**
@@ -15,22 +21,12 @@ public class GpioButtons implements GpioComponent {
      *
      * @return The identifier used to create this GPIO component.
      */
-    public String id() {
-        return "buttons";
-    }
+    public String id()     { return "buttons"; }
+    public int width()     { return 5; }
+    public boolean isGPI() { return true; }
+    public boolean isGPO() { return false; }
 
-    public int width() {
-        return 5;
-    }
-
-    public boolean isGPI() {
-        return true;
-    }
-
-    public boolean isGPO() {
-        return false;
-    }
-
+    // ISE stuff
     public Attribute getMHSAttribute() {
         return Attribute(PORT(),
             Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),

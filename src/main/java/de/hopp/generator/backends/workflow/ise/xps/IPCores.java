@@ -21,8 +21,8 @@ import de.hopp.generator.parser.Attributes;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHSFile;
 /**
- * Handles generation and deployment of files required to describe IPCores
- * for the XPS toolsuite.
+ * Handles generation and deployment of files required to describe
+ * user-specified IPCores for the XPS synthesis tool.
  *
  * @author Thomas Fischer
  * @since 24.5.2013

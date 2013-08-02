@@ -1,6 +1,5 @@
 package de.hopp.generator.backends.workflow.ise.xps;
 
-import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 
 /**
@@ -10,18 +9,17 @@ import de.hopp.generator.ErrorCollection;
  *
  * @author Thomas Fischer
  */
-public class MHS_14_4 extends MHS_14_1 {
+public abstract class MHS_14_4 extends MHS_14_1 {
 
     /**
      * Creates an XPS 14.4 project backend for a Virtex 6 board.
      *
      * Initialises version strings of components from the Xilinx catalogue.
      *
-     * @param config Configuration for this backend and the related generator run.
      * @param errors ErrorCollection for this backend and the related generator run.
      */
-    public MHS_14_4(Configuration config, ErrorCollection errors) {
-        super(config, errors);
+    public MHS_14_4(ErrorCollection errors) {
+        super(errors);
 
         // not sure if these are 14.4 changes or if they are available in an
         // earlier version

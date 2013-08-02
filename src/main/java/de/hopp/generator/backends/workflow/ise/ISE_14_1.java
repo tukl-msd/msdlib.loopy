@@ -6,7 +6,6 @@ import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.workflow.WorkflowIF;
 import de.hopp.generator.backends.workflow.ise.sdk.SDK;
 import de.hopp.generator.backends.workflow.ise.xps.MHSGenerator;
-import de.hopp.generator.backends.workflow.ise.xps.MHS_14_1;
 import de.hopp.generator.frontend.BDLFilePos;
 
 /**
@@ -38,7 +37,7 @@ public class ISE_14_1 extends ISE {
 
     @Override
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
-        xps = new MHS_14_1(config, errors);
+        xps = ((ISEBoard)config.board()).getMHS_14_1(errors);
         sdk = new SDK(config, errors);
 
         super.generate(board, config, errors);

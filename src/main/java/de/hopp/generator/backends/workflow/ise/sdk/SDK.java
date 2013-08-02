@@ -1,6 +1,7 @@
 package de.hopp.generator.backends.workflow.ise.sdk;
 
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkAppDir;
+import static de.hopp.generator.backends.workflow.ise.gpio.GpioUtils.getMSSBlock;
 import static de.hopp.generator.model.Model.*;
 import static de.hopp.generator.utils.BoardUtils.*;
 import static de.hopp.generator.utils.Model.add;
@@ -14,7 +15,7 @@ import katja.common.NE;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
-import de.hopp.generator.backends.workflow.ise.gpio.GpioEnum;
+import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.frontend.BDLFilePos.Visitor;
@@ -47,7 +48,6 @@ import de.hopp.generator.parser.MHSFile;
  */
 public class SDK extends Visitor<NE> {
 
-    private final Configuration config;
     private final ErrorCollection errors;
     private final ISEBoard board;
 
@@ -126,7 +126,6 @@ public class SDK extends Visitor<NE> {
     }
 
     public SDK(Configuration config, ErrorCollection errors) {
-        this.config = config;
         this.errors = errors;
         this.board = (ISEBoard)config.board();
 
@@ -453,10 +452,10 @@ public class SDK extends Visitor<NE> {
         deployFiles.put(new File(board.sdkSources(), "gpio.h"), new File(componentsDir, "gpio.h"));
         deployFiles.put(new File(board.sdkSources(), "gpio.c"), new File(componentsDir, "gpio.c"));
 
-        GpioEnum gpio;
+        GpioComponent gpio;
 
         try {
-            gpio = GpioEnum.fromString(term.name().term());
+            gpio = board.getGpio(term.name().term());
         } catch (IllegalArgumentException e) {
             errors.addError(new ParserError(e.getMessage(), term.pos().term()));
             return;
@@ -509,7 +508,7 @@ public class SDK extends Visitor<NE> {
 
         try {
             // add the driver block to the mss file
-            mssFile = addBlock(mssFile, gpio.getMSSBlock(hwVersion(term.term())));
+            mssFile = addBlock(mssFile, getMSSBlock(gpio, hwVersion(term.term())));
         } catch(ParserError e) {
             errors.addError(e);
         }
@@ -552,7 +551,7 @@ public class SDK extends Visitor<NE> {
             ), body);
     }
 
-    private MCode initGPI(GpioEnum gpio) throws ParserError {
+    private MCode initGPI(GpioComponent gpio) throws ParserError {
         String name = gpio.id();
         return MCode(Strings(
             "#if DEBUG",
@@ -581,7 +580,7 @@ public class SDK extends Visitor<NE> {
         ), MQuoteInclude(PRIVATE(), "gpio.h"), MQuoteInclude(PRIVATE(), "xparameters.h"));
     }
 
-    private MCode initGPO(GpioEnum gpio) throws ParserError {
+    private MCode initGPO(GpioComponent gpio) throws ParserError {
         String name = gpio.id();
         return MCode(Strings(
             "#if DEBUG",

@@ -5,6 +5,11 @@ import java.io.File;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.vivado.VivadoBoard;
 
+/**
+ *
+ * @author Thomas Fischer
+ * @since 1.8.2013
+ */
 public class Zed implements ISEBoard, VivadoBoard {
 
     protected String folder = "deploy" +
@@ -13,10 +18,10 @@ public class Zed implements ISEBoard, VivadoBoard {
 
     public String getName()  { return "zed"; }
 
-    public String getArch()  { throw new UnsupportedOperationException("ZedBoard not yet supported"); }
-    public String getDev()   { throw new UnsupportedOperationException("ZedBoard not yet supported"); }
-    public String getPack()  { throw new UnsupportedOperationException("ZedBoard not yet supported"); }
-    public String getSpeed() { throw new UnsupportedOperationException("ZedBoard not yet supported"); }
+    public String getArch()  { return "zynq"; }
+    public String getDev()   { return "xc7z020"; }
+    public String getPack()  { return "clg484"; }
+    public String getSpeed() { return "-1"; }
 
     public File xpsSources() { return new File(folder + File.separator + "xps"); }
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }

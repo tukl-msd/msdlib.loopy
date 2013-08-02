@@ -2,7 +2,6 @@ package de.hopp.generator.frontend;
 
 import de.hopp.generator.backends.host.cpp.CPP;
 
-
 public enum Host {
     CPP(new CPP());
 

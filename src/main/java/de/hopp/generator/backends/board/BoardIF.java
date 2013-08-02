@@ -1,5 +1,10 @@
 package de.hopp.generator.backends.board;
 
+/**
+ *
+ * @author Thomas Fischer
+ * @since 2.8.2013
+ */
 public interface BoardIF {
     /**
      * The name of this backend. The name is automatically used to select the backend
@@ -19,5 +24,7 @@ public interface BoardIF {
      * @return The name of the backend.
      */
     public String getName();
+
+    public GpioComponent getGpio(String name);
 
 }
