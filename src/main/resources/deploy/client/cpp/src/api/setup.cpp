@@ -26,7 +26,7 @@ void startup() {
 	startThreads();
 }
 #else
-void startup(string ip) {
+void startup(std::string ip) {
 	intrfc = new ethernet(ip.c_str(), PORT);
 	startThreads();
 }

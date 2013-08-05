@@ -1,8 +1,10 @@
 package de.hopp.generator.backends.board.zed;
 
 import java.io.File;
+import java.util.Map;
 
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.xps.MHS_14_1;
@@ -33,18 +35,20 @@ public class Zed implements ISEBoard, VivadoBoard {
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }
 
     public MHS_14_1 getMHS_14_1(ErrorCollection errors) {
-        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+        return new MHS(this, errors);
     }
 
     public MHS_14_4 getMHS_14_4(ErrorCollection errors) {
-        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+        return new MHS(this, errors);
     }
 
-    public String getUCF(BDLFile bdlFile) throws ParserError {
+    public Map<String, String> getData(BDLFile bdlFile) throws ParserError {
+        // FIXME constraint files? probably need something different from a single UCF file as well!
+        // (as in... getDataFiles or similar...)
         throw new UnsupportedOperationException("Zed Board not fully supported yet");
     }
 
     public GpioComponent getGpio(String name) {
-        throw new UnsupportedOperationException("Zed Board not fully supported yet");
+        return Gpio.fromString(name).getInstance();
     }
 }

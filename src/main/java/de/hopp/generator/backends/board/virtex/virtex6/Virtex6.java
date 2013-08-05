@@ -1,6 +1,8 @@
 package de.hopp.generator.backends.board.virtex.virtex6;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
@@ -48,7 +50,7 @@ public class Virtex6 implements ISEBoard {
      * @param bdlFile BDL description
      * @throws ParserError If errors occurred during generation of the .ucf file
      */
-    public String getUCF(BDLFile bdlFile) throws ParserError {
+    private String getUCF(BDLFile bdlFile) throws ParserError {
         String ucf = "# generic pin constraints\n" +
             "NET CLK_N LOC = \"H9\"   |  IOSTANDARD = \"LVDS_25\"  |  DIFF_TERM = \"TRUE\";\n" +
             "NET CLK_P LOC = \"J9\"   |  IOSTANDARD = \"LVDS_25\"  |  DIFF_TERM = \"TRUE\";\n" +
@@ -99,7 +101,17 @@ public class Virtex6 implements ISEBoard {
         return ucf;
     }
 
+    @Override
+    public Map<String, String> getData(BDLFile bdlFile) throws ParserError {
+        Map<String, String> constraints = new HashMap<String, String>();
+
+        constraints.put("system.ucf", getUCF(bdlFile));
+
+        return constraints;
+    }
+
     public GpioComponent getGpio(String name) throws IllegalArgumentException {
         return Gpio.fromString(name).getInstance();
     }
+
 }

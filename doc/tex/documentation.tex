@@ -45,6 +45,7 @@
 \tikzstyle{arr}=[->, >=stealth', thick, gray, shorten >= 0.2mm]
 \tikzstyle{aggregate}=[arr, >=open diamond]
 \tikzstyle{extend}=[arr, >=open triangle 90]
+\tikzstyle{implement}=[extend, dashed]
 %others
 \tikzstyle{ann} = [above, text centered]
 
@@ -1799,8 +1800,6 @@ Host backends, like the \texttt{C++} host backend, generates a host-side driver,
 Workflow backends are responsible for generationb of the .bit file, with which the FPGA is programmed. An example is the ISE 14.1 workflow backend. This backend uses the Xilinx ISE workflow to create the .bit file. In order to use other workflows, additional backends have to be defined.
 The third group of backends, i.e. board backends, support the workflow backends in their generation process by providing board-specific information required by the chosen workflow. A board backend may provide information for multiple, compatible workflows. For example, a .bit file for the ZedBoard can be generated using an ISE workflow as well as a Vivado workflow. Consequently, the ZedBoard backend should provide information for both workflows. To support additional boards, new board backends providing this board-specific information and files have to be created.
 
-
-
 \subsection{Adding Host Drivers}
 To add a host backend to the generator, the backend class is required to implement the respective interface (\texttt{de.hopp.generator.host.HostBackend}). The interface declares all methods necessary for project generation and clean integration of the backend. The recommended way to do this is extending the \texttt{AbstractHostBackend}, which describes a backend without parameters. If additional parameters are required, the provided methods can be overridden.
 
@@ -1838,9 +1837,53 @@ The above code adds the defined Java backend to the enum.
 
 Introduction of a new board backend is different from introduction of host or workflow backends. While there exists a generic interface for board backends, this should not directly be implemented by board backends. Rather, the a workflow should provide a board interface specifically designed to provide information required by the workflow. A concrete board backend can then implement interface of all workflows that are supported. These board interfaces are also used to evaluate compatibility of the selected board and workflow. Integration in a board enum is equivalent to host backends.
 
-% TODO Class diagram for this ??
-
 Addition of workflow backends is nearly identical to host backends. Naturally, the enum an interface to subtype differ. Furthermore, as described above, a specialised board interface should be introduced for each new workflow, that provides all information required for the workflow. 
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+\coordinate(center);
+
+\tikzstyle{outerClass}=[inner sep=8pt,draw=black]
+
+\node[class, fill=white] (board) at (0,0) {Board};
+\node[class, fill=white, below = 6em] (iseboard) at (board) {ISE Board};
+\node[class, fill=white, below = 6em] (virtex6) at (iseboard) {Virtex6};
+
+\node[class, fill=white, left = 6em] (workflow) at (board) {Workflow};
+\node[class, fill=white, left = 6em] (ise) at (iseboard) {ISE};
+\node[class, fill=white, left = 6em] (ise14_1) at (virtex6) {ISE 14.1};
+
+\node[class, fill=white, right = 6em] (gpio) at (board) {GPIO Component};
+\node[class, fill=white, right = 6em] (isegpio) at (iseboard) {ISE GPIO Component};
+\node[class, fill=white, right = 6em] (buttons) at (virtex6) {Virtex6 Buttons};
+
+%\node[ann, above left = 2em and -2.3em] (compText) at (port1) {Component};
+
+\draw[extend, black] (iseboard) to node[auto] {} (board);
+\draw[implement, black] (virtex6) to node[auto] {} (iseboard);
+
+\draw[extend, black] (ise) to node[auto] {} (workflow);
+\draw[implement, black] (ise14_1) to node[auto] {} (ise);
+
+\draw[extend, black] (isegpio) to node[auto] {} (gpio);
+\draw[implement, black] (buttons) to node[auto] {} (isegpio);
+
+\draw[arr] (gpio) to node[auto] {} (board);
+\draw[arr] (board) to node[auto] {} (workflow);
+
+\draw[arr] (isegpio) to node[auto] {} (iseboard);
+\draw[arr] (iseboard) to node[auto] {} (ise);
+
+\draw[arr] (buttons) to node[auto] {} (virtex6);
+\draw[arr] (virtex6) to node[auto] {} (ise14_1);
+
+\end{tikzpicture}
+\caption{Backend Architecture of the Driver Generator}
+\label{fig:gen:arch}
+\end{figure}
+
+\Cref{fig:gen:arch} shows the integration of the Virtex6 board and the ISE 14.1 workflow in this structure. The introduction of a new workflow like the ISE 14 requires introduction of a new corresponding board interface, providing all information required by the workflow. Since ISE workflows do not differ too much in minor versions, a stronger distinction between these is not required. Otherwise, an individual interface for the workflow would be required, i.e. an ISE 14.1 board interface.  The Virtex6 board backend can now implement the provided board interface indicating support of this workflow. A similar pattern is applied to GPIO components. An ise gpio component interface is provided by the workflow, which is in turn implemented by the Virtex6 components.
 
 All provided interfaces and enums and are summed up in \Cref{tab:gen:hook}.
 

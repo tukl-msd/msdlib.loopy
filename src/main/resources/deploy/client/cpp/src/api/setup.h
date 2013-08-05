@@ -21,7 +21,7 @@
 #ifdef IP
 void startup();
 #else
-void startup(string ip);
+void startup(std::string ip);
 #endif
 
 /**

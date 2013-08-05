@@ -398,6 +398,9 @@ static int medium_dhcp_config() {
 
     unsigned int dhcp_attempts = 0;
     while(1) {
+    	// perform ip input
+	    xemacif_input(netif_ptr);
+
     	// continue, if we have acquired an ip
         if(netif_ptr->ip_addr.addr) {
 #if SEVERITY >= SEVERITY_INFO
@@ -407,17 +410,15 @@ static int medium_dhcp_config() {
         	break;
         }
 
-    	// stop after a number of attempts
+        // stop after a number of attempts
         dhcp_attempts++;
         if(dhcp_attempts >= (DHCP_MAX_ATTEMPTS * 4)) {
         	xil_printf("\nERROR: DCHP request timed out after %d seconds", dhcp_attempts * 4);
 	        return -2;
 	    }
 
-	    // if no ip was assigned but attempts remain, wait a while, read a message and try again
+        // sleep and try again afterwards
 	    usleep(DHCP_FINE_TIMER_MSECS * 250);
-	    xemacif_input(netif_ptr);
-
     }
     return 0;
 }
@@ -486,6 +487,10 @@ static int medium_setup_ip() {
     IP4_ADDR(&ip,   IP_1,   IP_2,   IP_3,   IP_4);
     IP4_ADDR(&mask, MASK_1, MASK_2, MASK_3, MASK_4);
     IP4_ADDR(&gw,   GW_1,   GW_2,   GW_3,   GW_4);
+#else
+    IP4_ADDR(&ip  ,0,0,0,0);
+    IP4_ADDR(&mask,0,0,0,0);
+    IP4_ADDR(&gw  ,0,0,0,0);
 #endif /* DHCP */
 
     lwip_init();

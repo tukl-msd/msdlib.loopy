@@ -13,6 +13,7 @@ import static org.apache.commons.io.FileUtils.copyFileToDirectory;
 import static org.apache.commons.io.FileUtils.write;
 
 import java.io.*;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -169,11 +170,11 @@ public abstract class ISE implements WorkflowIF {
             errors.addError(new GenerationFailed("Failed to deploy generic edk sources due to:\n" + e.getMessage()));
         }
 
-        // FIXME merge these two blocks for better readability...
+        // FIXME merge these two blocks for better readability?...
         // deploy design-dependent files
         try {
-            // deploy ucf file(s)?
-            write(new File(new File(edkDir(config), "data"), "system.ucf"), iseBoard.getUCF(board.term()));
+            for(Entry<String, String> entry : iseBoard.getData(board.term()).entrySet())
+                write(new File(new File(edkDir(config), "data"), entry.getKey()), entry.getValue());
         } catch (ParserError e) {
             errors.addError(e);
         } catch (IOException e) {
