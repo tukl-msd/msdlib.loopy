@@ -17,9 +17,9 @@ external String
 external Integer
 external Boolean
 
-BDLFile (Imports imports, Backends backends, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
+BDLFile (Imports imports, Backends backends, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
 
-Decl = Import | Backend | Option | Core | GPIO | Instance | Medium | Scheduler
+Decl = Import | Backend | Logs | Option | Core | GPIO | Instance | Medium | Scheduler
 
 Import (String file, Position pos)
 
@@ -54,7 +54,19 @@ Option = HWQUEUE (Position pos, Integer qsize)
        | SWQUEUE (Position pos, Integer qsize)
        | BITWIDTH(Position pos, Integer bit)
        | POLL    (Position pos, Integer count)
-       | DEBUG   (Position pos)
+
+
+Logs (Log host, Log board)
+Log = NOLOG()
+    | CONSOLE (Position pos, LogSeverity sev)
+    | FILE    (Position pos, LogSeverity sev, String file)
+
+LogSeverity = ERROR()
+            | WARN()
+            | INFO()
+            | FINE()
+            | FINER()
+            | FINEST()
 
 MOption = MAC    (Position pos, String val)
         | IP     (Position pos, String val)
@@ -62,6 +74,7 @@ MOption = MAC    (Position pos, String val)
         | GATE   (Position pos, String val)
         | PORTID (Position pos, Integer val)
         | TOUT   (Position pos, Integer val)
+        | DHCP   (Position pos, Integer tout)
 
 Scheduler (Position pos, Code code)
 

@@ -1,0 +1,19 @@
+v0.3.0a
+- support for the ZedBoard
+- support for additional ise version (14.2, 14.3, 14.5, 14.6)
+
+v0.2.0
+- DHCP support
+- introduced logfiles for xps and sdk builds
+- changed syntax of several command line flags
+- introduced sdkonly flag which skips hw synthesis completely
+- internal changes for better flexibility concerning backends
+- improved logging
+- renamed server and client to board and host
+- provided a new eclipse setup that should work better
+
+- fixed: hardware queues now working correctly
+- fixed: known issues of Ethernet connector (esp. memory problems)
+- fixed: ise 14.4 backend now uses recent core versions
+- fixed: non-verbose runs should now finish correctly but still report bugs (due to parallel runs, failing of the build may take some time though)
+- fixed: multiple small fixes to host-side c++ driver code

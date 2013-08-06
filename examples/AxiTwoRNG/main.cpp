@@ -6,8 +6,6 @@
 
 #include <stdio.h>
 
-using namespace std;
-
 void randomTest() {
   // init test seeds
   int reset = 0x00000001;
@@ -16,7 +14,7 @@ void randomTest() {
   int seed3 = 0x37543452;
 
   // init seed vector
-  vector<bitset<32> > seeds;
+  std::vector<std::bitset<32> > seeds;
   seeds.push_back(reset);
   seeds.push_back(seed1);
   seeds.push_back(seed2);
@@ -29,12 +27,12 @@ void randomTest() {
   rng_a.s_axis.write(seeds);
 
   // read values
-  vector<bitset<32> > vals(8);
+  std::vector<std::bitset<32> > vals(8);
   rng_a.m_axis.read(vals);
 
   // print values
-  for(int i = 0; i < vals.size(); i++)
-      cout << endl << "value: " << vals[i].to_ulong();
+  for(unsigned int i = 0; i < vals.size(); i++)
+      std::cout << std::endl << "value: " << vals[i].to_ulong();
 }
 
 int main() {

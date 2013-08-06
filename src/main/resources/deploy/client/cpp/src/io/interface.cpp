@@ -22,6 +22,7 @@
 #include <netinet/in.h>
 
 #include "../exceptions.h"
+#include "../logger.h"
 
 #define LED_SETTING 0
 #define SWITCH_POLL 1
@@ -59,9 +60,7 @@ void ethernet::setup() {
 	struct sockaddr_in stSockAddr;
 	int Res;
 
-#if DEBUG
-	printf("setting up data socket @%s:%d ...", ip, port);
-#endif /* DEBUG */
+	logger_host << INFO << "setting up data socket @" << ip << ":" << port << " ...";
 
 	// throw an exception, if socket creation faileds
 	if (-1 == socketFD_send)
@@ -135,9 +134,7 @@ void ethernet::setup() {
 
 	//everything else --> listening loop...
 
-#if DEBUG
-	printf(" done\n");
-#endif /* DEBUG */
+	logger_host << " done" << std::endl;
 }
 
 void ethernet::teardown() {
@@ -155,15 +152,14 @@ void ethernet::send(int val) {
 
 void ethernet::send(int buf[], int size) {
 	// print debug message
-#if DEBUG
-		printf("\nsending package of size %d with values: ", size);
-		int i;
-		for(i = 0; i < size; i++) {
-			printf("%d", buf[i]);
-			if(i < size-1) printf(", ");
-		}
-		printf(" ...");
-#endif /* DEBUG */
+
+    logger_host << FINE << "sending package of size " << size << "with values: ";
+	int i;
+	for(i = 0; i < size; i++) {
+		logger_host << buf[i];
+		if(i < size-1) logger_host << ", ";
+	}
+	logger_host << " ...";
 
 	// write data
 	if(write(socketFD_send, buf, size*4) < 0) throw mediumException(
@@ -171,9 +167,7 @@ void ethernet::send(int buf[], int size) {
 			strerror(errno) + " (" + std::to_string(errno) + ")");
 
 	// print finishing debug message
-#if DEBUG
-	printf(" done");
-#endif /* DEBUG */
+	logger_host << " done" << std::endl;
 }
 
 void ethernet::send(std::vector<int> val) {

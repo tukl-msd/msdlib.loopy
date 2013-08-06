@@ -92,7 +92,7 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "backend"       { yybegin(BACKEND_START); }
 
 /* global options */
-"debug"         { return symbol(BDLFileSymbols.DEBUG);   }
+"log"           { return symbol(BDLFileSymbols.LOG);     }
 "swqueue"       { return symbol(BDLFileSymbols.SWQUEUE); }
 "hwqueue"       { return symbol(BDLFileSymbols.HWQUEUE); }
 
@@ -104,6 +104,7 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 "gate"          { return symbol(BDLFileSymbols.GATE); }
 "port"          { return symbol(BDLFileSymbols.PORT); }
 "timeout"       { return symbol(BDLFileSymbols.TIMEOUT); }
+"dhcp"          { return symbol(BDLFileSymbols.DHCP); }
 
 /* core related */
 "core"          { return symbol(BDLFileSymbols.CORE); }

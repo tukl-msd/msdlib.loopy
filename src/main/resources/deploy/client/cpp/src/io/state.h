@@ -17,6 +17,8 @@
 #include <math.h>
 #include <vector>
 
+#include "../logger.h"
+
 template <int width>
 class outPort;
 
@@ -97,7 +99,7 @@ public:
 class abstractWriteState : public state {
 friend void scheduleWriter();
 friend std::vector<int> take(std::shared_ptr<LinkedQueue<abstractWriteState>> q, unsigned int count);
-friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
+friend void recv_ack_unsafe(unsigned char pid, unsigned int count);
 private:
 	/**
 	 * Peeks at the first #count values of the state and stores them into the provided array.
@@ -124,7 +126,7 @@ public:
  */
 class abstractReadState : public state {
 friend void scheduleReader();
-friend void read_unsafe(unsigned char pid, int val);
+friend void recv_data_unsafe(unsigned char pid, int val);
 private:
 	/**
 	 * Tries to store #count values in the read state.
@@ -260,9 +262,7 @@ private:
 		while(put < count) {
 			if(put + done == size) break;
 
-#if DEBUG
-			printf("\nstoring value @ state: %d", val[put]);
-#endif /* DEBUG */
+			logger_host << FINE << "storing value @ state: " << val[put] << std::endl;
 
 			// leftshift current value
 			currentValue = currentValue << (sizeof(int) * 8);

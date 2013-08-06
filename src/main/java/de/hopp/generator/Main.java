@@ -9,9 +9,10 @@ import java.util.List;
 
 import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.frontend.BDLFilePos;
-import de.hopp.generator.frontend.ClientBackend;
+import de.hopp.generator.frontend.Board;
+import de.hopp.generator.frontend.Host;
 import de.hopp.generator.frontend.Parser;
-import de.hopp.generator.frontend.ServerBackend;
+import de.hopp.generator.frontend.Workflow;
 
 /**
  * Main class of the generator.
@@ -21,7 +22,7 @@ import de.hopp.generator.frontend.ServerBackend;
  */
 public class Main {
 
-    public final static String version = "0.0.1";
+    public final static String version = "0.2";
 
     private Configuration config;
     private final IOHandler IO;
@@ -66,21 +67,23 @@ public class Main {
         IO.println("Options:");
         IO.println();
         IO.println(" ---------- backend selection ----------");
-        IO.println(" -s --server <name>");
-        IO.println("    --board <name>     selects the backend for generation of");
-        IO.println("                       the board-side (server-side) driver.");
         IO.println(" -c --client <name>");
         IO.println("    --host <name>      selects the backend for generation of");
         IO.println("                       the host-side (client-side) driver");
+        IO.println(" -s --server <name>");
+        IO.println(" -b --board <name>     selects the board, for which a driver");
+        IO.println("                       should be generated.");
+        IO.println(" -w --workflow <name>  selects the workflow that should be used");
+        IO.println("                       for hardware synthesis.");
         IO.println(" ---------- directory related ----------");
         IO.println(" -S --serverDir <dir>");
-        IO.println("    --boardDir <dir>   generate files for the board to <dir>.");
+        IO.println(" -B --boardDir <dir>   generate files for the board to <dir>.");
         IO.println("                       If this is not set, the board files");
-        IO.println("                       are generated to ./" + Configuration.defaultServerDir + "\".");
+        IO.println("                       are generated to ./" + Configuration.defaultBoardDir + "\".");
         IO.println(" -C --clientDir <dir>");
-        IO.println("    --hostDir <dir>    generate files for the board to <dir>.");
+        IO.println(" -H --hostDir <dir>    generate files for the host to <dir>.");
         IO.println("                       If this is not set, the host files");
-        IO.println("                       are generated to ./" + Configuration.defaultClientDir + "\".");
+        IO.println("                       are generated to ./" + Configuration.defaultHostDir + "\".");
         IO.println(" -t --temp <dir>       generate temporary files into <dir>.");
         IO.println("                       If this is not set, the termporary files");
         IO.println("                       are generated to ./" + Configuration.defaultTempDir + "\".");
@@ -92,15 +95,13 @@ public class Main {
         IO.println(" -d --debug            sets the log level to debug resulting in additional");
         IO.println("                       console output from the driver generator.");
         IO.println("                       Note that the log level flags overwrite each other.");
-//        enables debug mode for the generated driver,");
-//        IO.println("                       which will cause THE DRIVER to produce additional");
-//        IO.println("                       console output.");
         IO.println();
         IO.println(" ---------- miscellaneous ----------");
         IO.println(" -o --parseonly        check only for parser errors");
         IO.println(" -n --dryrun           don't execute the generator phase of");
-        IO.println("                       the backends, i.e. analyze only");
-        IO.println("    --noBitGen         disable bitfile generation");
+        IO.println("                       the backends, i.e. analyze only.");
+        IO.println("    --nogen            disable generation of .bit and .elf files.");
+        IO.println("    --sdkonly          disable generation of .bit file and sources.");
         IO.println("    --config <file>    supplies the generator with a config file containing");
         IO.println("                       all information configurable with cli parameters.");
         IO.println("                       This will immediately start the generator ignoring all");
@@ -109,30 +110,29 @@ public class Main {
         IO.println("                       With this interface, config files can easily be created");
         IO.println("                       and directly executed. Further command line parameters");
         IO.println("                       will be ignored.");
-        IO.println(" -h --help             show this help.");
+        IO.println(" -h --help             show this help. Append a backend to get its help.");
         IO.println();
 
-        for(ClientBackend backend : ClientBackend.values()) {
-
-            // show backend name
-            IO.println("Host Backend: " + backend.getInstance().getName());
-            IO.println();
-
-            // show backend usage and flags
-            backend.getInstance().printUsage(IO);
-            IO.println();
+        // Print backends
+        IO.println("Supported host languages:");
+        for(Host backend : Host.values()) {
+            // FIXME comma separated list?
+            IO.println(" - " + backend.getInstance().getName());
         }
 
-        for(ServerBackend backend : ServerBackend.values()) {
-
-            // show backend name
-            IO.println("Server Backend: " + backend.getInstance().getName());
-            IO.println();
-
-            // show backend usage and flags
-            backend.getInstance().printUsage(IO);
-            IO.println();
+        IO.println("Supported boards:");
+        for(Board backend : Board.values()) {
+            // FIXME comma separated list?
+            IO.println(" - " + backend.getInstance().getName());
         }
+
+        IO.println("Supported workflows:");
+        for(Workflow backend : Workflow.values()) {
+            // FIXME comma separated list?
+            IO.println(" - " + backend.getInstance().getName());
+        }
+
+        IO.println();
     }
 
     private void run(String[] args) {
@@ -200,10 +200,10 @@ public class Main {
         }
 
         // unparse generated server models to corresponding files
-        if(config.server() != null) {
-            IO.println("starting up " + config.server().getName() + " board backend ...");
+        if(config.flow() != null) {
+            IO.println("starting up " + config.flow().getName() + " board backend ...");
 
-            config.server().generate(board, config, errors);
+            config.flow().generate(board, config, errors);
 
             // abort if any errors occurred
             IO.println();
@@ -212,8 +212,8 @@ public class Main {
             IO.println("backend finished");
         }
 
+        // unparse generated client models to corresponding files
         if(config.client() != null) {
-            // unparse generated client models to corresponding files
             IO.println();
             IO.println("starting up " + config.client().getName() + " host backend ...");
 
@@ -262,8 +262,8 @@ public class Main {
         args = parseOptions(args);
 
         // pass remaining flags to backends
-        if(config.server() != null) {
-            config = config.server().parseParameters(config, args);
+        if(config.flow() != null) {
+            config = config.flow().parseParameters(config, args);
             args   = config.UNUSED();
             config.setUnusued(new String[0]);
         }
@@ -322,38 +322,52 @@ public class Main {
                     throw new ExecutionFailed();
                 }
                 try {
-                    config.setClient(ClientBackend.fromName(args[++i]).getInstance());
+                    config.setClient(Host.fromName(args[++i]).getInstance());
                 } catch(IllegalArgumentException e) {
                     IO.error(e.getMessage());
                     throw new ExecutionFailed();
                 }
 
-            } else if(args[i].equals("-s") || args[i].equals("--server") || args[i].equals("--board")) {
+            } else if(args[i].equals("-b") || args[i].equals("--board")
+                   || args[i].equals("-s") || args[i].equals("--server")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
                 try {
-                    config.setServer(ServerBackend.fromName(args[++i]).getInstance());
+                    config.setBoard(Board.fromName(args[++i]).getInstance());
                 } catch(IllegalArgumentException e) {
                     IO.error(e.getMessage());
                     throw new ExecutionFailed();
                 }
+            } else if(args[i].equals("-w") || args[i].equals("--workflow")) {
+             if(i + 1 >= args.length) {
+                 IO.error("no argument left for "+args[i]);
+                 throw new ExecutionFailed();
+             }
+             try {
+                 config.setFlow(Workflow.fromName(args[++i]).getInstance());
+             } catch(IllegalArgumentException e) {
+                 IO.error(e.getMessage());
+                 throw new ExecutionFailed();
+             }
 
-            // DESTDIR flags TODO push these into backends
-            } else if(args[i].equals("-C") || args[i].equals("--clientDir") || args[i].equals("--hostDir")) {
+            // DESTDIR flags TODO push these into backends?
+            } else if(args[i].equals("-H") || args[i].equals("--hostDir")
+                   || args[i].equals("-C") || args[i].equals("--clientDir")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
-                config.setClientDir(new File(args[++i]));
+                config.setHostDir(new File(args[++i]));
 
-            } else if(args[i].equals("-S") || args[i].equals("--serverDir") || args[i].equals("--boardDir")) {
+            } else if(args[i].equals("-B") || args[i].equals("--boardDir")
+                   || args[i].equals("-S") || args[i].equals("--serverDir")) {
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
                     throw new ExecutionFailed();
                 }
-                config.setServerDir(new File(args[++i]));
+                config.setBoardDir(new File(args[++i]));
 
             } else if(args[i].equals("-t") || args[i].equals("--temp")) {
                 if(i + 1 >= args.length) {
@@ -375,10 +389,12 @@ public class Main {
                 config.enableParseonly();
             } else if(args[i].equals("-n") || args[i].equals("--dryrun")) {
                 config.enableDryrun();
-            } else if(args[i].equals("--noBitGen")) {
-                config.enableNoBitGen();
+            } else if(args[i].equals("--nogen")) {
+                config.enableNoGen();
+            } else if(args[i].equals("--sdkonly")) {
+                config.enableSDKOnly();
 
-            } else if(args[i].equals("-c") || args[i].equals("--config")) {
+            } else if(args[i].equals("--config")) {
                 // TODO run generator with the provided config
                 if(i + 1 >= args.length) {
                     IO.error("no argument left for "+args[i]);
@@ -388,6 +404,32 @@ public class Main {
 //                config.enableGUI();
             // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
+                if(i + 1 < args.length) {
+                    for(Host backend : Host.values())
+                        if(backend.getInstance().getName().equals(args[i+1])) {
+                            IO.println("Usage help of " + backend.getInstance().getName() + " host backend:");
+                            backend.getInstance().printUsage(IO);
+                            IO.println();
+                            throw new ExecutionFailed();
+                        }
+
+                    for(Board backend : Board.values())
+                        if(backend.getInstance().getName().equals(args[i+1])) {
+                            IO.println("Usage help of " + backend.getInstance().getName() + " board backend:");
+                            backend.getInstance().printUsage(IO);
+                            IO.println();
+                            throw new ExecutionFailed();
+                        }
+
+                    for(Workflow backend : Workflow.values())
+                        if(backend.getInstance().getName().equals(args[i+1])) {
+                            IO.println("Usage help of " + backend.getInstance().getName() + " workflow backend:");
+                            backend.getInstance().printUsage(IO);
+                            IO.println();
+                            throw new ExecutionFailed();
+                        }
+                }
+
                 showUsage();
                 throw new ExecutionFailed();
 
@@ -399,7 +441,7 @@ public class Main {
 
     /**
      * Show the current status, end program if there were errors
-     * @param checkpoint whether to show the status for a checkpoint only or to summarize all we can
+     * @param done whether to show the status for a checkpoint only or to summarize all we can
      * @throws ExecutionFailed if the error collection contains error, this method will abort execution
      */
     private void showStatus(boolean done) throws ExecutionFailed {

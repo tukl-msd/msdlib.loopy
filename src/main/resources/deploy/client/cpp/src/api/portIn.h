@@ -30,8 +30,8 @@ extern std::condition_variable can_write;
  */
 class abstractInPort {
 friend void scheduleWriter();
-friend void acknowledge_unsafe(unsigned char pid, unsigned int count);
-friend void acknowledge(unsigned char pid, unsigned int count);
+friend void recv_ack_unsafe(unsigned char pid, unsigned int count);
+friend void recv_ack(unsigned char pid, unsigned int count);
 friend void recv_poll(unsigned char pid);
 protected:
 	/** ID of the port. */
@@ -205,7 +205,7 @@ public:
 	 *          has received it. This will be fixed in a later version
 	 */
 	void write(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {
-	    std::vector<bitset<width>> vals = read_file<width>(file, delim, f);
+	    std::vector<std::bitset<width>> vals = read_file<width>(file, delim, f);
 	    write(vals);
 	}
 
@@ -254,7 +254,7 @@ public:
      * @throws invalidArgument If the provided file does not exist.
      */
 	std::shared_ptr<writeState<width>> nbwrite(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {
-        std::vector<bitset<width>> vals = read_file<width>(file, delim, f);
+        std::vector<std::bitset<width>> vals = read_file<width>(file, delim, f);
         return nbwrite(vals);
     }
 

@@ -44,7 +44,7 @@ void send_poll(unsigned char pid, unsigned int count);
  * @param pid Port id of the acknowledging port.
  * @param count Number of values acknowledged.
  */
-void acknowledge(unsigned char pid, unsigned int count);
+void recv_ack(unsigned char pid, unsigned int count);
 /**
  * Processes an incoming data package.
  * Adds the data either to the value queue of the target port or
@@ -53,7 +53,7 @@ void acknowledge(unsigned char pid, unsigned int count);
  * @param val Values sent to the port.
  * @param size Number of values sent to the port
  */
-void read(unsigned char pid, int val[], int size);
+void recv_data(unsigned char pid, int val[], int size);
 
 /**
  * Processes an incoming poll.

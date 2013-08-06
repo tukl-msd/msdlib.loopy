@@ -20,7 +20,7 @@ public class BoardUtils {
     /** The default bitwidth of ports. */
     public static final int defaultWidth = 32;
     /** The default size for the TCP sendbuffer. */
-    public static final int defaultTCPSendBuffer = 8192;
+    public static final int defaultTCPSendBuffer = 2048;
 //    public static boolean hasLEDs(Board board) {
 //        for(Component comp : board.components())
 //            if(comp instanceof LEDS) return true;
@@ -76,7 +76,9 @@ public class BoardUtils {
      */
     public static String printBoard(BDLFilePos board) {
         String rslt = "parsed the following board";
-        rslt += "\n  -debug: " + (isDebug(board) ? "yes" : "no");
+//        rslt += "\n  -debug: " + (isDebug(board) ? "yes" : "no");
+        rslt += "\n  -host log level  "  + getLogSeverity(board.logs().host()).sortName();
+        rslt += "\n  -board log level " + getLogSeverity(board.logs().board()).sortName();
         rslt += "\n  -" + board.medium().termMedium().Switch(new Medium.Switch<String, NE>() {
             public String CaseNONE(NONE term) {
                 return "no medium";
@@ -100,6 +102,7 @@ public class BoardUtils {
                         public String CaseGATE(GATE term)     { return "gate    " + term.val(); }
                         public String CasePORTID(PORTID term) { return "port    " + term.val(); }
                         public String CaseTOUT(TOUT term)     { return "timeout " + term.val(); }
+                        public String CaseDHCP(DHCP term)     { return "dhcp (timeout: " + term.tout() + ")"; }
                     });
                 }
                 return rslt;
@@ -112,15 +115,18 @@ public class BoardUtils {
         return rslt;
     }
 
-    /**
-     * Checks if the debug flag has been set in a board description file.
-     * @param board The board description to be checked.
-     * @return true, if the debug flag has been set, false otherwise.
-     */
-    public static boolean isDebug(BDLFilePos board) {
-        boolean debug = false;
-        for(OptionPos opt : board.opts()) if(opt instanceof DEBUGPos) debug = true;
-        return debug;
+    public static LogSeverity getLogSeverity(LogPos log) {
+        return log.termLog().Switch(new Log.Switch<LogSeverity, NE>() {
+            public LogSeverity CaseNOLOG(NOLOG term) {
+                return BDL.ERROR();
+            }
+            public LogSeverity CaseCONSOLE(CONSOLE term) {
+                return term.sev();
+            }
+            public LogSeverity CaseFILE(FILE term) {
+                return term.sev();
+            }
+        });
     }
 
     /**
@@ -367,7 +373,7 @@ public class BoardUtils {
      * @param file The complete board description.
      * @return The maximal used queue size.
      */
-    public static int maxQueueSize(BDLFilePos file) {
+    public static int maxOutQueueSize(BDLFilePos file) {
         int size = 0;
 
         for(InstancePos inst : file.insts())
@@ -393,6 +399,12 @@ public class BoardUtils {
         return 2;
     }
 
+    public static boolean hasDHCP(ETHERNETPos term) {
+        for(MOption opt : term.opts().term()) if(opt instanceof DHCP) return true;
+
+        return false;
+    }
+
     /**
      * Calculates the size of the TCP send buffer for the boards ethernet connection.
      *
@@ -402,21 +414,21 @@ public class BoardUtils {
      * @return The calculated size for the TCP send buffer in 4byte integers.
      */
     public static int tcp_sndbufSize(ETHERNETPos term) {
-        return Math.max(defaultTCPSendBuffer, maxQueueSize(term.root()) *10);
+        return Math.max(defaultTCPSendBuffer, maxOutQueueSize(term.root()) *10);
     }
 
     private static int totalQueueSize(BDLFilePos file) {
         int size = 0;
 
-        // add queue lenghts of all in-going ports
+        // add queue lengths of all in-going ports
         for(InstancePos inst : file.insts())
             for(BindingPos bind : inst.bind())
                 if(bind instanceof CPUAxisPos)
                     if(getPort(bind).direction() instanceof INPos)
                         size += getSWQueueSize((CPUAxisPos)bind);
 
-        // add maximal queue lenght of all out-going ports
-        size += maxQueueSize(file);
+        // add maximal queue length of all out-going ports
+        size += maxOutQueueSize(file);
 
         return size;
     }

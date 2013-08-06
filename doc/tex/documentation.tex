@@ -45,6 +45,7 @@
 \tikzstyle{arr}=[->, >=stealth', thick, gray, shorten >= 0.2mm]
 \tikzstyle{aggregate}=[arr, >=open diamond]
 \tikzstyle{extend}=[arr, >=open triangle 90]
+\tikzstyle{implement}=[extend, dashed]
 %others
 \tikzstyle{ann} = [above, text centered]
 
@@ -218,10 +219,10 @@ In order to generate a \texttt{.bit} and an \texttt{.elf} file that can is used 
 
 Interaction with these tools is reduced to a minimum by using the command line interface provided by Xilinx whenever possible. This in turn also implies, that the tools can not be used for the actual board design, but only for the synthesis process.
 
- \textcolor{red}{Currently, the user is still required to execute these cli commands manually (or do it with the gui again...).}
+Both XPS and the Xilinx SDK have to be accessible from console using the commands \texttt{xps} and \texttt{xsdk} respectively.
 
 \paragraph{\texttt{C/C++11} Compiler}
-The currently provided host-side driver is written in \texttt{C++11}. Hence, a \texttt{C/C++11} compiler is required as well.
+The currently provided host-side driver is written in \texttt{C++11}. Hence, a \texttt{C/C++11} compiler is required as well. For design of the host-side application build on top of the api, a development environment might also be desirable. The generated code has been successfully compiled using gcc 4.7.2. As developement environment, Eclipse 4.2 (Juno) with CDT 8.1 or above is recommended.
 
 \section{Board Description Language}
 \label{sec:bdl}
@@ -399,9 +400,9 @@ If the tools described in \Cref{sec:setup} are correctly installed, the followin
 
 
 \subsection{Checking out the Generator}
-First of all, the project has to be checked out (if you are reading this document, you have probably done that already). As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/ag/hopp/}. Please note, that authorization is required.} The the complete command for the initial checkout is:\\
+First of all, the project has to be checked out (if you are reading this document, you have probably done that already). As of now, the project is only available at the mercurial repository of the Softech Group of the University of Kaiserslautern.\footnote{The repository is located at \url{https://softech.informatik.uni-kl.de/hg/public/loopy/}.} The the complete command for the initial checkout is:\\
 
-\texttt{hg clone https://softech.informatik.uni-kl.de/hg/ag/hopp <target dir>}
+\texttt{hg clone https://softech.informatik.uni-kl.de/hg/public/loopy/\\<target dir>}\\
 
 Later updates can be performed using \texttt{hg pull -u} (which will pull and immediately update the local copy afterwards.
 %\begin{figure}
@@ -590,6 +591,8 @@ Since such components only hold a single state and perform no processing, commun
 
 Ports allow \textit{synchronous} as well as \textit{asynchronous} communication. A synchronous write to a port waits for the message to be delivered to the component. A synchronous read waits for a value to be received. Asynchronous operations do not wait, but return immediately. Instead, a \textit{task} is scheduled for the operation, which will be performed asynchronously. While the order between tasks and therefore values to a single port is maintained, the order between tasks executed at different ports may differ from the order they were scheduled in.
 
+\textbf{Important note:} Synchronous writes are currently not fully supported. The driver does not block until the component has received the written value, but only until the board-side driver has acknowledged and stored the value.\footnote{To understand the reason for this, one has to consider hardware queues described in the following chapters. The board-side driver is not directly connected to the target component. It only knows, that a value was successfully stored in the hardware queue. A software queue acknowledgement is used instead of this hardware queue acknowledgement, since it would provide no additional value for the user. Real component acknowledgement would require feedback of the empty flag of the hardware queue itself, either over another AXI stream port (reducing the total number of usable ports to 15 for the microblaze) or interrupt flags (which - from a software-engineers point of view - is a horrible way to do things).}
+
 \subsection{State}
 \label{sec:api:state}
 Another important part of the API is the \textit{state}, which describes the current progress of a read or write operations. A state is returned by asynchronous operations and can be used to keep track of the operations progress. A \textit{write state} indicates, how many values have already been written to the board (and how many have not), a \textit{read state} indicates, how many values have already been read to the given memory area (and how many still remain).
@@ -738,7 +741,7 @@ Consider the following example to understand why earlier, asynchronous operation
 
 Parallel, independent processing of operations can be realised by dedicated I/O threads, handling communication between host-side and board-side driver. These threads modify the client-side queues described above in \Cref{sec:arch:queue}.
 
-The most simple solution to enable independent processing of requests on ports is the introduction of a single thread for each port. However, this results in a possibly large number of threads. Depending on the host platform, a smaller number of threads might be preferable. It is not required to parallelise all ports, but only continue reading and writing of values while the API is blocked by a synchronous operation. This can be achieved using a single, dedicated I/O thread, that handles all communication between host-side and board-side driver. Since reading from the medium involves longer periods of listening for messages, which would unnecessarily delay write operations, it is preferable to introduce separate threads for writing and reading. Consequently, three threads are running on the host: the application thread itself calling the API, and the two I/O threads handling communication between the host-side and board-side driver.
+The most intuitive solution to enable independent processing of requests on ports is the introduction of a single thread for each port. However, this results in a possibly large number of threads. Depending on the host platform, a smaller number of threads might be preferable. It is not required to parallelise all ports, but only continue reading and writing of values while the API is blocked by a synchronous operation. This can be achieved using a single, dedicated I/O thread, that handles all communication between host-side and board-side driver. Since reading from the medium involves longer periods of listening for messages, which would unnecessarily delay write operations, it is preferable to introduce separate threads for writing and reading. Consequently, three threads are running on the host: the application thread itself calling the API, and the two I/O threads handling communication between the host-side and board-side driver.
 
 The threads have to be started with a special method \texttt{startup()} before using the API and should be shut down afterwards with another method \texttt{shutdown()}.
 
@@ -1792,19 +1795,18 @@ The is no real programmatic difference between idents, memory addresses, and num
 \section{Extensions}
 So far, the driver generator can only generate \texttt{C++} host APIs and only works with a virtex 6 board. To support more languages on the host side or different boards, extensions are necessary. The driver generator is designed with such extensibility in mind. Steps necessary for generation of a specific driver (be it host or board side) are wrapped inside a \textit{backend}. These backends usually incorporate translation of the board model into some output model and unparsing of said output model. An example for such a backend ist the \texttt{C++} host backend. This section describes the steps necessary to extend the driver generator with additional backends and introduces some utility classes that can make this task easier. 
 
-There are three kinds of backends in the driver generator: host backends, board backends and project backends.
+There are three kinds of backends in the driver generator: host backends, board backends and workflow backends.
 Host backends, like the \texttt{C++} host backend, generates a host-side driver, which only depends on the interface of the board, but not the architecture. Additional host backends can provide a different user API, which can also be written in another language.
-Board backends are responsible for generation of the .bit file, with which the FPGA is programmed. An example is the Virtex6 board backend. This backend is restricted to creating files for a Virtex 6 board. To support other architectures, new board backends have to be defined.
-The third group of backends, i.e. project backends, support board backends in their generation process. Generation of .bit files is not done by the driver generator itself, but an external tool, which is referenced by the project backend. The Virtex 6 board backend for example contains the project backends for ISE 14.1 or 14.4.
+Workflow backends are responsible for generationb of the .bit file, with which the FPGA is programmed. An example is the ISE 14.1 workflow backend. This backend uses the Xilinx ISE workflow to create the .bit file. In order to use other workflows, additional backends have to be defined.
+The third group of backends, i.e. board backends, support the workflow backends in their generation process by providing board-specific information required by the chosen workflow. A board backend may provide information for multiple, compatible workflows. For example, a .bit file for the ZedBoard can be generated using an ISE workflow as well as a Vivado workflow. Consequently, the ZedBoard backend should provide information for both workflows. To support additional boards, new board backends providing this board-specific information and files have to be created.
 
+\subsection{Adding Host Drivers}
+To add a host backend to the generator, the backend class is required to implement the respective interface (\texttt{de.hopp.generator.host.HostBackend}). The interface declares all methods necessary for project generation and clean integration of the backend. The recommended way to do this is extending the \texttt{AbstractHostBackend}, which describes a backend without parameters. If additional parameters are required, the provided methods can be overridden.
 
-\subsection{Adding Backends}
-To add a host backend to the generator, the backend class is required to implement the respective interface (\texttt{de.hopp.generator.client.ClientBackend}). The interface declares all methods necessary for project generation and clean integration of the backend. The recommended way to do this is extending the \texttt{AbstractClientBackend}, which describes a backend without parameters. If additional parameters are required, the provided methods can be overridden.
-
-\texttt{getName()} simply should return the name of the backend. This name will be used as identifier for backend selection in the command line interface of the generator. \texttt{printUsage} is used for printing cli parameters which are used to configure the backend. \texttt{parseParameters} is called by the generator during parameter parsing and can take away parameters from the list. Remaining parameters have to be stored in the configuration before returning it. This is done in the abstract client backend. Finally, \texttt{generate} transforms the model and generates files. It is recommended, to split transformation and generation into separate classes.
+The \texttt{getName()} method simply should return the name of the backend. This name will be used as identifier for backend selection in the command line interface of the generator. \texttt{printUsage} is used for printing cli parameters which are used to configure the backend. \texttt{parseParameters} is called by the generator during parameter parsing and can take away parameters from the list. Remaining parameters have to be stored in the configuration before returning it. This is done in the abstract client backend. Finally, \texttt{generate} transforms the model and generates files. It is recommended, to split transformation and generation into separate classes.
 
 \begin{lstlisting}[language=java]
-public class Java extends AbstractClientBackend {
+public class Java extends AbstractHostBackend {
   public String getName() {
     return "java";
   }
@@ -1817,10 +1819,10 @@ public class Java extends AbstractClientBackend {
 
 The above code fragment describes a possible Java client backend. For actual implementation of model translation and file generation, refer to the code of the provided backends.
 
-After defining the backend, it has to be added to the list of backends known to the generator. This is done by adding an instance of the backend to the client backend enum (\texttt{de.hopp.generator.frontend.ClientBackend}).
+After defining the backend, it has to be added to the list of backends known to the generator. This is done by adding an instance of the backend to the client backend enum (\texttt{de.hopp.generator.frontend.Host}).
 
 \begin{lstlisting}[language=java]
-public enum ClientBackend {
+public enum Host {
     CPP(new CPP()),
     Java(new Java());
 
@@ -1831,19 +1833,72 @@ public enum ClientBackend {
 
 The above code adds the defined Java backend to the enum.
 
-Addition of other backend types is very similar to host backends. The plugin interfaces and enums differ, and are described in
-\Cref{tab:gen:hook}. Note that project backends are specific for a board backend and addition of new board backends also requires implementation of project backends for these (if multiple workflows are to be supported).
+\subsection{Adding Workflows and Boards}
+
+Introduction of a new board backend is different from introduction of host or workflow backends. While there exists a generic interface for board backends, this should not directly be implemented by board backends. Rather, the a workflow should provide a board interface specifically designed to provide information required by the workflow. A concrete board backend can then implement interface of all workflows that are supported. These board interfaces are also used to evaluate compatibility of the selected board and workflow. Integration in a board enum is equivalent to host backends.
+
+Addition of workflow backends is nearly identical to host backends. Naturally, the enum an interface to subtype differ. Furthermore, as described above, a specialised board interface should be introduced for each new workflow, that provides all information required for the workflow. 
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+\coordinate(center);
+
+\tikzstyle{outerClass}=[inner sep=8pt,draw=black]
+
+\node[class, fill=white] (board) at (0,0) {Board};
+\node[class, fill=white, below = 6em] (iseboard) at (board) {ISE Board};
+\node[class, fill=white, below = 6em] (virtex6) at (iseboard) {Virtex6};
+
+\node[class, fill=white, left = 6em] (workflow) at (board) {Workflow};
+\node[class, fill=white, left = 6em] (ise) at (iseboard) {ISE};
+\node[class, fill=white, left = 6em] (ise14_1) at (virtex6) {ISE 14.1};
+
+\node[class, fill=white, right = 6em] (gpio) at (board) {GPIO Component};
+\node[class, fill=white, right = 6em] (isegpio) at (iseboard) {ISE GPIO Component};
+\node[class, fill=white, right = 6em] (buttons) at (virtex6) {Virtex6 Buttons};
+
+%\node[ann, above left = 2em and -2.3em] (compText) at (port1) {Component};
+
+\draw[extend, black] (iseboard) to node[auto] {} (board);
+\draw[implement, black] (virtex6) to node[auto] {} (iseboard);
+
+\draw[extend, black] (ise) to node[auto] {} (workflow);
+\draw[implement, black] (ise14_1) to node[auto] {} (ise);
+
+\draw[extend, black] (isegpio) to node[auto] {} (gpio);
+\draw[implement, black] (buttons) to node[auto] {} (isegpio);
+
+\draw[arr] (gpio) to node[auto] {} (board);
+\draw[arr] (board) to node[auto] {} (workflow);
+
+\draw[arr] (isegpio) to node[auto] {} (iseboard);
+\draw[arr] (iseboard) to node[auto] {} (ise);
+
+\draw[arr] (buttons) to node[auto] {} (virtex6);
+\draw[arr] (virtex6) to node[auto] {} (ise14_1);
+
+\end{tikzpicture}
+\caption{Backend Architecture of the Driver Generator}
+\label{fig:gen:arch}
+\end{figure}
+
+\Cref{fig:gen:arch} shows the integration of the Virtex6 board and the ISE 14.1 workflow in this structure. The introduction of a new workflow like the ISE 14 requires introduction of a new corresponding board interface, providing all information required by the workflow. Since ISE workflows do not differ too much in minor versions, a stronger distinction between these is not required. Otherwise, an individual interface for the workflow would be required, i.e. an ISE 14.1 board interface.  The Virtex6 board backend can now implement the provided board interface indicating support of this workflow. A similar pattern is applied to GPIO components. An ise gpio component interface is provided by the workflow, which is in turn implemented by the Virtex6 components.
+
+All provided interfaces and enums and are summed up in \Cref{tab:gen:hook}.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{ c | c | c }
 Backend & Type & Class \\ \hline\hline
-\multirow{2}{*}{Host} & Interface & de.hopp.generator.backends.client.ClientBackend \\
-& Enum & de.hopp.generator.frontend.ClientBackend\\ \hline
-\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.server.ServerBackend\\
-& Enum & de.hopp.generator.frontend.ServerBackend\\ \hline
-\multirow{2}{*}{Project} & Interface & ...backends.server.virtex6.ProjectBackendIF\\
-& Enum & ...backends.server.virtex6.ProjectBackend\\
+\multirow{2}{*}{Host} & Interface & de.hopp.generator.backends.host.HostBackend \\
+& Enum & de.hopp.generator.frontend.Host\\ \hline
+\multirow{2}{*}{Workflow} & Interface & de.hopp.generator.backends.workflow.WorkflowIF\\
+& Enum & de.hopp.generator.frontend.Workflow\\ \hline
+\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.board.BoardIF\\
+& Enum & de.hopp.generator.frontend.Board\\ \hline
+ISE Board & Interface & de.hopp.generator.workflow.ise.ISEBoard\\ \hline
+Vivado Board & Interface & de.hopp.generator.workflow.vivado.VivadoBoard \\
 \end{tabular}
 \caption{Overview of Classes and Enums required for Backend Extension}
 \label{tab:gen:hook}

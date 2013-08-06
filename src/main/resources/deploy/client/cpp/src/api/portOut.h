@@ -31,8 +31,8 @@ void send_poll(unsigned char pid, unsigned int count);
  */
 class abstractOutPort {
 friend void scheduleReader();
-friend void read_unsafe(unsigned char pid, int val);
-friend void read(unsigned char pid, int val[], int size);
+friend void recv_data_unsafe(unsigned char pid, int val);
+friend void recv_data(unsigned char pid, int val[], int size);
 protected:
 	/** ID of the port. */
 	int pid;
@@ -208,10 +208,10 @@ public:
      * @param f Function formatting values written to the file (cf ios_base.h).
      * @throws readException if the read failed.
      */
-	void read(int count, const char *file, const char delim, ios_base& (*f)(ios_base&)) {
+	void read(int count, const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {
 	    std::vector<std::bitset<width>> vals(count);
 	    read(vals);
-	    write_file(file, delim, f, vals);
+	    write_file<width>(file, delim, f, vals);
 	}
 
 	/**

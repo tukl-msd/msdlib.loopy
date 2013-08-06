@@ -1,8 +1,8 @@
 package de.hopp.generator.frontend;
 
 import java_cup.runtime.*;
-import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.exceptions.ParserError;
 import katja.common.NE;
 
 /* Preliminaries to set up and use the scanner.  */
@@ -20,7 +20,7 @@ action code {:
 :}
 
 parser code {:
-//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
+//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Logs(BDL.NOLOG(), BDL.NOLOG()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
 //
 //  public BDLFile getBDLFile() {
 //    return board;
@@ -63,8 +63,8 @@ terminal BEGIN, END, CBEGIN, COMMA;
 terminal String CEND;
 terminal IMPORT;
 terminal BACKEND;
-terminal SWQUEUE, HWQUEUE, DEBUG, WIDTH, POLL;
-terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT;
+terminal SWQUEUE, HWQUEUE, LOG, WIDTH, POLL;
+terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT, DHCP;
 terminal CORE, SOURCE, PORT;
 terminal CLK, RST;
 terminal IN, OUT, DUAL;
@@ -88,6 +88,10 @@ non terminal Instance instance;
 non terminal GPIO gpio;
 non terminal Bindings bind;
 non terminal Scheduler scheduler;
+
+non terminal Logs log;
+non terminal LogSeverity severity;
+non terminal Boolean device;
 
 non terminal Decl decl;
 non terminal Decls decl_list;
@@ -114,6 +118,7 @@ file ::=
      {:
          Imports imports     = BDL.Imports();
          Backends backends   = BDL.Backends();
+         Logs logs           = BDL.Logs(BDL.NOLOG(), BDL.NOLOG());
          Options opts        = BDL.Options();
          Cores cores         = BDL.Cores();
          GPIOs gpios         = BDL.GPIOs();
@@ -124,6 +129,23 @@ file ::=
                 if(d == null) continue;
            else if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
            else if(d instanceof Backend)  { backends = backends.add((Backend)d);  }
+           else if(d instanceof Logs)     {
+             Logs newLogs = (Logs)d;
+
+             // check if there is a new host logger
+             if(!(newLogs.host() instanceof NOLOG))
+                 // set host logger, if none was specified, otherwise throw error
+                 if(logs.host() instanceof NOLOG)
+                     logs = logs.replaceHost(newLogs.host());
+                 else error("duplicate definition of host logger", lleft, lright);
+
+             // check if there is a new board logger
+             if(!(newLogs.board() instanceof NOLOG))
+                 // set board logger, if none was specified, otherwise throw error
+                 if(logs.board() instanceof NOLOG)
+                     logs = logs.replaceBoard(newLogs.board());
+                 else error("duplicate definition of board logger", lleft, lright);
+           }
            else if(d instanceof Option)   {     opts =     opts.add((Option)d);   }
            else if(d instanceof Core)     {    cores =    cores.add((Core)d);     }
            else if(d instanceof Instance) {    insts =    insts.add((Instance)d); }
@@ -138,7 +160,7 @@ file ::=
              scheduler = (Scheduler)d;
            }
          }
-         RESULT = BDL.BDLFile(imports, backends, opts, cores, gpios, insts, medium, scheduler);
+         RESULT = BDL.BDLFile(imports, backends, logs, opts, cores, gpios, insts, medium, scheduler);
      :}
   ;
 
@@ -157,6 +179,7 @@ decl_list ::=
 decl ::=
      imp:i       {: RESULT = i; :}
   |  backend:b   {: RESULT = b; :}
+  |  log:l       {: RESULT = l; :}
   |  option:o    {: RESULT = o; :}
   |  core:c      {: RESULT = c; :}
   |  instance:i  {: RESULT = i; :}
@@ -223,9 +246,44 @@ option ::=
      {:
          RESULT = BDL.POLL(pos(keyleft), 0);
      :}
-  |  DEBUG:key
+  ;
+
+log ::=
+  LOG:key device:dev severity:sev
      {:
-         RESULT = BDL.DEBUG(pos(keyleft));
+         Log log = BDL.CONSOLE(pos(keyleft), sev);
+         if(dev) RESULT = BDL.Logs(log, BDL.NOLOG());
+         else    RESULT = BDL.Logs(BDL.NOLOG(), log);
+     :}
+  |  LOG:key device:dev severity:sev STRING_LITERAL:file
+     {:
+         Log log = BDL.FILE(pos(keyleft), sev, file);
+         if(dev) RESULT = BDL.Logs(log, BDL.NOLOG());
+         else    RESULT = BDL.Logs(BDL.NOLOG(), log);
+     :}
+  ;
+
+severity ::=
+     {:
+         RESULT = BDL.ERROR();
+     :}
+  |  ID:id
+     {:
+         if(id.equals("error"))        { RESULT = BDL.ERROR();  }
+         else if(id.equals("warning")) { RESULT = BDL.WARN();   }
+         else if(id.equals("info"))    { RESULT = BDL.INFO();   }
+         else if(id.equals("fine"))    { RESULT = BDL.FINE();   }
+         else if(id.equals("finer"))   { RESULT = BDL.FINER();  }
+         else if(id.equals("finest"))  { RESULT = BDL.FINEST(); }
+         else error("unknown severity " + id, idleft, idright);
+     :}
+  ;
+device ::=
+     ID:id
+     {:
+         if(id.equals("host"))       { RESULT = true;  }
+         else if(id.equals("board")) { RESULT = false; }
+         else error("unknown device specifier " + id, idleft, idright);
      :}
   ;
 
@@ -529,6 +587,14 @@ medium_option ::=
   |  TIMEOUT:key DEC:val
      {:
          RESULT = BDL.TOUT(pos(keyleft),val);
+     :}
+  |  DHCP:key
+     {:
+         RESULT = BDL.DHCP(pos(keyleft),-1);
+     :}
+  |  DHCP:key DEC:tout
+     {:
+         RESULT = BDL.DHCP(pos(keyleft),tout);
      :}
   ;
 

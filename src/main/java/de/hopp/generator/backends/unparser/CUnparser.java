@@ -18,9 +18,10 @@
 
 package de.hopp.generator.backends.unparser;
 
-import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.model.Model.CONSTANT;
+import static de.hopp.generator.model.Model.PRIVATE;
+import static de.hopp.generator.model.Model.STATIC;
 import katja.common.NE;
-
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.model.*;
 
@@ -28,7 +29,7 @@ import de.hopp.generator.model.*;
  * plain C unparser. Generates C code out of the given model.
  * Generated code references header file, HUnparser has to be invoked as well.
  * Note, that some constructs cannot be unparsed and will lead to exceptions.
- * 
+ *
  * @author Thomas Fischer
  */
 // TODO const modifier? (does it even make sense as modifier??)
@@ -37,33 +38,42 @@ public class CUnparser extends HUnparser {
     /**
      * Create a MFile unparser
      * @param buffer the buffer to unparse into
+     * @param name file name where the buffer should be unparsed to
      */
     public CUnparser(StringBuffer buffer, String name) {
         super(buffer, name);
     }
-    
+
     @Override
     public void visit(MFileInFile file) throws InvalidConstruct {
 
         // import the header file
         buffer.append("#include \"" + name + ".h\"\n");
-        
+
         // gather all imports
         MIncludes importLines = gatherImports(file);
-        
+
+        importLines = filter(importLines, PRIVATE());
+
         if(!importLines.isEmpty()) {
-            MInclude[] includes = sort(importLines.toArray());
-            
+
+            MInclude[] includes = importLines.toArray();
+            sort(includes);
+
             for(final MInclude include : includes)
                 buffer.append(include.Switch(new MInclude.Switch<String, NE>() {
-                    public String CaseMBracketInclude(MBracketInclude term) { return ""; }
-                    public String CaseMQuoteInclude(MQuoteInclude term)     { return ""; }
-                    public String CaseMForwardDecl(MForwardDecl term)       {
-                        return '\n' + term.name() + ";";
+                    public String CaseMBracketInclude(MBracketInclude term) {
+                        return "\n#include <"  + term.name() + '>';
+                    }
+                    public String CaseMQuoteInclude(MQuoteInclude term) {
+                        return "\n#include \""  + term.name() + '\"';
+                    }
+                    public String CaseMForwardDecl(MForwardDecl term) {
+                        return "\n" + term.name() + ";";
                     }
                 }));
         }
-        
+
         // unparse components
         visit(file.dirs());
         visit(file.structs());
@@ -79,7 +89,7 @@ public class CUnparser extends HUnparser {
         if(dirs.size() > 0) {
             // append comment
             buffer.append("\n// definitions of " + name + "");
-            
+
             // unparse the contained structs
             for(MPreProcDirInFile dir : dirs) visit(dir);
             buffer.append('\n');
@@ -91,13 +101,13 @@ public class CUnparser extends HUnparser {
         if(attributes.size() > 0) {
             super.visit(filter(attributes, PRIVATE()));
             super.visit(attributes.removeAll(filter(attributes, PRIVATE()).term()));
-        }  
+        }
     }
-    
+
     @Override
     public void visit(MMethodsInFile methods) throws InvalidConstruct {
         if(methods.parent() instanceof MClassInFile
-                && ((MClassInFile)methods.parent()).modifiers().term().contains(PRIVATE())) {
+                && methods.parent().modifiers().term().contains(PRIVATE())) {
             for(MMethodInFile method : filter(methods, PRIVATE()))
                 super.visit(method);
             for(MMethodInFile method : methods.removeAll(filter(methods, PRIVATE()).term()))
@@ -106,26 +116,26 @@ public class CUnparser extends HUnparser {
             if(methods.size() > 0) {
                 super.visit(filter(methods, PRIVATE()));
                 super.visit(methods.removeAll(filter(methods, PRIVATE()).term()));
-            }  
+            }
         }
     }
-    
+
     @Override
     public void visit(MClassesInFile classes) throws InvalidConstruct {
         // In plain C no classes are allowed. So this has to be empty.
         if(!classes.isEmpty())
             throw new InvalidConstruct("encountered a class in C unparser");
     }
-    
+
     @Override
     public void visit(MStructInFile struct) throws InvalidConstruct {
         visit(struct.doc());
         buffer.append("struct " + struct.name().term() + " {\n");
         buffer.indent();
-        
+
         // unparse contained attributes
         visit(struct.attributes());
-        
+
         buffer.unindent();
         buffer.append("}\n");
     }
@@ -143,43 +153,43 @@ public class CUnparser extends HUnparser {
 
     @Override
     public void visit(MAttributeInFile attribute) throws InvalidConstruct {
-        
+
         // start a new line for the attribute
         buffer.append('\n');
-        
+
         // append documentation
         visit(attribute.doc());
-        
+
         // set the type declaration to the attribute name
         typeDecl = attribute.name().term();
-        
+
         // "private" globals should always be declare "static"
         if(attribute.parent().parent() instanceof MFileInFile)
             if(attribute.modifiers().term().contains(PRIVATE())) buffer.append("static ");
         // for attributes of classes, static has a different semantic and should not be set automatically
         else if(attribute.modifiers().term().contains(STATIC())) buffer.append("static ");
-        
+
         // attributes can be constant
         if(attribute.modifiers().term().contains(CONSTANT())) buffer.append("const ");
-        
+
         // unparse the type
         visit(attribute.type());
-        
-        // for class attributes, the initial value is set in the header 
+
+        // for class attributes, the initial value is set in the header
         visit(attribute.initial());
-        
+
         // append colon
         buffer.append(";");
     }
 
     @Override
     public void visit(MProcedureInFile proc) throws InvalidConstruct {
-        
+
         buffer.append('\n');
-        
+
         // append documentation
         visit(proc.doc());
-        
+
         // append keywords if appropriate
         if(proc.modifiers().term().contains(CONSTANT())) buffer.append("const ");
 //        if(proc.parent().parent() instanceof MFileInFile
@@ -190,16 +200,16 @@ public class CUnparser extends HUnparser {
         //Private now only means that there is no header entry,
         //not that it can't be called from anywhere else (forward defs ftw...)
         else if(proc.modifiers().term().contains(STATIC())) buffer.append("static ");
-        
+
         // unparse the return type
         visit(proc.returnType());
-        
+
         // append the identifier of the method
         buffer.append(qualifiedName(proc));
-        
+
         // unparse the parameter list
         visit(proc.parameter());
-        
+
         // unparse the method body
         visit(proc.body());
     }
@@ -221,7 +231,7 @@ public class CUnparser extends HUnparser {
 //        if(! codefragment.part().term().equals(""))
 //            buffer.append(" = " + codefragment.part().term());
 //    }
-    
+
     @Override
     public void visit(MInitListInFile list) throws InvalidConstruct {
         throw new InvalidConstruct("encountered class initialisation list in C unparser");

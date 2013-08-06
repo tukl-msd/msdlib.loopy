@@ -25,8 +25,6 @@
 
 #include <math.h>
 
-using namespace std;
-
 // basic issues:
 // - size restricted ):
 // - skips characters after numbers without errors...
@@ -56,21 +54,21 @@ static bool from_string(T& t, const std::string& s, std::ios_base& (*f)(std::ios
  * @throws invalid_argument If the provided file does not exist.
  */
 template <int width>
-vector<bitset<width> > read_file(const char *file, const char delim, ios_base& (*f)(ios_base&)) {
+std::vector<std::bitset<width> > read_file(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {
     FILE *file_ptr;
     char *line_ptr = NULL;
     size_t len;
-    vector<bitset<width> > values;
+    std::vector<std::bitset<width> > values;
 
     file_ptr = fopen(file, "r");
 
-    if(NULL == file_ptr) throw invalid_argument("file not found"); // throw an error
+    if(NULL == file_ptr) throw std::invalid_argument("file not found"); // throw an error
 
     while((getdelim(&line_ptr, &len, delim, file_ptr)) != -1) {
-        string line = string(line_ptr);
+        std::string line = std::string(line_ptr);
         long long value;
         if(from_string<long long>(value, line_ptr, f)) // ignore bad lines
-            values.push_back(bitset<width> (value));   // push back value to vector
+            values.push_back(std::bitset<width> (value));   // push back value to vector
     }
 
     fclose(file_ptr);
@@ -93,13 +91,16 @@ vector<bitset<width> > read_file(const char *file, const char delim, ios_base& (
  * @tparam width Bitwidth of the source bitset vector.
  */
 template <int width>
-void write_file(const char *file, const char delim, ios_base& (*f)(ios_base&), vector<bitset<width> > vals) {
-    ofstream ofs(file, ofstream::out);
+void write_file(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&), std::vector<std::bitset<width> > vals) {
+    std::ofstream ofs(file, std::ofstream::out | std::ofstream::app);
 
     for(unsigned int i = 0; i < vals.size(); i++) {
         ofs << f << vals.at(i).to_ullong();  // add number in provided format
         if(i < vals.size()-1) ofs << delim;  // add delimiter
     }
+
+    // append new line at the end
+    ofs << "\n";
 
     ofs.close();
 }

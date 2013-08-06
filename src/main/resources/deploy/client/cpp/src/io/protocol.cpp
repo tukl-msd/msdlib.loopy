@@ -17,6 +17,7 @@
 // others
 #include "io.h"
 #include "../exceptions.h"
+#include "../logger.h"
 
 // protocol instance to be used
 protocol *proto = new protocol_v1();
@@ -57,15 +58,11 @@ void protocol_v1::decode(int first) {
 	// the last two bytes mark the size of this frame
 	unsigned int size = fmod(first, pow(2, 16));
 
-#if DEBUG
-		printf("\ndecoded the following message header: %d", first);
-		printf("\n  version : %hhu", version);
-		printf("\n  type    : %hhu", type);
-		printf("\n  target  : %hhu", id);
-		printf("\n  size    : %d", size);
-#endif /* DEBUG */
-
-	std::cout.flush();
+	logger_host << FINE << "decoded the following message header: " << first << std::endl;
+	logger_host << FINE << "  version : " << version << std::endl;
+	logger_host << FINE << "  type    : " << type << std::endl;
+	logger_host << FINE << "  target  : " << id << std::endl;
+	logger_host << FINE << "  size    : " << size << std::endl;
 
 	// 8 bit protocol version
 	// 4 bit message type
@@ -114,22 +111,13 @@ void protocol_v1::decode(int first) {
                 try {
                     if(intrfc->waitForData(0, 250000)) intrfc->readInt(payload + i);
                 } catch(mediumException &e) {
-                    printf("%s", e.what());
+                    logger_host << ERROR << e.what() << std::endl;
                     intrfc->waitForData(0, 250000);
                 }
             }
 
-            // TODO replace cout here with actual output stream...
-            cout << endl;
-            switch(id){
-            case info:    cout << "INFO:    "; break;
-            case warning: cout << "WARNING: "; break;
-            case error:   cout << "ERROR:   "; break;
-            default:      cout << "DEBUG:   "; break;
-            }
-
-            // TODO relace above switch with something similar to hex/dec/...?
-            cout << (char*)payload;
+            // stream severity to logger
+            logger_board << (severity)id << (char*)payload << std::endl;
         }
 
         break;
@@ -145,8 +133,6 @@ void protocol_v1::decode(int first) {
 			// the size is given in sizeof(int)
 			int payload[size];
 			unsigned int i = 0;
-
-			std::cout.flush();
 
 			// try to read a value from the medium
 			while(i < size) {
@@ -169,7 +155,7 @@ void protocol_v1::decode(int first) {
                     // c) broken board-side driver didn't send all the values specified in the size field...
                     // d) broken medium (lost connection for some reason)
                     // while a) and b) fix themselves by ignoring this message, c) and d) do not...
-                    printf("%s", e.what());
+                    logger_host << ERROR << e.what() << std::endl;
                     // SOLUTION for d): perform a short wait and die over there, if something is wrong with the medium
                     // this however does NOT solve c) - buggy drivers will not send enough values...
                     //  this probably is a stupid use-case though. We do not look at attackers...
@@ -178,10 +164,8 @@ void protocol_v1::decode(int first) {
 			}
 //			intrfc->readInts(payload, size);
 
-			std::cout.flush();
-
 			// shift read values to the respective queue
-			read(id, payload, size);
+			recv_data(id, payload, size);
 		}
 		break;
 	case poll: // This is a non-blocking poll.
@@ -198,7 +182,7 @@ void protocol_v1::decode(int first) {
 		if(id > IN_PORT_COUNT-1) throw protocolException(std::string("pid value (") +
 				std::to_string(id) + ") of received acknowledgment exceeded count of in-going ports (" +
 				std::to_string(IN_PORT_COUNT) + ")");
-		acknowledge(id, size);
+		recv_ack(id, size);
 		break;
 	default:
 		throw protocolException(
@@ -206,7 +190,7 @@ void protocol_v1::decode(int first) {
 		        std::to_string(type) + ") for protocol version 1");
 	}
 
-	if(DEBUG) printf("\nfinished message interpretation");
+	logger_host << FINE << "finished message interpretation" << std::endl;
 }
 
 std::vector<int> protocol_v1::encode_data(unsigned char pid, std::vector<int> val) {

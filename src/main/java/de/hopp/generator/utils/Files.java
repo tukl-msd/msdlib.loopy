@@ -97,6 +97,7 @@ public class Files {
      * Copies files and directories into another directory.
      * @param in the input file (maybe a directory or file)
      * @param out the output file
+     * @param IO IOHandler of this generator run
      * @throws IOException file operations cause IOExceptions, naturally...
      */
     private static void copy(File in, File out, IOHandler IO) throws IOException {
