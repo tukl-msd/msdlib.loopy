@@ -5,8 +5,8 @@ import de.hopp.generator.backends.board.virtex.virtex6.Virtex6;
 import de.hopp.generator.backends.board.zed.Zed;
 
 public enum Board {
-    VIRTEX6(new Virtex6()),
-    ZED(new Zed());
+    VIRTEX6(new Virtex6());
+//    ZED(new Zed());
 
     // one instance of the backend
     private BoardIF instance;
