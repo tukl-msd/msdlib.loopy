@@ -523,19 +523,21 @@ static int medium_setup_ip() {
 }
 
 int init_medium() {
-	// setup network interface & lwip
-	int rslt = medium_setup_ip();
-	if(rslt != 0) return rslt;
+    // setup network interface & lwip
+    int rslt = medium_setup_ip();
+    if(rslt != 0) return rslt;
 
 #if SEVERITY >= SEVERITY_INFO
     print_ip_settings();
 #endif
-
-	// setup transport layer
-    return medium_setup_tcp();
+    
+    // setup transport layer
+    rslt = medium_setup_tcp();
+    if(rslt != 0) return rslt;
 
 #if SEVERITY >= SEVERITY_INFO
     print_tcp_settings();
 #endif
 
+    return rslt;
 }

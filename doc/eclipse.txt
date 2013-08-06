@@ -12,7 +12,7 @@ Unfortunately, C++11 support is still experimental within the gcc c++ compiler a
 To make it even worse, this setup is project-specific and has to be performed for each new project.
 
 - navigate to project -> properties -> C/C++ Build -> Settings
-- add "-std=c++11" (without quotes)
+- add "-std=c++11 -pthread" (without quotes)
     to GCC C++ Compiler -> Miscellaneous -> Other flags
     and GCC C++ Linker -> Miscellaneous -> Linker flags
 
