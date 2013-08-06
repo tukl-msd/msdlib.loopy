@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Map;
 
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
@@ -25,6 +26,11 @@ public class Zed implements ISEBoard, VivadoBoard {
              File.separator + "zed";
 
     public String getName()  { return "zed"; }
+
+    public void printUsage(IOHandler IO) {
+        // TODO Auto-generated method stub
+        IO.println(" no usage help provided");
+    }
 
     public String getArch()  { return "zynq"; }
     public String getDev()   { return "xc7z020"; }

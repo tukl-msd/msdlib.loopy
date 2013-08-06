@@ -1,5 +1,7 @@
 package de.hopp.generator.backends.board;
 
+import de.hopp.generator.IOHandler;
+
 /**
  *
  * @author Thomas Fischer
@@ -25,6 +27,7 @@ public interface BoardIF {
      */
     public String getName();
 
-    public GpioComponent getGpio(String name);
+    public void printUsage(IOHandler IO);
 
+    public GpioComponent getGpio(String name);
 }

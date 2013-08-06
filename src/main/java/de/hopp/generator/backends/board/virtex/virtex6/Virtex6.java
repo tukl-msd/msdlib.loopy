@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
@@ -29,6 +30,11 @@ public class Virtex6 implements ISEBoard {
 
     public String getName()  { return "virtex6"; }
 
+    public void printUsage(IOHandler IO) {
+        // TODO Auto-generated method stub
+        IO.println(" no usage help provided");
+    }
+
     public String getArch()  { return "virtex6"; }
     public String getDev()   { return "xc6vlx240t"; }
     public String getPack()  { return "ff1156"; }
@@ -48,6 +54,7 @@ public class Virtex6 implements ISEBoard {
     /**
      * Generates and a .ucf constraint file for a board description.
      * @param bdlFile BDL description
+     * @return The generated user constraint file.
      * @throws ParserError If errors occurred during generation of the .ucf file
      */
     private String getUCF(BDLFile bdlFile) throws ParserError {
@@ -113,5 +120,4 @@ public class Virtex6 implements ISEBoard {
     public GpioComponent getGpio(String name) throws IllegalArgumentException {
         return Gpio.fromString(name).getInstance();
     }
-
 }

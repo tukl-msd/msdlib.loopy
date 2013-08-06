@@ -22,9 +22,6 @@ package de.hopp.generator;
  * IOHandler of the generator.
  * The handler is identical to the IOHandler used by Katja.
  * @author Thomas Fischer
- * User: jmg
- * Date: 01.12.2004
- * Time: 09:05:07
  */
 public class IOHandler {
 
@@ -100,7 +97,7 @@ public class IOHandler {
         // print error
         System.out.println("  ERROR: " + line);
     }
-    
+
     /**
      * Outputs a warning  only if debugging is enabled. Output goes either to a IOHandler or standard output.
      * @param line the line to print
@@ -110,12 +107,12 @@ public class IOHandler {
         // reuse of other method
         println("  WARNING: " + line);
     }
-    
+
     public void verbose(String line) {
-        
+
         // if the config is not verbose, do nothing
         if(!config.VERBOSE()) return;
-        
+
         // print line
         System.out.println(line);
     }
@@ -127,7 +124,7 @@ public class IOHandler {
         println("------------------------------------------------------------------------------");
 //        println("Katja " + Version.VERSION + ":" + Version.getSvnVersion() + " (" + BRANCH + ")");
 //        println(" " + DATE);
-        println("HOPP Driver Generator version " + Main.version);
+        println("LOOPY Driver Generator version " + Main.version);
         println("Copyright (C) 2012-2013 Software Technology Group");
         println("                        University of Kaiserslautern, Germany");
         println("");

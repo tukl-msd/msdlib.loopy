@@ -27,7 +27,7 @@ import de.hopp.generator.frontend.Workflow;
  */
 public class Main {
 
-    public final static String version = "0.0.1";
+    public final static String version = "0.2";
 
     private Configuration config;
     private final IOHandler IO;
@@ -130,7 +130,7 @@ public class Main {
         IO.println("                       If this is not set, the board files");
         IO.println("                       are generated to ./" + Configuration.defaultBoardDir + "\".");
         IO.println(" -C --clientDir <dir>");
-        IO.println(" -H --hostDir <dir>    generate files for the board to <dir>.");
+        IO.println(" -H --hostDir <dir>    generate files for the host to <dir>.");
         IO.println("                       If this is not set, the host files");
         IO.println("                       are generated to ./" + Configuration.defaultHostDir + "\".");
         IO.println(" -t --temp <dir>       generate temporary files into <dir>.");
@@ -159,34 +159,30 @@ public class Main {
         IO.println("                       With this interface, config files can easily be created");
         IO.println("                       and directly executed. Further command line parameters");
         IO.println("                       will be ignored.");
-        IO.println(" -h --help             show this help.");
-        // TODO parameterized help for valid workflow / board combinations?
+        IO.println(" -h --help             show this help. Append a backend to get its help.");
+        // FIXME parameterized help for valid workflow / board combinations?
         IO.println();
 
+        // Print backends
+        IO.println("Supported host languages:");
         for(Host backend : Host.values()) {
-
-            // show backend name
-            IO.println("Host Backend: " + backend.getInstance().getName());
-            IO.println();
-
-            // show backend usage and flags
-            backend.getInstance().printUsage(IO);
-            IO.println();
-        }
-
-        IO.println("Supported boards: ");
-
-        for(Board backend : Board.values()) {
-            IO.println("  - " + backend.getInstance().getName());
-            // TODO comma separated list?
-        }
-
-        IO.println("Supported workflows: ");
-
-        for(Workflow backend : Workflow.values()) {
+            // FIXME comma separated list?
             IO.println(" - " + backend.getInstance().getName());
-            // TODO comma separated list?
         }
+
+        IO.println("Supported boards:");
+        for(Board backend : Board.values()) {
+            // FIXME comma separated list?
+            IO.println(" - " + backend.getInstance().getName());
+        }
+
+        IO.println("Supported workflows:");
+        for(Workflow backend : Workflow.values()) {
+            // FIXME comma separated list?
+            IO.println(" - " + backend.getInstance().getName());
+        }
+
+        IO.println();
     }
 
     private void run(String[] args) {
@@ -458,6 +454,32 @@ public class Main {
 //                config.enableGUI();
             // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
+                if(i + 1 < args.length) {
+                    for(Host backend : Host.values())
+                        if(backend.getInstance().getName().equals(args[i+1])) {
+                            IO.println("Usage help of " + backend.getInstance().getName() + " host backend:");
+                            backend.getInstance().printUsage(IO);
+                            IO.println();
+                            throw new ExecutionFailed();
+                        }
+
+                    for(Board backend : Board.values())
+                        if(backend.getInstance().getName().equals(args[i+1])) {
+                            IO.println("Usage help of " + backend.getInstance().getName() + " board backend:");
+                            backend.getInstance().printUsage(IO);
+                            IO.println();
+                            throw new ExecutionFailed();
+                        }
+
+                    for(Workflow backend : Workflow.values())
+                        if(backend.getInstance().getName().equals(args[i+1])) {
+                            IO.println("Usage help of " + backend.getInstance().getName() + " workflow backend:");
+                            backend.getInstance().printUsage(IO);
+                            IO.println();
+                            throw new ExecutionFailed();
+                        }
+                }
+
                 showUsage();
                 throw new ExecutionFailed();
 
