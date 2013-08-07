@@ -1,6 +1,13 @@
 v0.3.0a
-- support for the ZedBoard
-- support for additional ise version (14.2, 14.3, 14.5, 14.6)
+- TODO: support for the ZedBoard
+- TODO: support for additional ise version (14.2, 14.3, 14.5)
+
+v0.2.1
+- removed hierarchy of workflow backends - all versions are now independent
+- dedicated ise 14.6 workflow backend
+
+- fixed: workflow backends now all use their own core versions
+- fixed: injected cores now always lower case (ise 14.6 does require this)
 
 v0.2.0
 - DHCP support
