@@ -2,6 +2,7 @@ package de.hopp.generator.backends.board.zed.gpio;
 
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 
@@ -45,10 +46,10 @@ public class GpioButtons implements GpioComponent {
         return "BTNs_5Bits_IP2INTC_Irpt";
     }
 
-    public Block getMHSBlock(String version) {
+    public Block getMHSBlock(IPCoreVersions versions) {
         return Block("axi_gpio",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_buttons))),
             Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
@@ -64,10 +65,10 @@ public class GpioButtons implements GpioComponent {
 
     public String getUCFConstraints() {
         return  "\nNET BTNs_5Bits_TRI_IO[0] LOC = \"P16\"  |  IOSTANDARD = \"LVCMOS25\";" +
-            "\nNET BTNs_5Bits_TRI_IO[1] LOC = \"R16\"  |  IOSTANDARD = \"LVCMOS25\";" +
-            "\nNET BTNs_5Bits_TRI_IO[2] LOC = \"N15\"  |  IOSTANDARD = \"LVCMOS25\";" +
-            "\nNET BTNs_5Bits_TRI_IO[3] LOC = \"R18\"  |  IOSTANDARD = \"LVCMOS25\";" +
-            "\nNET BTNs_5Bits_TRI_IO[4] LOC = \"T18\"  |  IOSTANDARD = \"LVCMOS25\";\n";
+                "\nNET BTNs_5Bits_TRI_IO[1] LOC = \"R16\"  |  IOSTANDARD = \"LVCMOS25\";" +
+                "\nNET BTNs_5Bits_TRI_IO[2] LOC = \"N15\"  |  IOSTANDARD = \"LVCMOS25\";" +
+                "\nNET BTNs_5Bits_TRI_IO[3] LOC = \"R18\"  |  IOSTANDARD = \"LVCMOS25\";" +
+                "\nNET BTNs_5Bits_TRI_IO[4] LOC = \"T18\"  |  IOSTANDARD = \"LVCMOS25\";\n";
 //        return "\nNET Push_Buttons_5Bits_TRI_I[0] LOC = \"G26\"  |  IOSTANDARD = \"LVCMOS15\";" +
 //               "\nNET Push_Buttons_5Bits_TRI_I[1] LOC = \"A19\"  |  IOSTANDARD = \"LVCMOS15\";" +
 //               "\nNET Push_Buttons_5Bits_TRI_I[2] LOC = \"G17\"  |  IOSTANDARD = \"LVCMOS15\";" +

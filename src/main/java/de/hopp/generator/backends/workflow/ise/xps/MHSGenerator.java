@@ -37,12 +37,15 @@ import de.hopp.generator.parser.MHSFile;
  * rename this file accordingly to the earliest version number,
  * the core description is compatible with (e.g. XPS14).
  */
-public abstract class MHSGenerator extends Visitor<NE> {
+public abstract class MHSGenerator extends Visitor<NE> implements MHS {
     protected ErrorCollection errors;
 
     // the generated mhs file
     protected MHSFile mhs;
     protected ISEBoard board;
+
+    // core versions of Xilinx standard catalogue
+    protected IPCoreVersions versions;
 
     // temporary variables used to build up the mhs file
     protected Block curBlock;
@@ -55,32 +58,17 @@ public abstract class MHSGenerator extends Visitor<NE> {
     protected int globalHWQueueSize;
     protected int globalSWQueueSize;
 
-    // version strings
-    protected String version;
-
-    protected String version_microblaze;
-
-    protected String version_proc_sys_reset;
-    protected String version_axi_intc;
-    protected String version_lmb_v10;
-    protected String version_lmb_bram_if_cntlr;
-    protected String version_bram_block;
-    protected String version_mdm;
-    protected String version_clock_generator;
-    protected String version_axi_timer;
-    protected String version_axi_interconnect;
-    protected String version_axi_v6_ddrx;
-
-    protected String version_axi_uartlite;
-    protected String version_axi_ethernetlite;
-
-    protected String version_gpio_leds;
-    protected String version_gpio_buttons;
-    protected String version_gpio_switches;
-
     protected Set<Integer> frequencies = new HashSet<Integer>();
 
     protected AndExp intrCntrlPorts = AndExp();
+
+    // note, that the ISEBoard and IPCoreVersions may depend on the ISE versions.
+    // a corresponding board / version pack must be selected in the actual mhs instances
+    public MHSGenerator(ISEBoard board, IPCoreVersions versions, ErrorCollection errors) {
+        this.board    = board;
+        this.versions = versions;
+        this.errors   = errors;
+    }
 
     public MHSFile generateMHSFile(BDLFilePos file) {
         // initialise / reset variables
@@ -103,22 +91,23 @@ public abstract class MHSGenerator extends Visitor<NE> {
             else if(opt instanceof SWQUEUEPos)
                 globalSWQueueSize = ((SWQUEUEPos)opt).qsize().term();
 
+        // add default blocks
+        mhs = add(mhs, getDefaultParts());
+
         // visit boards components
         visit(term.gpios());
         visit(term.insts());
         visit(term.medium());
 
-        // TODO independent interrupt controller?
+        // TODO this would remove the necessity for the AndExp and go over the complete file once more ;)
         // addINTC();
 
-        // add timer instance?
+        // add clock generator
         mhs = add(mhs, getClk());
 
-        // add default blocks
+        // add processor and required cores for its AXI4 connection to the design
         mhs = add(mhs, getProcessorConnection());
 
-        // add default blocks
-        mhs = add(mhs, getDefaultParts());
     }
 
     public void visit(GPIOPos term) {
@@ -132,7 +121,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
         }
 
         mhs = add(mhs, gpio.getMHSAttribute());
-        mhs = add(mhs, gpio.getMHSBlock(version_gpio_leds));
+        mhs = add(mhs, gpio.getMHSBlock(versions));
 
         addPortToInterruptController(gpio.getINTCPort());
     }
@@ -315,7 +304,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
         // add a queue component in between the component and the microblaze
         mhs = add(mhs, Block("Queue",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup + "_QUEUE"))),
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup.toLowerCase() + "_queue"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
             Attribute(PARAMETER(), Assignment("G_DEPTH", Number(depth))),
             Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
@@ -360,7 +349,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
         // depending on direction and bitwidth, we need an up- or downsizer
         mhs = add(mhs, Block(up ? "Upsizer" : "Downsizer",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup + "_MUX"))),
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup.toLowerCase() + "_mux"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
             Attribute(PARAMETER(), Assignment("WIDTH_IN",  Number(d ? 32 : width))),
             Attribute(PARAMETER(), Assignment("WIDTH_OUT", Number(d ? width : 32))),

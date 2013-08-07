@@ -29,7 +29,7 @@ import de.hopp.generator.backends.unparser.MHSUnparser;
 import de.hopp.generator.backends.workflow.WorkflowIF;
 import de.hopp.generator.backends.workflow.ise.sdk.SDK;
 import de.hopp.generator.backends.workflow.ise.xps.IPCores;
-import de.hopp.generator.backends.workflow.ise.xps.MHSGenerator;
+import de.hopp.generator.backends.workflow.ise.xps.MHS;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
@@ -68,8 +68,19 @@ public abstract class ISE implements WorkflowIF {
     public static final File genericSDKSourceDir = new File("deploy/board/generic/sdk/generic");
     // All other files are not considered generic at THIS point and are referenced when required.
 
-    protected abstract MHSGenerator xps();
-    protected abstract SDK sdk();
+    protected MHS xps;
+    protected SDK sdk;
+
+    @Override
+    public void printUsage(IOHandler IO) {
+        IO.println(" no parameters");
+    }
+
+    @Override
+    public Configuration parseParameters(Configuration config, String[] args) {
+        config.setUnusued(args);
+        return config;
+    }
 
     @Override
     public void generate(BDLFilePos board, Configuration config, ErrorCollection errors) {
@@ -137,7 +148,7 @@ public abstract class ISE implements WorkflowIF {
         /* ************************ ANALYSIS & GENERATION ************************ */
 
         // generate design-specific Models
-        unparser.visit(xps().generateMHSFile(board));
+        unparser.visit(xps.generateMHSFile(board));
 
         if(errors.hasErrors()) return;
 
@@ -206,7 +217,7 @@ public abstract class ISE implements WorkflowIF {
         /* ************************ ANALYSIS & GENERATION ************************ */
 
         // generate board-specific MFiles
-        sdk().visit(board);
+        sdk.visit(board);
 
         // abort, if errors occurred
         if(errors.hasErrors()) return;
@@ -223,8 +234,8 @@ public abstract class ISE implements WorkflowIF {
             // deploy design-independent SDK files and directories
             copy(new File(iseBoard.sdkSources(), "generic").getPath(), sdkDir(config), IO);
             // deploy board-independent SDK files and directories
-            for(File source : sdk().getFiles().keySet())
-                copy(source.getPath(), sdk().getFiles().get(source), IO);
+            for(File source : sdk.getFiles().keySet())
+                copy(source.getPath(), sdk.getFiles().get(source), IO);
         } catch(IOException e) {
             errors.addError(new GenerationFailed("Failed to deploy generic sdk sources due to:\n"
                 + e.getMessage()));
@@ -233,7 +244,7 @@ public abstract class ISE implements WorkflowIF {
 
         try {
             // deploy mss file
-            printMFile(sdk().getMSS(), new File(sdkBSPDir(config), "system.mss"));
+            printMFile(sdk.getMSS(), new File(sdkBSPDir(config), "system.mss"));
             // deploy linker script
             FileUtils.writeStringToFile(new File(new File(ISEUtils.sdkAppDir(config), "src"), "lscript.ld"),
                 setupLinkerScript(board, iseBoard, config));
@@ -246,11 +257,11 @@ public abstract class ISE implements WorkflowIF {
 
         // unparse & deploy the generated MFiles
         try {
-            printMFile(sdk().getConstants(),  UnparserType.HEADER);
-            printMFile(sdk().getComponents(), UnparserType.HEADER);
-            printMFile(sdk().getComponents(), UnparserType.C);
-            printMFile(sdk().getScheduler(),  UnparserType.HEADER);
-            printMFile(sdk().getScheduler(),  UnparserType.C);
+            printMFile(sdk.getConstants(),  UnparserType.HEADER);
+            printMFile(sdk.getComponents(), UnparserType.HEADER);
+            printMFile(sdk.getComponents(), UnparserType.C);
+            printMFile(sdk.getScheduler(),  UnparserType.HEADER);
+            printMFile(sdk.getScheduler(),  UnparserType.C);
         } catch(IOException e) {
             errors.addError(new GenerationFailed("Failed to deploy generic SDK sources due to:\n"
                 + e.getMessage()));

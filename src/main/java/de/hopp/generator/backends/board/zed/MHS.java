@@ -3,7 +3,8 @@ package de.hopp.generator.backends.board.zed;
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
-import de.hopp.generator.backends.workflow.ise.xps.MHS_14_4;
+import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
+import de.hopp.generator.backends.workflow.ise.xps.MHSGenerator;
 import de.hopp.generator.frontend.ETHERNETPos;
 import de.hopp.generator.frontend.PCIEPos;
 import de.hopp.generator.frontend.UARTPos;
@@ -11,10 +12,10 @@ import de.hopp.generator.parser.Attributes;
 import de.hopp.generator.parser.Block;
 import de.hopp.generator.parser.MHSFile;
 
-public class MHS extends MHS_14_4 {
+public class MHS extends MHSGenerator {
 
-    public MHS(ISEBoard board, ErrorCollection errors) {
-        super(board, errors);
+    public MHS(ISEBoard board, IPCoreVersions versions, ErrorCollection errors) {
+        super(board, versions, errors);
     }
 
     public void visit(ETHERNETPos term) {
@@ -33,6 +34,7 @@ public class MHS extends MHS_14_4 {
     protected MHSFile getDefaultParts() {
         // TODO Auto-generated method stub
         Attributes attributes = Attributes(
+            Attribute(PARAMETER(), Assignment("VERSION", Ident(versions.mhs))),
             Attribute(PORT(),
                 Assignment("processing_system7_0_MIO", Ident("processing_system7_0_MIO")),
                 Assignment("DIR", Ident("IO")),
@@ -150,12 +152,28 @@ public class MHS extends MHS_14_4 {
             )
         );
 
+        return MHSFile(attributes);
+    }
+
+    @Override
+    protected MHSFile getProcessorConnection() {
+        // TODO Auto-generated method stub
+
+        // BEGIN axi_interconnect
+        //  PARAMETER INSTANCE = axi4lite_0
+        //  PARAMETER HW_VER = 1.06.a
+        //  PARAMETER C_INTERCONNECT_CONNECTIVITY_MODE = 0
+        //  PORT interconnect_aclk = processing_system7_0_FCLK_CLK0
+        //  PORT INTERCONNECT_ARESETN = processing_system7_0_FCLK_RESET0_N_0
+        // END
+
+        // FIXME clocks!!
         // BEGIN processing_system7
         Block ps7 = Block("processing_system7",
             // PARAMETER INSTANCE = processing_system7_0
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("processing_system7_0"))),
             // PARAMETER HW_VER = 4.02.a
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident("4.02.a"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.ps7))),
             // PARAMETER C_DDR_RAM_HIGHADDR = 0x1FFFFFFF
             Attribute(PARAMETER(), Assignment("C_DDR_RAM_HIGHADDR", MemAddr("0x1FFFFFFF"))),
             // PARAMETER C_USE_M_AXI_GP0 = 1
@@ -320,32 +338,15 @@ public class MHS extends MHS_14_4 {
             Attribute(PORT(), Assignment("M_AXI_GP0_ACLK", Ident("processing_system7_0_FCLK_CLK0"))),
             // PORT IRQ_F2P = BTNs_5Bits_IP2INTC_Irpt & SWs_8Bits_IP2INTC_Irpt & LEDs_8Bits_IP2INTC_Irpt & axi_timer_0_Interrupt
             Attribute(PORT(), Assignment("IRQ_F2P", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
-
         );
 
-        return MHSFile(attributes, ps7);
-    }
-
-    @Override
-    protected MHSFile getProcessorConnection() {
-        // TODO Auto-generated method stub
-
-        // BEGIN axi_interconnect
-        //  PARAMETER INSTANCE = axi4lite_0
-        //  PARAMETER HW_VER = 1.06.a
-        //  PARAMETER C_INTERCONNECT_CONNECTIVITY_MODE = 0
-        //  PORT interconnect_aclk = processing_system7_0_FCLK_CLK0
-        //  PORT INTERCONNECT_ARESETN = processing_system7_0_FCLK_RESET0_N_0
-        // END
-
-        return null;
+        return MHSFile(Attributes(), ps7);
     }
 
     @Override
     protected MHSFile getClk() {
-        // TODO Auto-generated method stub
-
-        return null;
+        // In this architecture, the clock is provided by the ps7
+        return MHSFile(Attributes());
     }
 
 }

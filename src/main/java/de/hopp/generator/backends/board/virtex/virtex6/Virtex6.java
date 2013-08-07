@@ -7,10 +7,11 @@ import java.util.Map;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
-import de.hopp.generator.backends.workflow.ise.ISEBoard;
+import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_1;
+import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_4;
+import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_6;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
-import de.hopp.generator.backends.workflow.ise.xps.MHS_14_1;
-import de.hopp.generator.backends.workflow.ise.xps.MHS_14_4;
+import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.BDLFile;
 import de.hopp.generator.frontend.ETHERNET;
@@ -21,7 +22,7 @@ import de.hopp.generator.frontend.GPIO;
  * @author Thomas Fischer
  * @since 1.8.2013
  */
-public class Virtex6 implements ISEBoard {
+public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
 
     protected String folder = "deploy" +
              File.separator + "board"  +
@@ -43,12 +44,16 @@ public class Virtex6 implements ISEBoard {
     public File xpsSources() { return new File(folder + File.separator + "xps"); }
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }
 
-    public MHS_14_1 getMHS_14_1(ErrorCollection errors) {
-        return new MHS(this, errors);
+    public MHS getMHS_14_1(ErrorCollection errors) {
+        return new MHS(this, IPCoreVersions.ISE14_1, errors);
     }
 
-    public MHS_14_4 getMHS_14_4(ErrorCollection errors) {
-        return new MHS(this, errors);
+    public MHS getMHS_14_4(ErrorCollection errors) {
+        return new MHS(this, IPCoreVersions.ISE14_4, errors);
+    }
+
+    public MHS getMHS_14_6(ErrorCollection errors) {
+        return new MHS(this, IPCoreVersions.ISE14_6, errors);
     }
 
     /**

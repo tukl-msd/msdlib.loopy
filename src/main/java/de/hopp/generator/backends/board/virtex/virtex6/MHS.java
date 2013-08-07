@@ -4,7 +4,8 @@ import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
-import de.hopp.generator.backends.workflow.ise.xps.MHS_14_4;
+import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
+import de.hopp.generator.backends.workflow.ise.xps.MHSGenerator;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.ETHERNETPos;
 import de.hopp.generator.frontend.PCIEPos;
@@ -19,10 +20,10 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 2.8.2013
  */
-public class MHS extends MHS_14_4 {
+public class MHS extends MHSGenerator {
 
-    public MHS(ISEBoard board, ErrorCollection errors) {
-        super(board, errors);
+    public MHS(ISEBoard board, IPCoreVersions versions, ErrorCollection errors) {
+        super(board, versions, errors);
 
         frequencies.add(100);
         frequencies.add(200);
@@ -76,7 +77,7 @@ public class MHS extends MHS_14_4 {
 
         mhs = add(mhs, Block("axi_ethernetlite",
             Attribute(PARAMETER(), Assignment("INSTANCE",     Ident("Ethernet_Lite"))),
-            Attribute(PARAMETER(), Assignment("HW_VER",       Ident(version_axi_ethernetlite))),
+            Attribute(PARAMETER(), Assignment("HW_VER",       Ident(versions.axi_ethernetlite))),
             Attribute(PARAMETER(), Assignment("C_BASEADDR",   MemAddr("0x40e00000"))),
             Attribute(PARAMETER(), Assignment("C_HIGHADDR",   MemAddr("0x40e0ffff"))),
             Attribute(BUS_IF(),    Assignment("S_AXI",        Ident("axi4lite_0"))),
@@ -116,7 +117,7 @@ public class MHS extends MHS_14_4 {
 
     protected Attributes defaultAttributes() {
         return Attributes(
-            Attribute(PARAMETER(), Assignment("VERSION", Ident(version))
+            Attribute(PARAMETER(), Assignment("VERSION", Ident(versions.mhs))
             ), Attribute(PORT(),
                 Assignment("ddr_memory_we_n", Ident("ddr_memory_we_n")),
                 Assignment("DIR", Ident("O"))
@@ -207,7 +208,7 @@ public class MHS extends MHS_14_4 {
        return Blocks(
             Block("proc_sys_reset",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("proc_sys_reset_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_proc_sys_reset))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.proc_sys_reset))),
                 Attribute(PARAMETER(), Assignment("C_EXT_RESET_HIGH", Number(1))),
                 Attribute(PORT(), Assignment("MB_Debug_Sys_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))),
                 Attribute(PORT(), Assignment("Dcm_locked", Ident("proc_sys_reset_0_Dcm_locked"))),
@@ -220,7 +221,7 @@ public class MHS extends MHS_14_4 {
                 Attribute(PORT(), Assignment("Peripheral_aresetn", Ident("proc_sys_reset_0_Peripheral_aresetn")))
             ), Block("axi_intc",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_intc))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_intc))),
                 Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41200000"))),
                 Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4120ffff"))),
                 Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
@@ -229,36 +230,36 @@ public class MHS extends MHS_14_4 {
                 Attribute(PORT(), Assignment("INTR", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
             ), Block("lmb_v10",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_ilmb"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_v10))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_v10))),
                 Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
                 Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
             ), Block("lmb_bram_if_cntlr",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_i_bram_ctrl"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_bram_if_cntlr))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_bram_if_cntlr))),
                 Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
                 Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
                 Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_ilmb"))),
                 Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block")))
             ), Block("lmb_v10",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_dlmb"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_v10))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_v10))),
                 Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
                 Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
             ), Block("lmb_bram_if_cntlr",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_d_bram_ctrl"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_lmb_bram_if_cntlr))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_bram_if_cntlr))),
                 Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
                 Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
                 Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_dlmb"))),
                 Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
             ), Block("bram_block",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_bram_block"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_bram_block))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.bram_block))),
                 Attribute(BUS_IF(), Assignment("PORTA", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block"))),
                 Attribute(BUS_IF(), Assignment("PORTB", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
             ), Block("mdm",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("debug_module"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_mdm))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.mdm))),
                 Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
                 Attribute(PARAMETER(), Assignment("C_USE_UART", Number(1))),
                 Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41400000"))),
@@ -269,7 +270,7 @@ public class MHS extends MHS_14_4 {
                 Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0")))
             ), Block("axi_timer",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi_timer_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_timer))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_timer))),
                 Attribute(PARAMETER(), Assignment("C_COUNT_WIDTH", Number(32))),
                 Attribute(PARAMETER(), Assignment("C_ONE_TIMER_ONLY", Number(0))),
                 Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41c00000"))),
@@ -279,18 +280,18 @@ public class MHS extends MHS_14_4 {
                 Attribute(PORT(), Assignment("Interrupt", Ident("axi_timer_0_Interrupt")))
             ), Block("axi_interconnect",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4lite_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_interconnect))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
                 Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(0))),
                 Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
                 Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident("clk_100_0000MHzMMCM0")))
             ), Block("axi_interconnect",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4_0"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_interconnect))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
                 Attribute(PORT(), Assignment("interconnect_aclk", Ident("clk_100_0000MHzMMCM0"))),
                 Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn")))
             ), Block("axi_v6_ddrx",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DDR3_SDRAM"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_v6_ddrx))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_v6_ddrx))),
                 Attribute(PARAMETER(), Assignment("C_MEM_PARTNO", Ident("MT41J64M16XX-15E"))),
                 Attribute(PARAMETER(), Assignment("C_DM_WIDTH", Number(1))),
                 Attribute(PARAMETER(), Assignment("C_DQS_WIDTH", Number(1))),
@@ -331,7 +332,7 @@ public class MHS extends MHS_14_4 {
                 Attribute(PORT(), Assignment("PD_PSDONE", Ident("psdone")))
             ), Block("axi_uartlite",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("RS232_Uart_1"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_axi_uartlite))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_uartlite))),
                 Attribute(PARAMETER(), Assignment("C_BAUDRATE", Number(9600))),
                 Attribute(PARAMETER(), Assignment("C_DATA_BITS", Number(8))),
                 Attribute(PARAMETER(), Assignment("C_USE_PARITY", Number(0))),
@@ -352,7 +353,7 @@ public class MHS extends MHS_14_4 {
     protected MHSFile getProcessorConnection() {
         Block microblaze = Block("microblaze",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_microblaze))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.microblaze))),
             Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
             Attribute(PARAMETER(), Assignment("C_USE_BARREL", Number(1))),
             Attribute(PARAMETER(), Assignment("C_USE_FPU", Number(0))), // default: 0 speed 2
@@ -412,7 +413,7 @@ public class MHS extends MHS_14_4 {
         // TODO add information about this buf and varphase... find out what it means...
         Block timer = Block("clock_generator",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version_clock_generator))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.clock_generator))),
             Attribute(PARAMETER(), Assignment("C_CLKIN_FREQ", Number(200000000))),
             Attribute(PARAMETER(), Assignment("C_CLKOUT0_FREQ", Number(100000000))),
             Attribute(PARAMETER(), Assignment("C_CLKOUT0_GROUP", Ident("MMCM0"))),

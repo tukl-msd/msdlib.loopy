@@ -2,6 +2,7 @@ package de.hopp.generator.backends.board.virtex.virtex6.gpio;
 
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 
@@ -43,10 +44,10 @@ public class GpioButtons implements GpioComponent {
         return "Push_Buttons_5Bits_IP2INTC_Irpt";
     }
 
-    public Block getMHSBlock(String version) {
+    public Block getMHSBlock(IPCoreVersions versions) {
         return Block("axi_gpio",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("Push_Buttons_5Bits"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(version))),
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_buttons))),
             Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
             Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
             Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
