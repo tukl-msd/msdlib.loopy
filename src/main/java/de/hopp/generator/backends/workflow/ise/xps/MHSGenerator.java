@@ -37,12 +37,15 @@ import de.hopp.generator.parser.MHSFile;
  * rename this file accordingly to the earliest version number,
  * the core description is compatible with (e.g. XPS14).
  */
-public abstract class MHSGenerator extends Visitor<NE> {
+public abstract class MHSGenerator extends Visitor<NE> implements MHS {
     protected ErrorCollection errors;
 
     // the generated mhs file
     protected MHSFile mhs;
     protected ISEBoard board;
+
+    // core versions of Xilinx standard catalogue
+    protected IPCoreVersions versions;
 
     // temporary variables used to build up the mhs file
     protected Block curBlock;
@@ -55,36 +58,23 @@ public abstract class MHSGenerator extends Visitor<NE> {
     protected int globalHWQueueSize;
     protected int globalSWQueueSize;
 
-    // version strings
-    protected String version;
-
-    protected String version_microblaze;
-
-    protected String version_axi_intc;
-    protected String version_axi_interconnect;
-    protected String version_axi_timer;
-    protected String version_axi_v6_ddrx;
-    protected String version_bram_block;
-    protected String version_clock_generator;
-    protected String version_lmb_bram_if_cntlr;
-    protected String version_lmb_v10;
-    protected String version_mdm;
-    protected String version_proc_sys_reset;
-
-    protected String version_axi_uartlite;
-    protected String version_axi_ethernetlite;
-
-    protected String version_gpio_leds;
-    protected String version_gpio_buttons;
-    protected String version_gpio_switches;
-
     protected Set<Integer> frequencies = new HashSet<Integer>();
 
     protected AndExp intrCntrlPorts = AndExp();
 
+    // note, that the ISEBoard and IPCoreVersions may depend on the ISE versions.
+    // a corresponding board / version pack must be selected in the actual mhs instances
+    public MHSGenerator(ISEBoard board, IPCoreVersions versions, ErrorCollection errors) {
+        this.board    = board;
+        this.versions = versions;
+        this.errors   = errors;
+    }
+
     public MHSFile generateMHSFile(BDLFilePos file) {
         // initialise / reset variables
-        mhs = MHSFile(Attributes());
+        mhs = MHSFile(Attributes(
+            Attribute(PARAMETER(), Assignment("VERSION", Ident(versions.mhs)))
+        ));
 
         axiStreamIdMaster = 0;
         axiStreamIdSlave  = 0;
@@ -108,17 +98,8 @@ public abstract class MHSGenerator extends Visitor<NE> {
         visit(term.insts());
         visit(term.medium());
 
-        // TODO independent interrupt controller?
-        // addINTC();
-
-        // add timer instance?
-        mhs = add(mhs, getClk());
-
-        // add default blocks
-        mhs = add(mhs, getProcessorConnection());
-
-        // add default blocks
-        mhs = add(mhs, getDefaultParts());
+        // add generic design-dependent mhs components (that use variables set up in mhs)
+        mhs = add(mhs, getDefault());
     }
 
     public void visit(GPIOPos term) {
@@ -132,7 +113,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
         }
 
         mhs = add(mhs, gpio.getMHSAttribute());
-        mhs = add(mhs, gpio.getMHSBlock(version_gpio_leds));
+        mhs = add(mhs, gpio.getMHSBlock(versions));
 
         addPortToInterruptController(gpio.getINTCPort());
     }
@@ -315,7 +296,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
         // add a queue component in between the component and the microblaze
         mhs = add(mhs, Block("Queue",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup + "_QUEUE"))),
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup.toLowerCase() + "_queue"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
             Attribute(PARAMETER(), Assignment("G_DEPTH", Number(depth))),
             Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
@@ -360,7 +341,7 @@ public abstract class MHSGenerator extends Visitor<NE> {
 
         // depending on direction and bitwidth, we need an up- or downsizer
         mhs = add(mhs, Block(up ? "Upsizer" : "Downsizer",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup + "_MUX"))),
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(axisGroup.toLowerCase() + "_mux"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident("1.00.a"))),
             Attribute(PARAMETER(), Assignment("WIDTH_IN",  Number(d ? 32 : width))),
             Attribute(PARAMETER(), Assignment("WIDTH_OUT", Number(d ? width : 32))),
@@ -383,36 +364,19 @@ public abstract class MHSGenerator extends Visitor<NE> {
     }
 
     /**
-     * Generates the default parameters and blocks always required by the design.
-     * These are typically board specific and should therefore be provided by the
-     * board visitors.
+     * Responsible for generating those parts of the .mhs file,
+     * that are added independent of the board design.
+     * They may however be parameterised depending on the
+     * board design.
+     * The values for these parameters are generated automatically
+     * while visting.
      *
-     * This procedure is called last of the generation phase. All variables provided
-     * by the default generator are completely instantiated at this point.
-     * @return Board-specific default parameters and blocks
+     * For example, some sort of connection between the board
+     * processor and axi components is always required.
+     * The number of components deployed on the board may still
+     * influence this connection.
+     * @return Parts of the .mhs file, that are required independently
+     *   from the board design.
      */
-    protected abstract MHSFile getDefaultParts();
-
-    /**
-     * Generates attributes and blocks required to connect components to the boards
-     * processor. If the board has no processor integrated, this will also have to
-     * generate a soft-processor.
-     * @return Board-specific processor connection attributes and blocks
-     */
-    // TODO exceptions?
-    protected abstract MHSFile getProcessorConnection();
-
-
-    /**
-     * Adds the clock generator to the design.
-     *
-     * Depending on the described file, additional output frequencies might be required.
-     * Per default, 100, 200, 400 (buffered and unbuffered) MHz are provided.
-     *
-     * The BDL allows all positive integer frequencies (though XPS will probably fail with some
-     * higher frequencies...).
-     *
-     * @return Board-specific clock attributes and blocks
-     */
-    protected abstract MHSFile getClk();
+    protected abstract MHSFile getDefault();
 }

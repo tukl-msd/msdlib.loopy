@@ -1,5 +1,6 @@
 package de.hopp.generator.backends.workflow.ise.gpio;
 
+import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.parser.Attribute;
 import de.hopp.generator.parser.Block;
 
@@ -12,7 +13,7 @@ public interface GpioComponent extends de.hopp.generator.backends.board.GpioComp
 
     public abstract Attribute getMHSAttribute();
 
-    public abstract Block getMHSBlock(String version);
+    public abstract Block getMHSBlock(IPCoreVersions version);
 
     public abstract String getINTCPort();
 
