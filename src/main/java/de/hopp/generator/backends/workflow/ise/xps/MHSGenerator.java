@@ -91,23 +91,17 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             else if(opt instanceof SWQUEUEPos)
                 globalSWQueueSize = ((SWQUEUEPos)opt).qsize().term();
 
-        // add default blocks
-        mhs = add(mhs, getDefaultParts());
+
+        // add generic mhs components, independent of board design
+        mhs = add(mhs, getFirst());
 
         // visit boards components
         visit(term.gpios());
         visit(term.insts());
         visit(term.medium());
 
-        // TODO this would remove the necessity for the AndExp and go over the complete file once more ;)
-        // addINTC();
-
-        // add clock generator
-        mhs = add(mhs, getClk());
-
-        // add processor and required cores for its AXI4 connection to the design
-        mhs = add(mhs, getProcessorConnection());
-
+        // add generic design-dependent mhs components (that use variables set up in mhs)
+        mhs = add(mhs, getLast());
     }
 
     public void visit(GPIOPos term) {
@@ -371,37 +365,41 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
         intrCntrlPorts = intrCntrlPorts.add(Ident(port));
     }
 
-    /**
-     * Generates the default parameters and blocks always required by the design.
-     * These are typically board specific and should therefore be provided by the
-     * board visitors.
-     *
-     * This procedure is called last of the generation phase. All variables provided
-     * by the default generator are completely instantiated at this point.
-     * @return Board-specific default parameters and blocks
-     */
-    protected abstract MHSFile getDefaultParts();
+    protected abstract MHSFile getFirst();
 
-    /**
-     * Generates attributes and blocks required to connect components to the boards
-     * processor. If the board has no processor integrated, this will also have to
-     * generate a soft-processor.
-     * @return Board-specific processor connection attributes and blocks
-     */
-    // TODO exceptions?
-    protected abstract MHSFile getProcessorConnection();
+    protected abstract MHSFile getLast();
 
-
-    /**
-     * Adds the clock generator to the design.
-     *
-     * Depending on the described file, additional output frequencies might be required.
-     * Per default, 100, 200, 400 (buffered and unbuffered) MHz are provided.
-     *
-     * The BDL allows all positive integer frequencies (though XPS will probably fail with some
-     * higher frequencies...).
-     *
-     * @return Board-specific clock attributes and blocks
-     */
-    protected abstract MHSFile getClk();
+//    /**
+//     * Generates the default parameters and blocks always required by the design.
+//     * These are typically board specific and should therefore be provided by the
+//     * board visitors.
+//     *
+//     * This procedure is called last of the generation phase. All variables provided
+//     * by the default generator are completely instantiated at this point.
+//     * @return Board-specific default parameters and blocks
+//     */
+//    protected abstract MHSFile getDefaultParts();
+//
+//    /**
+//     * Generates attributes and blocks required to connect components to the boards
+//     * processor. If the board has no processor integrated, this will also have to
+//     * generate a soft-processor.
+//     * @return Board-specific processor connection attributes and blocks
+//     */
+//    // TODO exceptions?
+//    protected abstract MHSFile getProcessorConnection();
+//
+//
+//    /**
+//     * Adds the clock generator to the design.
+//     *
+//     * Depending on the described file, additional output frequencies might be required.
+//     * Per default, 100, 200, 400 (buffered and unbuffered) MHz are provided.
+//     *
+//     * The BDL allows all positive integer frequencies (though XPS will probably fail with some
+//     * higher frequencies...).
+//     *
+//     * @return Board-specific clock attributes and blocks
+//     */
+//    protected abstract MHSFile getClk();
 }

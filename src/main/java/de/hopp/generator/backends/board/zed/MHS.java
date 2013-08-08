@@ -31,6 +31,15 @@ public class MHS extends MHSGenerator {
     }
 
     @Override
+    protected MHSFile getFirst() {
+        return null;
+    }
+
+    @Override
+    protected MHSFile getLast() {
+        return null;
+    }
+
     protected MHSFile getDefaultParts() {
         // TODO Auto-generated method stub
         Attributes attributes = Attributes(
@@ -155,7 +164,6 @@ public class MHS extends MHSGenerator {
         return MHSFile(attributes);
     }
 
-    @Override
     protected MHSFile getProcessorConnection() {
         // TODO Auto-generated method stub
 
@@ -343,7 +351,6 @@ public class MHS extends MHSGenerator {
         return MHSFile(Attributes(), ps7);
     }
 
-    @Override
     protected MHSFile getClk() {
         // In this architecture, the clock is provided by the ps7
         return MHSFile(Attributes());

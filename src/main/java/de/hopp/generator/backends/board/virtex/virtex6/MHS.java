@@ -110,12 +110,7 @@ public class MHS extends MHSGenerator {
         errors.addError(new ParserError("PCIE is not supported as communication interface yet", term.pos().term()));
     }
 
-    @Override
-    protected MHSFile getDefaultParts() {
-        return MHSFile(defaultAttributes(), defaultBlocks());
-    }
-
-    protected Attributes defaultAttributes() {
+    private Attributes defaultAttributes() {
         return Attributes(
             Attribute(PARAMETER(), Assignment("VERSION", Ident(versions.mhs))
             ), Attribute(PORT(),
@@ -202,10 +197,10 @@ public class MHS extends MHSGenerator {
      * Adds all basic components to the design, that are independent from the board.
      * @return all default blocks for a Virtex 6 board.
      */
-    protected Blocks defaultBlocks() {
+    private Blocks defaultBlocks() {
         intrCntrlPorts = intrCntrlPorts.add(Ident("RS232_Uart_1_Interrupt"));
 
-       return Blocks(
+        return Blocks(
             Block("proc_sys_reset",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("proc_sys_reset_0"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.proc_sys_reset))),
@@ -219,15 +214,6 @@ public class MHS extends MHSGenerator {
                 Attribute(PORT(), Assignment("BUS_STRUCT_RESET", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
                 Attribute(PORT(), Assignment("Peripheral_reset", Ident("proc_sys_reset_0_Peripheral_reset"))),
                 Attribute(PORT(), Assignment("Peripheral_aresetn", Ident("proc_sys_reset_0_Peripheral_aresetn")))
-            ), Block("axi_intc",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
-                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_intc))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41200000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4120ffff"))),
-                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(BUS_IF(), Assignment("INTERRUPT", Ident("microblaze_0_interrupt"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("INTR", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
             ), Block("lmb_v10",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_ilmb"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_v10))),
@@ -349,8 +335,7 @@ public class MHS extends MHSGenerator {
     }
 
     /** Adds the microblaze to the design. */
-    @Override
-    protected MHSFile getProcessorConnection() {
+    private MHSFile getMicroblaze() {
         Block microblaze = Block("microblaze",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0"))),
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.microblaze))),
@@ -408,8 +393,7 @@ public class MHS extends MHSGenerator {
         return MHSFile(Attributes(), microblaze);
     }
 
-    @Override
-    protected MHSFile getClk() {
+    private MHSFile getClk() {
         // TODO add information about this buf and varphase... find out what it means...
         Block timer = Block("clock_generator",
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
@@ -459,6 +443,29 @@ public class MHS extends MHSGenerator {
 
         timer = add(timer, ports);
         return MHSFile(Attributes(), timer);
+    }
+
+    private MHSFile getINTC() {
+        return MHSFile(Attributes(), Block("axi_intc",
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_intc))),
+            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41200000"))),
+            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4120ffff"))),
+            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
+            Attribute(BUS_IF(), Assignment("INTERRUPT", Ident("microblaze_0_interrupt"))),
+            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("INTR", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
+        ));
+    }
+
+    @Override
+    protected MHSFile getFirst() {
+        return MHSFile(defaultAttributes(), defaultBlocks());
+    }
+
+    @Override
+    protected MHSFile getLast() {
+        return add(add(getINTC(), getClk()), getMicroblaze());
     }
 
 }
