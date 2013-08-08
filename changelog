@@ -2,13 +2,6 @@ v0.3.0a
 - TODO: support for the ZedBoard
 - TODO: support for additional ise version (14.2, 14.3, 14.5)
 
-v0.2.1
-- removed hierarchy of workflow backends - all versions are now independent
-- dedicated ise 14.6 workflow backend
-
-- fixed: workflow backends now all use their own core versions
-- fixed: injected cores now always lower case (ise 14.6 does require this)
-
 v0.2.0
 - DHCP support
 - introduced logfiles for xps and sdk builds
@@ -18,9 +11,11 @@ v0.2.0
 - improved logging
 - renamed server and client to board and host
 - provided a new eclipse setup that should work better
+- dedicated ise 14.6 workflow backend
 
 - fixed: hardware queues now working correctly
 - fixed: known issues of Ethernet connector (esp. memory problems)
-- fixed: ise 14.4 backend now uses recent core versions
+- fixed: workflow backends now all use their own core versions
+- fixed: injected cores now always lower case (ise 14.6 does require this)
 - fixed: non-verbose runs should now finish correctly but still report bugs (due to parallel runs, failing of the build may take some time though)
 - fixed: multiple small fixes to host-side c++ driver code

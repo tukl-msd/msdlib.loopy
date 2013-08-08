@@ -1,7 +1,6 @@
 syntax: glob
 .classpath
 .gradle
-.project
 *.*~
 .settings
 src-gen
@@ -23,3 +22,5 @@ doc/tex/*.out
 doc/tex/*.synctex.gz
 doc/tex/*.toc
 
+syntax: regexp
+^\.project$
