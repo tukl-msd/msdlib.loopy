@@ -7,12 +7,14 @@ import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkBSPDir;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkDir;
 import static de.hopp.generator.utils.BoardUtils.totalMemorySize;
-import static de.hopp.generator.utils.Files.copy;
-import static de.hopp.generator.utils.Files.getResouce;
+import static de.hopp.generator.utils.Files.deploy;
+import static de.hopp.generator.utils.Files.deployContent;
+import static de.hopp.generator.utils.Files.getResource;
 import static org.apache.commons.io.FileUtils.copyFileToDirectory;
-import static org.apache.commons.io.FileUtils.write;
 
 import java.io.*;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
@@ -91,8 +93,10 @@ public abstract class ISE implements WorkflowIF {
             return;
         }
 
+        boolean newFiles = false;
+
         // deploy the necessary sources
-        if(!config.sdkOnly()) deployBITSources(board, config, errors);
+        if(!config.sdkOnly()) newFiles = deployBITSources(board, config, errors);
         deployELFSources(board, config, errors);
         // abort, if errors occurred
         if(errors.hasErrors()) return;
@@ -105,7 +109,7 @@ public abstract class ISE implements WorkflowIF {
         if(config.noGen()) return;
 
         // generate .bit file (if sdk only flag is not set)
-        if(!config.sdkOnly()) generateBITFile(config, errors);
+        if(!config.sdkOnly()) generateBITFile(newFiles, config, errors);
         // abort, if errors occurred
         if(errors.hasErrors()) return;
 
@@ -137,25 +141,29 @@ public abstract class ISE implements WorkflowIF {
      * @param board bdl file for which .bit sources should be generated
      * @param config the configuration for this generator run
      * @param errors the error collection of this generator run
+     * @return true if new files have been deployed, that did not exist before,
+     *      false otherwise
      */
-    protected void deployBITSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
+    protected boolean deployBITSources(BDLFilePos board, Configuration config, ErrorCollection errors) {
         ISEBoard iseBoard = (ISEBoard)config.board();
         IOHandler IO = config.IOHANDLER();
 
         StringBuffer buffer  = new StringBuffer();
         MHSUnparser unparser = new MHSUnparser(buffer);
 
+        boolean newFiles = false;
+
         /* ************************ ANALYSIS & GENERATION ************************ */
 
         // generate design-specific Models
         unparser.visit(xps.generateMHSFile(board));
 
-        if(errors.hasErrors()) return;
+        if(errors.hasErrors()) return newFiles;
 
         // generate and deploy core sources
         for(Core core : board.cores().term()) {
             try {
-                IPCores.deployCore(core, config);
+                newFiles = newFiles || IPCores.deployCore(core, config);
             } catch (UsageError e) {
                 errors.addError(e);
             } catch (IOException e) {
@@ -166,16 +174,20 @@ public abstract class ISE implements WorkflowIF {
         }
 
         // if this is a dryrun, skip deployment phase
-        if(config.dryrun()) return;
+        if(config.dryrun()) return newFiles;
 
 
         /* ****************************** DEPLOYMENT ****************************** */
 
         try {
             // deploy board-independent XPS files and directories (i.e. the pcores)
-            copy(genericXPSSourceDir.getPath(), edkDir(config), IO);
+            IO.verbose("  deploying board-independent xps files");
+            newFiles = newFiles || deploy(genericXPSSourceDir.getPath(), edkDir(config), IO);
+            IO.verbose();
             // deploy design-independent XPS files and directories (i.e. the mig project file)
-            copy(new File(iseBoard.xpsSources(), "generic").getPath(), edkDir(config), IO);
+            IO.verbose("  deploying design-independent xps files");
+            newFiles = newFiles || deploy(new File(iseBoard.xpsSources(), "generic").getPath(), edkDir(config), IO);
+            IO.verbose();
         } catch(IOException e) {
             e.printStackTrace(); // TODO only if debug or something like that...
             errors.addError(new GenerationFailed("Failed to deploy generic edk sources due to:\n" + e.getMessage()));
@@ -184,8 +196,10 @@ public abstract class ISE implements WorkflowIF {
         // FIXME merge these two blocks for better readability?...
         // deploy design-dependent files
         try {
+            IO.verbose("  deploying dependent files");
             for(Entry<String, String> entry : iseBoard.getData(board.term()).entrySet())
-                write(new File(new File(edkDir(config), "data"), entry.getKey()), entry.getValue());
+                newFiles = newFiles || deployContent(entry.getValue(),
+                    new File(new File(edkDir(config), "data"), entry.getKey()), IO);
         } catch (ParserError e) {
             errors.addError(e);
         } catch (IOException e) {
@@ -194,13 +208,15 @@ public abstract class ISE implements WorkflowIF {
         try {
             // deploy generated .mhs file
             File target = new File(edkDir(config), "system.mhs");
-            IO.debug("deploying " + target.getPath());
-            write(target, buffer);
+            newFiles = newFiles || deployContent(buffer, target, IO);
+            IO.verbose();
         } catch(IOException e) {
             errors.addError(new GenerationFailed(e.getMessage()));
         }
 
         // deploy generated ucf file
+
+        return newFiles;
     }
 
     /**
@@ -230,12 +246,18 @@ public abstract class ISE implements WorkflowIF {
 
         try {
             // deploy independent SDK files and directories
-            copy(genericSDKSourceDir.getPath(), sdkDir(config), IO);
+            IO.verbose("  deploying independent sdk files");
+            deploy(genericSDKSourceDir.getPath(), sdkDir(config), IO);
+            IO.verbose();
             // deploy design-independent SDK files and directories
-            copy(new File(iseBoard.sdkSources(), "generic").getPath(), sdkDir(config), IO);
+            IO.verbose("  deploying design-independent sdk files");
+            deploy(new File(iseBoard.sdkSources(), "generic").getPath(), sdkDir(config), IO);
+            IO.verbose();
             // deploy board-independent SDK files and directories
+            IO.verbose("  deploying board-independent sdk files");
             for(File source : sdk.getFiles().keySet())
-                copy(source.getPath(), sdk.getFiles().get(source), IO);
+                deploy(source.getPath(), sdk.getFiles().get(source), IO);
+            IO.verbose();
         } catch(IOException e) {
             errors.addError(new GenerationFailed("Failed to deploy generic sdk sources due to:\n"
                 + e.getMessage()));
@@ -275,30 +297,38 @@ public abstract class ISE implements WorkflowIF {
         doxygen(sdkAppDir(config), IO, errors);
     }
     /**
-     * Starts whatever external tool is responsible for generation of the BIT file
-     * @param config the configuration for this generator run
-     * @param errors the error collection of this generator run
+     * Starts whatever external tool is responsible for generation of the BIT file.
+     * @param newFiles indicates if new files have been deployed in the generation phase.
+     * @param config the configuration for this generator run.
+     * @param errors the error collection of this generator run.
      */
-    protected void generateBITFile(Configuration config, ErrorCollection errors) {
+    protected void generateBITFile(boolean newFiles, Configuration config, ErrorCollection errors) {
         ISEBoard board = (ISEBoard)config.board();
         config.IOHANDLER().println("running xps synthesis (this may take some time) ...");
 
         try {
             // setup process builder (all of this would be soooo much easier with Java 7 ;)
             ProcessBuilder pb = new ProcessBuilder("xps", "-nw").directory(edkDir(config));
-            String[] args = new String[] {
-                "xload new system.xmp " + board.getArch() + " " + board.getDev() + " " +
-                    board.getPack() + " " + board.getSpeed(),
-                "save proj",
-                "xset parallel_synthesis yes",
-                "xset sdk_export_dir " + sdkDir(config).getCanonicalPath(),
-                "run bits",
-                "run exporttosdk",
-                "exit"
-            };
+
+            List<String> args = new LinkedList<String>();
+            if(newFiles || ! new File(edkDir(config), "system.xmp").exists()) {
+                // if there is no xmp file or something changed, rebuild the project file
+                args.add("xload new system.xmp " + board.getArch() + " " + board.getDev() + " " +
+                        board.getPack() + " " + board.getSpeed());
+                args.add("save proj");
+            } else {
+                // otherwise just load it
+                args.add("xload xmp system.xmp");
+            }
+
+            args.add("xset parallel_synthesis yes");
+            args.add("xset sdk_export_dir " + sdkDir(config).getCanonicalPath());
+            args.add("run bits");
+            args.add("run exporttosdk");
+            args.add("exit");
 
             // start XPS process
-            Process p = startProcess(pb.redirectErrorStream(true), args);
+            Process p = startProcess(pb.redirectErrorStream(true), args.toArray(new String[args.size()]));
 
             // start stream reader threads for this process
             PrintStream[] writers = writers(config, "xps.log");
@@ -357,7 +387,7 @@ public abstract class ISE implements WorkflowIF {
     private String setupLinkerScript(BDLFilePos file, ISEBoard iseBoard, Configuration config) throws IOException {
         InputStream input = null;
         try {
-            input = getResouce(new File(iseBoard.sdkSources(), "lscript.ld").getPath(), config.IOHANDLER()).openStream();
+            input = getResource(new File(iseBoard.sdkSources(), "lscript.ld").getPath(), config.IOHANDLER()).openStream();
             String lScript = IOUtils.toString(input);
 
             // TODO This will allocate to much memory, since there is no distinction between stack and heap here...

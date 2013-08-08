@@ -202,7 +202,7 @@ public:
      * This is a blocking read, meaning that the reading program will wait until a value is returned.
      *
      * @see utils.h for the undelying write_file operation.
-     * @param size The number of values to be read.
+     * @param count The number of values to be read.
      * @param file Path of the file where the values should be stored in.
      * @param delim Separation character between two values.
      * @param f Function formatting values written to the file (cf ios_base.h).

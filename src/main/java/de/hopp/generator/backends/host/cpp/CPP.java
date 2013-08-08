@@ -2,7 +2,7 @@ package de.hopp.generator.backends.host.cpp;
 
 import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
-import static de.hopp.generator.utils.Files.copy;
+import static de.hopp.generator.utils.Files.deploy;
 
 import java.io.IOException;
 
@@ -49,7 +49,7 @@ public class CPP extends AbstractHostBackend {
 
         // deploy generic client code
         try {
-            copy("deploy/client/cpp", config.hostDir(), IO);
+            deploy("deploy/client/cpp", config.hostDir(), IO);
         } catch(IOException e) {
             errors.addError(new GenerationFailed(""));
             return;

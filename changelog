@@ -1,6 +1,7 @@
-v0.3.0a
-- TODO: support for the ZedBoard
+v0.3.0a (preview)
+- TODO: full support for the ZedBoard
 - TODO: support for additional ise version (14.2, 14.3, 14.5)
+- TODO: no longer runs synthesis if nothing changed
 
 v0.2.0
 - DHCP support

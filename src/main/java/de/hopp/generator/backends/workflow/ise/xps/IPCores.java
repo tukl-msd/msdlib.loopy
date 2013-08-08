@@ -3,8 +3,8 @@ package de.hopp.generator.backends.workflow.ise.xps;
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
-import static org.apache.commons.io.FileUtils.copyFile;
-import static org.apache.commons.io.FileUtils.write;
+import static de.hopp.generator.utils.Files.deploy;
+import static de.hopp.generator.utils.Files.deployContent;
 import static org.apache.commons.io.FilenameUtils.getName;
 
 import java.io.File;
@@ -13,8 +13,8 @@ import java.io.IOException;
 import org.apache.commons.io.FilenameUtils;
 
 import de.hopp.generator.Configuration;
-import de.hopp.generator.backends.workflow.ise.ISEUtils;
 import de.hopp.generator.backends.unparser.MHSUnparser;
+import de.hopp.generator.backends.workflow.ise.ISEUtils;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.frontend.*;
 import de.hopp.generator.parser.Attributes;
@@ -41,7 +41,11 @@ public class IPCores {
      * @throws IOException if an Exception occurred with an underlying file operation.
      * @throws UsageError if an invalid combination of bdl attributes is encountered.
      */
-    public static void deployCore(Core core, Configuration config) throws IOException, UsageError {
+    public static boolean deployCore(Core core, Configuration config) throws IOException, UsageError {
+        config.IOHANDLER().verbose("  deploying sources for core " + core.name());
+
+        boolean newFiles = false;
+
         File coresDir = new File(ISEUtils.edkDir(config), "pcores");
 
         MHSFile mpdFile;      // content for target mpd file
@@ -71,17 +75,19 @@ public class IPCores {
         StringBuffer buffer = new StringBuffer();
         MHSUnparser mhsUnparser = new MHSUnparser(buffer);
         mhsUnparser.visit(mpdFile);
-        write(target, buffer);
+        newFiles = newFiles || deployContent(buffer, target, config.IOHANDLER());
 
         // deploy pao file
         target = new File(coreDataDir, name + "_v2_1_0" + ".pao");
-        write(target, paoFile);
+        newFiles = newFiles || deployContent(paoFile, target, config.IOHANDLER());
 
         // deploy sources
         for(Import source : core.source()) {
             target = new File(coreSrcDir, getName(source.file()));
-            copyFile(new File(source.file()), target);
+            newFiles = newFiles || deploy(new File(source.file()), target, config.IOHANDLER());
         }
+
+        return newFiles;
     }
 
     /**
