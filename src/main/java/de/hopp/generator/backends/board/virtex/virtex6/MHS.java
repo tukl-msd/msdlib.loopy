@@ -459,13 +459,11 @@ public class MHS extends MHSGenerator {
     }
 
     @Override
-    protected MHSFile getFirst() {
-        return MHSFile(defaultAttributes(), defaultBlocks());
+    protected MHSFile getDefault() {
+        MHSFile mhs = getMicroblaze();
+        mhs = add(mhs, MHSFile(defaultAttributes(), defaultBlocks()));
+        mhs = add(mhs, getClk());
+        mhs = add(mhs, getINTC());
+        return mhs;
     }
-
-    @Override
-    protected MHSFile getLast() {
-        return add(add(getINTC(), getClk()), getMicroblaze());
-    }
-
 }

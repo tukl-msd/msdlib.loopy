@@ -1,5 +1,6 @@
 package de.hopp.generator.backends.board.zed;
 
+import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
@@ -31,19 +32,15 @@ public class MHS extends MHSGenerator {
     }
 
     @Override
-    protected MHSFile getFirst() {
-        return null;
+    protected MHSFile getDefault() {
+        MHSFile mhs = MHSFile(getAttributes(), getPS7());
+        mhs = add(mhs, getClk());
+        return mhs;
     }
 
-    @Override
-    protected MHSFile getLast() {
-        return null;
-    }
-
-    protected MHSFile getDefaultParts() {
+    protected Attributes getAttributes() {
         // TODO Auto-generated method stub
-        Attributes attributes = Attributes(
-            Attribute(PARAMETER(), Assignment("VERSION", Ident(versions.mhs))),
+        return Attributes(
             Attribute(PORT(),
                 Assignment("processing_system7_0_MIO", Ident("processing_system7_0_MIO")),
                 Assignment("DIR", Ident("IO")),
@@ -160,11 +157,9 @@ public class MHS extends MHSGenerator {
                 Assignment("DIR", Ident("IO"))
             )
         );
-
-        return MHSFile(attributes);
     }
 
-    protected MHSFile getProcessorConnection() {
+    protected Block getPS7() {
         // TODO Auto-generated method stub
 
         // BEGIN axi_interconnect
@@ -177,7 +172,7 @@ public class MHS extends MHSGenerator {
 
         // FIXME clocks!!
         // BEGIN processing_system7
-        Block ps7 = Block("processing_system7",
+        return Block("processing_system7",
             // PARAMETER INSTANCE = processing_system7_0
             Attribute(PARAMETER(), Assignment("INSTANCE", Ident("processing_system7_0"))),
             // PARAMETER HW_VER = 4.02.a
@@ -347,8 +342,6 @@ public class MHS extends MHSGenerator {
             // PORT IRQ_F2P = BTNs_5Bits_IP2INTC_Irpt & SWs_8Bits_IP2INTC_Irpt & LEDs_8Bits_IP2INTC_Irpt & axi_timer_0_Interrupt
             Attribute(PORT(), Assignment("IRQ_F2P", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
         );
-
-        return MHSFile(Attributes(), ps7);
     }
 
     protected MHSFile getClk() {
