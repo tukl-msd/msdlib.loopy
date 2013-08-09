@@ -163,7 +163,7 @@ public abstract class ISE implements WorkflowIF {
         // generate and deploy core sources
         for(Core core : board.cores().term()) {
             try {
-                newFiles = newFiles || IPCores.deployCore(core, config);
+                newFiles = IPCores.deployCore(core, config) || newFiles;
             } catch (UsageError e) {
                 errors.addError(e);
             } catch (IOException e) {
@@ -182,11 +182,11 @@ public abstract class ISE implements WorkflowIF {
         try {
             // deploy board-independent XPS files and directories (i.e. the pcores)
             IO.verbose("  deploying board-independent xps files");
-            newFiles = newFiles || deploy(genericXPSSourceDir.getPath(), edkDir(config), IO);
+            newFiles = deploy(genericXPSSourceDir.getPath(), edkDir(config), IO) || newFiles;
             IO.verbose();
             // deploy design-independent XPS files and directories (i.e. the mig project file)
             IO.verbose("  deploying design-independent xps files");
-            newFiles = newFiles || deploy(new File(iseBoard.xpsSources(), "generic").getPath(), edkDir(config), IO);
+            newFiles = deploy(new File(iseBoard.xpsSources(), "generic").getPath(), edkDir(config), IO) || newFiles;
             IO.verbose();
         } catch(IOException e) {
             e.printStackTrace(); // TODO only if debug or something like that...
@@ -198,8 +198,8 @@ public abstract class ISE implements WorkflowIF {
         try {
             IO.verbose("  deploying dependent files");
             for(Entry<String, String> entry : iseBoard.getData(board.term()).entrySet())
-                newFiles = newFiles || deployContent(entry.getValue(),
-                    new File(new File(edkDir(config), "data"), entry.getKey()), IO);
+                newFiles = deployContent(entry.getValue(),
+                    new File(new File(edkDir(config), "data"), entry.getKey()), IO) || newFiles;
         } catch (ParserError e) {
             errors.addError(e);
         } catch (IOException e) {
@@ -208,7 +208,7 @@ public abstract class ISE implements WorkflowIF {
         try {
             // deploy generated .mhs file
             File target = new File(edkDir(config), "system.mhs");
-            newFiles = newFiles || deployContent(buffer, target, IO);
+            newFiles = deployContent(buffer, target, IO) || newFiles;
             IO.verbose();
         } catch(IOException e) {
             errors.addError(new GenerationFailed(e.getMessage()));

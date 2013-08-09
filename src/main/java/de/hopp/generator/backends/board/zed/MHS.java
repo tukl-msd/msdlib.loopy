@@ -34,11 +34,11 @@ public class MHS extends MHSGenerator {
     @Override
     protected MHSFile getDefault() {
         MHSFile mhs = MHSFile(getAttributes(), getPS7());
-        mhs = add(mhs, getClk());
+        mhs = add(mhs, getAxiInterCon());
         return mhs;
     }
 
-    protected Attributes getAttributes() {
+    private Attributes getAttributes() {
         // TODO Auto-generated method stub
         return Attributes(
             Attribute(PORT(),
@@ -159,7 +159,7 @@ public class MHS extends MHSGenerator {
         );
     }
 
-    protected Block getPS7() {
+    private Block getPS7() {
         // TODO Auto-generated method stub
 
         // BEGIN axi_interconnect
@@ -180,7 +180,7 @@ public class MHS extends MHSGenerator {
             // PARAMETER C_DDR_RAM_HIGHADDR = 0x1FFFFFFF
             Attribute(PARAMETER(), Assignment("C_DDR_RAM_HIGHADDR", MemAddr("0x1FFFFFFF"))),
             // PARAMETER C_USE_M_AXI_GP0 = 1
-            Attribute(PARAMETER(), Assignment("C_USE_M_AXI_GPO", Number(1))),
+            Attribute(PARAMETER(), Assignment("C_USE_M_AXI_GP0", Number(1))),
             // PARAMETER C_EN_EMIO_CAN0 = 0
             Attribute(PARAMETER(), Assignment("C_EN_EMIO_CAN0", Number(0))),
             // PARAMETER C_EN_EMIO_CAN1 = 0
@@ -218,7 +218,7 @@ public class MHS extends MHSGenerator {
             // PARAMETER C_EN_EMIO_TTC0 = 1
             Attribute(PARAMETER(), Assignment("C_EN_EMIO_TTC0", Number(1))),
             // PARAMETER C_EN_EMIO_TTC1 = 0
-            Attribute(PARAMETER(), Assignment("EN_EMIO_TTC1", Number(0))),
+            Attribute(PARAMETER(), Assignment("C_EN_EMIO_TTC1", Number(0))),
             // PARAMETER C_EN_EMIO_UART0 = 0
             Attribute(PARAMETER(), Assignment("C_EN_EMIO_UART0", Number(0))),
             // PARAMETER C_EN_EMIO_UART1 = 0
@@ -334,19 +334,24 @@ public class MHS extends MHSGenerator {
             // PORT DDR_VRP = processing_system7_0_DDR_VRP
             Attribute(PORT(), Assignment("DDR_VRP", Ident("processing_system7_0_DDR_VRP"))),
             // PORT FCLK_CLK0 = processing_system7_0_FCLK_CLK0
-            Attribute(PORT(), Assignment("FLCK_CLK0", Ident("processing_system7_0_FCLK_CLK0"))),
+            Attribute(PORT(), Assignment("FCLK_CLK0", Ident("processing_system7_0_FCLK_CLK0"))),
             // PORT FCLK_RESET0_N = processing_system7_0_FCLK_RESET0_N_0
-            Attribute(PORT(), Assignment("RESET0_N", Ident("processing_system7_0_FCLK_RESET0_N_0"))),
+            Attribute(PORT(), Assignment("FCLK_RESET0_N", Ident("processing_system7_0_FCLK_RESET0_N_0"))),
             // PORT M_AXI_GP0_ACLK = processing_system7_0_FCLK_CLK0
             Attribute(PORT(), Assignment("M_AXI_GP0_ACLK", Ident("processing_system7_0_FCLK_CLK0"))),
             // PORT IRQ_F2P = BTNs_5Bits_IP2INTC_Irpt & SWs_8Bits_IP2INTC_Irpt & LEDs_8Bits_IP2INTC_Irpt & axi_timer_0_Interrupt
-            Attribute(PORT(), Assignment("IRQ_F2P", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
+            Attribute(PORT(), Assignment("IRQ_F2P", intrCntrlPorts))
         );
     }
 
-    protected MHSFile getClk() {
-        // In this architecture, the clock is provided by the ps7
-        return MHSFile(Attributes());
+    private MHSFile getAxiInterCon() {
+        return MHSFile(Attributes(), Block("axi_interconnect",Attributes(
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4lite_0"))),
+            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
+            Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(0))),
+            Attribute(PORT(), Assignment("interconnect_aclk", Ident("processing_system7_0_FCLK_CLK0"))),
+            Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("processing_system7_0_FCLK_RESET0_N_0")))
+        )));
     }
 
 }

@@ -3,8 +3,7 @@ package de.hopp.generator.backends.board.virtex.virtex6.gpio;
 import static de.hopp.generator.parser.MHS.*;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
-import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Block;
+import de.hopp.generator.parser.MHSFile;
 
 /**
  *
@@ -28,14 +27,6 @@ public class GpioButtons implements GpioComponent {
     public boolean isGPO() { return false; }
 
     // ISE stuff
-    public Attribute getMHSAttribute() {
-        return Attribute(PORT(),
-            Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),
-            Assignment("DIR", Ident("I")),
-            Assignment("VEC", Range(width()-1,0))
-        );
-    }
-
     public String hwInstance() {
         return "push_buttons_5bits";
     }
@@ -44,21 +35,27 @@ public class GpioButtons implements GpioComponent {
         return "Push_Buttons_5Bits_IP2INTC_Irpt";
     }
 
-    public Block getMHSBlock(IPCoreVersions versions) {
-        return Block("axi_gpio",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_buttons))),
-            Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
-            Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40000000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4000ffff"))),
-            Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("GPIO_IO_I", Ident("Push_Buttons_5Bits_TRI_I"))),
-            Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(getINTCPort())))
-        );
+    @Override
+    public MHSFile getMHS(IPCoreVersions versions) {
+        return MHSFile(Attributes(
+            Attribute(PORT(),
+                Assignment("Push_Buttons_5Bits_TRI_I", Ident("Push_Buttons_5Bits_TRI_I")),
+                Assignment("DIR", Ident("I")),
+                Assignment("VEC", Range(width()-1,0))
+            )), Block("axi_gpio",
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_buttons))),
+                Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
+                Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
+                Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
+                Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40000000"))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4000ffff"))),
+                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("GPIO_IO_I", Ident("Push_Buttons_5Bits_TRI_I"))),
+                Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(getINTCPort())))
+            ));
     }
 
     public String getUCFConstraints() {

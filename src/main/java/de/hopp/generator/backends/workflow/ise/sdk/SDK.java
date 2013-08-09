@@ -130,6 +130,7 @@ public class SDK extends Visitor<NE> {
         this.board = (ISEBoard)config.board();
 
         // initialise version strings
+        // FIXME move these to versions!
         version                   = "2.2.0";
 
         version_os                = "3.08.a";
@@ -210,6 +211,9 @@ public class SDK extends Visitor<NE> {
             ), MHS.Block("OS",
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_NAME", MHS.Ident("standalone"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("OS_VER", MHS.Ident(version_os))),
+                // FIXME this is not always the case ;)
+                // Neither are several other parts... basically the mss is dependent on the board and
+                // generation should be moved to the iseboard interface
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("PROC_INSTANCE", MHS.Ident("microblaze_0"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDIN", MHS.Ident("rs232_uart_1"))),
                 MHS.Attribute(MHS.PARAMETER(), MHS.Assignment("STDOUT", MHS.Ident("rs232_uart_1")))

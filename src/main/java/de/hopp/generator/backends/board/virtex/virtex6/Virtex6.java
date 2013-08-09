@@ -44,16 +44,33 @@ public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
     public File xpsSources() { return new File(folder + File.separator + "xps"); }
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }
 
+    @Override
     public MHS getMHS_14_1(ErrorCollection errors) {
         return new MHS(this, IPCoreVersions.ISE14_1, errors);
     }
 
+    @Override
     public MHS getMHS_14_4(ErrorCollection errors) {
         return new MHS(this, IPCoreVersions.ISE14_4, errors);
     }
 
+    @Override
     public MHS getMHS_14_6(ErrorCollection errors) {
         return new MHS(this, IPCoreVersions.ISE14_6, errors);
+    }
+
+    @Override
+    public GpioComponent getGpio(String name) throws IllegalArgumentException {
+        return Gpio.fromString(name).getInstance();
+    }
+
+    @Override
+    public Map<String, String> getData(BDLFile bdlFile) throws ParserError {
+        Map<String, String> constraints = new HashMap<String, String>();
+
+        constraints.put("system.ucf", getUCF(bdlFile));
+
+        return constraints;
     }
 
     /**
@@ -111,18 +128,5 @@ public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
         }
 
         return ucf;
-    }
-
-    @Override
-    public Map<String, String> getData(BDLFile bdlFile) throws ParserError {
-        Map<String, String> constraints = new HashMap<String, String>();
-
-        constraints.put("system.ucf", getUCF(bdlFile));
-
-        return constraints;
-    }
-
-    public GpioComponent getGpio(String name) throws IllegalArgumentException {
-        return Gpio.fromString(name).getInstance();
     }
 }
