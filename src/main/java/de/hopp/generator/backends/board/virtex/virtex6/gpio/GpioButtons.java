@@ -10,7 +10,7 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 10.6.2013
  */
-public class GpioButtons implements GpioComponent {
+public class GpioButtons extends GpioComponent {
 
     /**
      * Returns the identifier used to create this GPIO component.
@@ -27,12 +27,9 @@ public class GpioButtons implements GpioComponent {
     public boolean isGPO() { return false; }
 
     // ISE stuff
+    @Override
     public String hwInstance() {
-        return "push_buttons_5bits";
-    }
-
-    public String getINTCPort() {
-        return "Push_Buttons_5Bits_IP2INTC_Irpt";
+        return "Push_Buttons_5Bits";
     }
 
     @Override
@@ -43,7 +40,7 @@ public class GpioButtons implements GpioComponent {
                 Assignment("DIR", Ident("I")),
                 Assignment("VEC", Range(width()-1,0))
             )), Block("axi_gpio",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance().toLowerCase()))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_buttons))),
                 Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
                 Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
@@ -58,6 +55,7 @@ public class GpioButtons implements GpioComponent {
             ));
     }
 
+    @Override
     public String getUCFConstraints() {
         return "\nNET Push_Buttons_5Bits_TRI_I[0] LOC = \"G26\"  |  IOSTANDARD = \"LVCMOS15\";" +
                "\nNET Push_Buttons_5Bits_TRI_I[1] LOC = \"A19\"  |  IOSTANDARD = \"LVCMOS15\";" +
@@ -66,10 +64,7 @@ public class GpioButtons implements GpioComponent {
                "\nNET Push_Buttons_5Bits_TRI_I[4] LOC = \"H17\"  |  IOSTANDARD = \"LVCMOS15\";\n";
     }
 
-    public String deviceID() {
-        return "XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID";
-    }
-
+    @Override
     public String deviceIntrChannel() {
         return "XPAR_MICROBLAZE_0_INTC_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_INTR";
     }

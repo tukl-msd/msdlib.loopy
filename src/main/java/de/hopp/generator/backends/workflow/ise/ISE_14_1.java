@@ -4,7 +4,6 @@ import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_1;
-import de.hopp.generator.backends.workflow.ise.sdk.SDK;
 import de.hopp.generator.frontend.BDLFilePos;
 
 /**
@@ -29,7 +28,7 @@ public class ISE_14_1 extends ISE {
         }
 
         xps = ((ISEBoard_14_1)config.board()).getMHS_14_1(errors);
-        sdk = new SDK(config, errors);
+        sdk = ((ISEBoard_14_1)config.board()).getSDK_14_1(config, errors);
         super.generate(board, config, errors);
     }
 }

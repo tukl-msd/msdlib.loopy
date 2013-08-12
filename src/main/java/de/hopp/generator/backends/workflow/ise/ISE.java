@@ -233,7 +233,7 @@ public abstract class ISE implements WorkflowIF {
         /* ************************ ANALYSIS & GENERATION ************************ */
 
         // generate board-specific MFiles
-        sdk.visit(board);
+        sdk.generate(board);
 
         // abort, if errors occurred
         if(errors.hasErrors()) return;

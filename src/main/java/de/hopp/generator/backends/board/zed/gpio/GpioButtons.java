@@ -10,7 +10,7 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 10.6.2013
  */
-public class GpioButtons implements GpioComponent {
+public class GpioButtons extends GpioComponent {
 
     /**
      * Returns the identifier used to create this GPIO component.
@@ -27,12 +27,9 @@ public class GpioButtons implements GpioComponent {
     public boolean isGPO() { return false; }
 
     // ISE stuff
+    @Override
     public String hwInstance() {
         return "BTNs_5Bits";
-    }
-
-    public String getINTCPort() {
-        return hwInstance() + "_IP2INTC_Irpt";
     }
 
     @Override
@@ -43,7 +40,7 @@ public class GpioButtons implements GpioComponent {
                 Assignment("DIR", Ident("IO")),
                 Assignment("VEC", Range(width()-1,0))
             )), Block("axi_gpio",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance().toLowerCase()))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_buttons))),
                 Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
                 Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
@@ -59,6 +56,7 @@ public class GpioButtons implements GpioComponent {
         );
     }
 
+    @Override
     public String getUCFConstraints() {
         return  "\nNET BTNs_5Bits_TRI_IO[0] LOC = \"P16\"  |  IOSTANDARD = \"LVCMOS25\";" +
                 "\nNET BTNs_5Bits_TRI_IO[1] LOC = \"R16\"  |  IOSTANDARD = \"LVCMOS25\";" +
@@ -68,10 +66,7 @@ public class GpioButtons implements GpioComponent {
     }
 
     // SDK stuff
-    public String deviceID() {
-        return "XPAR_" + hwInstance().toUpperCase() + "_DEVICE_ID";
-    }
-
+    @Override
     public String deviceIntrChannel() {
         return "XPAR_FABRIC_" + getINTCPort().toUpperCase() + "_INTR";
     }

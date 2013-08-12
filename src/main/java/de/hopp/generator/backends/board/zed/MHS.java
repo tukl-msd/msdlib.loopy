@@ -160,16 +160,6 @@ public class MHS extends MHSGenerator {
     }
 
     private Block getPS7() {
-        // TODO Auto-generated method stub
-
-        // BEGIN axi_interconnect
-        //  PARAMETER INSTANCE = axi4lite_0
-        //  PARAMETER HW_VER = 1.06.a
-        //  PARAMETER C_INTERCONNECT_CONNECTIVITY_MODE = 0
-        //  PORT interconnect_aclk = processing_system7_0_FCLK_CLK0
-        //  PORT INTERCONNECT_ARESETN = processing_system7_0_FCLK_RESET0_N_0
-        // END
-
         // FIXME clocks!!
         // BEGIN processing_system7
         return Block("processing_system7",

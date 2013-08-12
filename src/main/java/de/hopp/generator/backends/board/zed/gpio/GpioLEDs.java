@@ -10,7 +10,7 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 10.6.2013
  */
-public class GpioLEDs implements GpioComponent {
+public class GpioLEDs extends GpioComponent {
 
     /**
      * Returns the identifier used to create this GPIO component.
@@ -27,12 +27,9 @@ public class GpioLEDs implements GpioComponent {
     public boolean isGPO() { return true; }
 
     // ISE
+    @Override
     public String hwInstance() {
         return "LEDs_8Bits";
-    }
-
-    public String getINTCPort() {
-        return hwInstance() + "_IP2INTC_Irpt";
     }
 
     @Override
@@ -43,7 +40,7 @@ public class GpioLEDs implements GpioComponent {
                 Assignment("DIR", Ident("O")),
                 Assignment("VEC", Range(width()-1,0))
             )), Block("axi_gpio",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance().toLowerCase()))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_leds))),
                 Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
                 Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(0))),
@@ -58,6 +55,7 @@ public class GpioLEDs implements GpioComponent {
         ));
     }
 
+    @Override
     public String getUCFConstraints() {
         return "\nNET LEDs_8Bits_TRI_IO[0] LOC = \"T22\"  |  IOSTANDARD = \"LVCMOS33\";" +
                "\nNET LEDs_8Bits_TRI_IO[1] LOC = \"T21\"  |  IOSTANDARD = \"LVCMOS33\";" +
@@ -69,10 +67,7 @@ public class GpioLEDs implements GpioComponent {
                "\nNET LEDs_8Bits_TRI_IO[7] LOC = \"U14\"  |  IOSTANDARD = \"LVCMOS33\";\n";
     }
 
-    public String deviceID() {
-        return "XPAR_" + hwInstance().toUpperCase() + "_DEVICE_ID";
-    }
-
+    @Override
     public String deviceIntrChannel() {
         return "XPAR_FABRIC_" + getINTCPort().toUpperCase() + "_INTR";
     }

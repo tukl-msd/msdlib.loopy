@@ -14,12 +14,11 @@ import de.hopp.generator.parser.Block;
  */
 public class GpioUtils {
 
-    public static Block getMSSBlock(GpioComponent gpio, String version) {
+    public static Block getMSSBlock(String instance, String version) {
         return Block("DRIVER",
             Attribute(PARAMETER(), Assignment("DRIVER_NAME", Ident("gpio"))),
             Attribute(PARAMETER(), Assignment("DRIVER_VER",  Ident(version))),
-            Attribute(PARAMETER(), Assignment("HW_INSTANCE", Ident(gpio.hwInstance())))
+            Attribute(PARAMETER(), Assignment("HW_INSTANCE", Ident(instance)))
         );
     }
-
 }

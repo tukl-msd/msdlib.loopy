@@ -53,7 +53,7 @@ public class BackendUtils {
         visitor.visit(MFileInFile(mfile));
 
         // write buffer contents to file
-        write(target, buf);
+        write(target, buf.toString());
     }
 
     public static void printMFile(MHSFile mfile, File target) throws IOException {

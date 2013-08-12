@@ -10,7 +10,7 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 10.6.2013
  */
-public class GpioSwitches implements GpioComponent {
+public class GpioSwitches extends GpioComponent {
 
     /**
      * Returns the identifier used to create this GPIO component.
@@ -27,12 +27,9 @@ public class GpioSwitches implements GpioComponent {
     public boolean isGPO() { return false; }
 
     // ISE
+    @Override
     public String hwInstance() {
-        return "dip_switches_8bits";
-    }
-
-    public String getINTCPort() {
-        return "DIP_Switches_8Bits_IP2INTC_Irpt";
+        return "DIP_Switches_8Bits";
     }
 
     @Override
@@ -43,7 +40,7 @@ public class GpioSwitches implements GpioComponent {
                 Assignment("DIR", Ident("I")),
                 Assignment("VEC", Range(width()-1,0))
             )), Block("axi_gpio",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance().toLowerCase()))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_switches))),
                 Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
                 Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(1))),
@@ -58,6 +55,7 @@ public class GpioSwitches implements GpioComponent {
             ));
     }
 
+    @Override
     public String getUCFConstraints() {
         return "\nNET DIP_Switches_8Bits_TRI_I[0] LOC = \"D22\"  |  IOSTANDARD = \"LVCMOS15\";" +
                "\nNET DIP_Switches_8Bits_TRI_I[1] LOC = \"C22\"  |  IOSTANDARD = \"LVCMOS15\";" +
@@ -69,10 +67,7 @@ public class GpioSwitches implements GpioComponent {
                "\nNET DIP_Switches_8Bits_TRI_I[7] LOC = \"K21\"  |  IOSTANDARD = \"LVCMOS15\";\n";
     }
 
-    public String deviceID() {
-        return "XPAR_DIP_SWITCHES_8BITS_DEVICE_ID";
-    }
-
+    @Override
     public String deviceIntrChannel() {
         return "XPAR_MICROBLAZE_0_INTC_DIP_SWITCHES_8BITS_IP2INTC_IRPT_INTR";
     }

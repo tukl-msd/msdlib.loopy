@@ -10,7 +10,7 @@ import de.hopp.generator.parser.MHSFile;
  * @author Thomas Fischer
  * @since 10.6.2013
  */
-public class GpioLEDs implements GpioComponent {
+public class GpioLEDs extends GpioComponent {
 
     /**
      * Returns the identifier used to create this GPIO component.
@@ -27,12 +27,9 @@ public class GpioLEDs implements GpioComponent {
     public boolean isGPO() { return true; }
 
     // ISE
+    @Override
     public String hwInstance() {
-        return "leds_8bits";
-    }
-
-    public String getINTCPort() {
-        return "LEDs_8Bits_IP2INTC_Irpt";
+        return "LEDs_8Bits";
     }
 
     @Override
@@ -43,7 +40,7 @@ public class GpioLEDs implements GpioComponent {
                 Assignment("DIR", Ident("O")),
                 Assignment("VEC", Range(width()-1,0))
             )), Block("axi_gpio",
-                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance()))),
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(hwInstance().toLowerCase()))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_leds))),
                 Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
                 Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(0))),
@@ -58,6 +55,7 @@ public class GpioLEDs implements GpioComponent {
             ));
     }
 
+    @Override
     public String getUCFConstraints() {
         return "\nNET LEDs_8Bits_TRI_O[0] LOC = \"AC22\"  |  IOSTANDARD = \"LVCMOS25\";" +
                "\nNET LEDs_8Bits_TRI_O[1] LOC = \"AC24\"  |  IOSTANDARD = \"LVCMOS25\";" +
@@ -69,10 +67,7 @@ public class GpioLEDs implements GpioComponent {
                "\nNET LEDs_8Bits_TRI_O[7] LOC = \"AD24\"  |  IOSTANDARD = \"LVCMOS25\";\n";
     }
 
-    public String deviceID() {
-        return "XPAR_LEDS_8BITS_DEVICE_ID";
-    }
-
+    @Override
     public String deviceIntrChannel() {
         throw new UnsupportedOperationException("GPI component 'LEDS' does not support interrupts");
         // pretty sure there IS an interrupt channel for LEDs...

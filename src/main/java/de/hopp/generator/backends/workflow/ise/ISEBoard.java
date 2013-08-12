@@ -3,9 +3,11 @@ package de.hopp.generator.backends.workflow.ise;
 import java.io.File;
 import java.util.Map;
 
+import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.board.BoardIF;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.backends.workflow.ise.sdk.SDKGenerator;
 import de.hopp.generator.backends.workflow.ise.xps.MHS;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.BDLFile;
@@ -54,6 +56,8 @@ public interface ISEBoard extends BoardIF {
          * @return The MHS file for the board and ise 14.1.
          */
         public MHS getMHS_14_1(ErrorCollection errors);
+
+        public SDKGenerator getSDK_14_1(Configuration config, ErrorCollection errors);
     }
 
     /**
@@ -70,6 +74,8 @@ public interface ISEBoard extends BoardIF {
          * @return The MHS file for the board and ise 14.4.
          */
         public MHS getMHS_14_4(ErrorCollection errors);
+
+        public SDKGenerator getSDK_14_4(Configuration config, ErrorCollection errors);
     }
 
     /**
@@ -86,5 +92,7 @@ public interface ISEBoard extends BoardIF {
          * @return The MHS file for the board and ise 14.6.
          */
         public MHS getMHS_14_6(ErrorCollection errors);
+
+        public SDKGenerator getSDK_14_6(Configuration config, ErrorCollection errors);
     }
 }

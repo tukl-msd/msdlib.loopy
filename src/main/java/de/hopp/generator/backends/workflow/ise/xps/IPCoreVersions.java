@@ -9,7 +9,6 @@ public class IPCoreVersions {
     public static IPCoreVersions ISE14_5 = create14_5();
     public static IPCoreVersions ISE14_6 = create14_6();
 
-
     public String ise;
 
     // XPS (MHS)
@@ -35,30 +34,6 @@ public class IPCoreVersions {
     public String gpio_leds;
     public String gpio_buttons;
     public String gpio_switches;
-
-    // SDK (MSS)
-    public String mss;
-
-    public String mss_os;
-    public String mss_cpu_mb;
-    public String mss_cpu_ca9;
-
-    public String mss_intc;
-    public String mss_v6_ddrx;
-    public String mss_bram_block;
-    public String mss_timer_controller;
-
-    public String mss_uartlite;
-    public String mss_ethernetlite;
-    public String mss_lwip_lib_name;
-    public String mss_lwip_lib;
-
-    public String mss_gpio_leds;
-    public String mss_gpio_buttons;
-    public String mss_gpio_switches;
-
-    public String mss_queue;
-    public String mss_resizer;
 
     private IPCoreVersions() { }
 
@@ -87,30 +62,6 @@ public class IPCoreVersions {
         versions.gpio_leds         = "1.01.b";
         versions.gpio_buttons      = "1.01.b";
         versions.gpio_switches     = "1.01.b";
-
-        // SDK (MHS)
-        versions.mss                   = "2.2.0";
-
-        versions.mss_os                = "3.08.a";
-        versions.mss_cpu_mb            = "1.14.a";
-
-        versions.mss_bram_block        = "3.01.a";
-        versions.mss_intc              = "2.05.a";
-        versions.mss_timer_controller  = "2.04.a";
-        versions.mss_v6_ddrx           = "2.00.a";
-
-        versions.mss_uartlite          = "2.00.a";
-        versions.mss_ethernetlite      = "3.03.a";
-
-        versions.mss_lwip_lib_name     = "lwip140";
-        versions.mss_lwip_lib          = "1.03.a";
-
-        versions.mss_gpio_leds         = "3.00.a";
-        versions.mss_gpio_buttons      = "3.00.a";
-        versions.mss_gpio_switches     = "3.00.a";
-
-        versions.mss_queue             = "1.00.a";
-        versions.mss_resizer           = "1.00.a";
 
         return versions;
     }
@@ -157,30 +108,6 @@ public class IPCoreVersions {
         versions.microblaze        = "8.50.b";
 
         versions.axi_intc          = "1.04.a";
-
-        versions.mss_cpu_ca9       = "1.01.a";
-
-        // FIXME It obviously is a good idea to move board-specific stuff to the board-backend
-        // This version list should only contain independent versions
-        // This probably means only xsdk and maybe the mss version
-        // Other things should be in the board, though they still depend on the ise version
-        // So far I'm not sure how to do this with the current interface wrapping
-//        versions.ps7_afi           = "1.00.a";
-//        versions.ps7_ddr           = "1.00.a";
-//        versions.ps7_dev_cfg       = "2.01.a";
-//        versions.ps7_dma           = "1.04.a";
-//        versions.ps7_eth           = "1.02.a";
-//        versions.ps7_gpio          = "1.01.a";
-//        versions.ps7_iop_bus_cfg   = "1.00.a";
-//        versions.ps7_qspi          = "2.00.a";
-//        versions.ps7_qspi_linear   = "1.00.a";
-//        versions.ps7_ram           = "1.00.a";
-//        versions.ps7_scu           = "1.02.a";
-//        versions.ps7_sd            = "1.00.a";
-//        versions.ps7_slcr          = "1.00.a";
-//        versions.ps7_ttc           = "1.01.a";
-//        versions.ps7_uart          = "1.03.a";
-//        versions.ps7_usb           = "1.04.a";
 
         return versions;
     }

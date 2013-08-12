@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
 import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
@@ -11,6 +12,7 @@ import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_1;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_4;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_6;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
+import de.hopp.generator.backends.workflow.ise.sdk.DriverVersions;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.frontend.BDLFile;
@@ -50,13 +52,28 @@ public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
     }
 
     @Override
+    public SDK getSDK_14_1(Configuration config, ErrorCollection errors) {
+        return new SDK(config, DriverVersions.ISE14_1, errors);
+    }
+
+    @Override
     public MHS getMHS_14_4(ErrorCollection errors) {
         return new MHS(this, IPCoreVersions.ISE14_4, errors);
     }
 
     @Override
+    public SDK getSDK_14_4(Configuration config, ErrorCollection errors) {
+        return new SDK(config, DriverVersions.ISE14_4, errors);
+    }
+
+    @Override
     public MHS getMHS_14_6(ErrorCollection errors) {
         return new MHS(this, IPCoreVersions.ISE14_6, errors);
+    }
+
+    @Override
+    public SDK getSDK_14_6(Configuration config, ErrorCollection errors) {
+        return new SDK(config, DriverVersions.ISE14_6, errors);
     }
 
     @Override

@@ -160,7 +160,6 @@ public class Main {
         IO.println("                       and directly executed. Further command line parameters");
         IO.println("                       will be ignored.");
         IO.println(" -h --help             show this help. Append a backend to get its help.");
-        // FIXME parameterized help for valid workflow / board combinations?
         IO.println();
 
         // Print backends
