@@ -88,6 +88,8 @@ void init_platform()
 {
 	platform_setup_interrupts();
 
+	platform_enable_interrupts();
+
 	return;
 }
 

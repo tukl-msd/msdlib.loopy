@@ -53,7 +53,7 @@ void gpi_test() {
     std::cout << "in total, you've executed " << count << " button examples so far" << std::endl;
       break;
     case 8: count++;
-      cout << "you pressed button 4!" << std::endl;
+      std::cout << "you pressed button 4!" << std::endl;
       do {
     	  gpio_buttons.waitForChange();
       } while(gpio_buttons.readState() != 8);

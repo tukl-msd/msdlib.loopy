@@ -36,7 +36,7 @@ public class GpioLEDs extends GpioComponent {
     public MHSFile getMHS(IPCoreVersions versions) {
         return MHSFile(Attributes(
             Attribute(PORT(),
-                Assignment("LEDs_8Bits_TRI_IO", Ident("LEDs_8Bits_TRI_O")),
+                Assignment("LEDs_8Bits_TRI_IO", Ident("LEDs_8Bits_TRI_IO")),
                 Assignment("DIR", Ident("O")),
                 Assignment("VEC", Range(width()-1,0))
             )), Block("axi_gpio",
