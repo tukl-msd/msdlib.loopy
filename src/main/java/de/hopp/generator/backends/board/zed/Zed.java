@@ -1,8 +1,13 @@
 package de.hopp.generator.backends.board.zed;
 
+import static de.hopp.generator.backends.workflow.ise.ISEUtils.edkDir;
+import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkDir;
+
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
@@ -79,6 +84,17 @@ public class Zed implements ISEBoard_14_4, ISEBoard_14_6, VivadoBoard {
 //        data.put("system.xdc", getXDC(bdlFile));
 
         return data;
+    }
+
+    @Override
+    public Set<File> boardFiles(Configuration config) {
+        Set<File> files = new HashSet<File>();
+
+        files.add(new File(edkDir(config), "implementation/system.bit"));
+        files.add(new File(sdkDir(config), "app/Debug/app.elf"));
+        files.add(new File(sdkDir(config), "hw/ps7_init.tcl"));
+
+        return files;
     }
 
     private String getUCF(BDLFile bdlFile) {

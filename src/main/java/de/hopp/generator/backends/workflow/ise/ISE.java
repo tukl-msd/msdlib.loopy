@@ -16,8 +16,10 @@ import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import de.hopp.generator.Configuration;
@@ -72,6 +74,7 @@ public abstract class ISE implements WorkflowIF {
 
     protected MHS xps;
     protected SDK sdk;
+    protected Set<File> sources;
 
     @Override
     public void printUsage(IOHandler IO) {
@@ -92,6 +95,8 @@ public abstract class ISE implements WorkflowIF {
                 " board incompatible with " + config.flow().getName() + " workflow"));
             return;
         }
+
+        sources = ((ISEBoard)config.board()).boardFiles(config);
 
         boolean newFiles = false;
 
@@ -118,18 +123,14 @@ public abstract class ISE implements WorkflowIF {
         // abort, if errors occurred
         if(errors.hasErrors()) return;
 
-        // deploy bit and elf files
-        try {
-            File bitFile = new File(new File(edkDir(config), "implementation"), "system.bit");
-            copyFileToDirectory(bitFile, config.boardDir());
-        } catch (IOException e) {
-            errors.addWarning(new Warning("could not deploy .bit file due to: " + e.getMessage()));
-        }
-        try {
-            File elfFile = new File(new File(new File(sdkDir(config), "app"), "Debug"), "app.elf");
-            copyFileToDirectory(elfFile, config.boardDir());
-        } catch (IOException e) {
-            errors.addWarning(new Warning("could not deploy .elf file due to: " + e.getMessage()));
+        for(File source : sources) {
+            try {
+                copyFileToDirectory(source, config.boardDir());
+            } catch (IOException e) {
+                errors.addWarning(new Warning("could not deploy " +
+                    FilenameUtils.getName(source.getPath()) +
+                    " file due to: " + e.getMessage()));
+            }
         }
 
         // load .elf into .bit file

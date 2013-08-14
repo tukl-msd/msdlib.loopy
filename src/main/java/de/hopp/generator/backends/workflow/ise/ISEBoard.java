@@ -2,6 +2,7 @@ package de.hopp.generator.backends.workflow.ise;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Set;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
@@ -41,6 +42,14 @@ public interface ISEBoard extends BoardIF {
     public Map<String, String> getData(BDLFile bdlFile) throws ParserError;
 
     public GpioComponent getGpio(String name);
+
+    /**
+     * Provides a list of files that are required to setup the board-side driver.
+     * All these files will be deployed in the board folder after generation.
+     * @param config Configuration for this run (which might change the source folder).
+     * @return A list of files required to setup the board-side driver.
+     */
+    public Set<File> boardFiles(Configuration config);
 
     /**
      * Interface for boards that can be synthesised with ise version 14.1

@@ -1,8 +1,13 @@
 package de.hopp.generator.backends.board.virtex.virtex6;
 
+import static de.hopp.generator.backends.workflow.ise.ISEUtils.edkDir;
+import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkDir;
+
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
@@ -88,6 +93,17 @@ public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
         constraints.put("system.ucf", getUCF(bdlFile));
 
         return constraints;
+    }
+
+    @Override
+    public Set<File> boardFiles(Configuration config) {
+        Set<File> files = new HashSet<File>();
+
+        files.add(new File(edkDir(config), "implementation/system.bit"));
+        files.add(new File(sdkDir(config), "app/Debug/app.elf"));
+        files.add(new File(sdkDir(config), "hw/ps7_init.tcl"));
+
+        return files;
     }
 
     /**
