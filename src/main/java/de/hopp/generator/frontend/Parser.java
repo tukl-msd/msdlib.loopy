@@ -1,10 +1,13 @@
 package de.hopp.generator.frontend;
 
 import static de.hopp.generator.frontend.BDL.BDLFile;
+import static de.hopp.generator.frontend.BDL.Cores;
+import static de.hopp.generator.frontend.BDL.Import;
+import static de.hopp.generator.frontend.BDL.Imports;
 import static de.hopp.generator.frontend.BDL.Logs;
 import static org.apache.commons.io.FileUtils.getFile;
 import static org.apache.commons.io.FilenameUtils.getBaseName;
-import static org.apache.commons.io.FilenameUtils.getPath;
+import static org.apache.commons.io.FilenameUtils.getFullPath;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,17 +20,21 @@ import java.util.Map;
 import java.util.Set;
 
 import java_cup.runtime.Symbol;
-import katja.common.NE;
+import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.IOHandler;
+import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.ParserWarning;
 import de.hopp.generator.exceptions.UsageError;
 
 public class Parser {
 
+    private IOHandler IO;
     private ErrorCollection errors;
 
-    public Parser(ErrorCollection errors) {
+    public Parser(Configuration config, ErrorCollection errors) {
+        IO = config.IOHANDLER();
         this.errors = errors;
     }
 
@@ -72,7 +79,7 @@ public class Parser {
             parser.setErrorCollection(errors);
             parser.setFilename(file.getCanonicalPath());
 
-            File directory = getFile(getPath(file.getCanonicalPath()));
+            File directory = new File(getFullPath(file.getCanonicalPath()));
 
             // parse the file
             try {
@@ -83,6 +90,9 @@ public class Parser {
 
                 // otherwise, cast the result to a BDLFile
                 BDLFile bdl = (BDLFile) symbol.value;
+
+                // normalize the sources of the bdl
+                bdl = normalizeSources(bdl, directory, file.getCanonicalPath());
 
                 // add all imports of this file (relative to the importing .bdl file)
                 for(Import imp : bdl.imports()) files.add(getFile(directory, imp.file()));
@@ -97,6 +107,55 @@ public class Parser {
             errors.addError(new UsageError("File not found " + file.getPath()));
         }
         return null;
+    }
+
+    /**
+     * Normalizes sources of all cores declared in the .bdl file.
+     *
+     * Checks, if a reference source file exists in the relative context
+     * of the importing .bdl file. If this is the case, it prefixes the import
+     * with the directory of the importing .bdl file, thus making the path global.
+     *
+     * If no source file exists in the context of the importing .bdl, the import already
+     * is global. If the source file also does not exist in a global context, an error
+     * is added to the parsers error collection.
+     *
+     * @param file The .bdl file to normalize
+     * @return The input .bdl file with normalized core sources
+     * @param dir The directory of the .bdl file
+     * @param loc The full path to the .bdl file
+     * @throws ExecutionFailed on IOExceptions during normalization. This is pretty much unrecoverable.
+     *  Also, occurrence of such an error is no usage error and therefore should not be reported
+     *  using the error collection.
+     */
+    private BDLFile normalizeSources(BDLFile file, File dir, String loc) {
+        Cores cores = Cores();
+        for(Core core : file.cores()) {
+            Imports sources = Imports();
+            for(Import source : core.source()) {
+                // check local existence first
+                File sourcefile = new File(dir, source.file());
+                if(sourcefile.exists() && sourcefile.isFile()) {
+                    // if the file exists locally, prepend the directory
+                    try {
+                        IO.verbose("Normalizing import " + source.file());
+                        IO.verbose("  in " + loc);
+                        IO.verbose("  to " + sourcefile.getCanonicalPath());
+                        source = Import(sourcefile.getCanonicalPath(), source.pos());
+                    } catch (IOException e) {
+                        throw new ExecutionFailed();
+                    }
+                } else {
+                    // afterwards check global existence
+                    sourcefile = new File(source.file());
+                    if(!sourcefile.exists() || !sourcefile.isFile())
+                        errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", source.pos()));
+                }
+                sources = sources.add(source);
+            }
+            cores = cores.add(core.replaceSource(sources));
+        }
+        return file.replaceCores(cores);
     }
 
     private static BDLFile merge(BDLFile file1, BDLFile file2) throws ParserError {
@@ -120,53 +179,24 @@ public class Parser {
     private static Logs merge(Logs l1, Logs l2) throws ParserError{
         Log host = null, board = null;
 
-        class LogPos implements Log.Switch<Position, NE> {
-            public Position CaseNOLOG(NOLOG term) {
-                return null;
-            }
-            public Position CaseCONSOLE(CONSOLE term) {
-                return term.pos();
-            }
-            public Position CaseFILE(FILE term) {
-                return term.pos();
-            }
-        }
-
-        if(l1.host() instanceof NOLOG) host = l2.host();
-        else if(l2.host() instanceof NOLOG) host = l1.host();
+        if(l1.host() instanceof NONE) host = l2.host();
+        else if(l2.host() instanceof NONE) host = l1.host();
         else throw new ParserError("Duplicate definition of host-logger",
-            l1.host().Switch(new LogPos()), l2.host().Switch(new LogPos()));
+            ((DefinedLog)l1.host()).pos(), ((DefinedLog)l2.host()).pos());
 
-        if(l1.board() instanceof NOLOG) board = l2.board();
-        else if(l2.board() instanceof NOLOG) board = l1.board();
+        if(l1.board() instanceof NONE) board = l2.board();
+        else if(l2.board() instanceof NONE) board = l1.board();
         else throw new ParserError("Duplicate definitinon of board-logger",
-            l1.board().Switch(new LogPos()), l2.board().Switch(new LogPos()));
+            ((DefinedLog)l1.host()).pos(), ((DefinedLog)l2.host()).pos());
 
         return Logs(host, board);
     }
 
     private static Medium merge(Medium m1, Medium m2) throws ParserError{
-
-        // TODO add a variant in the .katja file to replace this switch with a cast
-        class MediumPos implements Medium.Switch<Position, NE> {
-            public Position CaseNONE(NONE term) throws NE {
-                return null;
-            }
-            public Position CaseETHERNET(ETHERNET term) {
-                return term.pos();
-            }
-            public Position CaseUART(UART term) {
-                return term.pos();
-            }
-            public Position CasePCIE(PCIE term) {
-                return term.pos();
-            }
-        }
-
         if(m1 instanceof NONE) return m2;
         if(m2 instanceof NONE) return m1;
         throw new ParserError("Duplicate definition of communication medium",
-            m1.Switch(new MediumPos()), m2.Switch(new MediumPos()));
+            ((DefinedMedium)m1).pos(), ((DefinedMedium)m2).pos());
     }
 
     private static Scheduler merge(Scheduler s1, Scheduler s2) throws ParserError {
@@ -197,12 +227,7 @@ public class Parser {
         for(Core core : bdf.cores()) {
             Set<String> sources = new HashSet<String>();
             for(Import source : core.source()) {
-                // check existence of referenced core sources
-                File sourcefile = new File(source.file());
-                if(!sourcefile.exists() || !sourcefile.isFile())
-                    errors.addError(new ParserError("Referenced sourcefile " + sourcefile + " does not exist", source.pos()));
-
-                // check for duplicate filenames
+                // check for duplicate (normalized, existing) filenames
                 if(!sources.add(getBaseName(source.file()).toLowerCase())) {
                     errors.addError(new ParserError("name of sourcefile " + source.file() +
                         " clashes (case-insensitive) with other sourcefile", source.pos()));

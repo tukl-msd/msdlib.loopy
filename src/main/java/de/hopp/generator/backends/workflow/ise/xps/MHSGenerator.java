@@ -194,7 +194,6 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
 
     // logger options
     public void visit(LogsPos    term) { }
-    public void visit(NOLOGPos   term) { }
     public void visit(CONSOLEPos term) { }
     public void visit(FILEPos    term) { }
 

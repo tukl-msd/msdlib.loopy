@@ -117,7 +117,7 @@ public class BoardUtils {
 
     public static LogSeverity getLogSeverity(LogPos log) {
         return log.termLog().Switch(new Log.Switch<LogSeverity, NE>() {
-            public LogSeverity CaseNOLOG(NOLOG term) {
+            public LogSeverity CaseNONE(NONE term) {
                 return BDL.ERROR();
             }
             public LogSeverity CaseCONSOLE(CONSOLE term) {

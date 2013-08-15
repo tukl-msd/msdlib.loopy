@@ -43,11 +43,14 @@ Binding = Axis(String port, String axis, Position pos, Options opts)
 
 GPIO (String name, Position pos, Code callback)
 
+NONE()
+
 // Definition of the attached medium
-Medium = NONE()
-       | ETHERNET(Position pos, MOptions opts)
-       | UART    (Position pos, MOptions opts) 
-       | PCIE    (Position pos, MOptions opts)
+Medium = NONE
+       | DefinedMedium
+DefinedMedium = ETHERNET(Position pos, MOptions opts)
+              | UART    (Position pos, MOptions opts)
+              | PCIE    (Position pos, MOptions opts)
 
 // General constants and flags for board and ports (care for invalid combinations)
 Option = HWQUEUE (Position pos, Integer qsize)
@@ -57,9 +60,10 @@ Option = HWQUEUE (Position pos, Integer qsize)
 
 
 Logs (Log host, Log board)
-Log = NOLOG()
-    | CONSOLE (Position pos, LogSeverity sev)
-    | FILE    (Position pos, LogSeverity sev, String file)
+Log = NONE
+    | DefinedLog
+DefinedLog = CONSOLE (Position pos, LogSeverity sev)
+           | FILE    (Position pos, LogSeverity sev, String file)
 
 LogSeverity = ERROR()
             | WARN()

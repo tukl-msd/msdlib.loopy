@@ -125,7 +125,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     private void addLogger(final String name, final String prefix, final Log log) {
         MInitList initList = log.Switch(new Log.Switch<MInitList, NE>() {
-            public MInitList CaseNOLOG(NOLOG term) {
+            public MInitList CaseNONE(NONE term) {
                 return MInitList(Strings("NULL", "0", "\"" + prefix + "\""));
             }
             public MInitList CaseCONSOLE(CONSOLE term) {
@@ -360,7 +360,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(POLLPos     term) { }
 
     // logger options
-    public void visit(NOLOGPos    term) { }
     public void visit(CONSOLEPos  term) { }
     public void visit(FILEPos     term) { }
 

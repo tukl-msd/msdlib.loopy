@@ -658,7 +658,7 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
     public void visit(DEFAULTPos term)      { }
     public void visit(USER_DEFINEDPos term) { }
 
-    // missing medium declaration
+    // missing declaration
     public void visit(NONEPos term) { }
 
     // options (handled directly inside the board or port if occurring)
@@ -669,7 +669,6 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
 
     // logger options
     public void visit(LogsPos     term) { }
-    public void visit(NOLOGPos    term) { }
     public void visit(CONSOLEPos  term) { }
     public void visit(FILEPos     term) { }
 

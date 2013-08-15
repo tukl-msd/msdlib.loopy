@@ -20,7 +20,7 @@ action code {:
 :}
 
 parser code {:
-//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Logs(BDL.NOLOG(), BDL.NOLOG()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
+//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Logs(BDL.NONE(), BDL.NONE()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
 //
 //  public BDLFile getBDLFile() {
 //    return board;
@@ -118,7 +118,7 @@ file ::=
      {:
          Imports imports     = BDL.Imports();
          Backends backends   = BDL.Backends();
-         Logs logs           = BDL.Logs(BDL.NOLOG(), BDL.NOLOG());
+         Logs logs           = BDL.Logs(BDL.NONE(), BDL.NONE());
          Options opts        = BDL.Options();
          Cores cores         = BDL.Cores();
          GPIOs gpios         = BDL.GPIOs();
@@ -133,16 +133,16 @@ file ::=
              Logs newLogs = (Logs)d;
 
              // check if there is a new host logger
-             if(!(newLogs.host() instanceof NOLOG))
+             if(!(newLogs.host() instanceof NONE))
                  // set host logger, if none was specified, otherwise throw error
-                 if(logs.host() instanceof NOLOG)
+                 if(logs.host() instanceof NONE)
                      logs = logs.replaceHost(newLogs.host());
                  else error("duplicate definition of host logger", lleft, lright);
 
              // check if there is a new board logger
-             if(!(newLogs.board() instanceof NOLOG))
+             if(!(newLogs.board() instanceof NONE))
                  // set board logger, if none was specified, otherwise throw error
-                 if(logs.board() instanceof NOLOG)
+                 if(logs.board() instanceof NONE)
                      logs = logs.replaceBoard(newLogs.board());
                  else error("duplicate definition of board logger", lleft, lright);
            }
@@ -153,10 +153,11 @@ file ::=
            else if(d instanceof Medium)   {
              // TODO catch duplicates?
              // check, if the medium is already defined. If so, throw exception
-             medium = (Medium)d;
+             if(medium instanceof NONE) medium = (Medium)d;
+             else error("Duplicate communication medium", lleft, lright);
            }
            else if(d instanceof Scheduler) {
-             if(scheduler instanceof USER_DEFINED) error("Duplicate Scheduler", lleft, lright);
+             if(scheduler instanceof USER_DEFINED) error("Duplicate scheduler", lleft, lright);
              scheduler = (Scheduler)d;
            }
          }
@@ -252,14 +253,14 @@ log ::=
   LOG:key device:dev severity:sev
      {:
          Log log = BDL.CONSOLE(pos(keyleft), sev);
-         if(dev) RESULT = BDL.Logs(log, BDL.NOLOG());
-         else    RESULT = BDL.Logs(BDL.NOLOG(), log);
+         if(dev) RESULT = BDL.Logs(log, BDL.NONE());
+         else    RESULT = BDL.Logs(BDL.NONE(), log);
      :}
   |  LOG:key device:dev severity:sev STRING_LITERAL:file
      {:
          Log log = BDL.FILE(pos(keyleft), sev, file);
-         if(dev) RESULT = BDL.Logs(log, BDL.NOLOG());
-         else    RESULT = BDL.Logs(BDL.NOLOG(), log);
+         if(dev) RESULT = BDL.Logs(log, BDL.NONE());
+         else    RESULT = BDL.Logs(BDL.NONE(), log);
      :}
   ;
 

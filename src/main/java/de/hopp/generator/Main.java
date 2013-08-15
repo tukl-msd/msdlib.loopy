@@ -228,7 +228,7 @@ public class Main {
         // start parser
         IO.println();
         IO.println("starting parser");
-        BDLFilePos board = BDLFilePos(new Parser(errors).parse(schemaFile));
+        BDLFilePos board = BDLFilePos(new Parser(config, errors).parse(schemaFile));
         IO.println();
 
         if(board != null && board.term() != null) {
