@@ -114,7 +114,8 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
 
         mhs = add(mhs, gpio.getMHS(versions));
 
-        addPortToInterruptController(gpio.getINTCPort());
+        if(gpio.isGPI())
+            addPortToInterruptController(gpio.getINTCPort());
     }
 
     public void visit(InstancePos term) {

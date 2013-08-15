@@ -262,11 +262,11 @@ public class Main {
         }
 
         // unparse generated client models to corresponding files
-        if(config.client() != null) {
+        if(config.host() != null) {
             IO.println();
-            IO.println("starting up " + config.client().getName() + " host backend ...");
+            IO.println("starting up " + config.host().getName() + " host backend ...");
 
-            config.client().generate(board, config, errors);
+            config.host().generate(board, config, errors);
 
             // abort if any errors occurred
             IO.println();
@@ -316,8 +316,8 @@ public class Main {
             args   = config.UNUSED();
             config.setUnusued(new String[0]);
         }
-        if(config.client() != null) {
-            config = config.client().parseParameters(config, args);
+        if(config.host() != null) {
+            config = config.host().parseParameters(config, args);
             args   = config.UNUSED();
             config.setUnusued(new String[0]);
         }
@@ -371,7 +371,7 @@ public class Main {
                     throw new ExecutionFailed();
                 }
                 try {
-                    config.setClient(Host.fromName(args[++i]).getInstance());
+                    config.setHost(Host.fromName(args[++i]).getInstance());
                 } catch(IllegalArgumentException e) {
                     IO.error(e.getMessage());
                     throw new ExecutionFailed();

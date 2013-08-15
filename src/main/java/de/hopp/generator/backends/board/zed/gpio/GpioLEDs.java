@@ -44,14 +44,14 @@ public class GpioLEDs extends GpioComponent {
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio_leds))),
                 Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(width()))),
                 Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(0))),
-                Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
+//                Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
                 Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(0))),
                 Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41220000"))),
                 Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4122ffff"))),
                 Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
                 Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("processing_system7_0_FCLK_CLK0"))),
-                Attribute(PORT(), Assignment("GPIO_IO_O", Ident("LEDs_8Bits_TRI_IO"))),
-                Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(getINTCPort())))
+                Attribute(PORT(), Assignment("GPIO_IO_O", Ident("LEDs_8Bits_TRI_IO")))
+//                Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(getINTCPort())))
         ));
     }
 
@@ -69,6 +69,7 @@ public class GpioLEDs extends GpioComponent {
 
     @Override
     public String deviceIntrChannel() {
-        return "XPAR_FABRIC_" + getINTCPort().toUpperCase() + "_INTR";
+        throw new UnsupportedOperationException("GPI component 'LEDS' does not support interrupts");
+//        return "XPAR_FABRIC_" + getINTCPort().toUpperCase() + "_INTR";
     }
 }

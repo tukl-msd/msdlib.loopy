@@ -19,3 +19,22 @@ gpio switches {:
   // here, the switch state is linked to the led state
 
 :}
+
+//gpio led<3> myleds
+//gpio button<5> mutton {:
+//
+//:}
+
+// some way to specify gpio devices unknown to the driver generator?
+// seems dangerous and unwanted - this should lead to extension of the driver generator rather than
+// some unchecked gpio component...
+//gpio {
+//  // direction specifies if gpi/gpo/gpio
+//  in/out/dual
+//  // pin specifiers (number determines bitwidth of the component)
+//  pin U12
+//  pin F23
+//  pin T22
+//} name {:
+//
+//:}

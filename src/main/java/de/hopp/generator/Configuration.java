@@ -17,9 +17,9 @@ public class Configuration {
     private String[] args;
 
     // backends
-    private HostBackend client;
     private BoardIF board;
     private WorkflowIF flow;
+    private HostBackend host;
 
     // destination folders
     public final static String defaultBoardDir = "board";
@@ -51,18 +51,18 @@ public class Configuration {
         IO = new IOHandler(this);
     }
 
-    public void setClient(HostBackend client) { this.client = client; }
-    public void setBoard(BoardIF board)         { this.board  = board; }
-    public void setFlow(WorkflowIF flow)        { this.flow   = flow; }
-
-    /** set the directory, into which the host-side files of the driver should be generated */
-    public void setHostDir(File dir) {
-        this.hostDir = dir;
-    }
+    public void setBoard(BoardIF board)   { this.board = board; }
+    public void setFlow(WorkflowIF flow)  { this.flow  = flow; }
+    public void setHost(HostBackend host) { this.host  = host; }
 
     /** set the directory, into which the board-side files of the driver should be generated */
     public void setBoardDir(File dir) {
         this.boardDir = dir;
+    }
+
+    /** set the directory, into which the host-side files of the driver should be generated */
+    public void setHostDir(File dir) {
+        this.hostDir = dir;
     }
 
     /** set the directory, into which the temporary files of the driver should be generated */
@@ -120,17 +120,17 @@ public class Configuration {
 
     public String[] UNUSED() { return args; }
 
-    public HostBackend client() { return client; }
-    public BoardIF board() { return board; }
-    public WorkflowIF flow() { return flow; }
+    public BoardIF board()    { return board; }
+    public WorkflowIF flow()  { return flow; }
+    public HostBackend host() { return host; }
 
 
     /** get the directory, into which the board-side files should be generated */
-    public File boardDir()  { return boardDir; }
+    public File boardDir() { return boardDir; }
     /** get the directory, into which the host-side files should be generated */
     public File hostDir()  { return hostDir; }
     /** get the directory, into which temporary files should be generated */
-    public File tempDir()    { return tempDir; }
+    public File tempDir()  { return tempDir; }
 
     /** check if the parseonly flag is set, meaning that only the frontend should be executed */
     public boolean parseonly() { return parseonly; }
@@ -154,11 +154,11 @@ public class Configuration {
 
     /** print this config on console */
     public void printConfig() {
-        IO.println("- host backend    : " + (client == null ? "none" : client.getName()));
-        IO.println("- board backend   : " + (board  == null ? "none" : board.getName()));
-        IO.println("- workflow backend: " + (flow   == null ? "none" : flow.getName()));
-        IO.println("- host folder     : " + hostDir.getAbsolutePath());
+        IO.println("- board backend   : " + (board == null ? "none" : board.getName()));
+        IO.println("- workflow backend: " + (flow  == null ? "none" : flow.getName()));
+        IO.println("- host backend    : " + (host  == null ? "none" : host.getName()));
         IO.println("- board folder    : " + boardDir.getAbsolutePath());
+        IO.println("- host folder     : " + hostDir.getAbsolutePath());
         IO.println("- temp folder     : " + tempDir.getAbsolutePath());
 
         IO.print  ("- log level       : ");
