@@ -1,11 +1,11 @@
 package de.hopp.generator.backends.workflow.ise.sdk;
 
-import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkAppDir;
-import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
+import static de.hopp.generator.model.cpp.CPP.*;
 import static de.hopp.generator.utils.BoardUtils.*;
-import static de.hopp.generator.utils.Model.add;
-import static de.hopp.generator.utils.Model.addLines;
+import static de.hopp.generator.utils.CPPUtils.add;
+import static de.hopp.generator.utils.CPPUtils.addLines;
 
 import java.io.File;
 import java.util.HashMap;
@@ -16,17 +16,16 @@ import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
-import de.hopp.generator.frontend.*;
-import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.model.MCode;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MInclude;
-import de.hopp.generator.model.MProcedure;
-import de.hopp.generator.model.Strings;
-import de.hopp.generator.parser.Block;
-import de.hopp.generator.parser.MHS;
-import de.hopp.generator.parser.MHSFile;
-
+import de.hopp.generator.model.*;
+import de.hopp.generator.model.BDLFilePos.Visitor;
+import de.hopp.generator.model.cpp.MCode;
+import de.hopp.generator.model.cpp.MFile;
+import de.hopp.generator.model.cpp.MInclude;
+import de.hopp.generator.model.cpp.MProcedure;
+import de.hopp.generator.model.cpp.Strings;
+import de.hopp.generator.model.mhs.Block;
+import de.hopp.generator.model.mhs.MHS;
+import de.hopp.generator.model.mhs.MHSFile;
 /**
  * Generation backend for Xilinx SDK.
  *

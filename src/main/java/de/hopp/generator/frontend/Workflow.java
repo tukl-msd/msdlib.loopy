@@ -1,6 +1,6 @@
 package de.hopp.generator.frontend;
 
-import de.hopp.generator.backends.workflow.WorkflowIF;
+import de.hopp.generator.backends.workflow.WorkflowBackend;
 import de.hopp.generator.backends.workflow.ise.ISE_14_1;
 import de.hopp.generator.backends.workflow.ise.ISE_14_4;
 import de.hopp.generator.backends.workflow.ise.ISE_14_6;
@@ -11,13 +11,13 @@ public enum Workflow {
     ISE_14_6(new ISE_14_6());
 
     // one instance of the backend
-    private WorkflowIF instance;
+    private WorkflowBackend instance;
 
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param instance one instance of the backend
      */
-    Workflow(WorkflowIF instance) {
+    Workflow(WorkflowBackend instance) {
         this.instance = instance;
     }
 
@@ -25,7 +25,7 @@ public enum Workflow {
      * Returns an instance of this backend
      * @return an instance of this backend
      */
-    public WorkflowIF getInstance() {
+    public WorkflowBackend getInstance() {
         return instance;
     }
 

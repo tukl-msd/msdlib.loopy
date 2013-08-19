@@ -1,17 +1,17 @@
 package de.hopp.generator.backends.board.zed;
 
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
-import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.model.mhs.MHS.*;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.backends.workflow.ise.xps.MHSGenerator;
-import de.hopp.generator.frontend.ETHERNETPos;
-import de.hopp.generator.frontend.PCIEPos;
-import de.hopp.generator.frontend.UARTPos;
-import de.hopp.generator.parser.Attributes;
-import de.hopp.generator.parser.Block;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.ETHERNETPos;
+import de.hopp.generator.model.PCIEPos;
+import de.hopp.generator.model.UARTPos;
+import de.hopp.generator.model.mhs.Attributes;
+import de.hopp.generator.model.mhs.Block;
+import de.hopp.generator.model.mhs.MHSFile;
 
 public class MHS extends MHSGenerator {
 

@@ -1,9 +1,9 @@
 package de.hopp.generator.backends.board.zed.gpio;
 
-import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.model.mhs.MHS.*;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.mhs.MHSFile;
 
 /**
  *

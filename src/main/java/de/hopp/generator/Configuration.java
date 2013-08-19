@@ -2,9 +2,9 @@ package de.hopp.generator;
 
 import java.io.File;
 
-import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.board.BoardBackend;
 import de.hopp.generator.backends.host.HostBackend;
-import de.hopp.generator.backends.workflow.WorkflowIF;
+import de.hopp.generator.backends.workflow.WorkflowBackend;
 
 /**
  * Configuration of the generator run itself.
@@ -17,8 +17,8 @@ public class Configuration {
     private String[] args;
 
     // backends
-    private BoardIF board;
-    private WorkflowIF flow;
+    private BoardBackend board;
+    private WorkflowBackend flow;
     private HostBackend host;
 
     // destination folders
@@ -51,8 +51,8 @@ public class Configuration {
         IO = new IOHandler(this);
     }
 
-    public void setBoard(BoardIF board)   { this.board = board; }
-    public void setFlow(WorkflowIF flow)  { this.flow  = flow; }
+    public void setBoard(BoardBackend board)   { this.board = board; }
+    public void setFlow(WorkflowBackend flow)  { this.flow  = flow; }
     public void setHost(HostBackend host) { this.host  = host; }
 
     /** set the directory, into which the board-side files of the driver should be generated */
@@ -120,8 +120,8 @@ public class Configuration {
 
     public String[] UNUSED() { return args; }
 
-    public BoardIF board()    { return board; }
-    public WorkflowIF flow()  { return flow; }
+    public BoardBackend board()    { return board; }
+    public WorkflowBackend flow()  { return flow; }
     public HostBackend host() { return host; }
 
 

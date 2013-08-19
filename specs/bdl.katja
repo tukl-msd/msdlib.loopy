@@ -5,7 +5,7 @@ specification BDL
 // weird behaviour concerning cli parameter parses (cause unknowns are passed on and on and non-flags are always interpreted as additional files at the end;)
 
 backend java {
-  package de.hopp.generator.frontend
+  package de.hopp.generator.model
   import java.lang.String
   import java.lang.Integer
   import java.lang.Boolean

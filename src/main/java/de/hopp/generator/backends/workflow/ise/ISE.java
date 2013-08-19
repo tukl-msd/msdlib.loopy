@@ -29,8 +29,7 @@ import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.SDKGenerationFailed;
 import de.hopp.generator.backends.XPSGenerationFailed;
-import de.hopp.generator.backends.unparser.MHSUnparser;
-import de.hopp.generator.backends.workflow.WorkflowIF;
+import de.hopp.generator.backends.workflow.WorkflowBackend;
 import de.hopp.generator.backends.workflow.ise.sdk.SDK;
 import de.hopp.generator.backends.workflow.ise.xps.IPCores;
 import de.hopp.generator.backends.workflow.ise.xps.MHS;
@@ -38,8 +37,9 @@ import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
 import de.hopp.generator.exceptions.Warning;
-import de.hopp.generator.frontend.BDLFilePos;
-import de.hopp.generator.frontend.Core;
+import de.hopp.generator.model.BDLFilePos;
+import de.hopp.generator.model.Core;
+import de.hopp.generator.model.unparser.MHSUnparser;
 
 /**
  * Abstract project backend for Xilinx ISE projects for the Virtex6 board.
@@ -64,7 +64,7 @@ import de.hopp.generator.frontend.Core;
  *
  * @author Thomas Fischer
  */
-public abstract class ISE implements WorkflowIF {
+public abstract class ISE implements WorkflowBackend {
 
     /** Truly generic ISE sources, that have to be deployed independent of board and design */
     public static final File genericXPSSourceDir = new File("deploy/board/generic/xps");

@@ -1,16 +1,16 @@
 package de.hopp.generator.backends.board.zed;
 
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
-import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.model.cpp.CPP.*;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.board.zed.gpio.Gpio;
 import de.hopp.generator.backends.workflow.ise.sdk.DriverVersions;
-import de.hopp.generator.frontend.ETHERNETPos;
-import de.hopp.generator.frontend.GPIOPos;
-import de.hopp.generator.model.MProcedure;
-import de.hopp.generator.parser.MHS;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.ETHERNETPos;
+import de.hopp.generator.model.GPIOPos;
+import de.hopp.generator.model.cpp.MProcedure;
+import de.hopp.generator.model.mhs.MHS;
+import de.hopp.generator.model.mhs.MHSFile;
 
 public class SDK extends de.hopp.generator.backends.workflow.ise.sdk.SDKGenerator {
 

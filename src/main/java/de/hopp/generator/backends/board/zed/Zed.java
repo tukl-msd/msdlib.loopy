@@ -20,8 +20,8 @@ import de.hopp.generator.backends.workflow.ise.sdk.DriverVersions;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.backends.workflow.vivado.VivadoBoard;
 import de.hopp.generator.exceptions.ParserError;
-import de.hopp.generator.frontend.BDLFile;
-import de.hopp.generator.frontend.GPIO;
+import de.hopp.generator.model.BDLFile;
+import de.hopp.generator.model.GPIO;
 
 /**
  *

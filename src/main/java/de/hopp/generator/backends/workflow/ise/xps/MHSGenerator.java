@@ -1,7 +1,7 @@
 package de.hopp.generator.backends.workflow.ise.xps;
 
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
-import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.model.mhs.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getClockPort;
 import static de.hopp.generator.utils.BoardUtils.getCore;
 import static de.hopp.generator.utils.BoardUtils.getDirection;
@@ -18,12 +18,12 @@ import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.*;
-import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.parser.AndExp;
-import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Block;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.*;
+import de.hopp.generator.model.BDLFilePos.Visitor;
+import de.hopp.generator.model.mhs.AndExp;
+import de.hopp.generator.model.mhs.Attribute;
+import de.hopp.generator.model.mhs.Block;
+import de.hopp.generator.model.mhs.MHSFile;
 
 /**
  * Abstract XPS generation backend, providing some utility methods.

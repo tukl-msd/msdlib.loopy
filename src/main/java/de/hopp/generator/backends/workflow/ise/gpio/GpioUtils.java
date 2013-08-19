@@ -1,11 +1,11 @@
 package de.hopp.generator.backends.workflow.ise.gpio;
 
-import static de.hopp.generator.parser.MHS.Assignment;
-import static de.hopp.generator.parser.MHS.Attribute;
-import static de.hopp.generator.parser.MHS.Block;
-import static de.hopp.generator.parser.MHS.Ident;
-import static de.hopp.generator.parser.MHS.PARAMETER;
-import de.hopp.generator.parser.Block;
+import static de.hopp.generator.model.mhs.MHS.Assignment;
+import static de.hopp.generator.model.mhs.MHS.Attribute;
+import static de.hopp.generator.model.mhs.MHS.Block;
+import static de.hopp.generator.model.mhs.MHS.Ident;
+import static de.hopp.generator.model.mhs.MHS.PARAMETER;
+import de.hopp.generator.model.mhs.Block;
 
 /**
  *

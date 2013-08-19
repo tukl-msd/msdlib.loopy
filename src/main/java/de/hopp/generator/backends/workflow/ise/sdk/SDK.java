@@ -3,9 +3,9 @@ package de.hopp.generator.backends.workflow.ise.sdk;
 import java.io.File;
 import java.util.Map;
 
-import de.hopp.generator.frontend.BDLFilePos;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.BDLFilePos;
+import de.hopp.generator.model.cpp.MFile;
+import de.hopp.generator.model.mhs.MHSFile;
 
 public interface SDK {
     public void generate(BDLFilePos file);

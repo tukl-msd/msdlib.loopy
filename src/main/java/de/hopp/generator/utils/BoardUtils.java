@@ -1,7 +1,7 @@
 package de.hopp.generator.utils;
 
 import katja.common.NE;
-import de.hopp.generator.frontend.*;
+import de.hopp.generator.model.*;
 
 /**
  * Provides several utility methods concerning the board model.
@@ -108,7 +108,7 @@ public class BoardUtils {
                 return rslt;
             }
         });
-        for(de.hopp.generator.frontend.GPIO gpio : board.gpios().term())
+        for(GPIO gpio : board.gpios().term())
             rslt += "\n  -GPIO component " + gpio.name();
         for(Instance inst : board.insts().term())
             rslt += "\n  -VHDL Component " + inst.name() + " (" + inst.core() + ")";

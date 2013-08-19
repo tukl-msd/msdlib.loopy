@@ -1,6 +1,6 @@
 package de.hopp.generator.exceptions;
 
-import de.hopp.generator.frontend.Position;
+import de.hopp.generator.model.Position;
 
 @SuppressWarnings("serial")
 public class ParserError extends Error {

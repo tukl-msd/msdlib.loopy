@@ -1,17 +1,17 @@
-package de.hopp.generator.backends.unparser;
+package de.hopp.generator.model.unparser;
 
-import static de.hopp.generator.model.Model.CONSTANT;
-import static de.hopp.generator.model.Model.INLINE;
-import static de.hopp.generator.model.Model.MIncludes;
-import static de.hopp.generator.model.Model.PRIVATE;
-import static de.hopp.generator.model.Model.PUBLIC;
-import static de.hopp.generator.model.Model.STATIC;
+import static de.hopp.generator.model.cpp.CPP.CONSTANT;
+import static de.hopp.generator.model.cpp.CPP.INLINE;
+import static de.hopp.generator.model.cpp.CPP.MIncludes;
+import static de.hopp.generator.model.cpp.CPP.PRIVATE;
+import static de.hopp.generator.model.cpp.CPP.PUBLIC;
+import static de.hopp.generator.model.cpp.CPP.STATIC;
 
 import java.util.Comparator;
 
 import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
-import de.hopp.generator.model.*;
+import de.hopp.generator.model.cpp.*;
 
 /**
  * Unparser for header files. Can be used for C headers as well
@@ -132,7 +132,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
         MIncludes importLines = MIncludes();
 
         // go through the file and gather all imports / includes required
-        for(Model.SortInFile pos = file; pos != null; pos = pos.preOrder()) {
+        for(CPP.SortInFile pos = file; pos != null; pos = pos.preOrder()) {
 
             // only add if current position is a MType and we do not already have this type
             if(pos instanceof MIncludeInFile) {

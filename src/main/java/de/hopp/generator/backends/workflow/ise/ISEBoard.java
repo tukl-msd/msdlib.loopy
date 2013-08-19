@@ -6,12 +6,12 @@ import java.util.Set;
 
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.board.BoardBackend;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.sdk.SDKGenerator;
 import de.hopp.generator.backends.workflow.ise.xps.MHS;
 import de.hopp.generator.exceptions.ParserError;
-import de.hopp.generator.frontend.BDLFile;
+import de.hopp.generator.model.BDLFile;
 
 /**
  * General interface for boards that can be synthesised using an ise workflow.
@@ -20,7 +20,7 @@ import de.hopp.generator.frontend.BDLFile;
  * @author Thomas Fischer
  * @since 1.8.2013
  */
-public interface ISEBoard extends BoardIF {
+public interface ISEBoard extends BoardBackend {
 
     public String getArch();
     public String getDev();

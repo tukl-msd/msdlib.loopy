@@ -1,36 +1,36 @@
 package de.hopp.generator.backends.host.cpp;
 
-import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.model.cpp.CPP.*;
 import static de.hopp.generator.utils.BoardUtils.defaultQueueSizeHW;
 import static de.hopp.generator.utils.BoardUtils.defaultQueueSizeSW;
 import static de.hopp.generator.utils.BoardUtils.getPort;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 import static de.hopp.generator.utils.BoardUtils.isPolling;
-import static de.hopp.generator.utils.Model.add;
-import static de.hopp.generator.utils.Model.addDoc;
-import static de.hopp.generator.utils.Model.addInit;
-import static de.hopp.generator.utils.Model.addParam;
+import static de.hopp.generator.utils.CPPUtils.add;
+import static de.hopp.generator.utils.CPPUtils.addDoc;
+import static de.hopp.generator.utils.CPPUtils.addInit;
+import static de.hopp.generator.utils.CPPUtils.addParam;
 
 import java.io.File;
 
 import katja.common.NE;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.board.BoardBackend;
 import de.hopp.generator.backends.board.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.*;
-import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.model.MClass;
-import de.hopp.generator.model.MConstr;
-import de.hopp.generator.model.MDestr;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MInitList;
+import de.hopp.generator.model.*;
+import de.hopp.generator.model.BDLFilePos.Visitor;
+import de.hopp.generator.model.cpp.MClass;
+import de.hopp.generator.model.cpp.MConstr;
+import de.hopp.generator.model.cpp.MDestr;
+import de.hopp.generator.model.cpp.MFile;
+import de.hopp.generator.model.cpp.MInitList;
 
 public class CPPBDLVisitor extends Visitor<NE> {
 
-    BoardIF board;
+    BoardBackend board;
     ErrorCollection errors;
 
     // generated files

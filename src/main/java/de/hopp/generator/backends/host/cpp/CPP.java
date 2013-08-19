@@ -13,7 +13,7 @@ import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.host.AbstractHostBackend;
 import de.hopp.generator.exceptions.InvalidConstruct;
-import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.model.BDLFilePos;
 
 /**
  * Generation backend for a host-side C++ driver.

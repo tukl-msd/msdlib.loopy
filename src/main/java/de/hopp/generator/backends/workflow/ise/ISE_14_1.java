@@ -4,7 +4,7 @@ import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_1;
-import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.model.BDLFilePos;
 
 /**
  * Generation backend for a project for Xilinx XPS version 14.1.

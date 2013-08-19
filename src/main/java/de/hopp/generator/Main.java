@@ -1,6 +1,6 @@
 package de.hopp.generator;
 
-import static de.hopp.generator.frontend.BDL.BDLFilePos;
+import static de.hopp.generator.model.BDL.BDLFilePos;
 import static de.hopp.generator.utils.BoardUtils.printBoard;
 
 import java.io.File;
@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import de.hopp.generator.exceptions.ExecutionFailed;
-import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.model.BDLFilePos;
 import de.hopp.generator.frontend.Board;
 import de.hopp.generator.frontend.Host;
 import de.hopp.generator.frontend.Parser;

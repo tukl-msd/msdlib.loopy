@@ -7,7 +7,7 @@ import de.hopp.generator.IOHandler;
  * @author Thomas Fischer
  * @since 2.8.2013
  */
-public interface BoardIF {
+public interface BoardBackend {
     /**
      * The name of this backend. The name is automatically used to select the backend
      * from the command line interface of the driver generator.

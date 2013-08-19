@@ -1,9 +1,10 @@
 package de.hopp.generator.frontend;
 
 import java_cup.runtime.*;
+import katja.common.NE;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.exceptions.ParserError;
-import katja.common.NE;
+import de.hopp.generator.model.*;
 
 /* Preliminaries to set up and use the scanner.  */
 //init with {: scanner.init(); :};

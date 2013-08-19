@@ -1,7 +1,7 @@
 package de.hopp.generator.backends.workflow.ise.xps;
 
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
-import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.model.mhs.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 import static de.hopp.generator.utils.Files.deploy;
 import static de.hopp.generator.utils.Files.deployContent;
@@ -13,13 +13,13 @@ import java.io.IOException;
 import org.apache.commons.io.FilenameUtils;
 
 import de.hopp.generator.Configuration;
-import de.hopp.generator.backends.unparser.MHSUnparser;
 import de.hopp.generator.backends.workflow.ise.ISEUtils;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.*;
-import de.hopp.generator.parser.Attributes;
-import de.hopp.generator.parser.Block;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.*;
+import de.hopp.generator.model.mhs.Attributes;
+import de.hopp.generator.model.mhs.Block;
+import de.hopp.generator.model.mhs.MHSFile;
+import de.hopp.generator.model.unparser.MHSUnparser;
 /**
  * Handles generation and deployment of files required to describe
  * user-specified IPCores for the XPS synthesis tool.
@@ -36,8 +36,13 @@ public class IPCores {
      * - the .mpd file describing the interface of the core
      * - the .pao file referencing the sources of the core and
      * - the vhdl sources themselves
+     *
+     * Will check if these files already exist and are identical to the new files
+     * to dpeloy. Will not dpeloy any files, if this is the case.
+     *
      * @param core The core for which files should be deployed.
      * @param config Configuration of this run, containing required directories and log level.
+     * @return true if new files have been deployed by this step, false otherwise
      * @throws IOException if an Exception occurred with an underlying file operation.
      * @throws UsageError if an invalid combination of bdl attributes is encountered.
      */

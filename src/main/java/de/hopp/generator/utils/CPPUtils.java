@@ -1,8 +1,8 @@
 package de.hopp.generator.utils;
 
-import de.hopp.generator.model.*;
+import de.hopp.generator.model.cpp.*;
 
-public class Model {
+public class CPPUtils {
 
     public static MFile add(MFile file, MClass c) {
         return file.replaceClasses(file.classes().add(c));

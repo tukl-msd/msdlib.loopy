@@ -1,7 +1,7 @@
 specification MHS
 
 backend java {
-  package de.hopp.generator.parser
+  package de.hopp.generator.model.mhs
   import java.lang.String
   import java.lang.Integer
 }

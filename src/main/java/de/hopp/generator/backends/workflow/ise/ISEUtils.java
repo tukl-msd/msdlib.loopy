@@ -6,6 +6,9 @@ import de.hopp.generator.Configuration;
 
 /**
  * Utility methods used by all ISE backends.
+ *
+ * Provides directory locations to be used for deployment of sourcefiles
+ * for the Xilinx ISE workflow.
  * @author Thomas Fischer
  */
 public class ISEUtils {

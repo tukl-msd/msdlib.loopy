@@ -315,7 +315,7 @@ gpio in buttons {:
 \end{lstlisting}
 
 As all other declarations, the GPIO declaration begins with a keyword. The next part of the declaration is a direction specifier, telling the generator if the component is an input, output or dual component.
-Afterwards, the identifier of the component is required. This identifier has to be known to the specified board backend.
+Afterwards, the identifier of the component is required. A GPIO component with this identifier has to be available on the board, the driver is built for.
 Finally, an optional code block can be used to override board-side standard behaviour of the GPIO component. This code block is only valid for input components (or the input part of a dual component). The default behaviour for input components is forwarding of the value to the host-side driver.
 
 \subsubsection{Core}
@@ -335,7 +335,7 @@ A core is declared by the keyword \texttt{core} followed by the name of the core
 
 Source references are very similar to import declarations and only differ in the used keyword and allowed occurrences within the bdl file.
 
-\textbf{Important note}: The ISE backend of the driver generator requires the top model source file to contain a VHDL entity with the same name as the specified core. It is further recommended to use the same name for the source file itself. As a result the core, sourcefile and entity share the same name. This property is not checked by the driver generator, since it does require analysis of the provided VHDL code, and may cause the synthesis process to fail. \textcolor{red}{VHDL analysis will be a feature of a later version.}
+\textbf{Important note}: To build a driver with the Xilinx ISE workflow the driver generator requires the top model source file to contain a VHDL entity with the same name as the specified core. It is further recommended to use the same name for the source file itself. As a result the core, sourcefile and entity share the same name. This property is not checked by the driver generator, since it does require analysis of the provided VHDL code which is not implemented yet. It may still cause the synthesis process to fail. \textcolor{red}{VHDL analysis will be a feature of a later version.}
 
 The second part of the core declaration block describes the interface of the core.
 
@@ -352,7 +352,7 @@ An interface description consists of several port declarations. A port is either
 
 \textbf{Important note:} The ports described using this syntax have to be AXI4 stream compliant and the ports of the vhdl component have to follow a strict naming pattern. The four ports that make up an AXI4 stream have to be suffixed \texttt{\_data}, \texttt{\_ready}, \texttt{\_valid} and \texttt{\_last} accordingly. For example, an in-going AXI4 stream port \texttt{inA} requires the basic ports \texttt{inA\_data}, \texttt{inA\_ready} and so on. Also carefully check directions and widths of these ports, since VHDL code is not analysed and will result in very late error detection.
 
-\textcolor{red}{It would be nice, if there was some sort of AXI4 wrapper that can be used for non-compliant components...}
+%TODO It would be nice, if there was some sort of AXI4 wrapper that can be used for non-compliant components...
 
 Finally, the core requires bindings for the implicit clock and reset ports. These may be interleaved with the "normal" AXI stream ports.
 
@@ -393,6 +393,18 @@ The host-side driver will provide methods for direct communication with these po
 Again, a block is used for properties of these driver-attached ports. Specifiable properties include queue sizes (see \Cref{sec:arch:queue}) and automatic value forwarding to the host-side driver (this is explained in more detail in \Cref{sec:arch:fwd}). If not specified otherwise, the global queue sizes of the board are used and forwarding is enabled.
 
 For both bindings, the referenced port has to exist within the core declaration.
+
+\section{Generation Backends}
+The driver generator relies on so-called \textit{generation backends} (or simply \textit{backends}) for code generation. All relevant resources and steps to create the desired output are performed by the backend.
+
+Three different kinds of backends exist:
+\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
+\item \textbf{workflow backends} describe the workflow of synthesis tools. The output of such a backend are all files comprising the board-side driver, that can be uploaded to a corresponding board. Depending on the workflow, different files are generated. For example, a Xilinx ISE workflow usually generates a .bit and an .elf file. For certain boards, additional files are required, e.g. the ps7\_init.tcl for the ZedBoard.
+
+\item \textbf{host backends} are responsible for generation of the host-side API. They provide all sources required for communication with the board-side driver and an easy-to-use interface. %actually, adding a compiler step wouldn't be such a bad idea! only bad thing: it's platform dependent... maybe provide different compiler backends? e.g. g++ backend? or options for the c++ backend?
+
+\item \textbf{board backends} model the target boards of the driver generator. They are different from the other generation backends, since they do not generate code itself. Rather, they provide board-specific attributes to the actually generating backends.
+\end{itemize}
 
 \section{Process}
 \label{sec:process}
@@ -474,14 +486,7 @@ A third group consists of temporary files required for generation of the board-s
 In addition to these sources, documentation for both host- and board-side sources is generated, using doxygen.
 
 \paragraph{Logging}
-The driver generator itself does not provide a more elaborate logging mechanism than printing output on console. However, logging of underlying tools can be used for debugging purposes. All working files of the Xilinx toolsuite, including its logs, are located in the temporary directory. These logs should be consulted in case of an error:
-\begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item \texttt{temp/edk/system.log} as the central log of bitfile generation using Xilinx ISE.
-\item \texttt{temp/sdk/.metadata/.log} is the log of the Xilinx SDK, responsible for .elf file generation.
-\item \texttt{temp/edk/bitinit.log}, the log of the bitfile initialisation.
-\end{itemize}
-
-Several other tools and logs are involved in bitfile generation, but these should give an initial hint on where to look for the source of an error.
+In addition to the usual logs, the driver generator does aggregate the output of the generation process in logfiles. These can be found in the temporary directory and should be consulted in case of an error.
 
 \subsection{Executing your Application}
 Now the regular design process from Xilinx can be continued. The next step would be writing a host application that uses the generated host-side driver and API (see \Cref{sec:api} for a overview over this API). The board-side driver is represented by the \texttt{.bit} \textcolor{red}{and \texttt{.elf}} file resulting from the command line calls preformed by the driver generator. After the FPGA has been programmed using these files, your program should be able to communicate with VHDL components on the FPGA through the API provided by the host-side driver.
@@ -1587,7 +1592,7 @@ BDLFile (Imports imports, Options opts, Cores cores, GPIOs gpios, Instances inst
 Position (String filename, Integer line)
 \end{lstlisting}
 
-The board model is comparably flat, containing most elements already on top level. Most of the components of the BDL model are augmented with a position, storing the occurring document and line within the document, to provide nod only the reason for an error, but also the position within a .bdl file.
+The board model is comparably flat, containing most elements already on top level. Most of the components of the BDL model are augmented with a position, storing the occurring document and line within the document. This allows to provide not only the reason for an error when parsing and analysing .bdl files, but also the position of the errors within the file.
 
 \begin{lstlisting}[language=java, breaklines=true]
 Imports * Import
@@ -1635,7 +1640,7 @@ Binding = Axis(String port, String axis, Position pos, Options opts)
         | CPUAxis(String port, Position pos, Options opts)
 \end{lstlisting}
 
-The instance marks the instantiation of a core as component on the board. It also has a name and position, and references the core by string and version id. Existence of the core is checked in the frontend. \texttt{BINDINGS} are used to connect ports of instantiated cores to each other. The normal \texttt{AXIS} is used to connect instances of user-defined cores. The axis identifier marks the name of a direct connection between two AXI stream ports. An axis identifier may occur at most once, though it is allowed to leave a connection open or not connect the port at all (however, this will result in a warning from the frontend). The bitwidths of ports connected this way are required to be identical.
+The \texttt{Instance} marks the instantiation of a core as component on the board. It also has a name and position, and references the core by string and version id. Existence of the core is checked in the frontend. \texttt{BINDINGS} are used to connect ports of instantiated cores to each other. The normal \texttt{AXIS} is used to connect instances of user-defined cores. The axis identifier marks the name of a direct connection between two AXI stream ports. An axis identifier may occur at most once, though it is allowed to leave a connection open or not connect the port at all (however, this will result in a warning from the frontend). The bitwidths of ports connected this way are required to be identical.
 A \texttt{CPUAxis} marks the connection of a port directly to the processor on the board. If an axis is connected that way, it can be written to or read from by the driver and methods are generated in the host-side API. Additional options can be used for cpu connections. This includes the queue options as well as the poll switch. These values are preferred as queue size for the connection, if specified. Otherwise, more global values are used. Also, bitwidth translation for a cpu connected port is performed automatically.
 
 Note, that for both bindings, the referenced port has to exist. If it doesn't, the frontend will stop and return an error. % this is to much semantic! Only describe the concrete model here. The reader should know all this from chapter 2 ...
@@ -1669,10 +1674,10 @@ MOption = MAC    (Position pos, String val)
 
 The \texttt{Medium} describes how the board-side and host-side drivers are connected to each other. This can be done via Ethernet, UART or PCIE. Medium options specify several medium-specific properties. Note, that it is required to specify a medium (i.e., leaving the medium unspecified will result in an error) and there are no default values for a concrete medium, i.e. corresponding medium options are required as well.
 
-\subsection{C Model}
+\subsection{C/C++ Model}
 \label{sec:cmodel}
 %TODO completely outdated, but don't want to update this part before all changes are finalised...
-The \texttt{C} model provides data types representing a \texttt{C/C++} program. Note, that the model is neither complete nor always valid, i.e. not all \texttt{C} programs can be described using this model and it is possible to specify a model not translating into valid \texttt{C}. Still, the model simplifies the process of code generation. The model is used for generating \texttt{C} as well as \texttt{C++} code. \texttt{C} model files are generated by the \texttt{C++} host backend as well as the ISE project backend.
+The \texttt{C/C++} model provides data types representing a \texttt{C/C++} program. Note, that the model is neither complete nor always valid, i.e. not all \texttt{C} programs can be described using this model and it is possible to specify a model not translating into valid \texttt{C}. Still, the model simplifies the process of code generation. The model is used for generating \texttt{C} as well as \texttt{C++} code. \texttt{C} model files are generated by the \texttt{C++} host backend as well as the ISE project backend.
 
 \begin{lstlisting}[language=java, breaklines=true]
 MFile ( MDocumentation doc, String name, MDefinitions defs, MStructs structs, MEnums enums, MAttributes attributes, MMethods methods, MClasses classes )
@@ -1721,7 +1726,7 @@ MAnyType = MType             ( String name )
          | MConstPointerType ( MAnyType type )
 \end{lstlisting}
 
-The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing \texttt{C} type, e.g. \texttt{int}, \texttt{struct student} or \texttt{enum day}. This type can then be extended using pointer or array types. So \texttt{MArrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than in the same order as in \texttt{C}. Consequently, a point type of a const pointer type of type integer will be translated into \texttt{int const ** a}.
+The type system of the model supports arrays as well as (const) pointers. The basic type is the \texttt{MType}, which consists only of a string that has to reference an existing \texttt{C} type, e.g. \texttt{int}, \texttt{struct student} or \texttt{enum day}. This type can then be extended using pointer or array types. So \texttt{MArrayType(MType("int"), 5)} would mark an integer array of length 5. Note, that these types are nested semantically rather than syntactically. Consequently, a pointer type of a const pointer type of type integer will be translated into \texttt{int *const* a}. % supposedly, pointers are evaluated from right to left?
 
 \begin{lstlisting}[language=java, breaklines=true]
 MDocumentation ( Strings doc, MTags tags )
@@ -1735,11 +1740,11 @@ MTag = PARAM      ( String name, Strings details )
      | SINCE      ( String date )
 \end{lstlisting}
 
-For generation of the API, Javadoc style documentation has to be added to the model. A \texttt{MDocumentation} element contains documentation for the following block as well as possibly several tags. Tags can be parameter or return value descriptions of a method/procedure, descriptions for exception behaviour, deprecation descriptions or references to other elements of the code. The \texttt{JAVADOC\_AUTOBRIEF} option is set in the generated doxygen config files, resulting in the first sentence (concluded by a dot and following space or newline) will be used as short description for the documented program part. Since neither the driver generator nor doxygen perform sanity checks, we rely on the user to only introduce meaningful tags for a documentation element. Note further, that the order of tags influences the order of elements in the generated API description.
+For generation of the API, Javadoc style documentation has to be added to the model. An \texttt{MDocumentation} element contains documentation for the following block as well as possibly several tags. Tags can be parameter or return value descriptions of a method/procedure, descriptions for exception behaviour, deprecation descriptions or references to other elements of the code. The \texttt{JAVADOC\_AUTOBRIEF} option is set in the generated doxygen config files, resulting in the first sentence (concluded by a dot and following space or newline) will be used as short description for the documented program part. Since neither the driver generator nor doxygen perform sanity checks, we rely on the user to only introduce meaningful tags for a documentation element. Note further, that the order of tags influences the order of elements in the generated API description.
 
 \subsubsection{Unparser}
 \label{sec:gen:unparser}
-Different unparsers are used, to translate the \texttt{C} model in actual code. For each instance of the model, a header file and a corresponding source file, either \texttt{C} or \texttt{C++}, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain \texttt{C}, files intended for the client side can also be \texttt{C++} files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
+Different unparsers are used, to translate the \texttt{C/C++} model in actual code. For each instance of the model, a header file and a corresponding source file, either \texttt{C} or \texttt{C++}, has to be generated. These unparsers are called depending on the particular instance of the model. Files intended to be loaded to the board have to be plain \texttt{C}, files intended for the client side can also be \texttt{C++} files. The unparsing itself is realized using the visitor pattern. Each visit method appends code to a string buffer depending on the visited element.
 
 \paragraph{Header Unparser}
 The header unparser is used for both, unparsing \texttt{C} as well as \texttt{C++} code. Consequently, it doesn't filter any constructs, but accepts everything specifiable with the model.
@@ -1747,10 +1752,10 @@ The header unparser is used for both, unparsing \texttt{C} as well as \texttt{C+
 This unparser generates only signatures for all methods and only the declarations of attributes and enums. However, the header file will contain all includes referenced within the model.
 
 \paragraph{Plain \texttt{C} Unparser}
-Since plain \texttt{C} doesn't have any concept of classes, using a model with classes in this unparser will result in exceptions. Otherwise, all components and combinations are accepted. The source file will only import the corresponding header file, no other headers or sourcefiles.
+Since plain \texttt{C} doesn't have any concept of classes, using a model with classes in this unparser will result in exceptions. Otherwise, all components and combinations are accepted. Source files will automatically include their corresponding header file. Furthermore, all includes flagged as private are unparsed.
 
 \paragraph{\texttt{C++} Unparser}
-For the \texttt{C++} unparser, like with the header unparser, every component and combination is allowed. The source file will only import the corresponding header file, no other headers or sourcefiles.
+For the \texttt{C++} unparser, like with the header unparser, all components and more combinations are allowed. Still, some combinations of elements are forbidden (e.g. combination of different visibility modifiers in for the same procedure). Includes are handled identical to the \texttt{C} Unparser.
 
 \subsection{MHS Model}
 The MHS model encapsulates several project files required by the Xilinx ISE workflow, namely .mpd files describing ip cores, the .mhs file describing the overall board design and the .mss file describing the contents of a board support package in Xilinx SDK.

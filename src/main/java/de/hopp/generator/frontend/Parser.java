@@ -1,10 +1,10 @@
 package de.hopp.generator.frontend;
 
-import static de.hopp.generator.frontend.BDL.BDLFile;
-import static de.hopp.generator.frontend.BDL.Cores;
-import static de.hopp.generator.frontend.BDL.Import;
-import static de.hopp.generator.frontend.BDL.Imports;
-import static de.hopp.generator.frontend.BDL.Logs;
+import static de.hopp.generator.model.BDL.BDLFile;
+import static de.hopp.generator.model.BDL.Cores;
+import static de.hopp.generator.model.BDL.Import;
+import static de.hopp.generator.model.BDL.Imports;
+import static de.hopp.generator.model.BDL.Logs;
 import static org.apache.commons.io.FileUtils.getFile;
 import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.apache.commons.io.FilenameUtils.getFullPath;
@@ -27,6 +27,7 @@ import de.hopp.generator.exceptions.ExecutionFailed;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.ParserWarning;
 import de.hopp.generator.exceptions.UsageError;
+import de.hopp.generator.model.*;
 
 public class Parser {
 
