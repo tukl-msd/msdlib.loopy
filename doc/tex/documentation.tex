@@ -403,7 +403,7 @@ Three different kinds of backends exist:
 
 \item \textbf{host backends} are responsible for generation of the host-side API. They provide all sources required for communication with the board-side driver and an easy-to-use interface. %actually, adding a compiler step wouldn't be such a bad idea! only bad thing: it's platform dependent... maybe provide different compiler backends? e.g. g++ backend? or options for the c++ backend?
 
-\item \textbf{board backends} model the target boards of the driver generator. They are different from the other generation backends, since they do not generate code itself. Rather, they provide board-specific attributes to the actually generating backends.
+\item \textbf{board backends} model the target boards of the driver generator. They are different from the other generation backends, since they do not generate code themselves. Rather, they provide board-specific attributes to the actually generating backends.
 \end{itemize}
 
 \section{Process}
@@ -1853,11 +1853,12 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 
 \node[class, fill=white] (board) at (0,0) {Board};
 \node[class, fill=white, below = 6em] (iseboard) at (board) {ISE Board};
-\node[class, fill=white, below = 6em] (virtex6) at (iseboard) {Virtex6};
+\node[class, fill=white, below = 6em] (iseboard14_1) at (iseboard) {ISE 14.1 Board};
+\node[class, fill=white, below = 6em] (virtex6) at (iseboard14_1) {Virtex 6};
 
 \node[class, fill=white, left = 6em] (workflow) at (board) {Workflow};
 \node[class, fill=white, left = 6em] (ise) at (iseboard) {ISE};
-\node[class, fill=white, left = 6em] (ise14_1) at (virtex6) {ISE 14.1};
+\node[class, fill=white, left = 6em] (ise14_1) at (iseboard14_1) {ISE 14.1};
 
 \node[class, fill=white, right = 6em] (gpio) at (board) {GPIO Component};
 \node[class, fill=white, right = 6em] (isegpio) at (iseboard) {ISE GPIO Component};
@@ -1866,7 +1867,8 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 %\node[ann, above left = 2em and -2.3em] (compText) at (port1) {Component};
 
 \draw[extend, black] (iseboard) to node[auto] {} (board);
-\draw[implement, black] (virtex6) to node[auto] {} (iseboard);
+\draw[implement, black] (iseboard14_1) to node[auto] {} (iseboard);
+\draw[implement, black] (virtex6) to node[auto] {} (iseboard14_1);
 
 \draw[extend, black] (ise) to node[auto] {} (workflow);
 \draw[implement, black] (ise14_1) to node[auto] {} (ise);
@@ -1881,7 +1883,7 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 \draw[arr] (iseboard) to node[auto] {} (ise);
 
 \draw[arr] (buttons) to node[auto] {} (virtex6);
-\draw[arr] (virtex6) to node[auto] {} (ise14_1);
+\draw[arr] (iseboard14_1) to node[auto] {} (ise14_1);
 
 \end{tikzpicture}
 \caption{Backend Architecture of the Driver Generator}

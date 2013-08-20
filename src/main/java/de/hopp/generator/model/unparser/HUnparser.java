@@ -596,7 +596,7 @@ public class HUnparser extends MFileInFile.Visitor<InvalidConstruct> {
 
     @Override
     public void visit(MConstPointerTypeInFile constPointerType) throws InvalidConstruct {
-        typeDecl = "*const" + typeDecl;
+        typeDecl = "*const " + typeDecl;
         visit(constPointerType.type());
     }
 
