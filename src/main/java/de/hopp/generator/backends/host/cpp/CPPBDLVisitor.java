@@ -116,7 +116,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos term)   { }
-    public void visit(BackendsPos term)  { }
 
     public void visit(LogsPos term) {
         addLogger("logger_host",  "Host:  ", term.host().termLog());
@@ -341,7 +340,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     // general (handled before this visitor)
     public void visit(ImportPos term)  { }
-    public void visit(BackendPos term) { }
 
     // scheduler (irrelevant for host-side driver
     public void visit(SchedulerPos term) { }

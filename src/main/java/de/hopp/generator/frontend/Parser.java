@@ -166,7 +166,6 @@ public class Parser {
 
         return BDLFile(
             file1.imports().addAll(file2.imports()),
-            file1.backends().addAll(file2.backends()),
             merge(file1.logs(), file2.logs()),
             file1.opts().addAll(file2.opts()),
             file1.cores().addAll(file2.cores()),

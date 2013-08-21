@@ -139,7 +139,7 @@
 \begin{document}
 
 \selectlanguage{english}
-\title{HOPP Driver Generator Documentation}
+\title{Loopy Driver Generator Documentation}
 \author{Thomas Fischer}
 \date{\today}
 
@@ -154,10 +154,10 @@
 
 \chapter{Introduction}
 \label{sec:intro}
-This document is intended to give an overview over the HOPP Driver Generator for both, users and developers. While the first chapters are more addressed towards users of the generator, the later ones are more addressed towards developers. 
+This document is intended to give an overview over the Loopy Driver Generator Framework for both, users and developers. While the first chapters are more addressed towards users of the generator, the later ones are more addressed towards developers. 
 
 %define scope of the generator
-The HOPP Driver Generator itself is intended to provide embedded system developers %that's kinda vague
+The Loopy Driver Generator itself is intended to provide embedded system developers %that's kinda vague
 with a simple, convenient API to communicate with their designed hardware components. % that's not better...
 This interface provides methods for synchronous as well as asynchronous communication over different communication media, for example Ethernet.
 
@@ -1536,7 +1536,7 @@ This section gives a short overview over the used libraries and explains what fo
 Flex is a scanner generator, CUP a parser generator. Both together with a few wrapping Java classes make up the frontend of the generator and are used to parse \texttt{.bdl} files into abstract syntax trees.
 
 \subsection{Katja}
-The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates several data types\footnote{Since these data types will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as several models used by the generation backends described in detail in \Cref{sec:gen:models}.
+The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates models for frontend and backend of the Loopy generator\footnote{Since these models will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as several models used by the generation backends. The models are described in detail in \Cref{sec:gen:models}.
 
 \section{Generation Process}
 \label{sec:gen:process}
@@ -1660,7 +1660,8 @@ Similar to the callback method, the default scheduler behaviour can be overriden
 
 \begin{lstlisting}[language=java, breaklines=true]
 Medium = NONE()
-       | ETHERNET(Position pos, MOptions opts)
+       | DefinedMedium
+DefinedMedium = ETHERNET(Position pos, MOptions opts)
        | UART    (Position pos, MOptions opts)
        | PCIE    (Position pos, MOptions opts)
 
@@ -1672,7 +1673,7 @@ MOption = MAC    (Position pos, String val)
         | PORTID (Position pos, Integer val)
 \end{lstlisting}
 
-The \texttt{Medium} describes how the board-side and host-side drivers are connected to each other. This can be done via Ethernet, UART or PCIE. Medium options specify several medium-specific properties. Note, that it is required to specify a medium (i.e., leaving the medium unspecified will result in an error) and there are no default values for a concrete medium, i.e. corresponding medium options are required as well.
+The \texttt{Medium} describes how the board-side and host-side drivers are connected to each other. This can be done via Ethernet, UART or PCIE. Medium options specify several medium-specific properties. It is possible, that no medium is specified within a file, and the file is instead imported by another .bdl file. Still, a medium has to be defined in a .bdl file structure, either directly in the top-level .bdl file or an imported file. Note further, that there are no default values for a concrete medium, i.e. corresponding medium options are required as well.
 
 \subsection{C/C++ Model}
 \label{sec:cmodel}

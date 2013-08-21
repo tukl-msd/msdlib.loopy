@@ -166,7 +166,6 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
 
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos  term) { }
-    public void visit(BackendsPos term) { }
     public void visit(OptionsPos  term) { }
 
     public void visit(BDLFilePos board) {
@@ -549,7 +548,6 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
 
     // general (handled before this visitor)
     public void visit(ImportPos term)  { }
-    public void visit(BackendPos term) { }
 
     // scheduler (irrelevant for host-side driver
     public void visit(SchedulerPos term) {

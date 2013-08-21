@@ -167,8 +167,6 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
     // imports and backends should be handled before this visitor
     public void visit(ImportsPos  term) { }
     public void visit(ImportPos   term) { }
-    public void visit(BackendsPos term) { }
-    public void visit(BackendPos  term) { }
 
     // positions and directions are handled in their surrounding blocks
     public void visit(PositionPos term) { }

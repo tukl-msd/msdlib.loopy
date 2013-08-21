@@ -21,7 +21,7 @@ action code {:
 :}
 
 parser code {:
-//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Backends(), BDL.Logs(BDL.NONE(), BDL.NONE()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
+//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Logs(BDL.NONE(), BDL.NONE()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
 //
 //  public BDLFile getBDLFile() {
 //    return board;
@@ -63,7 +63,6 @@ parser code {:
 terminal BEGIN, END, CBEGIN, COMMA;
 terminal String CEND;
 terminal IMPORT;
-terminal BACKEND;
 terminal SWQUEUE, HWQUEUE, LOG, WIDTH, POLL;
 terminal MEDIUM, MAC, IP, MASK, GATE, TIMEOUT, DHCP;
 terminal CORE, SOURCE, PORT;
@@ -78,7 +77,6 @@ terminal Integer DEC;
 /* non terminals */
 non terminal BDLFile file;
 non terminal Import imp;
-non terminal Backend backend;
 non terminal Medium medium;
 non terminal Option option;
 non terminal MOption medium_option;
@@ -118,7 +116,6 @@ file ::=
      decl_list:l
      {:
          Imports imports     = BDL.Imports();
-         Backends backends   = BDL.Backends();
          Logs logs           = BDL.Logs(BDL.NONE(), BDL.NONE());
          Options opts        = BDL.Options();
          Cores cores         = BDL.Cores();
@@ -129,7 +126,6 @@ file ::=
          for(Decl d : l) {
                 if(d == null) continue;
            else if(d instanceof Import)   {  imports =  imports.add((Import)d);   }
-           else if(d instanceof Backend)  { backends = backends.add((Backend)d);  }
            else if(d instanceof Logs)     {
              Logs newLogs = (Logs)d;
 
@@ -162,7 +158,7 @@ file ::=
              scheduler = (Scheduler)d;
            }
          }
-         RESULT = BDL.BDLFile(imports, backends, logs, opts, cores, gpios, insts, medium, scheduler);
+         RESULT = BDL.BDLFile(imports, logs, opts, cores, gpios, insts, medium, scheduler);
      :}
   ;
 
@@ -180,7 +176,6 @@ decl_list ::=
 
 decl ::=
      imp:i       {: RESULT = i; :}
-  |  backend:b   {: RESULT = b; :}
   |  log:l       {: RESULT = l; :}
   |  option:o    {: RESULT = o; :}
   |  core:c      {: RESULT = c; :}
@@ -194,13 +189,6 @@ imp ::=
      IMPORT STRING_LITERAL:imp
      {:
          RESULT = BDL.Import(imp, pos(impleft));
-     :}
-  ;
-
-backend ::=
-     BACKEND ID:id STRING_LITERAL:content 
-     {:
-         RESULT = BDL.Backend(id, content, pos(idleft));
      :}
   ;
 

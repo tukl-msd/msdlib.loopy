@@ -17,14 +17,11 @@ external String
 external Integer
 external Boolean
 
-BDLFile (Imports imports, Backends backends, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
+BDLFile (Imports imports, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
 
-Decl = Import | Backend | Logs | Option | Core | GPIO | Instance | Medium | Scheduler
+Decl = Import | Logs | Option | Core | GPIO | Instance | Medium | Scheduler
 
 Import (String file, Position pos)
-
-// selected backends for generation
-Backend (String name, String content, Position pos)
 
 // Definition of a new ipcore
 Core (String name, String version, Position pos, Imports source, Ports ports)
@@ -88,7 +85,6 @@ Position (String filename, Integer line)
 
 // List types
 Imports   * Import
-Backends  * Backend
 Options   * Option
 MOptions  * MOption
 Cores     * Core
