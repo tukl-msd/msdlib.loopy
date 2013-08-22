@@ -9,14 +9,20 @@ import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.backends.board.BoardBackend;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.sdk.SDKGenerator;
+import de.hopp.generator.backends.workflow.ise.xps.Clock;
 import de.hopp.generator.backends.workflow.ise.xps.MHS;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.model.BDLFile;
 
 /**
- * General interface for boards that can be synthesised using an ise workflow.
+ * General interface for boards that can be synthesised using an ISE workflow.
  * Do not implement boards against this interface, but against the more specialised
- * board interfaces for concrete ise versions.
+ * board interfaces for concrete ISE versions.
+ *
+ * So far, all supported ISE versions are very similar and only the core and driver
+ * versions differ. If more differences between other ISE versions exist, methods of
+ * this interfaces might be moved to more specific backends and renamed adequately.
+ *
  * @author Thomas Fischer
  * @since 1.8.2013
  */
@@ -41,8 +47,6 @@ public interface ISEBoard extends BoardBackend {
      */
     public Map<String, String> getData(BDLFile bdlFile) throws ParserError;
 
-    public GpioComponent getGpio(String name);
-
     /**
      * Provides a list of files that are required to setup the board-side driver.
      * All these files will be deployed in the board folder after generation.
@@ -50,6 +54,9 @@ public interface ISEBoard extends BoardBackend {
      * @return A list of files required to setup the board-side driver.
      */
     public Set<File> boardFiles(Configuration config);
+
+    public Clock getClock();
+    public GpioComponent getGpio(String name);
 
     /**
      * Interface for boards that can be synthesised with ise version 14.1

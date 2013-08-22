@@ -48,4 +48,9 @@ public enum Host {
 
         return false;
     }
+
+    @Override
+    public String toString() {
+        return instance.getName();
+    }
 }

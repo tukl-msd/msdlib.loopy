@@ -31,4 +31,8 @@ public class ISE_14_1 extends ISE {
         sdk = ((ISEBoard_14_1)config.board()).getSDK_14_1(config, errors);
         super.generate(board, config, errors);
     }
+
+    public Class getBoardInterface() {
+        return ISEBoard.ISEBoard_14_1.class;
+    }
 }

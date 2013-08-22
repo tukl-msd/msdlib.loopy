@@ -8,12 +8,9 @@ import static de.hopp.generator.utils.BoardUtils.getDirection;
 import static de.hopp.generator.utils.BoardUtils.getHWQueueSize;
 import static de.hopp.generator.utils.BoardUtils.getResetPort;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import katja.common.NE;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.Memory;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
@@ -57,8 +54,6 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
     // queue sizes
     protected int globalHWQueueSize;
     protected int globalSWQueueSize;
-
-    protected Set<Integer> frequencies = new HashSet<Integer>();
 
     protected AndExp intrCntrlPorts = AndExp();
 
@@ -112,7 +107,33 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             return;
         }
 
-        mhs = add(mhs, gpio.getMHS(versions));
+        // allocate a 0xffff block in the board memory model
+        Memory.Range gpioMemRange = board.getMemory().allocateMemory(0xffff);
+
+        mhs = add(mhs, MHSFile(Attributes(
+            Attribute(PORT(),
+                Assignment(gpio.portID(), Ident(gpio.portID())),
+                Assignment("DIR", Ident((gpio.isGPI() ? "I" : "") + (gpio.isGPO() ? "O" : ""))),
+                Assignment("VEC", Range(gpio.width()-1,0))
+            )), Block("axi_gpio",
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(gpio.instID().toLowerCase()))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio))),
+                Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(gpio.width()))),
+                // this one might still be problematic... if there is some sort of hybrid I/O component where
+                // not ALL pins are bi-directional (or none at all?)
+                // the width and isGPI/isGPO parameters need some fundamental changes...
+                Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(gpio.isGPI() ? 1 : 0))),
+                Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
+                Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(gpio.isGPI() && gpio.isGPO() ? 1 : 0))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(gpioMemRange.getBaseAddress()))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(gpioMemRange.getHighAddress()))),
+                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
+                // the clock port is different for each board! only the clock itself remains the same...
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident(board.getClock().getClockPort(100)))),
+                Attribute(PORT(), Assignment("GPIO_IO_" + (gpio.isGPI() ? "I" : "") + (gpio.isGPO() ? "O" : ""),
+                    Ident(gpio.portID()))),
+                Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(gpio.getINTCPort())))
+            )));
 
         if(gpio.isGPI())
             addPortToInterruptController(gpio.getINTCPort());
@@ -162,7 +183,7 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
 
     // clock frequencies
     public void visit(CorePos  term) { visit(term.ports()); }
-    public void visit(CLKPos   term) { frequencies.add(term.frequency().term()); }
+    public void visit(CLKPos   term) { } //frequencies.add(term.frequency().term()); }
 
     // imports and backends should be handled before this visitor
     public void visit(ImportsPos  term) { }
@@ -236,7 +257,7 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             public Boolean CaseIN  (  IN term) { return true;  }
             public Boolean CaseOUT ( OUT term) { return false; }
             public Boolean CaseDUAL(DUAL term) throws UsageError {
-                throw new UsageError("invalid direction for virtex6");
+                throw new UsageError("no bi-directional components supported yet");
             }
         });
     }

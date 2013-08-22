@@ -12,11 +12,13 @@ import java.util.Set;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
+import de.hopp.generator.backends.Memory;
 import de.hopp.generator.backends.board.zed.gpio.Gpio;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_4;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_6;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.sdk.DriverVersions;
+import de.hopp.generator.backends.workflow.ise.xps.Clock;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.backends.workflow.vivado.VivadoBoard;
 import de.hopp.generator.exceptions.ParserError;
@@ -34,6 +36,9 @@ public class Zed implements ISEBoard_14_4, ISEBoard_14_6, VivadoBoard {
              File.separator + "board"  +
              File.separator + "zed";
 
+    // board memory and clock models
+    private Memory memory = new Memory(0x40000000, 0x4fffffff);
+
     public String getName()  { return "zed"; }
 
     public void printUsage(IOHandler IO) {
@@ -44,6 +49,10 @@ public class Zed implements ISEBoard_14_4, ISEBoard_14_6, VivadoBoard {
     public String getDev()   { return "xc7z020"; }
     public String getPack()  { return "clg484"; }
     public String getSpeed() { return "-1"; }
+
+    public Memory getMemory() { return memory; }
+    // FIXME need a clock here ;)
+    public Clock  getClock()  { return null; }
 
     public File xpsSources() { return new File(folder + File.separator + "xps"); }
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }

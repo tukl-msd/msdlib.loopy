@@ -3,6 +3,7 @@ package de.hopp.generator.backends.board.virtex.virtex6;
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.model.mhs.MHS.*;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.Memory;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.backends.workflow.ise.xps.MHSGenerator;
@@ -16,6 +17,11 @@ import de.hopp.generator.model.mhs.Blocks;
 import de.hopp.generator.model.mhs.MHSFile;
 
 /**
+ * Basic .mhs generator for a Xilinx Virtex 6 board.
+ *
+ * Though supporting several minor ISE versions, no modifications of the sources
+ * for the XPS build are required except version numbers of IP cores in the .mhs file.
+ * This MHS generator can therefore be used for multiple ISE versions.
  *
  * @author Thomas Fischer
  * @since 2.8.2013
@@ -24,11 +30,12 @@ public class MHS extends MHSGenerator {
 
     public MHS(ISEBoard board, IPCoreVersions versions, ErrorCollection errors) {
         super(board, versions, errors);
-
-        frequencies.add(100);
-        frequencies.add(200);
-        frequencies.add(400);
     }
+
+
+    // in order to fully support this pattern, also in the bdl,
+    // we need to create a more elaborate clocking model than pure integer based....
+    @Override
 
     public void visit(ETHERNETPos term) {
         Attributes attr = Attributes(
@@ -75,13 +82,16 @@ public class MHS extends MHSGenerator {
 
         mhs = add(mhs, attr);
 
+        // allocate a 0xffff block in the board memory model
+        Memory.Range memRange = board.getMemory().allocateMemory(0xffff);
+
         mhs = add(mhs, Block("axi_ethernetlite",
             Attribute(PARAMETER(), Assignment("INSTANCE",     Ident("Ethernet_Lite"))),
             Attribute(PARAMETER(), Assignment("HW_VER",       Ident(versions.axi_ethernetlite))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR",   MemAddr("0x40e00000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR",   MemAddr("0x40e0ffff"))),
+            Attribute(PARAMETER(), Assignment("C_BASEADDR",   MemAddr(memRange.getBaseAddress()))),
+            Attribute(PARAMETER(), Assignment("C_HIGHADDR",   MemAddr(memRange.getHighAddress()))),
             Attribute(BUS_IF(),    Assignment("S_AXI",        Ident("axi4lite_0"))),
-            Attribute(PORT(),      Assignment("S_AXI_ACLK",   Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(),      Assignment("S_AXI_ACLK",   Ident(board.getClock().getClockPort(100)))),
             Attribute(PORT(),      Assignment("PHY_tx_en",    Ident("Ethernet_Lite_TX_EN"))),
             Attribute(PORT(),      Assignment("PHY_tx_clk",   Ident("Ethernet_Lite_TX_CLK"))),
             Attribute(PORT(),      Assignment("PHY_tx_data",  Ident("Ethernet_Lite_TXD"))),
@@ -112,8 +122,7 @@ public class MHS extends MHSGenerator {
 
     private Attributes defaultAttributes() {
         return Attributes(
-            Attribute(PARAMETER(), Assignment("VERSION", Ident(versions.mhs))
-            ), Attribute(PORT(),
+            Attribute(PORT(),
                 Assignment("ddr_memory_we_n", Ident("ddr_memory_we_n")),
                 Assignment("DIR", Ident("O"))
             ), Attribute(PORT(),
@@ -200,6 +209,11 @@ public class MHS extends MHSGenerator {
     private Blocks defaultBlocks() {
         intrCntrlPorts = intrCntrlPorts.add(Ident("RS232_Uart_1_Interrupt"));
 
+        // allocate required 0xffff blocks in the board memory model
+        Memory.Range mdmMemRange = board.getMemory().allocateMemory(0xffff);
+        Memory.Range tmrMemRange = board.getMemory().allocateMemory(0xffff);
+        Memory.Range uartMemRange = board.getMemory().allocateMemory(0xffff);
+
         return Blocks(
             Block("proc_sys_reset",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("proc_sys_reset_0"))),
@@ -208,7 +222,7 @@ public class MHS extends MHSGenerator {
                 Attribute(PORT(), Assignment("MB_Debug_Sys_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))),
                 Attribute(PORT(), Assignment("Dcm_locked", Ident("proc_sys_reset_0_Dcm_locked"))),
                 Attribute(PORT(), Assignment("MB_Reset", Ident("proc_sys_reset_0_MB_Reset"))),
-                Attribute(PORT(), Assignment("Slowest_sync_clk", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("Slowest_sync_clk", Ident(board.getClock().getClockPort(100)))),
                 Attribute(PORT(), Assignment("Interconnect_aresetn", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
                 Attribute(PORT(), Assignment("Ext_Reset_In", Ident("RESET"))),
                 Attribute(PORT(), Assignment("BUS_STRUCT_RESET", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
@@ -218,24 +232,24 @@ public class MHS extends MHSGenerator {
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_ilmb"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_v10))),
                 Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
-                Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
+                Attribute(PORT(), Assignment("LMB_CLK", Ident(board.getClock().getClockPort(100))))
             ), Block("lmb_bram_if_cntlr",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_i_bram_ctrl"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_bram_if_cntlr))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(0x00000000))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(0x0000ffff))),
                 Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_ilmb"))),
                 Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block")))
             ), Block("lmb_v10",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_dlmb"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_v10))),
                 Attribute(PORT(), Assignment("SYS_RST", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
-                Attribute(PORT(), Assignment("LMB_CLK", Ident("clk_100_0000MHzMMCM0")))
+                Attribute(PORT(), Assignment("LMB_CLK", Ident(board.getClock().getClockPort(100))))
             ), Block("lmb_bram_if_cntlr",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_d_bram_ctrl"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_bram_if_cntlr))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x00000000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x0000ffff"))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(0x00000000))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(0x0000ffff))),
                 Attribute(BUS_IF(), Assignment("SLMB", Ident("microblaze_0_dlmb"))),
                 Attribute(BUS_IF(), Assignment("BRAM_PORT", Ident("microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block")))
             ), Block("bram_block",
@@ -248,32 +262,32 @@ public class MHS extends MHSGenerator {
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.mdm))),
                 Attribute(PARAMETER(), Assignment("C_INTERCONNECT", Number(2))),
                 Attribute(PARAMETER(), Assignment("C_USE_UART", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41400000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4140ffff"))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(mdmMemRange.getBaseAddress()))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(mdmMemRange.getHighAddress()))),
                 Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
                 Attribute(BUS_IF(), Assignment("MBDEBUG_0", Ident("microblaze_0_debug"))),
                 Attribute(PORT(), Assignment("Debug_SYS_Rst", Ident("proc_sys_reset_0_MB_Debug_Sys_Rst"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0")))
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident(board.getClock().getClockPort(100))))
             ), Block("axi_timer",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi_timer_0"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_timer))),
                 Attribute(PARAMETER(), Assignment("C_COUNT_WIDTH", Number(32))),
                 Attribute(PARAMETER(), Assignment("C_ONE_TIMER_ONLY", Number(0))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41c00000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x41c0ffff"))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(tmrMemRange.getBaseAddress()))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(tmrMemRange.getHighAddress()))),
                 Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident(board.getClock().getClockPort(100)))),
                 Attribute(PORT(), Assignment("Interrupt", Ident("axi_timer_0_Interrupt")))
             ), Block("axi_interconnect",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4lite_0"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
                 Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(0))),
                 Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
-                Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident("clk_100_0000MHzMMCM0")))
+                Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident(board.getClock().getClockPort(100))))
             ), Block("axi_interconnect",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4_0"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
-                Attribute(PORT(), Assignment("interconnect_aclk", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("interconnect_aclk", Ident(board.getClock().getClockPort(100)))),
                 Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("proc_sys_reset_0_Interconnect_aresetn")))
             ), Block("axi_v6_ddrx",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("DDR3_SDRAM"))),
@@ -291,8 +305,8 @@ public class MHS extends MHSGenerator {
                 Attribute(PARAMETER(), Assignment("C_MMCM_EXT_LOC", Ident("MMCM_ADV_X0Y8"))),
                 Attribute(PARAMETER(), Assignment("C_NDQS_COL0", Number(1))),
                 Attribute(PARAMETER(), Assignment("C_NDQS_COL1", Number(0))),
-                Attribute(PARAMETER(), Assignment("C_S_AXI_BASEADDR", MemAddr("0xa4000000"))),
-                Attribute(PARAMETER(), Assignment("C_S_AXI_HIGHADDR", MemAddr("0xa7ffffff"))),
+                Attribute(PARAMETER(), Assignment("C_S_AXI_BASEADDR", MemAddr(0xa4000000))),
+                Attribute(PARAMETER(), Assignment("C_S_AXI_HIGHADDR", MemAddr(0xa7ffffff))),
                 Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4_0"))),
                 Attribute(PORT(), Assignment("ddr_we_n", Ident("ddr_memory_we_n"))),
                 Attribute(PORT(), Assignment("ddr_ras_n", Ident("ddr_memory_ras_n"))),
@@ -309,10 +323,10 @@ public class MHS extends MHSGenerator {
                 Attribute(PORT(), Assignment("ddr_cas_n", Ident("ddr_memory_cas_n"))),
                 Attribute(PORT(), Assignment("ddr_ba", Ident("ddr_memory_ba"))),
                 Attribute(PORT(), Assignment("ddr_addr", Ident("ddr_memory_addr"))),
-                Attribute(PORT(), Assignment("clk_rd_base", Ident("clk_400_0000MHzMMCM0_nobuf_varphase"))),
-                Attribute(PORT(), Assignment("clk_mem", Ident("clk_400_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("clk", Ident("clk_200_0000MHzMMCM0"))),
-                Attribute(PORT(), Assignment("clk_ref", Ident("clk_200_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("clk_rd_base", Ident(board.getClock().getClockPort(400, false, true)))),
+                Attribute(PORT(), Assignment("clk_mem", Ident(board.getClock().getClockPort(400)))),
+                Attribute(PORT(), Assignment("clk", Ident(board.getClock().getClockPort(200)))),
+                Attribute(PORT(), Assignment("clk_ref", Ident(board.getClock().getClockPort(200)))),
                 Attribute(PORT(), Assignment("PD_PSEN", Ident("psen"))),
                 Attribute(PORT(), Assignment("PD_PSINCDEC", Ident("psincdec"))),
                 Attribute(PORT(), Assignment("PD_PSDONE", Ident("psdone")))
@@ -323,10 +337,10 @@ public class MHS extends MHSGenerator {
                 Attribute(PARAMETER(), Assignment("C_DATA_BITS", Number(8))),
                 Attribute(PARAMETER(), Assignment("C_USE_PARITY", Number(0))),
                 Attribute(PARAMETER(), Assignment("C_ODD_PARITY", Number(1))),
-                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x40600000"))),
-                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4060ffff"))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(uartMemRange.getBaseAddress()))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(uartMemRange.getHighAddress()))),
                 Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
-                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident(board.getClock().getClockPort(100)))),
                 Attribute(PORT(), Assignment("TX", Ident("RS232_Uart_1_sout"))),
                 Attribute(PORT(), Assignment("RX", Ident("RS232_Uart_1_sin"))),
                 Attribute(PORT(), Assignment("Interrupt", Ident("RS232_Uart_1_Interrupt")))
@@ -343,18 +357,18 @@ public class MHS extends MHSGenerator {
             Attribute(PARAMETER(), Assignment("C_USE_BARREL", Number(1))),
             Attribute(PARAMETER(), Assignment("C_USE_FPU", Number(0))), // default: 0 speed 2
             Attribute(PARAMETER(), Assignment("C_DEBUG_ENABLED", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_ICACHE_BASEADDR", MemAddr("0xa4000000"))),
-            Attribute(PARAMETER(), Assignment("C_ICACHE_HIGHADDR", MemAddr("0xa7ffffff"))),
+            Attribute(PARAMETER(), Assignment("C_ICACHE_BASEADDR", MemAddr(0xa4000000))),
+            Attribute(PARAMETER(), Assignment("C_ICACHE_HIGHADDR", MemAddr(0xa7ffffff))),
             Attribute(PARAMETER(), Assignment("C_USE_ICACHE", Number(1))),
             Attribute(PARAMETER(), Assignment("C_CACHE_BYTE_SIZE", Number(65536))), // default: 65536 speed: 32768
             Attribute(PARAMETER(), Assignment("C_ICACHE_ALWAYS_USED", Number(1))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_BASEADDR", MemAddr("0xa4000000"))),
-            Attribute(PARAMETER(), Assignment("C_DCACHE_HIGHADDR", MemAddr("0xa7ffffff"))),
+            Attribute(PARAMETER(), Assignment("C_DCACHE_BASEADDR", MemAddr(0xa4000000))),
+            Attribute(PARAMETER(), Assignment("C_DCACHE_HIGHADDR", MemAddr(0xa7ffffff))),
             Attribute(PARAMETER(), Assignment("C_USE_DCACHE", Number(1))),
             Attribute(PARAMETER(), Assignment("C_DCACHE_BYTE_SIZE", Number(65536))), // default: 65536 speed: 32768
             Attribute(PARAMETER(), Assignment("C_DCACHE_ALWAYS_USED", Number(1))),
             Attribute(PARAMETER(), Assignment("C_STREAM_INTERCONNECT", Number(1))),
-            // new stuff
+            // for speed-optimized microblaze add these lines
             //Attribute(PARAMETER(), Assignment("C_ICACHE_LINE_LEN", Number(8))),
             //Attribute(PARAMETER(), Assignment("C_ICACHE_STREAMS", Number(1))),
             //Attribute(PARAMETER(), Assignment("C_ICACHE_VICTIMS", Number(8))),
@@ -388,72 +402,23 @@ public class MHS extends MHSGenerator {
 
         // add reset and clock ports
         microblaze = add(microblaze, Attribute(PORT(), Assignment("MB_RESET", Ident("proc_sys_reset_0_MB_Reset"))));
-        microblaze = add(microblaze, Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))));
+        microblaze = add(microblaze, Attribute(PORT(), Assignment("CLK", Ident(board.getClock().getClockPort(100)))));
 
         return MHSFile(Attributes(), microblaze);
     }
 
-    private MHSFile getClk() {
-        // TODO add information about this buf and varphase... find out what it means...
-        Block timer = Block("clock_generator",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("clock_generator_0"))),
-            Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.clock_generator))),
-            Attribute(PARAMETER(), Assignment("C_CLKIN_FREQ", Number(200000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT0_FREQ", Number(100000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT0_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT1_FREQ", Number(200000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT1_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT2_FREQ", Number(400000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT2_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_FREQ", Number(400000000))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_GROUP", Ident("MMCM0"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_BUF", Ident("FALSE"))),
-            Attribute(PARAMETER(), Assignment("C_CLKOUT3_VARIABLE_PHASE", Ident("TRUE")))
-            );
-
-        Attributes ports = Attributes(
-            Attribute(PORT(), Assignment("LOCKED", Ident("proc_sys_reset_0_Dcm_locked"))),
-            Attribute(PORT(), Assignment("CLKIN", Ident("CLK"))),
-            Attribute(PORT(), Assignment("PSCLK", Ident("clk_200_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("PSEN", Ident("psen"))),
-            Attribute(PORT(), Assignment("PSINCDEC", Ident("psincdec"))),
-            Attribute(PORT(), Assignment("PSDONE", Ident("psdone"))),
-            Attribute(PORT(), Assignment("RST", Ident("RESET"))),
-            Attribute(PORT(), Assignment("CLKOUT0", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT1", Ident("clk_200_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT2", Ident("clk_400_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("CLKOUT3", Ident("clk_400_0000MHzMMCM0_nobuf_varphase")))
-            );
-
-        int freqCounter = 4;
-
-        frequencies.remove(100);
-        frequencies.remove(200);
-        frequencies.remove(400);
-
-        for(Integer frequency : frequencies) {
-            timer = add(timer, Attribute(PARAMETER(),
-                Assignment("C_CLKOUT" + freqCounter + "_FREQ", Number(frequency * 1000000))));
-            timer = add(timer, Attribute(PARAMETER(),
-                Assignment("C_CLKOUT" + freqCounter + "_GROUP", Ident("MMCMC0"))));
-            ports.add(Attribute(PORT(),
-                Assignment("CLKOUT" + freqCounter, Ident("clk_" + frequency + "_0000MHzMMCM0"))));
-            freqCounter++;
-        }
-
-        timer = add(timer, ports);
-        return MHSFile(Attributes(), timer);
-    }
-
     private MHSFile getINTC() {
+
+        Memory.Range intcMemRange = board.getMemory().allocateMemory(0xffff);
+
         return MHSFile(Attributes(), Block("axi_intc",
-            Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_intc"))),
+            Attribute(PARAMETER(), Assignment("INSTANCE", Ident(Virtex6.intcIdent))), // <-- THIS is the reason for gpio intc naming!
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_intc))),
-            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr("0x41200000"))),
-            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr("0x4120ffff"))),
+            Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(intcMemRange.getBaseAddress()))),
+            Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(intcMemRange.getHighAddress()))),
             Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
             Attribute(BUS_IF(), Assignment("INTERRUPT", Ident("microblaze_0_interrupt"))),
-            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident("clk_100_0000MHzMMCM0"))),
+            Attribute(PORT(), Assignment("S_AXI_ACLK", Ident(board.getClock().getClockPort(100)))),
             Attribute(PORT(), Assignment("INTR", intrCntrlPorts.add(Ident("axi_timer_0_Interrupt"))))
         ));
     }
@@ -462,7 +427,7 @@ public class MHS extends MHSGenerator {
     protected MHSFile getDefault() {
         MHSFile mhs = getMicroblaze();
         mhs = add(mhs, MHSFile(defaultAttributes(), defaultBlocks()));
-        mhs = add(mhs, getClk());
+        mhs = add(mhs, board.getClock().getMHS(versions));
         mhs = add(mhs, getINTC());
         return mhs;
     }

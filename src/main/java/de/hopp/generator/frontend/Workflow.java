@@ -52,4 +52,9 @@ public enum Workflow {
 
         return false;
     }
+
+    @Override
+    public String toString() {
+        return instance.getName();
+    }
 }

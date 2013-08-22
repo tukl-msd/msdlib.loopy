@@ -50,4 +50,9 @@ public enum Board {
 
         return false;
     }
+
+    @Override
+    public String toString() {
+        return instance.getName();
+    }
 }

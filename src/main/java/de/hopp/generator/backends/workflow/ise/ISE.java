@@ -16,7 +16,6 @@ import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -74,7 +73,6 @@ public abstract class ISE implements WorkflowBackend {
 
     protected MHS xps;
     protected SDK sdk;
-    protected Set<File> sources;
 
     @Override
     public void printUsage(IOHandler IO) {
@@ -95,8 +93,6 @@ public abstract class ISE implements WorkflowBackend {
                 " board incompatible with " + config.flow().getName() + " workflow"));
             return;
         }
-
-        sources = ((ISEBoard)config.board()).boardFiles(config);
 
         boolean newFiles = false;
 
@@ -123,7 +119,7 @@ public abstract class ISE implements WorkflowBackend {
         // abort, if errors occurred
         if(errors.hasErrors()) return;
 
-        for(File source : sources) {
+        for(File source : ((ISEBoard)config.board()).boardFiles(config)) {
             try {
                 copyFileToDirectory(source, config.boardDir());
             } catch (IOException e) {

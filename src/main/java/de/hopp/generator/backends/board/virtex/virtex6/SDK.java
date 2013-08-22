@@ -12,6 +12,16 @@ import de.hopp.generator.model.cpp.MProcedure;
 import de.hopp.generator.model.mhs.MHS;
 import de.hopp.generator.model.mhs.MHSFile;
 
+/**
+ * Basic SDK generator for a Xilinx Virtex 6 board.
+ *
+ * Though supporting several minor ISE versions, no modifications of the sources for the SDK
+ * build are required except version numbers of the drivers in the .mss file.
+ * This SDK generator can therefore be used for multiple ISE versions.
+ *
+ * @author Thomas Fischer
+ *
+ */
 public class SDK extends de.hopp.generator.backends.workflow.ise.sdk.SDKGenerator {
 
     private final String proc_inst = "microblaze_0";

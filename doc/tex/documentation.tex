@@ -1872,7 +1872,7 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 \draw[implement, black] (virtex6) to node[auto] {} (iseboard14_1);
 
 \draw[extend, black] (ise) to node[auto] {} (workflow);
-\draw[implement, black] (ise14_1) to node[auto] {} (ise);
+\draw[extend, black] (ise14_1) to node[auto] {} (ise);
 
 \draw[extend, black] (isegpio) to node[auto] {} (gpio);
 \draw[implement, black] (buttons) to node[auto] {} (isegpio);
@@ -1891,21 +1891,22 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 \label{fig:gen:arch}
 \end{figure}
 
-\Cref{fig:gen:arch} shows the integration of the Virtex6 board and the ISE 14.1 workflow in this structure. The introduction of a new workflow like the ISE 14 requires introduction of a new corresponding board interface, providing all information required by the workflow. Since ISE workflows do not differ too much in minor versions, a stronger distinction between these is not required. Otherwise, an individual interface for the workflow would be required, i.e. an ISE 14.1 board interface.  The Virtex6 board backend can now implement the provided board interface indicating support of this workflow. A similar pattern is applied to GPIO components. An ise gpio component interface is provided by the workflow, which is in turn implemented by the Virtex6 components.
+\Cref{fig:gen:arch} shows the integration of the Virtex6 board and the ISE 14.1 workflow in this structure. The introduction of a new workflow like the ISE 14 requires introduction of a new corresponding board interface, providing all information required by the workflow. As an additional layer of abstraction, the general ISE backend and board interface are provided, but no direct instance of these exist. The Virtex6 board backend implements the provided ISE 14.1 board interface indicating support of this workflow. A similar pattern is applied to GPIO components. An ise gpio component interface is provided by the workflow, which is in turn implemented by the Virtex6 components. Since so far no differences in the  implementation of GPIO components for the supported ISE versions are required, a more tailored GPIO interface for each minor ISE version is not necessary. Instead, a single interface for all ISE versions is provided. If a later extension of Loopy for more versions makes such an interface necessary, a new interface can easily be introduced.
 
 All provided interfaces and enums and are summed up in \Cref{tab:gen:hook}.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{ c | c | c }
-Backend & Type & Class \\ \hline\hline
+Backend & Type & Location \\ \hline\hline
 \multirow{2}{*}{Host} & Interface & de.hopp.generator.backends.host.HostBackend \\
 & Enum & de.hopp.generator.frontend.Host\\ \hline
-\multirow{2}{*}{Workflow} & Interface & de.hopp.generator.backends.workflow.WorkflowIF\\
+\multirow{2}{*}{Workflow} & Interface & de.hopp.generator.backends.workflow.WorkflowBackend\\
 & Enum & de.hopp.generator.frontend.Workflow\\ \hline
-\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.board.BoardIF\\
+\multirow{2}{*}{Board} & Interface & de.hopp.generator.backends.board.BoardBackend\\
 & Enum & de.hopp.generator.frontend.Board\\ \hline
-ISE Board & Interface & de.hopp.generator.workflow.ise.ISEBoard\\ \hline
+ISE Board & Interface & de.hopp.generator.workflow.ise.ISEBoard\\
+ISE GPIO & Interface & de.hopp.generator.workflow.ise.gpio.GPIOComponent\\ \hline
 Vivado Board & Interface & de.hopp.generator.workflow.vivado.VivadoBoard \\
 \end{tabular}
 \caption{Overview of Classes and Enums required for Backend Extension}
@@ -1913,6 +1914,14 @@ Vivado Board & Interface & de.hopp.generator.workflow.vivado.VivadoBoard \\
 \end{table}
 
 %Add a picture about the backend hierarchy?
+%Some paragraphhere?
+%What exactly should this example be for? Subclassing the abstract MHS/SDK visitors?
+
+As an example, the integration of ISE 14.1 support for the Virtex 6 board will be discussed in more detail here. For this purpose, the Virtex 6 board backend is required to implement the ISE 14.1 backend as depicted in \Cref{fig:gen:arch}.
+
+The ISE backend interface requires the implementing board to provide visitors for generating an .mhs file for hardware synthesis using XPS and an .mss file for building the board-side software. For both, an abstract visitor is provided, that requires only small board-specific adjustments. To simplify generation of GPIO components, the abstract visitor relies on the board backend to also provide a GPIO object with additional information for each supported GPIO component. It is also possible to override the implementation of GPIO components completely in the subclassed visitor, yet providing a GPIO object for each component installed on the board is deemed much easier.
+
+While providing a lot of board-independent definitions, neither the .mhs nor SDK generator are complete. Both require some board-specific additions. For the .mhs generator this concerns hardware parts for the selected medium and also design-independent but board-specific building blocks. In case of the Virtex 6, which does not have a processor, this includes addition of a microblaze soft-processor and related components. In the SDK generator, communication with components attached via AXI4 stream interfaces has to be explicitly specified. The microblaze of the Virtex 6 provides commands for communication over the integrated stream interfaces, hard processors usually do not have these interfaces and consequently no such methods are provided. Instead, a memory-mapped approach is chosen for these boards.
 
 \subsection{Utility Classes}
 There are several utility classes which supply basic methods for file generation and model translation.

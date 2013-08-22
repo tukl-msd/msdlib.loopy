@@ -27,7 +27,7 @@ Value = Ident | MemAddr | Number | Range | STR
 
 Ident   ( String val )
 STR     ( String val )
-MemAddr ( String val )
+MemAddr ( Integer val )
 Number  ( Integer val )
 Range   ( Integer u, Integer l)
 

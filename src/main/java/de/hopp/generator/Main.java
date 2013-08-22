@@ -4,20 +4,24 @@ import static de.hopp.generator.model.BDL.BDLFilePos;
 import static de.hopp.generator.utils.BoardUtils.printBoard;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
+
+import org.apache.commons.lang.StringUtils;
 
 import de.hopp.generator.exceptions.ExecutionFailed;
-import de.hopp.generator.model.BDLFilePos;
 import de.hopp.generator.frontend.Board;
 import de.hopp.generator.frontend.Host;
 import de.hopp.generator.frontend.Parser;
+import de.hopp.generator.frontend.Workflow;
+import de.hopp.generator.model.BDLFilePos;
 //import static de.upb.hni.vmagic.parser.VhdlParser.parseFile;
 //import de.upb.hni.vmagic.VhdlFile;
 //import de.upb.hni.vmagic.libraryunit.Entity;
 //import de.upb.hni.vmagic.libraryunit.LibraryUnit;
 //import de.upb.hni.vmagic.parser.VhdlParserException;
-import de.hopp.generator.frontend.Workflow;
 
 /**
  * Main class of the generator.
@@ -164,22 +168,13 @@ public class Main {
 
         // Print backends
         IO.println("Supported host languages:");
-        for(Host backend : Host.values()) {
-            // FIXME comma separated list?
-            IO.println(" - " + backend.getInstance().getName());
-        }
+        IO.println("  " + StringUtils.join(Host.values(), ", "));
 
         IO.println("Supported boards:");
-        for(Board backend : Board.values()) {
-            // FIXME comma separated list?
-            IO.println(" - " + backend.getInstance().getName());
-        }
+        IO.println("  " + StringUtils.join(Board.values(), ", "));
 
         IO.println("Supported workflows:");
-        for(Workflow backend : Workflow.values()) {
-            // FIXME comma separated list?
-            IO.println(" - " + backend.getInstance().getName());
-        }
+        IO.println("  " + StringUtils.join(Workflow.values(), ", "));
 
         IO.println();
     }
@@ -454,29 +449,41 @@ public class Main {
             // USAGE HELP flag
             } else if(args[i].equals("-h") || args[i].equals("--help")) {
                 if(i + 1 < args.length) {
-                    for(Host backend : Host.values())
-                        if(backend.getInstance().getName().equals(args[i+1])) {
-                            IO.println("Usage help of " + backend.getInstance().getName() + " host backend:");
-                            backend.getInstance().printUsage(IO);
-                            IO.println();
-                            throw new ExecutionFailed();
-                        }
+                    if(Host.exists(args[i+1])) {
+                        Host backend = Host.fromName(args[i+1]);
+                        IO.println("Usage help of " + backend.getInstance().getName() + " host backend:");
+                        backend.getInstance().printUsage(IO);
+                        IO.println();
+                        throw new ExecutionFailed();
+                    }
 
-                    for(Board backend : Board.values())
-                        if(backend.getInstance().getName().equals(args[i+1])) {
-                            IO.println("Usage help of " + backend.getInstance().getName() + " board backend:");
-                            backend.getInstance().printUsage(IO);
-                            IO.println();
-                            throw new ExecutionFailed();
-                        }
+                    if(Board.exists(args[i+1])) {
+                        Board backend = Board.fromName(args[i+1]);
+                        IO.println("Usage help of " + backend.getInstance().getName() + " board backend:");
+                        backend.getInstance().printUsage(IO);
+                        IO.println();
+                        IO.println("Compatible workflows:");
+                        List<Workflow> flows = new LinkedList<Workflow>();
+                        for(Workflow flow : Workflow.values())
+                            if(flow.getInstance().getBoardInterface().isInstance(backend.getInstance()))
+                                flows.add(flow);
+                        IO.println("  " + StringUtils.join(flows, ", "));
+                        throw new ExecutionFailed();
+                    }
 
-                    for(Workflow backend : Workflow.values())
-                        if(backend.getInstance().getName().equals(args[i+1])) {
-                            IO.println("Usage help of " + backend.getInstance().getName() + " workflow backend:");
-                            backend.getInstance().printUsage(IO);
-                            IO.println();
-                            throw new ExecutionFailed();
-                        }
+                    if(Workflow.exists(args[i+1])) {
+                        Workflow backend = Workflow.fromName(args[i+1]);
+                        IO.println("Usage help of " + backend.getInstance().getName() + " workflow backend:");
+                        backend.getInstance().printUsage(IO);
+                        IO.println();
+                        IO.println("Compaible boards:");
+                        List<Board> boards = new LinkedList<Board>();
+                        for(Board board : Board.values())
+                            if(backend.getInstance().getBoardInterface().isInstance(board.getInstance()))
+                                boards.add(board);
+                        IO.println("  " + StringUtils.join(boards, ", "));
+                        throw new ExecutionFailed();
+                    }
                 }
 
                 showUsage();

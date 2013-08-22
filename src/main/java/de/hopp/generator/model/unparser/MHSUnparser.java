@@ -64,7 +64,7 @@ public class MHSUnparser extends MHSFile.Visitor<NE> {
         buffer.append('\"');
     }
     public void visit(Number term)  { visit(term.val()); }
-    public void visit(MemAddr term) { visit(term.val()); }
+    public void visit(MemAddr term) { visit(String.format("0x%1$08x", term.val())); }
     public void visit(Range term) {
         buffer.append('[');
         visit(term.u());

@@ -1,7 +1,5 @@
 package de.hopp.generator.backends.board.virtex.virtex6.gpio;
 
-import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
-
 /**
  * Enum class for virtex6 GPIO components.
  *

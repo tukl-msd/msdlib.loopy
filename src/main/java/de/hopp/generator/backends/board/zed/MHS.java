@@ -168,7 +168,7 @@ public class MHS extends MHSGenerator {
             // PARAMETER HW_VER = 4.02.a
             Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.ps7))),
             // PARAMETER C_DDR_RAM_HIGHADDR = 0x1FFFFFFF
-            Attribute(PARAMETER(), Assignment("C_DDR_RAM_HIGHADDR", MemAddr("0x1FFFFFFF"))),
+            Attribute(PARAMETER(), Assignment("C_DDR_RAM_HIGHADDR", MemAddr(0x1FFFFFFF))),
             // PARAMETER C_USE_M_AXI_GP0 = 1
             Attribute(PARAMETER(), Assignment("C_USE_M_AXI_GP0", Number(1))),
             // PARAMETER C_EN_EMIO_CAN0 = 0

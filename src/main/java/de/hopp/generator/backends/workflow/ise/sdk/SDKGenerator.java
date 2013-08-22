@@ -3,6 +3,7 @@ package de.hopp.generator.backends.workflow.ise.sdk;
 import static de.hopp.generator.backends.workflow.ise.ISEUtils.sdkAppDir;
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
 import static de.hopp.generator.model.cpp.CPP.*;
+import static de.hopp.generator.model.mhs.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.*;
 import static de.hopp.generator.utils.CPPUtils.add;
 import static de.hopp.generator.utils.CPPUtils.addLines;
@@ -364,7 +365,11 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
             gpoCount++;
         }
 
-        mssFile = add(mssFile, gpio.getMSS(versions));
+        mssFile = add(mssFile, MHSFile(Attributes(), Block("DRIVER",
+            Attribute(PARAMETER(), Assignment("DRIVER_NAME", Ident("gpio"))),
+            Attribute(PARAMETER(), Assignment("DRIVER_VER",  Ident(versions.mss_gpio))),
+            Attribute(PARAMETER(), Assignment("HW_INSTANCE", Ident(gpio.instID().toLowerCase())))
+        )));
     }
 
     private MProcedure createExceptionHandler(final GpioComponent gpio, Code callback) {

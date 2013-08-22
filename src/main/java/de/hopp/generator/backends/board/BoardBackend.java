@@ -1,6 +1,7 @@
 package de.hopp.generator.backends.board;
 
 import de.hopp.generator.IOHandler;
+import de.hopp.generator.backends.Memory;
 
 /**
  *
@@ -30,4 +31,6 @@ public interface BoardBackend {
     public void printUsage(IOHandler IO);
 
     public GpioComponent getGpio(String name);
+
+    public Memory getMemory();
 }

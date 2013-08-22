@@ -31,6 +31,7 @@ public class IPCoreVersions {
     public String axi_uartlite;
     public String axi_ethernetlite;
 
+    public String gpio;
     public String gpio_leds;
     public String gpio_buttons;
     public String gpio_switches;
@@ -59,6 +60,7 @@ public class IPCoreVersions {
         versions.axi_uartlite      = "1.02.a";
         versions.axi_ethernetlite  = "1.01.b";
 
+        versions.gpio              = "1.01.b";
         versions.gpio_leds         = "1.01.b";
         versions.gpio_buttons      = "1.01.b";
         versions.gpio_switches     = "1.01.b";
