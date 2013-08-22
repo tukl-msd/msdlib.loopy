@@ -1,6 +1,7 @@
 package de.hopp.generator.backends.workflow;
 
 import de.hopp.generator.backends.Backend;
+import de.hopp.generator.backends.board.BoardBackend;
 
 /**
  *
@@ -8,5 +9,5 @@ import de.hopp.generator.backends.Backend;
  * @since 1.8.2013
  */
 public interface WorkflowBackend extends Backend {
-    public Class getBoardInterface();
+    public Class<? extends BoardBackend> getBoardInterface();
 }

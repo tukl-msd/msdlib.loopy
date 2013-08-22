@@ -4,10 +4,8 @@ import static de.hopp.generator.model.BDL.BDLFilePos;
 import static de.hopp.generator.utils.BoardUtils.printBoard;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.apache.commons.lang.StringUtils;
 

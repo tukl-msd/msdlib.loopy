@@ -32,7 +32,7 @@ public class ISE_14_4 extends ISE {
         super.generate(board, config, errors);
     }
 
-    public Class getBoardInterface() {
+    public Class<ISEBoard_14_4> getBoardInterface() {
         return ISEBoard.ISEBoard_14_4.class;
     }
 }
