@@ -108,12 +108,12 @@ public class Clock implements de.hopp.generator.backends.workflow.ise.xps.Clock 
                 Assignment("C_CLKOUT" + freqCounter + "_FREQ", Number(frequency.frequency * 1000000))));
             timer = add(timer, Attribute(PARAMETER(),
                 Assignment("C_CLKOUT" + freqCounter + "_GROUP", Ident("MMCM0"))));
-            timer = add(timer, Attribute(PARAMETER(),
-                Assignment("C_CLKOUT" + freqCounter + "_BUF",
-                    Ident(String.valueOf(frequency.buffered).toUpperCase()))));
-            timer = add(timer, Attribute(PARAMETER(),
-                Assignment("C_CLKOUT" + freqCounter + "_VARIABLE_PHASE",
-                    Ident(String.valueOf(frequency.buffered).toUpperCase()))));
+            if(!frequency.buffered)
+                timer = add(timer, Attribute(PARAMETER(),
+                    Assignment("C_CLKOUT" + freqCounter + "_BUF", Ident("FALSE"))));
+            if(frequency.variablePhase)
+                timer = add(timer, Attribute(PARAMETER(),
+                    Assignment("C_CLKOUT" + freqCounter + "_VARIABLE_PHASE", Ident("TRUE"))));
             ports = ports.add(Attribute(PORT(),
                 Assignment("CLKOUT" + freqCounter, Ident(frequency.print()))));
             freqCounter++;
