@@ -22,6 +22,7 @@ public class GpioSwitches extends GpioComponent {
     public boolean isGPO() { return false;      }
 
     public String getUCFConstraints() {
+        // TODO might also be 18 for input devices...
         return "\nNET " + portID() + "[0] LOC = \"F22\" | IOSTANDARD = \"LVCMOS25\";" +
                "\nNET " + portID() + "[1] LOC = \"G22\" | IOSTANDARD = \"LVCMOS25\";" +
                "\nNET " + portID() + "[2] LOC = \"H22\" | IOSTANDARD = \"LVCMOS25\";" +

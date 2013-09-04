@@ -18,6 +18,21 @@ import java.util.jar.JarFile;
 
 import de.hopp.generator.IOHandler;
 
+/**
+ * A utility class for resource location and deployment.
+ *
+ * Build upon the Apache Commons IO package and Java resource
+ * functionality, this class provides methods for locating
+ * resources in- and outside of .jar files and deploying them
+ * incrementally.
+ * This includes checking for existence of the files to be
+ * deployed beforehand and not deploying the new file,
+ * if the content of the existing file is identical.
+ * This leaves timestamps of such files untouched and allows
+ * incremental builds for processes working on the deployed files.
+ *
+ * @author Thomas Fischer
+ */
 public class Files {
 
     /**

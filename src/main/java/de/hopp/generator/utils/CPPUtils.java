@@ -2,6 +2,14 @@ package de.hopp.generator.utils;
 
 import de.hopp.generator.model.cpp.*;
 
+/**
+ * Provides several utility methods concerning the C/C++ model.
+ *
+ * This concerns add methods for easier concatenation of the immutable
+ * Katja data types.
+ *
+ * @author Thomas Fischer
+ */
 public class CPPUtils {
 
     public static MFile add(MFile file, MClass c) {

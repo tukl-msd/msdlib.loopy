@@ -18,7 +18,6 @@ import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_4;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_6;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.sdk.DriverVersions;
-import de.hopp.generator.backends.workflow.ise.xps.Clock;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
 import de.hopp.generator.backends.workflow.vivado.VivadoBoard;
 import de.hopp.generator.exceptions.ParserError;
@@ -51,8 +50,7 @@ public class Zed implements ISEBoard_14_4, ISEBoard_14_6, VivadoBoard {
     public String getSpeed() { return "-1"; }
 
     public Memory getMemory() { return memory; }
-    // FIXME need a clock here ;)
-    public Clock  getClock()  { return null; }
+    public Clock  getClock()  { return new Clock(); }
 
     public File xpsSources() { return new File(folder + File.separator + "xps"); }
     public File sdkSources() { return new File(folder + File.separator + "sdk"); }
@@ -354,7 +352,7 @@ public class Zed implements ISEBoard_14_4, ISEBoard_14_6, VivadoBoard {
             "  <set param=\"PCW::UIPARAM::DDR::PARTNO\" value=\"MT41J128M16 HA-15E\" />\n" +
             "  <set param=\"PCW::APU::PERIPHERAL::FREQMHZ\" value=\"666.666667\" />\n" +
             "  <set param=\"PCW::FPGA0::PERIPHERAL::FREQMHZ\" value=\"100.000000\" />\n" +
-            "  <set param=\"PCW::FPGA1::PERIPHERAL::FREQMHZ\" value=\"150.000000\" />\n" +
+            "  <set param=\"PCW::FPGA1::PERIPHERAL::FREQMHZ\" value=\"153.000000\" />\n" +
             "  <set param=\"PCW::FPGA2::PERIPHERAL::FREQMHZ\" value=\"50.000000\" />\n" +
             "  <set param=\"PCW::FPGA3::PERIPHERAL::FREQMHZ\" value=\"50.000000\" />\n" +
             "  <set param=\"PCW::QSPI::PERIPHERAL::FREQMHZ\" value=\"200.000000\" />\n" +

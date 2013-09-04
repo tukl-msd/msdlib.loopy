@@ -721,22 +721,21 @@ Since the FPGA usually only has a single processor and is not capable of multi-t
 
 \subsection{Forwarding}
 \label{sec:arch:fwd}
-Values generated on out-going ports on the board are usually automatically forwarded to the read queues of the host-side driver. This leads to shorter read cycles, since values are usually available at the host-side driver and no polling cycle has to be performed. 
+Values generated on out-going ports on the board are usually automatically forwarded to the read queues of the host-side driver. This leads to shorter read cycles, since values are usually available at the host-side driver and no polling cycle has to be performed. In addition, board-side queues at out-going ports can be smaller, since values can immediately be sent as soon as available without waiting for a poll. They are instead stored on the host, which is assumed to have more memory available, until the application actually requests the computed values. However, depending on the application and the specific port, forwarding can also lead to problems:
 
-However, forwarding also leads to several problems:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
-\item ports generating a constant, infinite stream of values will never stop sending values
+\item ports generating a constant, infinite stream of values, e.g. random number generators, will never stop sending values
 \item considering status ports, a read operation should return the current status, not some stored value
 \item forwarding in general can lead to unnecessary traffic, since values are sent without being required and as soon as available
 \end{itemize}
 
-To counter these problems, \textit{polling ports} are introduced. These are basically ports without value forwarding. Instead, the host-side driver explicitly requests values, as soon as a read operation is performed on such a port. While this results generally in longer response cycles compared to forwarding ports, values are only sent if required. This obviously is imperative for status ports or ports generating an infinite amount of values. In other scenarios, polling ports may reduce medium traffic in certain cases, but also results in poll messages being sent by the host-side driver, increasing traffic in other cases. Therefore, switching of such a port into polling mode should be considered carefully.
+To counter these problems, loopy also supports traditional \textit{polling ports}. These are basically ports without value forwarding. Instead, the host-side driver explicitly requests values, as soon as a read operation is performed on such a port. While this results generally in longer response cycles compared to forwarding ports, values are only sent if required. This obviously is imperative for status ports or ports generating an infinite amount of values. In other scenarios, polling ports may reduce medium traffic in certain cases, but also results in poll messages being sent by the host-side driver, increasing traffic in other cases. Therefore, switching of such a port into polling mode should be considered carefully.
 
-While it does not always make sense (e.g. in the case of status ports), polling ports may still have a read queue. This is especially useful in the scenario of a random number generator, where values are endlessly generated without additional input and not constantly required, but are still be processed en block. Compared to forwarding ports, the read queue of a polling port is limited. The driver will automatically keep the read queue filled. 
+While it does not always make sense (e.g. in the case of status ports), polling ports may still have a read queue. This is especially useful in the scenario of a random number generator, where values are endlessly generated without additional input and not constantly required, but are still be processed en block. Compared to forwarding ports, the read queue of a polling port is limited. The driver will automatically keep the read queue filled. Reading of a set of values will cause the host-side driver to request exactly this amount of values, re-filling the queue.
 
 In contradiction to the usual propagation of queue size parameters, all queue sizes of polling ports (including board-side queues) are set to 0. If other queue sizes are desired, they have to be explicitly declared in the port instance definition. This is done to prevent user errors due to incorrect board-side queue sizes and convenience, since the most common application of polling ports are status ports.
 
-Note, that forwarding and polling has no effect on the host-side API. Only the response times and memory behaviour of the driver may change.
+Note, that forwarding and polling have no effect on the host-side API. Only the response times and memory behaviour of the driver may change.
 
 \subsection{I/O Threads}
 \label{sec:arch:threads}
@@ -799,6 +798,8 @@ The communication between host-side and board-side driver usually happens in the
 
 The state of a bi-directional port is represented by the concatenation of the corresponding states for in-going and out-going ports. The overall state of the host-side, or board-side driver respectively, is constructed by concatenation of the individual states of all ports.
 
+As stated in \Cref{sec:arch:threads} not each port has its own thread. This is especially true for the board-side driver application, which consists of only a single thread. Instead, a scheduler decides which port may perform an transition. Usually, the schedulers for the individual threads simply iterate over all ports as long as there are values (with some upper bound). The only exception is the client-side reader thread, which consumes messages as soon as they arrive but in turn does not send messages on its own.
+
 \subsubsection{In-going Ports}
 On the host, the state of an in-going port is physically represented by two variables \texttt{q} and \texttt{s}. \texttt{q} denotes the task queue, while \texttt{s} stores the number of values in transit, i.e. those, that have been sent but not yet acknowledged. A more abstract view on the state of an in-going port is provided in \Cref{fig:cfg:hostIn}. Each state represents a combination of these variables. Changes to these variables are not explicitly denoted in the diagram, but should be intuitive considering above method description.
 
@@ -828,16 +829,14 @@ On the host, the state of an in-going port is physically represented by two vari
 \caption{Host-side control flow graph of an in-going port}
 \end{figure}
 
-If a write from the application occurs (typically triggered by the user performing a write operation), the write operation and its values are stored in the task queue. if the task queue is not empty, the writer will take a peek at the first \texttt{n} values and send them to the board-side driver, also setting the transit counter correctly. It then waits for an acknowledgement of these values. Acknowledged values get removed from the task queue. If all values got acknowledged, the writer continues with the next set. Otherwise, it waits for a board-side poll request. Once the task queue has been cleared, the application is notified, in case the last performed write operation was a blocking one.
+% This is probably unnecessarily complicated. A pure polling approach similar to polling ports without this ack mechanism would work better. Another message for component acknowledgement is required anyway.
 
-Several loops have been left out in order to simplify the graph. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored. Other application writes in any state will result in the values to be appended to \texttt{q}.\\
+If a write from the application occurs (triggered by the user performing a write operation), the write operation and its values are stored in the task queue. If the task queue is not empty, the writer thread will take a peek at the first \texttt{n} values and send them to the board-side driver, also setting the transit counter correctly. It then waits for an acknowledgement of these values. Acknowledged values get removed from the task queue. If all sent values got acknowledged in one go, the writer continues with the next set of values. If not all values got acknowledged, the board-side queue has been filled. In this case, the writer thread waits for a board-side data poll. Once the task queue has been cleared, the application is notified. If the last performed operation on this port was a blocking one, the application may now continue.
+
+Several loop transitions have been left out in order to simplify the graph. Messages \texttt{ack} or \texttt{poll} in other states than specified in the graph will simply be ignored. Application writes in any state other than the ones explicitly marked will result in the values to be appended to \texttt{q}. Reception of a \texttt{debug} message at any state results in immediate printing of the message to the configured logger.\\
 
 
-On the board, an in-going ports state The state of a port on the board is represented by the corresponding software queue \texttt{q} and the corresponding hardware queue \texttt{r}.
-
-Since only a single thread can run on the FPGA, a scheduler determines which port can make a step. The default scheduler switches to a different port, once the current port cannot perform any more steps or has already performed a certain number of steps (i.e. a round robin like scheduler). It is possible for the user to define a scheduler better matching his application, if so desired.
-
-An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for received data packages and stores received values. If it has received values and can write to the hardware queue at some point, it switches to consuming received messages. Messages are then shifted from the software queue to the hardware queue, until either the hardware queue is filled or the software queue is emptied. If the software queue was full before shifting the first message, a poll is sent in addition. After shifting all values possible, the port switches back to listening for more values. 
+The state of a port on the board is represented by the corresponding software queue \texttt{q} and hardware queue \texttt{r}.
 
 \begin{figure}[h]
 \centering
@@ -859,10 +858,13 @@ An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for
 \caption{Board-side control flow graph of an in-going port}
 \end{figure}
 
+An in-going port, as shown in \Cref{fig:cfg:boardIn}, sends acknowledgements for received data packages and stores received values. If values have been stored and the hardware queue is not already full, the scheduler might switch the port to consuming messages. In this state, values are shifted from the software queue to the hardware queue, until either the hardware queue is filled or the software queue is emptied. If the software queue was full before shifting the first message, a poll is sent in addition. After shifting all values possible, the port switches back to listening for more values. 
+Note, that these states are not actually represented within the ports themselves, but only by the current position of the scheduler.
+
 \subsubsection{Out-going Ports}
 The state of an out-going port on the host is represented by two queues \texttt{q} and \texttt{r}. \texttt{q} is the read task queue, which contains memory addresses, where values should be read to. \texttt{r} is the value queue, which stores values read from the medium but not requested from the application so far.
 
-For forwarding ports (see \Cref{fig:cfg:hostOut}), values are automatically pushed forward from the board and stored in th evalue queue. Similar, \texttt{read} requests from the application are stored in the task queue. While both are not empty, values are shifted from \texttt{r} into \texttt{q}. The application is notified, once all read requests have been served.
+Similar to in-going ports, \texttt{read} requests from the application are stored in the task queue. Values received from the board are stored in the value queue. While both are not empty, values are shifted from \texttt{r} into \texttt{q}. The application is notified, once all read requests have been served. If the port is forwarding (see \Cref{fig:cfg:hostOut}), values generated on the board are automatically forwarded to the host-side driver and the host-side queues are assumed to be unbounded. Consequently, no form of flow control is required.
 
 \begin{figure}[h]
 \centering
@@ -890,7 +892,7 @@ For forwarding ports (see \Cref{fig:cfg:hostOut}), values are automatically push
 \caption{Host-side control flow graph of a forwarding, out-going port}
 \end{figure}
 
-On the board, out-going ports are also represented by their software and hardware queues \texttt{q} and \texttt{r}. The board representation is comparably simple (\Cref{fig:cfg:boardOut}), since no incoming messages have to be processed. Instead, values are simply shifted to the software queue as long as possible, i.e., until either the hardware queue is emptied or the software queue is filled. All collected values are then transmitted to the host-side driver.
+On the board, out-going ports are represented by their software and hardware queues \texttt{q} and \texttt{r}, similar to in-going ports. The board representation is comparably simple (\Cref{fig:cfg:boardOut}), since no incoming messages have to be processed. Instead, values are simply shifted to the software queue as long as possible, i.e., until either the hardware queue is emptied or the software queue is filled. All collected values are then transmitted to the host-side driver.
 
 \begin{figure}[h]
 \centering
@@ -909,33 +911,36 @@ On the board, out-going ports are also represented by their software and hardwar
 \end{figure}
 
 \subsubsection{Polling Ports}
-Polling ports mark a more complex out-going port, that does not automatically forward, but explicitly request values. Consequently, a \texttt{poll} message is introduced.
+Polling ports mark a more complex out-going port, that does not automatically forward values. Instead, values are only forwarded once a \texttt{poll} message is received.
 
-The change for a host-side port is negligible. A \texttt{poll} is sent to the board-side driver, whenever a read request is dispatched from the application. This also happens once initially, in order to fill the value queue (if it has a size > 0).
+The change for a host-side port is negligible. A \texttt{poll} is sent to the board-side driver, whenever a read request is dispatched from the application. %This also happens once initially, in order to fill the value queue (if it has a size > 0).
 
-The board-side graph gets slightly more complex, since it now also has to process incoming messages. The state of the port gets augmented with a \textit{poll counter} \texttt{s}, storing the number of requested, yet unserviced values. Poll requests are simply added to the counter. If the poll counter is greater than zero, the port may start sending values. The port is only allowed to send as many messages as requested, but is also restricted by the software queue size \texttt{n}. Consequently, it can only send \texttt{max(s,n)} values per step.
+The board-side graph gets slightly more complex, since it now also has to process an incoming message. The state of the port gets augmented with a \textit{poll counter} \texttt{s}, storing the number of requested, yet unserviced values. The counter is initialized with the host-side queue size. Poll requests are simply added to the counter. If the poll counter is greater than zero, the port may start sending values. The sending state is comparable to the forwarding port. It shifts values until either the software queue is full or the 
 
+The port is only allowed to send as many messages as requested, but is also restricted by the software queue size \texttt{n}. Consequently, it can only send \texttt{max(s,n)} values per step.
+
+% still don't know if this is correct... need to check this against implementation
+% question is if values are shifted en block or individually shifted...
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}
 \coordinate(center);
 
+% states
 \node[state] (idle) at (0,0) {Idle};
+\node[state, below = 6em] (send) at (idle) {Send};
 
+% init arrow
 \node[above left = 2em and 4em] (anchor) at (idle){};
 \draw[extend, black] (anchor) to node[auto] {} (idle);
 
-\draw[arr, black, out=330, in=30, looseness=6] (idle) to node[midway, right=0.2em] {$\inferrule{poll(i)}{s~+=~i}$} (idle);
-
-\node[state, below = 6em] (send) at (idle) {Send};
+% state changes
 \draw[arr, black, bend right=20] (idle) to node[midway, left=0.2em] {$\inferrule{[s > 0]}{ }$} (send);
-\draw[arr, black, bend right=20] (send) to node[midway, right=0.2em] {$\inferrule{[s == 0]}{ }$} (idle);
+\draw[arr, black, bend right=20] (send) to node[midway, right=0.2em] {$\inferrule{[full(q) \vee empty(r) \vee s == 0]}{data(take(q,size(q)))}$} (idle);
 
-\draw[arr, black, out=330, in=30, looseness=6] (send) to node[midway, right=0.2em] {$\inferrule{poll(i)}{s~+=~i}$} (send);
-\draw[arr, black, out=210, in=150, looseness=6] (send) to node[midway, left=0.2em] {$\inferrule{[i > 0]}{data(take(q,max(i,n)))}$} (send);
-
-%\draw[arr, black, out=330, in=30, looseness=6] (listen) to node[midway, right=0.2em] {$\inferrule{[!empty(r) ~\wedge ~ !full(q)]}{store(q,take(r))}$} (listen);
-%\draw[arr, black, out=240, in=300, looseness=6] (listen) to node[near end, right=0.5em] {$\inferrule{[full(q) \vee empty(r)]}{data(take(q,n))}$} (listen);
+% loops 
+\draw[arr, black, out=330, in=30, looseness=6] (idle) to node[midway, right=0.2em] {$\inferrule{poll(i)}{s~+=~i}$} (idle);
+\draw[arr, black, out=330, in=30, looseness=6] (send) to node[midway, right=0.2em] {$\inferrule{[!empty(r) ~\wedge ~ !full(q) ~\wedge ~ s > 0]}{store(q,take(r)) ~~~~ s--}$} (send);
 \end{tikzpicture}
 \label{fig:cfg:boardOut}
 \caption{Board-side control flow graph of a polling, out-going port}
@@ -943,7 +948,7 @@ The board-side graph gets slightly more complex, since it now also has to proces
 
 \subsection{Message Encoding}
 \label{sec:protocol:encode}
-This section covers the translation of the above messages into messages on the communication medium. Messages can be split into header and payload. The header describes the payload to follow, the payload contains a number of 32-bit values that are sent to or form a component.
+This section covers the translation of the above messages into messages on the communication medium. Messages can be split into header and payload. The header describes the payload to follow, the payload contains a number of 32-bit values that are sent to or from a component.
 
 The first 8 bit of the header are reserved for the \textit{protocol version}, the message was encoded with. The only version currently available is version 1.
 
@@ -963,7 +968,7 @@ This version reserves the next 4 bit of the header for the \textit{type} field, 
 \end{figure}
 
 Values in this protocol version are expected to be properly aligned with 32-bit, meaning that, as described in \Cref{sec:arch:bitwidth}, values are padded host-side to a multiple of 32-bit and then split into 32-bit blocks.
-Note, that due to the size being only a 16-bit field, only $2^{16}-1$ such values can be written or read with a single message. The API has no such restriction and host-side queues are not bound by any size constraint either. This admittedly unlikely scenario has to be treated in the I/O thread, by splitting tasks accordingly.
+Note, that due to the size being only a 16-bit field, only $2^{16}-1$ such values can be written or read with a single message. The API has no such restriction and host-side queues are not bound by any size constraint either. This scenario has to be treated in the I/O thread, by splitting tasks accordingly.
 
 The control flow graphs in \Cref{sec:protocol:cfg} specify what types of messages are required. A short overview of the messages together with their type encoding and their fields is provided in \Cref{tab:proto:messages}. The following paragraphs provide a more detailed description of the message and their meaning.
 
@@ -975,8 +980,8 @@ Data & 1001 & Port ID & Payload Size & Yes\\
 GPIO & 1110 & GPIO ID & GPIO State & No\\
 Ack & 1111 & Port ID & Ack Count & No\\
 Poll & 1010 & Port ID & Poll Count & No\\
-\textcolor{red}{Reset} & 0000 & Unused & Unused & No\\
-\textcolor{red}{Debug} & 0111 & Severity & Payload Size & Yes
+\textcolor{red}{Reset} & 0000 & Unused & Unused & No\\ %TODO Not implemented yet
+Debug & 0111 & Severity & Payload Size & Yes
  \end{tabular}
 \caption{Overview of messages in protocol version 1}
 \label{tab:proto:messages}
@@ -1005,7 +1010,7 @@ Furthermore, GPIO components do only store their current state and perform no ca
 
 \paragraph{Reset Message}
 This message is not specified in the protocol above. A reset message sent by the host-side driver resets the state of the board-side driver, clearing all queues and setting the reset flag for all components. The board-side driver acknowledges a successful reset by answering with a reset message. 
-The target and size fields are unused by the reset message.
+The target and size fields are unused by the reset message. \textcolor{red}{Reset messages are not implemented so far. The board requires a manual reset, sometimes even a full reboot.}
 
 \paragraph{Debug Message}
 This message also is not specified in the protocol. It marks a notification of some sort, sent by the board. This can be debug output of the driver running on the board, a warning message about skipped messages or an unhandled error, that occurred on the board. For these messages, the payload contains a string.
@@ -1023,7 +1028,9 @@ Error &  1101 \\
 \label{tab:protoDebug}
 \end{table}
 
-While it is possible to provide debug output over the JTag cable, the FPGA is programmed with, this quickly slows down computation with larger debug outputs. Using the Ethernet connection also for debug output vastly accelerates such computations.
+While it is possible to provide debug output over the JTag cable, the board is programmed with, this quickly slows down computation with larger debug outputs. Using the Ethernet connection also for debug output vastly accelerates such computations.
+
+\textcolor{red}{Debug messages are generally disabled in the driver due to board-side memory issues when sending too many debug messages. Instead, debug messages are sent over UART despite the occurring slowdown.}
 
 \subsection{Sequence charts}
 \label{sec:protocol:sequence}
@@ -1424,23 +1431,9 @@ The communication medium is part of the I/O handler of the driver and wraps lowe
 Currently, three communication mediums are envisioned:
 \begin{itemize} \itemsep1pt \parskip0pt \parsep0pt
 \item \textbf{Ethernet Lite}, which is already implemented
-\item \textbf{USB/UART}, which is considered as second interface and
-\item \textbf{PCI Express}, which is not implemented in the initial driver generator.
+\item \textbf{USB/UART}, which is considered as a second interface, but is not implemented yet and
+\item \textbf{PCI Express}, which will not implemented in the initial driver generator at all.
 \end{itemize}
-
-\paragraph{Ethernet Lite}
-Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}.
-
-It is possible to implement more efficient Ethernet communication using dedicated VHDL components instead of running the lwip stack on the general purpose CPU. Such a component could easily be integrated in form of a new Communication Interface. An example for a dedicated VHDL communication component together with a client API is described in \cite{alachiotis10, alachiotis12}.
-
-\textcolor{red}{Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses.}
-
-\paragraph{USB/UART}
-While communication over USB/UART is rather slow, it provides a more simple method of communication than using Ethernet. 
-
-\paragraph{PCI Express}
-\textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication.}
-
 
 \subsection{Virtex 6 ML 605 Board-Side Driver}
 The following sections will highlight selected, important aspects of the implementation of the Virtex-6 ML605 board-side driver. For a more detailed description of individual classes and methods, please refer to to the API specification generated by doxygen and code level documentation.
@@ -1455,6 +1448,23 @@ A second folder \textit{components} contains files concerning hardware component
 The third group of files contains utility functions and structures, used by both other groups. These files are located directly in the root folder.  This includes software queues and the setup required for these.
 
 The main method for the board-side driver thread is located in the \texttt{main.c}. It calls initialisation procedures of the medium and all components and starts the scheduling loop.
+
+\subsubsection{Communication Medium}
+
+
+\paragraph{Ethernet Lite}
+Communication over Ethernet is based on the lightweight IP stack, originally developed by Adam Dunkels\footnote{The lwip stack is documented with a wiki available at \url{http://lwip.wikia.com/wiki/LwIP_Wiki}}. It is completely executed on the CPU of the board.
+
+It is possible to implement more efficient Ethernet communication using dedicated VHDL components instead of running the lwip stack on the general purpose CPU. Such a component could easily be integrated in form of a new Communication Interface. An example for a dedicated VHDL communication component together with a client API is described in \cite{alachiotis10, alachiotis12}. This introduces additional communication between the programmable logic and the processor but might still be faster than the current software solution (especially on boards using a comparably slow soft processor). It might also increase network throughput in general, since there exist components capable of Gigabit Ethernet connections, while our current implementation only supports 100MBit.
+
+%Describe implementation of general interface methods in Ethernet as well as challenges and problems this interface poses?
+%Talk about memory freeing mechanisms at our current implementation?
+
+\paragraph{USB/UART}
+Communication over USB/UART is rather slow, but it provides a simple method of communication most boards are capable of. \textcolor{red}{USB/UART support has been deferred to a later version since support of the zed board has been given higher priority.}
+
+\paragraph{PCI Express}
+Communication using a PCI Express interface offers the highest bandwidth of the proposed media. However, it is only available on few boards. While loopy can easily be extended to support additional interfaces and we encourage developers to do so, we do not support PCIe out of the box. \textcolor{red}{According to \cite{alachiotis10}, there exists a Xilinx wrapper for PCIE communication. This component can probably be used when implementing PCIe communication in a similar manner than with dedicated Ethernet components as depicted above.}
 
 \subsubsection{Scheduler}
 The default scheduling loop performs the following operations:
@@ -1516,27 +1526,31 @@ The loop also shifts messages from in-going software queues to in-going hardware
 
 Finally, once the out-going queue is filled or no more values are available, it warps values into a message and write this message to the medium.
 
-The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly.
+The loop can be overridden by the user, but is required to perform all these operations at some point for the driver to work correctly. Overriding the default scheduler can increase the performance of the generated driver for specific applications.
 
 \subsubsection{Bitwidth Translation}
 As explained in \Cref{sec:arch} and \Cref{sec:protocol}, transmitted values are padded to a multiple of 32-bit for transmission and have to be re-translated at the board-side driver.
-Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the ARM) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values.
+Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the general purpose AXI ports of the Zynq platform) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values.
 
 \subsubsection{Port Count}
 The microblaze on the Virtex 6 only allows 16 AXI master interfaces and 16 AXI slave interfaces. As a result, only 16 in- and out-going ports can be specified when generating a Virtex 6 board driver. Circumventing this restriction is possible by implementation of a multiplexer which delegates values to one of several components, but this is left to the user.
 
+Communication between programming logic and processing system on the Zynq platform is performed through up to two general purpose AXI slave and master ports and four high performance slave ports. The board-side driver on such a platform uses a CDMA connected to a single AXI master and one high performance slave to feed connected components. \textcolor{red}{We are considering to use this architecture on the Virtex board as well to remove the current restriction of ports.}
 
 \chapter{Generator}
-This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator, \textbf{not} for mere users (you are welcome to read it anyway, if you're interested, but it will not provide you with additional usage information)
+This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator, \textbf{not} for mere users (you are welcome to read it anyway, if you're interested, but it will not provide you with additional usage information).
 
 \section{Used Libraries}
 This section gives a short overview over the used libraries and explains what for and why they are used. These libraries are included in the repository and build jar file and require no further user interaction. Still, as the generator code depends on them, they are introduced here for future developers.
 
 \subsection{JFlex \& CUP}
-Flex is a scanner generator, CUP a parser generator. Both together with a few wrapping Java classes make up the frontend of the generator and are used to parse \texttt{.bdl} files into abstract syntax trees.
+Flex is a scanner generator, CUP a parser generator. Both together with a few wrapping Java classes make up the frontend of the generator and are used to parse \texttt{.bdl} files into abstract syntax trees. % A word or two about the license?
 
 \subsection{Katja}
-The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates models for frontend and backend of the Loopy generator\footnote{Since these models will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as several models used by the generation backends. The models are described in detail in \Cref{sec:gen:models}.
+The driver generator uses the Katja tool, developed by the Software Technology Group of the University of Kaiserslautern. This tool generates models for frontend and backend of the Loopy generator\footnote{Since these models will be described using their Katja specifications, it is strongly recommended to read through the Katja specification provided in form of three technical reports at \url{https://softech.informatik.uni-kl.de/Homepage/Katja}}. To be more specific, it provides the AST build up by the CUP parser as well as several models used by the generation backends. The models are described in detail in \Cref{sec:gen:models}. Katja is available under GPLv3.
+
+\subsection{Apache Commons}
+The Apache Commons libraries provide multiple useful features for all kinds of applications, that are not already integrated in the Java API, for example easy-to-use file copy operations. Loopy uses two packages of this project. The IO library is used for file operations and provides methods for working with file names. The Lang library provides extended functionality for Javas base classes, especially Strings. Apache uses its own license\footnote{\url{http://www.apache.org/licenses/LICENSE-2.0}} for Apache libraries. While this license is not fully compatible with the GPLv3, Apache licensed products can still be used within GPL projects\footnote{see \url{http://www.apache.org/licenses/GPL-compatibility.html} for details about GPL/Apache compatibility}.
 
 \section{Generation Process}
 \label{sec:gen:process}
@@ -1588,7 +1602,6 @@ The board model is the model underlying the board description language. It is ge
 
 \begin{lstlisting}[language=java, breaklines=true]
 BDLFile (Imports imports, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
-
 Position (String filename, Integer line)
 \end{lstlisting}
 
@@ -1759,7 +1772,7 @@ Since plain \texttt{C} doesn't have any concept of classes, using a model with c
 For the \texttt{C++} unparser, like with the header unparser, all components and more combinations are allowed. Still, some combinations of elements are forbidden (e.g. combination of different visibility modifiers in for the same procedure). Includes are handled identical to the \texttt{C} Unparser.
 
 \subsection{MHS Model}
-The MHS model encapsulates several project files required by the Xilinx ISE workflow, namely .mpd files describing ip cores, the .mhs file describing the overall board design and the .mss file describing the contents of a board support package in Xilinx SDK.
+The MHS model encapsulates several project files required by Xilinx workflows, namely .mpd files describing ip cores, the .mhs file describing the overall board design in XPS projects and the .mss file describing the contents of a board support package in Xilinx SDK.
 The model is comparably simple and, similar to the C model, does not guarantee correctness of files created using the model. However, the model is sufficient for the purpose of this driver generator.
 
 \begin{lstlisting}
@@ -1823,7 +1836,7 @@ public class Java extends AbstractHostBackend {
 }
 \end{lstlisting}
 
-The above code fragment describes a possible Java client backend. For actual implementation of model translation and file generation, refer to the code of the provided backends.
+The above code fragment describes a possible Java client backend. For actual model translation and file generation the \texttt{generate} method has to be implemented. Refer to the code of the provided \texttt{C/C++} backend to see how this can be done.
 
 After defining the backend, it has to be added to the list of backends known to the generator. This is done by adding an instance of the backend to the client backend enum (\texttt{de.hopp.generator.frontend.Host}).
 
@@ -1837,13 +1850,11 @@ public enum Host {
 }
 \end{lstlisting}
 
-The above code adds the defined Java backend to the enum.
-
 \subsection{Adding Workflows and Boards}
 
 Introduction of a new board backend is different from introduction of host or workflow backends. While there exists a generic interface for board backends, this should not directly be implemented by board backends. Rather, the a workflow should provide a board interface specifically designed to provide information required by the workflow. A concrete board backend can then implement interface of all workflows that are supported. These board interfaces are also used to evaluate compatibility of the selected board and workflow. Integration in a board enum is equivalent to host backends.
 
-Addition of workflow backends is nearly identical to host backends. Naturally, the enum an interface to subtype differ. Furthermore, as described above, a specialised board interface should be introduced for each new workflow, that provides all information required for the workflow. 
+Addition of workflow backends is nearly identical to host backends. Naturally, the enum an interface to subtype differ. Furthermore, as described above, a specialised board interface should be introduced for each new workflow, that provides all board-specific information required for the workflow. 
 
 \begin{figure}
 \centering
@@ -1868,10 +1879,10 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 %\node[ann, above left = 2em and -2.3em] (compText) at (port1) {Component};
 
 \draw[extend, black] (iseboard) to node[auto] {} (board);
-\draw[implement, black] (iseboard14_1) to node[auto] {} (iseboard);
+\draw[extend, black] (iseboard14_1) to node[auto] {} (iseboard);
 \draw[implement, black] (virtex6) to node[auto] {} (iseboard14_1);
 
-\draw[extend, black] (ise) to node[auto] {} (workflow);
+\draw[implement, black] (ise) to node[auto] {} (workflow);
 \draw[extend, black] (ise14_1) to node[auto] {} (ise);
 
 \draw[extend, black] (isegpio) to node[auto] {} (gpio);
@@ -1891,9 +1902,11 @@ Addition of workflow backends is nearly identical to host backends. Naturally, t
 \label{fig:gen:arch}
 \end{figure}
 
-\Cref{fig:gen:arch} shows the integration of the Virtex6 board and the ISE 14.1 workflow in this structure. The introduction of a new workflow like the ISE 14 requires introduction of a new corresponding board interface, providing all information required by the workflow. As an additional layer of abstraction, the general ISE backend and board interface are provided, but no direct instance of these exist. The Virtex6 board backend implements the provided ISE 14.1 board interface indicating support of this workflow. A similar pattern is applied to GPIO components. An ise gpio component interface is provided by the workflow, which is in turn implemented by the Virtex6 components. Since so far no differences in the  implementation of GPIO components for the supported ISE versions are required, a more tailored GPIO interface for each minor ISE version is not necessary. Instead, a single interface for all ISE versions is provided. If a later extension of Loopy for more versions makes such an interface necessary, a new interface can easily be introduced.
+\Cref{fig:gen:arch} shows the integration of the Virtex6 board and the ISE 14.1 workflow in this structure. The introduction of a new workflow like the ISE 14 requires a corresponding board interface, providing all information required by the workflow. As an additional layer of abstraction, the general ISE backend and board interface are provided, but no direct instance of these exist. The Virtex6 board backend implements the provided ISE 14.1 board interface indicating support of this workflow. A similar pattern is applied to GPIO components. An ise gpio component interface is provided by the workflow, which is in turn implemented by the Virtex6 components. Since there are no differences in the  implementation of GPIO components for the currently supported ISE versions, a more tailored GPIO interface for each minor ISE version is not necessary. Instead, a single interface for all ISE versions is provided.
 
-All provided interfaces and enums and are summed up in \Cref{tab:gen:hook}.
+The currently supported ISE versions allow to move functionality common to all supported versions to more abstract classes. If later versions of Loopy support more diverse ISE versions, introduction of additional hierarchy levels and renaming of existing classes might be required. The current, abstract ISE row in the class diagram only models ISE major version 14. If other major versions are more different and not compatible with these steps, an additional hierarchy level has to be introduced.
+
+All current interfaces and enums and are summed up in \Cref{tab:gen:hook}.
 
 \begin{table}[h]
 \centering

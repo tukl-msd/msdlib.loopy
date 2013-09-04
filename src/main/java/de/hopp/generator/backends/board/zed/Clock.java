@@ -15,7 +15,7 @@ public class Clock implements de.hopp.generator.backends.workflow.ise.xps.Clock 
 
     @Override
     public String getClockPort(int frequency) {
-        return getClockPort(frequency, false, true);
+        return getClockPort(frequency, true, false);
     }
 
     @Override
