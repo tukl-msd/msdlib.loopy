@@ -300,7 +300,7 @@ hwqueue 32
 
 The debug flag results in additional console output of the generated driver. Note, that this output is sent over UART and therefore significantly slows down the driver.
 
-\textbf{Important note:} Debugging over UART \textbf{vastly} slows down the board side driver. The performance impact is so big, that it can even lead to ICMP timeouts and the complete Ethernet communication breaking down. \textcolor{red}{Debugging over Ethernet is preferred but not implemented so far...}
+\textbf{Important note:} Debugging over UART \textbf{vastly} slows down the board side driver. The performance impact is so big, that it can even lead to ICMP timeouts and the complete Ethernet communication breaking down.
 
 If not specified otherwise, debugging is disabled and the queue sizes are set to default (1024 for the software queue, 64 for the hardware queue).
 
@@ -1530,12 +1530,21 @@ The loop can be overridden by the user, but is required to perform all these ope
 
 \subsubsection{Bitwidth Translation}
 As explained in \Cref{sec:arch} and \Cref{sec:protocol}, transmitted values are padded to a multiple of 32-bit for transmission and have to be re-translated at the board-side driver.
-Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the general purpose AXI ports of the Zynq platform) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values.
+Since AXI stream ports of the microblaze processor on the Virtex 6 (as well as the general purpose AXI ports of the Zynq platform) are fixed at 32-bit, this translation has to occur \textbf{after} the software part of the board-side driver. Consequently, a bit-translator component is put in-between the hardware queues on the board and the interface to the Microblaze. This translator is omitted, if the values expected by the attached component are indeed 32-bit values.
 
 \subsubsection{Port Count}
 The microblaze on the Virtex 6 only allows 16 AXI master interfaces and 16 AXI slave interfaces. As a result, only 16 in- and out-going ports can be specified when generating a Virtex 6 board driver. Circumventing this restriction is possible by implementation of a multiplexer which delegates values to one of several components, but this is left to the user.
 
-Communication between programming logic and processing system on the Zynq platform is performed through up to two general purpose AXI slave and master ports and four high performance slave ports. The board-side driver on such a platform uses a CDMA connected to a single AXI master and one high performance slave to feed connected components. \textcolor{red}{We are considering to use this architecture on the Virtex board as well to remove the current restriction of ports.}
+\subsection{ZedBoard}
+The second supported board is the Avnet Zedboard. In contrast to the Virtex 6, this board has its own processor, a dual core ARM, and does not depend on a Microblaze soft-processor to run the software. Most peripheral devices like the Ethernet adapter are connected directly in the processing system outside the programmable logic.
+
+While removing these components from the design certainly frees some FPGA resources, the ARM processor does not have the same amount of connections to the programmable logic as the Microblaze. Communication between programming logic and processing system is generally performed through two AXI slave and AXI master ports. In addition, there are four high performance slave ports for fast, memory-based transactions.
+
+The board-side driver of the ZedBoard uses a CDMA connected to a single general purpose AXI master and a high performance AXI slave. This CDMA component delegates data to AXI to AXI stream converters when a write occurs at the processor. These components in turn restrict the FPGA space on the board.
+
+Despite consuming memory, it may be considered to target a similar implementation on the Virtex 6. An arbitrary amount of connected slaves to the CDMA increases flexibility in terms of the port count, component acknowledgements for synchronised writes can be easily implemented without losing ports for user components, and the CDMA keyhole feature could improve write performance for larger blocks of values.
+
+\textcolor{red}{There are still several issues in the ZedBoard implementation. GPIO components break the driver and the architecture using a CDMA is not generated so far. Ethernet communication is working and the complete board-side driver code is can be executed without attaching the programmable logic.}
 
 \chapter{Generator}
 This chapter is used to explain the code generator itself. This information is intended for future developers of the driver generator, \textbf{not} for mere users (you are welcome to read it anyway, if you're interested, but it will not provide you with additional usage information).

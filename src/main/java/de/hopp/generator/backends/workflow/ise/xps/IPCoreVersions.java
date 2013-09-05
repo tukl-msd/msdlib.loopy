@@ -19,8 +19,12 @@ public class IPCoreVersions {
 
     public String axi_intc;
     public String axi_interconnect;
+
+    public String axi_cdma;
+    public String axi_fifo;
     public String axi_timer;
     public String axi_v6_ddrx;
+
     public String bram_block;
     public String clock_generator;
     public String lmb_bram_if_cntlr;
@@ -89,6 +93,8 @@ public class IPCoreVersions {
         versions.ps7               = "4.02.a";
 
         versions.axi_intc          = "1.03.a";
+        versions.axi_cdma          = "3.04.a";
+        versions.axi_fifo          = "3.00.a";
         versions.axi_v6_ddrx       = "1.06.a";
         versions.lmb_bram_if_cntlr = "3.10.c";
         versions.mdm               = "2.10.a";

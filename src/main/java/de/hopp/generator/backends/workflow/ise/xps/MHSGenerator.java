@@ -21,6 +21,7 @@ import de.hopp.generator.model.mhs.AndExp;
 import de.hopp.generator.model.mhs.Attribute;
 import de.hopp.generator.model.mhs.Block;
 import de.hopp.generator.model.mhs.MHSFile;
+import de.hopp.generator.utils.BoardUtils;
 
 /**
  * Abstract XPS generation backend, providing some utility methods.
@@ -153,10 +154,10 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
         // append clock and reset ports
         CLK clk = getClockPort(getCore(term));
         curBlock = add(curBlock, Attribute(PORT(), Assignment(
-                clk.name(), Ident("clk_" + clk.frequency() + "_0000MHzMMCM0"))));
-        RST rst = getResetPort(getCore(term));
+                clk.name(), Ident(board.getClock().getClockPort(clk.frequency())))));
+        RST rst = BoardUtils.getResetPort(getCore(term));
         curBlock = add(curBlock, Attribute(PORT(), Assignment(
-                rst.name(), Ident("proc_sys_reset_0_Peripheral_" + (rst.polarity() ? "reset": "aresetn")))));
+                rst.name(), Ident(rst.polarity() ? getResetPort(): getAResetNPort()))));
 
         // add the block to the file
         mhs = add(mhs, curBlock);
@@ -252,7 +253,7 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
      * @throws UsageError If the port is bi-directional, since those
      *                          ports are not supported using AXI4 stream interfaces.
      */
-    private static boolean direction(Direction direction) throws UsageError {
+    protected static boolean direction(Direction direction) throws UsageError {
         return direction.Switch(new Direction.Switch<Boolean, UsageError>() {
             public Boolean CaseIN  (  IN term) { return true;  }
             public Boolean CaseOUT ( OUT term) { return false; }
@@ -320,8 +321,8 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
             Attribute(BUS_IF(), Assignment("in", Ident(d ? currentAxis : queueAxis))),
             Attribute(BUS_IF(), Assignment("out", Ident(d ? queueAxis : currentAxis))),
-            Attribute(PORT(), Assignment("clk", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("rst", Ident("proc_sys_reset_0_Peripheral_reset")))
+            Attribute(PORT(), Assignment("clk", Ident(board.getClock().getClockPort(100)))),
+            Attribute(PORT(), Assignment("rst", Ident(getResetPort())))
             ));
 
         // return the axis identifier of the queues port, that should be attached to the components port
@@ -365,8 +366,8 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             Attribute(PARAMETER(), Assignment("WIDTH_OUT", Number(d ? width : 32))),
             Attribute(BUS_IF(), Assignment("S_AXIS", Ident(d ? currentAxis : muxAxis))),
             Attribute(BUS_IF(), Assignment("M_AXIS", Ident(d ? muxAxis : currentAxis))),
-            Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_reset")))
+            Attribute(PORT(), Assignment("CLK", Ident(board.getClock().getClockPort(100)))),
+            Attribute(PORT(), Assignment("RST", Ident(getResetPort())))
             ));
 
         return muxAxis;
@@ -397,4 +398,24 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
      *   from the board design.
      */
     protected abstract MHSFile getDefault();
+
+    /**
+     * Returns the reset port of the .mhs visitor for the concrete board.
+     * This is the peripheral reset port to be used by all programmable
+     * logic components of the user. It does not necessarily reset
+     * the complete board or its cpu.
+     *
+     * @return The reset port of the .mhs visitor for the concrete board.
+     */
+    protected abstract String getResetPort();
+
+    /**
+     * Returns the aresetn port of the .mhs visitor for the concrete board.
+     * This is the peripheral reset port to be used by all programmable
+     * logic components of the user. It does not necessarily reset
+     * the complete board or its cpu.
+     *
+     * @return The aresetn port of the mhs visitor for the concrete board.
+     */
+    protected abstract String getAResetNPort();
 }

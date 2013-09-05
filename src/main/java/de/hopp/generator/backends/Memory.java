@@ -54,11 +54,21 @@ public class Memory {
      *      in the remaining free memory space
      */
     public Range allocateMemory(int size) throws IllegalArgumentException {
+        // set base address
         int baseAddress = curAddress;
+
+        // set high address
         curAddress += size;
-        if(curAddress > highAddress) throw new IllegalArgumentException("Could not allocate enough memory");
         int highAddress = curAddress;
+
+        // check if we are still inside the provided memory space
+        if(curAddress > highAddress)
+            throw new IllegalArgumentException("Could not allocate enough memory");
+
+        // step and align current address for next block
         curAddress++;
+        if(curAddress % 0x10000 > 0)
+            curAddress += (0x10000 - (curAddress % 0x10000));
 
         return new Range(baseAddress, highAddress);
     }

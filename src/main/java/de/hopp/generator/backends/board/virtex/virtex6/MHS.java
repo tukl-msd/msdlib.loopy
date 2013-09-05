@@ -226,8 +226,8 @@ public class MHS extends MHSGenerator {
                 Attribute(PORT(), Assignment("Interconnect_aresetn", Ident("proc_sys_reset_0_Interconnect_aresetn"))),
                 Attribute(PORT(), Assignment("Ext_Reset_In", Ident("RESET"))),
                 Attribute(PORT(), Assignment("BUS_STRUCT_RESET", Ident("proc_sys_reset_0_BUS_STRUCT_RESET"))),
-                Attribute(PORT(), Assignment("Peripheral_reset", Ident("proc_sys_reset_0_Peripheral_reset"))),
-                Attribute(PORT(), Assignment("Peripheral_aresetn", Ident("proc_sys_reset_0_Peripheral_aresetn")))
+                Attribute(PORT(), Assignment("Peripheral_reset", Ident(getResetPort()))),
+                Attribute(PORT(), Assignment("Peripheral_aresetn", Ident(getAResetNPort())))
             ), Block("lmb_v10",
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("microblaze_0_ilmb"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.lmb_v10))),
@@ -430,5 +430,17 @@ public class MHS extends MHSGenerator {
         mhs = add(mhs, board.getClock().getMHS(versions));
         mhs = add(mhs, getINTC());
         return mhs;
+    }
+
+
+    @Override
+    protected String getResetPort() {
+        return "proc_sys_reset_0_Peripheral_reset";
+    }
+
+
+    @Override
+    protected String getAResetNPort() {
+        return "proc_sys_reset_0_Peripheral_aresetn";
     }
 }

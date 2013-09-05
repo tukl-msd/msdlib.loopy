@@ -90,16 +90,6 @@ public class DriverVersions {
 
     private static DriverVersions create14_4() {
         DriverVersions versions = create14_3();
-        return versions;
-    }
-
-    private static DriverVersions create14_5() {
-        DriverVersions versions = create14_4();
-        return versions;
-    }
-
-    private static DriverVersions create14_6() {
-        DriverVersions versions = create14_5();
 
         // FIXME It might be a good idea to move board-specific stuff to the board-backend
         // This version list should only contain independent versions
@@ -130,6 +120,16 @@ public class DriverVersions {
         versions.mss_uartps        = "1.03.a";
         versions.mss_usbps         = "1.04.a";
 
+        return versions;
+    }
+
+    private static DriverVersions create14_5() {
+        DriverVersions versions = create14_4();
+        return versions;
+    }
+
+    private static DriverVersions create14_6() {
+        DriverVersions versions = create14_5();
         return versions;
     }
 }
