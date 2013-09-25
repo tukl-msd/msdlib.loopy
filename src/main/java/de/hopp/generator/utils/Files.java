@@ -102,13 +102,13 @@ public class Files {
             return deploy(in, destFile, IO);
         } else {
             // if the file pointing to the resource doesn't exist, it probably is inside a jar file
-            IO.debug("    resource seems to point inside a jar file");
-            IO.debug("    iterating over jar file contents");
-
+            IO.debug("    resource not found as file - checking if it points inside a jar file");
             boolean newFiles = false;
+
 
             // get the jar file, where the resource is contained
             JarFile jarFile = ((JarURLConnection)srcURL.openConnection()).getJarFile();
+            IO.debug("    iterating over jar file contents");
 
             try {
                 // get all contained entries

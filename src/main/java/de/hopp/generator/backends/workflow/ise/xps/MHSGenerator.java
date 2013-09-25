@@ -6,7 +6,6 @@ import static de.hopp.generator.utils.BoardUtils.getClockPort;
 import static de.hopp.generator.utils.BoardUtils.getCore;
 import static de.hopp.generator.utils.BoardUtils.getDirection;
 import static de.hopp.generator.utils.BoardUtils.getHWQueueSize;
-import static de.hopp.generator.utils.BoardUtils.getResetPort;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 import katja.common.NE;
 import de.hopp.generator.ErrorCollection;

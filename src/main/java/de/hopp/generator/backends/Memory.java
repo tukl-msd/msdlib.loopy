@@ -57,13 +57,15 @@ public class Memory {
         // set base address
         int baseAddress = curAddress;
 
-        // set high address
+        // set add allocated size
         curAddress += size;
-        int highAddress = curAddress;
 
         // check if we are still inside the provided memory space
         if(curAddress > highAddress)
             throw new IllegalArgumentException("Could not allocate enough memory");
+
+        // set high address
+        int highAddress = curAddress;
 
         // step and align current address for next block
         curAddress++;

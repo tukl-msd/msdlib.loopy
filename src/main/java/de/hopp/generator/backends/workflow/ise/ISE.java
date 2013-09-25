@@ -336,7 +336,7 @@ public abstract class ISE implements WorkflowBackend {
             int rslt = p.waitFor();
 
             // if something went wrong, print a warning
-            if(p.waitFor() != 0) errors.addWarning(
+            if(rslt != 0) errors.addWarning(
                 new Warning("failed to correctly terminate XPS process (returned " + rslt + ")")
             );
 
@@ -374,7 +374,7 @@ public abstract class ISE implements WorkflowBackend {
           int rslt = p.waitFor();
 
           // if something went wrong, print a warning
-          if(p.waitFor() != 0) errors.addError(new SDKGenerationFailed("XSDK process terminated with result " + rslt));
+          if(rslt != 0) errors.addError(new SDKGenerationFailed("XSDK process terminated with result " + rslt));
 
         } catch(Exception e) {
             errors.addError(new SDKGenerationFailed("Failed to generate .elf file: " + e.getMessage()));
@@ -418,9 +418,14 @@ public abstract class ISE implements WorkflowBackend {
                 "-pe", "microblaze_0", "../sdk/app/Debug/app.elf",
                 "-o", config.boardDir().getCanonicalPath() + "/download.bit"
             ).directory(edkDir(config));
-//            runProcess(pb, config, errors);
-//        } catch (GenerationFailed e) {
-//            errors.addError(e);
+            Process p = startProcess(pb);
+
+            int rslt = p.waitFor();
+
+            if(rslt != 0) errors.addWarning(
+                new Warning("failed to correctly terminate XPS process (returned " + rslt + ")")
+            );
+
         } catch (Exception e) {
             errors.addError(new GenerationFailed("Could not initialise bit file with elf file: " + e.getMessage()));
         }

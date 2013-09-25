@@ -302,14 +302,14 @@ public class MHS extends MHSGenerator {
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi4lite_0"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
                 Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(0))),
-                Attribute(PORT(), Assignment("interconnect_aclk", Ident(board.getClock().getClockPort(100)))),
-                Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident(getResetPort())))
+                Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident(board.getClock().getClockPort(100)))),
+                Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("M_AXI_GP0_ARESETN")))
             )), Block("axi_interconnect", Attributes(
                 Attribute(PARAMETER(), Assignment("INSTANCE", Ident("axi_interconnect_0"))),
                 Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.axi_interconnect))),
                 Attribute(PARAMETER(), Assignment("C_INTERCONNECT_CONNECTIVITY_MODE", Number(1))),
-                Attribute(PORT(), Assignment("interconnect_aclk", Ident(board.getClock().getClockPort(100)))),
-                Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident(getResetPort())))
+                Attribute(PORT(), Assignment("INTERCONNECT_ACLK", Ident(board.getClock().getClockPort(100)))),
+                Attribute(PORT(), Assignment("INTERCONNECT_ARESETN", Ident("S_AXI_HP0_ARESETN")))
             ))
         );
     }
