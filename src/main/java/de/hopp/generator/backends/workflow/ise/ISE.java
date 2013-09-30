@@ -186,7 +186,6 @@ public abstract class ISE implements WorkflowBackend {
             newFiles = deploy(new File(iseBoard.xpsSources(), "generic").getPath(), edkDir(config), IO) || newFiles;
             IO.verbose();
         } catch(IOException e) {
-            e.printStackTrace(); // TODO only if debug or something like that...
             errors.addError(new GenerationFailed("Failed to deploy generic edk sources due to:\n" + e.getMessage()));
         }
 
@@ -252,8 +251,10 @@ public abstract class ISE implements WorkflowBackend {
             IO.verbose();
             // deploy board-independent SDK files and directories
             IO.verbose("  deploying board-independent sdk files");
-            for(File source : sdk.getFiles().keySet())
-                deploy(source.getPath(), sdk.getFiles().get(source), IO);
+            for(Entry<File, File> entry : sdk.getFiles().entrySet())
+                deploy(entry.getKey().getPath(), entry.getValue(), IO);
+//            for(File source : sdk.getFiles().keySet())
+//                deploy(source.getPath(), sdk.getFiles().get(source), IO);
             IO.verbose();
         } catch(IOException e) {
             errors.addError(new GenerationFailed("Failed to deploy generic sdk sources due to:\n"
