@@ -1,0 +1,40 @@
+log host info "host.log"
+log board info "board.log"
+
+medium ethernet {
+  
+  // USE YOUR BOARDS MAC AND DESIRED IP ADDRESS / PORT HERE ;)
+  mac "00:0a:35:02:31:95"
+  dhcp
+  port 8844
+}
+
+// disable hardware queues
+hwqueue 0
+
+core axififo 1.00.a {
+
+  // list of vhdl and netlist sources
+  source "vhdl_sources/AxiFifo.vhd"  
+  source "vhdl_sources/Fifo.ngc"  
+
+  // declaration of the components interface
+  port in s_axis
+  port out m_axis
+
+  // declaration of the components clock and reset ports
+  clk aclk 100
+  rst aresetn 0
+}
+
+instance axififo 1.00.a axififo_a {
+  cpu s_axis {
+    // since this port is only used to configure the component once, a large queues are not required
+    swqueue 8
+  }
+  cpu m_axis {
+    // several values should be cached, but continuous forwarding seems not practicable (for instance) for a random number generator (except perhaps if values are guaranteed to be consumed faster than they are generated)
+    poll 64
+  }
+}
+
