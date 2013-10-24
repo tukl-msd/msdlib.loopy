@@ -53,7 +53,7 @@ void protocol_v1::decode(int first) {
 
 	// set id as specified in protocol version 1
 	first = fmod(first, pow(2, 20));
-	unsigned char id = floor(first / pow(2, 16));
+	unsigned int id = floor(first / pow(2, 16));
 
 	// the last two bytes mark the size of this frame
 	unsigned int size = fmod(first, pow(2, 16));

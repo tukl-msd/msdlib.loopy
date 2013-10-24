@@ -143,24 +143,28 @@ Sequence Diagrams.]
   \stepcounter{seqlevel}
   \stepcounter{callevel} % push
 
-%   \pgfextractx{\xa}{(#2)}
-%   \pgfextractx{\xb}{(#4.\threadbias)}
-%\pgfmathsetmacro{\var}{\xa-\xb}
-%\pgfmathparse{ifthenelse((\var)>=0,0,1)} 
-%\def\xc{\pgfmathresult}
-%\if\pgfmathresult 1 \relax
-%   \def\xc{0}
-%  \else 
-%   \def\xc{\thecallselflevel*0.1+0.03}
-%\fi 
+  % extract x-coordinates of start and end
+  \pgfextractx{\xa}{(#2)}
+  \pgfextractx{\xb}{(#4.\threadbias)}
+  % subtract end from start
+  \def\var{\xa-\xb}
+  %\pgfmathsetmacro{\var}{\xa-\xb}
+  \pgfmathparse{ifthenelse((\var)<=0,0,1)}
+  % define offset according to calculated direction (positive = left, negative = right)
+  \def\xc{\pgfmathresult} \relax
+  \if\pgfmathresult 0 \relax
+    \def\xc{0}
+  \else 
+    \def\xc{\thecallselflevel*0.1+0.03}
+  \fi 
 
- 
   %\sidelabel{#2}{left}{\value{\xa}}
   %\sidelabel{#2}{right}{xb}
 
   \path %let \p1 = (#2), \p2 = (#4) in
   (#2)+(%ifthenelse(((\x1-\x2)>=0),1,0),
-       \thecallselflevel*0.1+0.03,-\theseqlevel*\unitfactor-0.7*\unitfactor) node (cf\arabic{callevel}) {}
+      % in theory: add \xc instead...
+      \xc,-\theseqlevel*\unitfactor-0.7*\unitfactor) node (cf\arabic{callevel}) {}
   (#4.\threadbias)+(0,-\theseqlevel*\unitfactor-0.7*\unitfactor) node (ct\arabic{callevel}) {};
   
   \draw[->,>=triangle 60] ({cf\arabic{callevel}}) -- (ct\arabic{callevel})

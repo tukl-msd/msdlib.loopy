@@ -9,17 +9,19 @@
  */
 
 // forward declarations
+/** Xilinx platform-initalisation */
 void init_platform();
+/** initialise the communication medium */
 int  init_medium();
 void init_components();
 void init_queue();
 
-void start_application();
 void schedule();
 
 void reset_components();
 void reset_queues();
 
+/** Xilinx platform-cleanup */
 void cleanup_platform();
 
 /**

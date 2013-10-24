@@ -1,36 +1,36 @@
 package de.hopp.generator.backends.host.cpp;
 
-import static de.hopp.generator.model.Model.*;
+import static de.hopp.generator.model.cpp.CPP.*;
 import static de.hopp.generator.utils.BoardUtils.defaultQueueSizeHW;
 import static de.hopp.generator.utils.BoardUtils.defaultQueueSizeSW;
 import static de.hopp.generator.utils.BoardUtils.getPort;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
 import static de.hopp.generator.utils.BoardUtils.isPolling;
-import static de.hopp.generator.utils.Model.add;
-import static de.hopp.generator.utils.Model.addDoc;
-import static de.hopp.generator.utils.Model.addInit;
-import static de.hopp.generator.utils.Model.addParam;
+import static de.hopp.generator.utils.CPPUtils.add;
+import static de.hopp.generator.utils.CPPUtils.addDoc;
+import static de.hopp.generator.utils.CPPUtils.addInit;
+import static de.hopp.generator.utils.CPPUtils.addParam;
 
 import java.io.File;
 
 import katja.common.NE;
 import de.hopp.generator.Configuration;
 import de.hopp.generator.ErrorCollection;
-import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.board.BoardBackend;
 import de.hopp.generator.backends.board.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.*;
-import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.model.MClass;
-import de.hopp.generator.model.MConstr;
-import de.hopp.generator.model.MDestr;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MInitList;
+import de.hopp.generator.model.*;
+import de.hopp.generator.model.BDLFilePos.Visitor;
+import de.hopp.generator.model.cpp.MClass;
+import de.hopp.generator.model.cpp.MConstr;
+import de.hopp.generator.model.cpp.MDestr;
+import de.hopp.generator.model.cpp.MFile;
+import de.hopp.generator.model.cpp.MInitList;
 
 public class CPPBDLVisitor extends Visitor<NE> {
 
-    BoardIF board;
+    BoardBackend board;
     ErrorCollection errors;
 
     // generated files
@@ -116,7 +116,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos term)   { }
-    public void visit(BackendsPos term)  { }
 
     public void visit(LogsPos term) {
         addLogger("logger_host",  "Host:  ", term.host().termLog());
@@ -125,7 +124,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     private void addLogger(final String name, final String prefix, final Log log) {
         MInitList initList = log.Switch(new Log.Switch<MInitList, NE>() {
-            public MInitList CaseNOLOG(NOLOG term) {
+            public MInitList CaseNONE(NONE term) {
                 return MInitList(Strings("NULL", "0", "\"" + prefix + "\""));
             }
             public MInitList CaseCONSOLE(CONSOLE term) {
@@ -341,7 +340,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
     // general (handled before this visitor)
     public void visit(ImportPos term)  { }
-    public void visit(BackendPos term) { }
 
     // scheduler (irrelevant for host-side driver
     public void visit(SchedulerPos term) { }
@@ -360,7 +358,6 @@ public class CPPBDLVisitor extends Visitor<NE> {
     public void visit(POLLPos     term) { }
 
     // logger options
-    public void visit(NOLOGPos    term) { }
     public void visit(CONSOLEPos  term) { }
     public void visit(FILEPos     term) { }
 

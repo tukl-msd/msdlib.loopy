@@ -1,23 +1,23 @@
-package de.hopp.generator.backends.unparser;
+package de.hopp.generator.model.unparser;
 
 import katja.common.NE;
-import de.hopp.generator.parser.*;
-import de.hopp.generator.parser.Number;
+import de.hopp.generator.model.mhs.*;
+import de.hopp.generator.model.mhs.Number;
 
 public class MHSUnparser extends MHSFile.Visitor<NE> {
 
     private IndentStringBuffer buffer;
-    
+
     public MHSUnparser(StringBuffer buffer) {
         this.buffer = new IndentStringBuffer(buffer);
     }
-    
+
     // root file
     public void visit(MHSFile term) {
         visit(term.attributes());
         visit(term.blocks());
     }
-    
+
     // blocks
     public void visit(Blocks term){ for(Block b : term) visit(b); }
     public void visit(Block term) {
@@ -40,9 +40,9 @@ public class MHSUnparser extends MHSFile.Visitor<NE> {
     public void visit(PORT term)      { buffer.append("\nPORT "); }
 
     // assignments
-    public void visit(Assignments term) { 
+    public void visit(Assignments term) {
         for(Assignment a : term) {
-            if(a != term.get(0)) buffer.append(", "); 
+            if(a != term.get(0)) buffer.append(", ");
             visit(a);
         }
     }
@@ -58,13 +58,13 @@ public class MHSUnparser extends MHSFile.Visitor<NE> {
         }
     }
     public void visit(Ident term)   { visit(term.val()); }
-    public void visit(STR term)     { 
+    public void visit(STR term)     {
         buffer.append('\"');
         visit(term.val());
         buffer.append('\"');
     }
     public void visit(Number term)  { visit(term.val()); }
-    public void visit(MemAddr term) { visit(term.val()); }
+    public void visit(MemAddr term) { visit(String.format("0x%1$08X", term.val())); }
     public void visit(Range term) {
         buffer.append('[');
         visit(term.u());
@@ -72,9 +72,9 @@ public class MHSUnparser extends MHSFile.Visitor<NE> {
         visit(term.l());
         buffer.append(']');
     }
-    
+
     // literals
     public void visit(Integer term) { buffer.append(term.toString()); }
     public void visit(String term)  { buffer.append(term); }
-    
+
 }

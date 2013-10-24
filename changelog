@@ -1,7 +1,14 @@
-v0.3.0a (preview)
-- support for the ZedBoard
-- support for additional ise version (14.2, 14.3, 14.5)
+v0.3.0
+- TODO: full support for the ZedBoard
+- TODO: support for additional ise version (14.2, 14.3, 14.5)
+- TODO: support for verilog files (.v), netlist files (.ngc) and constraint files (.ucf) based on file extension
 - no longer runs synthesis if nothing changed
+- more structural improvements to support further backend extension
+- tutorial added
+
+- fixed: bdl imports now working
+- fixed: imports and source references now relative to currently parsed .bdl file
+
 
 v0.2.0
 - DHCP support

@@ -38,12 +38,17 @@ extern std::condition_variable can_write;
 class abstract_gpo;
 class abstract_gpi;
 
+/** Pointers to the general purpose output components */
 extern abstract_gpo *gpos[];
+/** Pointers to the general purpose input components */
 extern abstract_gpi *gpis[];
 
 /**
- * Abstract representation of a generic gpio component.
- * This covers in-going as well as out-going components.
+ * Abstract representation of a generic general purpose
+ * input or output component.
+ *
+ * This abstract component only contains a state,
+ * represented as atomic integer.
  */
 class gpio : public component {
 protected:
@@ -51,6 +56,11 @@ protected:
 	std::atomic<int> state;
 };
 
+/**
+ * Abstract general purpose input component.
+ * Has no bitwidth and no corresponding methods but provides
+ * several private attributes thereby simplifying the template.
+ */
 class abstract_gpi : public gpio {
 friend void recv_gpio(unsigned char gid, unsigned char val);
 protected:
@@ -72,7 +82,7 @@ protected:
 
 public:
     /**
-     * Constructor for the generic gpi component.
+     * Constructor for the abstract gpi component.
      * @param gpi_id Identifier used for this component.
      */
     abstract_gpi(unsigned char gpi_id) : gpi_id(gpi_id) {
@@ -105,11 +115,20 @@ public:
     gpi(unsigned char gpi_id) : abstract_gpi(gpi_id) { }
     virtual ~gpi() {};
 
+    /**
+     * Reads the current state of a gpo component.
+     * @return The state of the component represented by a bitset.
+     */
     std::bitset<width> readState() {
         return std::bitset<width>(readStateInternal());
     }
 };
 
+/**
+ * Abstract general purpose output component.
+ * Has no bitwidth and no corresponding methods but provides
+ * several private attributes thereby simplifying the template.
+ */
 class abstract_gpo : public gpio {
 friend void scheduleWriter();
 protected:
@@ -180,9 +199,17 @@ protected:
         return direction;
     }
 public:
+    /**
+     * Constructor for the generic gpo component.
+     * @param gpo_id Identifier used for this component.
+     */
 	gpo(unsigned char gpo_id) : abstract_gpo(gpo_id) { }
 	virtual ~gpo() {};
 
+    /**
+     * Writes the state of a gpo component.
+     * @param state The new state of the component represented by a bitset.
+     */
 	void writeState(std::bitset<width> state) {
 	    writeStateInternal(state.to_ulong());
 	}

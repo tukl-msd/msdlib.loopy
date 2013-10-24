@@ -16,7 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.hopp.generator.backends.unparser;
+package de.hopp.generator.model.unparser;
 
 /**
  * Wraps a StringBuffer with the ability to automatically insert tabs after newlines,

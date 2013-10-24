@@ -16,14 +16,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.hopp.generator.backends.unparser;
+package de.hopp.generator.model.unparser;
 
-import static de.hopp.generator.model.Model.CONSTANT;
-import static de.hopp.generator.model.Model.PRIVATE;
-import static de.hopp.generator.model.Model.STATIC;
+import static de.hopp.generator.model.cpp.CPP.CONSTANT;
+import static de.hopp.generator.model.cpp.CPP.PRIVATE;
+import static de.hopp.generator.model.cpp.CPP.STATIC;
 import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
-import de.hopp.generator.model.*;
+import de.hopp.generator.model.cpp.*;
 
 /**
  * plain C unparser. Generates C code out of the given model.

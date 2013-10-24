@@ -85,7 +85,13 @@ public class IOHandler {
         if(!config.DEBUG()) return;
 
         // print line
-        System.out.println("DEBUG: " + line);
+        System.out.println(line);
+    }
+
+    public void debug() {
+        if(!config.DEBUG()) return;
+
+        System.out.println();
     }
 
     /**
@@ -115,6 +121,12 @@ public class IOHandler {
 
         // print line
         System.out.println(line);
+    }
+
+    public void verbose() {
+        if(!config.VERBOSE()) return;
+
+        System.out.println();
     }
 
     /**

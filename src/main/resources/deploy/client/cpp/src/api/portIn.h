@@ -251,6 +251,7 @@ public:
      * @param file File containing the values to be written.
      * @param delim Separation character between two values.
      * @param f Function formatting values read from the file (cf ios_base.h).
+     * @return A #state representing this write.
      * @throws invalidArgument If the provided file does not exist.
      */
 	std::shared_ptr<writeState<width>> nbwrite(const char *file, const char delim, std::ios_base& (*f)(std::ios_base&)) {

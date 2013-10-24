@@ -1,18 +1,19 @@
 package de.hopp.generator.frontend;
 
 import de.hopp.generator.backends.host.cpp.CPP;
+import de.hopp.generator.backends.host.HostBackend;
 
 public enum Host {
     CPP(new CPP());
 
     // one instance of the backend
-    private de.hopp.generator.backends.host.HostBackend instance;
+    private HostBackend instance;
 
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param instance one instance of the backend
      */
-    Host(de.hopp.generator.backends.host.HostBackend instance) {
+    Host(HostBackend instance) {
         this.instance = instance;
     }
 
@@ -20,7 +21,7 @@ public enum Host {
      * Returns an instance of this backend
      * @return an instance of this backend
      */
-    public de.hopp.generator.backends.host.HostBackend getInstance() {
+    public HostBackend getInstance() {
         return instance;
     }
 
@@ -46,5 +47,10 @@ public enum Host {
             if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return true;
 
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return instance.getName();
     }
 }

@@ -1,10 +1,10 @@
 package de.hopp.generator.backends.workflow.ise.xps;
 
-import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Attributes;
-import de.hopp.generator.parser.Block;
-import de.hopp.generator.parser.Blocks;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.mhs.Attribute;
+import de.hopp.generator.model.mhs.Attributes;
+import de.hopp.generator.model.mhs.Block;
+import de.hopp.generator.model.mhs.Blocks;
+import de.hopp.generator.model.mhs.MHSFile;
 
 /**
  * Utility methods for working with the mhs model.

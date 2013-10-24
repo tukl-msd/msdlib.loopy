@@ -1,13 +1,14 @@
 package de.hopp.generator.utils;
 
 import katja.common.NE;
-import de.hopp.generator.frontend.*;
+import de.hopp.generator.model.*;
 
 /**
  * Provides several utility methods concerning the board model.
  *
- * This mainly concerns easy access to (referenced) elements, that are
- * required to exist by definition.
+ * This concerns easy access to (referenced) elements, that are
+ * required to exist by definition as well as definition of several
+ * attributes on the board model.
  *
  * @author Thomas Fischer
  */
@@ -21,53 +22,6 @@ public class BoardUtils {
     public static final int defaultWidth = 32;
     /** The default size for the TCP sendbuffer. */
     public static final int defaultTCPSendBuffer = 2048;
-//    public static boolean hasLEDs(Board board) {
-//        for(Component comp : board.components())
-//            if(comp instanceof LEDS) return true;
-//        return false;
-//    }
-//    public static boolean hasSwitches(Board board) {
-//        for(Component comp : board.components())
-//            if(comp instanceof SWITCHES) return true;
-//        return false;
-//    }
-//    public static boolean hasButtons(Board board) {
-//        for(Component comp : board.components())
-//            if(comp instanceof BUTTONS) return true;
-//        return false;
-//    }
-//
-//    public static boolean hasGpioComponent(Board board) {
-//        for(Component comp : board.components()) {
-//            if(comp.Switch(new Component.Switch<Boolean, NE>() {
-//                public Boolean CaseUART(UART term)                   { return false; }
-//                public Boolean CaseETHERNET_LITE(ETHERNET_LITE term) { return false; }
-//                public Boolean CaseETHERNET(ETHERNET term)           { return false; }
-//                public Boolean CasePCIE(PCIE term)                   { return false; }
-//                public Boolean CaseLEDS(LEDS term)                   { return true;  }
-//                public Boolean CaseSWITCHES(SWITCHES term)           { return true;  }
-//                public Boolean CaseBUTTONS(BUTTONS term)             { return true;  }
-//                public Boolean CaseVHDL(VHDL term)                   { return false; }
-//            })) return true;
-//        }
-//        return false;
-//    }
-//
-//    public static boolean hasGpiComponent(Board board) {
-//        for(Component comp : board.components()) {
-//            if(comp.Switch(new Component.Switch<Boolean, NE>() {
-//                public Boolean CaseUART(UART term)                   { return false; }
-//                public Boolean CaseETHERNET_LITE(ETHERNET_LITE term) { return false; }
-//                public Boolean CaseETHERNET(ETHERNET term)           { return false; }
-//                public Boolean CasePCIE(PCIE term)                   { return false; }
-//                public Boolean CaseLEDS(LEDS term)                   { return false; }
-//                public Boolean CaseSWITCHES(SWITCHES term)           { return true;  }
-//                public Boolean CaseBUTTONS(BUTTONS term)             { return true;  }
-//                public Boolean CaseVHDL(VHDL term)                   { return false; }
-//            })) return true;
-//        }
-//        return false;
-//    }
 
     /**
      * Generates a String representing the provided board description file.
@@ -76,7 +30,6 @@ public class BoardUtils {
      */
     public static String printBoard(BDLFilePos board) {
         String rslt = "parsed the following board";
-//        rslt += "\n  -debug: " + (isDebug(board) ? "yes" : "no");
         rslt += "\n  -host log level  "  + getLogSeverity(board.logs().host()).sortName();
         rslt += "\n  -board log level " + getLogSeverity(board.logs().board()).sortName();
         rslt += "\n  -" + board.medium().termMedium().Switch(new Medium.Switch<String, NE>() {
@@ -108,7 +61,7 @@ public class BoardUtils {
                 return rslt;
             }
         });
-        for(de.hopp.generator.frontend.GPIO gpio : board.gpios().term())
+        for(GPIO gpio : board.gpios().term())
             rslt += "\n  -GPIO component " + gpio.name();
         for(Instance inst : board.insts().term())
             rslt += "\n  -VHDL Component " + inst.name() + " (" + inst.core() + ")";
@@ -117,7 +70,7 @@ public class BoardUtils {
 
     public static LogSeverity getLogSeverity(LogPos log) {
         return log.termLog().Switch(new Log.Switch<LogSeverity, NE>() {
-            public LogSeverity CaseNOLOG(NOLOG term) {
+            public LogSeverity CaseNONE(NONE term) {
                 return BDL.ERROR();
             }
             public LogSeverity CaseCONSOLE(CONSOLE term) {

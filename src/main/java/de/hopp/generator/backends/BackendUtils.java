@@ -1,6 +1,6 @@
 package de.hopp.generator.backends;
 
-import static de.hopp.generator.model.Model.MFileInFile;
+import static de.hopp.generator.model.cpp.CPP.MFileInFile;
 import static org.apache.commons.io.FileUtils.write;
 
 import java.io.BufferedReader;
@@ -10,15 +10,15 @@ import java.io.InputStreamReader;
 
 import de.hopp.generator.ErrorCollection;
 import de.hopp.generator.IOHandler;
-import de.hopp.generator.backends.unparser.CUnparser;
-import de.hopp.generator.backends.unparser.CppUnparser;
-import de.hopp.generator.backends.unparser.HUnparser;
-import de.hopp.generator.backends.unparser.MHSUnparser;
 import de.hopp.generator.exceptions.InvalidConstruct;
 import de.hopp.generator.exceptions.Warning;
-import de.hopp.generator.model.MFile;
-import de.hopp.generator.model.MFileInFile;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.cpp.MFile;
+import de.hopp.generator.model.cpp.MFileInFile;
+import de.hopp.generator.model.unparser.CUnparser;
+import de.hopp.generator.model.unparser.CPPUnparser;
+import de.hopp.generator.model.unparser.HUnparser;
+import de.hopp.generator.model.unparser.MHSUnparser;
+import de.hopp.generator.model.mhs.MHSFile;
 
 public class BackendUtils {
 
@@ -28,7 +28,7 @@ public class BackendUtils {
         switch(type) {
         case HEADER : return new   HUnparser(buf, name);
         case C      : return new   CUnparser(buf, name);
-        case CPP    : return new CppUnparser(buf, name);
+        case CPP    : return new CPPUnparser(buf, name);
         }
         throw new IllegalStateException();
     }
@@ -53,7 +53,7 @@ public class BackendUtils {
         visitor.visit(MFileInFile(mfile));
 
         // write buffer contents to file
-        write(target, buf);
+        write(target, buf.toString());
     }
 
     public static void printMFile(MHSFile mfile, File target) throws IOException {

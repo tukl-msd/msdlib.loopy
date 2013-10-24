@@ -11,6 +11,7 @@ public class IPCoreVersions {
 
     public String ise;
 
+    // XPS (MHS)
     public String mhs;
 
     public String microblaze;
@@ -18,8 +19,12 @@ public class IPCoreVersions {
 
     public String axi_intc;
     public String axi_interconnect;
+
+    public String axi_cdma;
+    public String axi_fifo;
     public String axi_timer;
     public String axi_v6_ddrx;
+
     public String bram_block;
     public String clock_generator;
     public String lmb_bram_if_cntlr;
@@ -30,6 +35,7 @@ public class IPCoreVersions {
     public String axi_uartlite;
     public String axi_ethernetlite;
 
+    public String gpio;
     public String gpio_leds;
     public String gpio_buttons;
     public String gpio_switches;
@@ -58,6 +64,7 @@ public class IPCoreVersions {
         versions.axi_uartlite      = "1.02.a";
         versions.axi_ethernetlite  = "1.01.b";
 
+        versions.gpio              = "1.01.b";
         versions.gpio_leds         = "1.01.b";
         versions.gpio_buttons      = "1.01.b";
         versions.gpio_switches     = "1.01.b";
@@ -86,6 +93,8 @@ public class IPCoreVersions {
         versions.ps7               = "4.02.a";
 
         versions.axi_intc          = "1.03.a";
+        versions.axi_cdma          = "3.04.a";
+        versions.axi_fifo          = "3.00.a";
         versions.axi_v6_ddrx       = "1.06.a";
         versions.lmb_bram_if_cntlr = "3.10.c";
         versions.mdm               = "2.10.a";

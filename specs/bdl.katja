@@ -5,7 +5,7 @@ specification BDL
 // weird behaviour concerning cli parameter parses (cause unknowns are passed on and on and non-flags are always interpreted as additional files at the end;)
 
 backend java {
-  package de.hopp.generator.frontend
+  package de.hopp.generator.model
   import java.lang.String
   import java.lang.Integer
   import java.lang.Boolean
@@ -17,14 +17,11 @@ external String
 external Integer
 external Boolean
 
-BDLFile (Imports imports, Backends backends, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
+BDLFile (Imports imports, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
 
-Decl = Import | Backend | Logs | Option | Core | GPIO | Instance | Medium | Scheduler
+Decl = Import | Logs | Option | Core | GPIO | Instance | Medium | Scheduler
 
 Import (String file, Position pos)
-
-// selected backends for generation
-Backend (String name, String content, Position pos)
 
 // Definition of a new ipcore
 Core (String name, String version, Position pos, Imports source, Ports ports)
@@ -43,11 +40,14 @@ Binding = Axis(String port, String axis, Position pos, Options opts)
 
 GPIO (String name, Position pos, Code callback)
 
+NONE()
+
 // Definition of the attached medium
-Medium = NONE()
-       | ETHERNET(Position pos, MOptions opts)
-       | UART    (Position pos, MOptions opts) 
-       | PCIE    (Position pos, MOptions opts)
+Medium = NONE
+       | DefinedMedium
+DefinedMedium = ETHERNET(Position pos, MOptions opts)
+              | UART    (Position pos, MOptions opts)
+              | PCIE    (Position pos, MOptions opts)
 
 // General constants and flags for board and ports (care for invalid combinations)
 Option = HWQUEUE (Position pos, Integer qsize)
@@ -57,9 +57,10 @@ Option = HWQUEUE (Position pos, Integer qsize)
 
 
 Logs (Log host, Log board)
-Log = NOLOG()
-    | CONSOLE (Position pos, LogSeverity sev)
-    | FILE    (Position pos, LogSeverity sev, String file)
+Log = NONE
+    | DefinedLog
+DefinedLog = CONSOLE (Position pos, LogSeverity sev)
+           | FILE    (Position pos, LogSeverity sev, String file)
 
 LogSeverity = ERROR()
             | WARN()
@@ -84,7 +85,6 @@ Position (String filename, Integer line)
 
 // List types
 Imports   * Import
-Backends  * Backend
 Options   * Option
 MOptions  * MOption
 Cores     * Core

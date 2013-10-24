@@ -1,29 +1,26 @@
 package de.hopp.generator.backends.workflow.ise.xps;
 
 import static de.hopp.generator.backends.workflow.ise.xps.MHSUtils.add;
-import static de.hopp.generator.parser.MHS.*;
+import static de.hopp.generator.model.mhs.MHS.*;
 import static de.hopp.generator.utils.BoardUtils.getClockPort;
 import static de.hopp.generator.utils.BoardUtils.getCore;
 import static de.hopp.generator.utils.BoardUtils.getDirection;
 import static de.hopp.generator.utils.BoardUtils.getHWQueueSize;
-import static de.hopp.generator.utils.BoardUtils.getResetPort;
 import static de.hopp.generator.utils.BoardUtils.getWidth;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import katja.common.NE;
 import de.hopp.generator.ErrorCollection;
+import de.hopp.generator.backends.Memory;
 import de.hopp.generator.backends.workflow.ise.ISEBoard;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.exceptions.ParserError;
 import de.hopp.generator.exceptions.UsageError;
-import de.hopp.generator.frontend.*;
-import de.hopp.generator.frontend.BDLFilePos.Visitor;
-import de.hopp.generator.parser.AndExp;
-import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Block;
-import de.hopp.generator.parser.MHSFile;
+import de.hopp.generator.model.*;
+import de.hopp.generator.model.BDLFilePos.Visitor;
+import de.hopp.generator.model.mhs.AndExp;
+import de.hopp.generator.model.mhs.Attribute;
+import de.hopp.generator.model.mhs.Block;
+import de.hopp.generator.model.mhs.MHSFile;
+import de.hopp.generator.utils.BoardUtils;
 
 /**
  * Abstract XPS generation backend, providing some utility methods.
@@ -57,8 +54,6 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
     // queue sizes
     protected int globalHWQueueSize;
     protected int globalSWQueueSize;
-
-    protected Set<Integer> frequencies = new HashSet<Integer>();
 
     protected AndExp intrCntrlPorts = AndExp();
 
@@ -112,10 +107,36 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             return;
         }
 
-        mhs = add(mhs, gpio.getMHSAttribute());
-        mhs = add(mhs, gpio.getMHSBlock(versions));
+        // allocate a 0xffff block in the board memory model
+        Memory.Range gpioMemRange = board.getMemory().allocateMemory(0xffff);
 
-        addPortToInterruptController(gpio.getINTCPort());
+        mhs = add(mhs, MHSFile(Attributes(
+            Attribute(PORT(),
+                Assignment(gpio.portID(), Ident(gpio.portID())),
+                Assignment("DIR", Ident((gpio.isGPI() ? "I" : "") + (gpio.isGPO() ? "O" : ""))),
+                Assignment("VEC", Range(gpio.width()-1,0))
+            )), Block("axi_gpio",
+                Attribute(PARAMETER(), Assignment("INSTANCE", Ident(gpio.instID().toLowerCase()))),
+                Attribute(PARAMETER(), Assignment("HW_VER", Ident(versions.gpio))),
+                Attribute(PARAMETER(), Assignment("C_GPIO_WIDTH", Number(gpio.width()))),
+                // this one might still be problematic... if there is some sort of hybrid I/O component where
+                // not ALL pins are bi-directional (or none at all?)
+                // the width and isGPI/isGPO parameters need some fundamental changes...
+                Attribute(PARAMETER(), Assignment("C_ALL_INPUTS", Number(gpio.isGPI() ? 1 : 0))),
+                Attribute(PARAMETER(), Assignment("C_INTERRUPT_PRESENT", Number(1))),
+                Attribute(PARAMETER(), Assignment("C_IS_DUAL", Number(gpio.isGPI() && gpio.isGPO() ? 1 : 0))),
+                Attribute(PARAMETER(), Assignment("C_BASEADDR", MemAddr(gpioMemRange.getBaseAddress()))),
+                Attribute(PARAMETER(), Assignment("C_HIGHADDR", MemAddr(gpioMemRange.getHighAddress()))),
+                Attribute(BUS_IF(), Assignment("S_AXI", Ident("axi4lite_0"))),
+                // the clock port is different for each board! only the clock itself remains the same...
+                Attribute(PORT(), Assignment("S_AXI_ACLK", Ident(board.getClock().getClockPort(100)))),
+                Attribute(PORT(), Assignment("GPIO_IO_" + (gpio.isGPI() ? "I" : "") + (gpio.isGPO() ? "O" : ""),
+                    Ident(gpio.portID()))),
+                Attribute(PORT(), Assignment("IP2INTC_Irpt", Ident(gpio.getINTCPort())))
+            )));
+
+        if(gpio.isGPI())
+            addPortToInterruptController(gpio.getINTCPort());
     }
 
     public void visit(InstancePos term) {
@@ -132,10 +153,10 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
         // append clock and reset ports
         CLK clk = getClockPort(getCore(term));
         curBlock = add(curBlock, Attribute(PORT(), Assignment(
-                clk.name(), Ident("clk_" + clk.frequency() + "_0000MHzMMCM0"))));
-        RST rst = getResetPort(getCore(term));
+                clk.name(), Ident(board.getClock().getClockPort(clk.frequency())))));
+        RST rst = BoardUtils.getResetPort(getCore(term));
         curBlock = add(curBlock, Attribute(PORT(), Assignment(
-                rst.name(), Ident("proc_sys_reset_0_Peripheral_" + (rst.polarity() ? "reset": "aresetn")))));
+                rst.name(), Ident(rst.polarity() ? getResetPort(): getAResetNPort()))));
 
         // add the block to the file
         mhs = add(mhs, curBlock);
@@ -162,13 +183,11 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
 
     // clock frequencies
     public void visit(CorePos  term) { visit(term.ports()); }
-    public void visit(CLKPos   term) { frequencies.add(term.frequency().term()); }
+    public void visit(CLKPos   term) { } //frequencies.add(term.frequency().term()); }
 
     // imports and backends should be handled before this visitor
     public void visit(ImportsPos  term) { }
     public void visit(ImportPos   term) { }
-    public void visit(BackendsPos term) { }
-    public void visit(BackendPos  term) { }
 
     // positions and directions are handled in their surrounding blocks
     public void visit(PositionPos term) { }
@@ -194,7 +213,6 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
 
     // logger options
     public void visit(LogsPos    term) { }
-    public void visit(NOLOGPos   term) { }
     public void visit(CONSOLEPos term) { }
     public void visit(FILEPos    term) { }
 
@@ -234,12 +252,12 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
      * @throws UsageError If the port is bi-directional, since those
      *                          ports are not supported using AXI4 stream interfaces.
      */
-    private static boolean direction(Direction direction) throws UsageError {
+    protected static boolean direction(Direction direction) throws UsageError {
         return direction.Switch(new Direction.Switch<Boolean, UsageError>() {
             public Boolean CaseIN  (  IN term) { return true;  }
             public Boolean CaseOUT ( OUT term) { return false; }
             public Boolean CaseDUAL(DUAL term) throws UsageError {
-                throw new UsageError("invalid direction for virtex6");
+                throw new UsageError("no bi-directional components supported yet");
             }
         });
     }
@@ -302,8 +320,8 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             Attribute(PARAMETER(), Assignment("G_BW", Number(width))),
             Attribute(BUS_IF(), Assignment("in", Ident(d ? currentAxis : queueAxis))),
             Attribute(BUS_IF(), Assignment("out", Ident(d ? queueAxis : currentAxis))),
-            Attribute(PORT(), Assignment("clk", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("rst", Ident("proc_sys_reset_0_Peripheral_reset")))
+            Attribute(PORT(), Assignment("clk", Ident(board.getClock().getClockPort(100)))),
+            Attribute(PORT(), Assignment("rst", Ident(getResetPort())))
             ));
 
         // return the axis identifier of the queues port, that should be attached to the components port
@@ -347,8 +365,8 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
             Attribute(PARAMETER(), Assignment("WIDTH_OUT", Number(d ? width : 32))),
             Attribute(BUS_IF(), Assignment("S_AXIS", Ident(d ? currentAxis : muxAxis))),
             Attribute(BUS_IF(), Assignment("M_AXIS", Ident(d ? muxAxis : currentAxis))),
-            Attribute(PORT(), Assignment("CLK", Ident("clk_100_0000MHzMMCM0"))),
-            Attribute(PORT(), Assignment("RST", Ident("proc_sys_reset_0_Peripheral_reset")))
+            Attribute(PORT(), Assignment("CLK", Ident(board.getClock().getClockPort(100)))),
+            Attribute(PORT(), Assignment("RST", Ident(getResetPort())))
             ));
 
         return muxAxis;
@@ -379,4 +397,24 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
      *   from the board design.
      */
     protected abstract MHSFile getDefault();
+
+    /**
+     * Returns the reset port of the .mhs visitor for the concrete board.
+     * This is the peripheral reset port to be used by all programmable
+     * logic components of the user. It does not necessarily reset
+     * the complete board or its cpu.
+     *
+     * @return The reset port of the .mhs visitor for the concrete board.
+     */
+    protected abstract String getResetPort();
+
+    /**
+     * Returns the aresetn port of the .mhs visitor for the concrete board.
+     * This is the peripheral reset port to be used by all programmable
+     * logic components of the user. It does not necessarily reset
+     * the complete board or its cpu.
+     *
+     * @return The aresetn port of the mhs visitor for the concrete board.
+     */
+    protected abstract String getAResetNPort();
 }

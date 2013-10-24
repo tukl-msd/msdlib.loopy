@@ -1,13 +1,14 @@
 package de.hopp.generator.backends.board;
 
 import de.hopp.generator.IOHandler;
+import de.hopp.generator.backends.Memory;
 
 /**
  *
  * @author Thomas Fischer
  * @since 2.8.2013
  */
-public interface BoardIF {
+public interface BoardBackend {
     /**
      * The name of this backend. The name is automatically used to select the backend
      * from the command line interface of the driver generator.
@@ -30,4 +31,6 @@ public interface BoardIF {
     public void printUsage(IOHandler IO);
 
     public GpioComponent getGpio(String name);
+
+    public Memory getMemory();
 }

@@ -22,7 +22,7 @@ import java_cup.runtime.*;
   }
 %}
 
-%states CODE, STRING, BACKEND_START, BACKEND
+%states CODE, STRING
 
 /* whitespaces */
 LineTerminator = \r|\n|\r\n
@@ -58,17 +58,6 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
   ":}" { }
 }
 
-<BACKEND_START> {
-  {Comment} { /* ignore comments */ }
-  "{" { yybegin(BACKEND); string.setLength(0); }
-}
-
-<BACKEND> {
-  {Comment} { /* ignore comments */ }
-  "}" { yybegin(YYINITIAL); return symbol(BDLFileSymbols.STRING_LITERAL, string.toString()); }
-   ({InputCharacter} | {WhiteSpace}) { string.append(yytext()); } // otherwise append
-}
-
 <CODE> {
   {Comment} {string.append(yytext()); } // append comments. They may also include :} symbols
   ":}"      { yybegin(YYINITIAL); return symbol(BDLFileSymbols.CEND, string.toString()); } // switch state back, if :} out of comment occurs
@@ -87,9 +76,6 @@ Identifier      = [:jletter:] [[:jletterdigit:]\-_]*
 
 /* Keywords */
 "import"        { return symbol(BDLFileSymbols.IMPORT); }
-
-/* selected backends */
-"backend"       { yybegin(BACKEND_START); }
 
 /* global options */
 "log"           { return symbol(BDLFileSymbols.LOG);     }

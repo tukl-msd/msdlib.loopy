@@ -72,6 +72,50 @@ void platform_setup_interrupts(void)
 			(Xil_ExceptionHandler)XScuGic_DeviceInterruptHandler,
 			(void *)INTC_DEVICE_ID);
 
+//	XScuGic *InterruptController = getIntc(); /* Instance of the Interrupt Controller */
+//	static XScuGic_Config *GicConfig;/* The configuration parameters of the controller */
+//
+//	int Status;
+//	/*
+//	 * Initialize the interrupt controller driver so that it is ready to
+//	 * use.
+//	 */
+//	Xil_ExceptionInit();
+//
+//	GicConfig = XScuGic_LookupConfig(XPAR_PS7_SCUGIC_0_DEVICE_ID);
+//	if (NULL == GicConfig) {
+//		return;
+//	}
+//
+//	Status = XScuGic_CfgInitialize(InterruptController, GicConfig,
+//			GicConfig->CpuBaseAddress);
+//
+//	if (Status != XST_SUCCESS) {
+//		return;
+//	}
+//
+//	/*
+//	 * Setup the Interrupt System
+//	 */
+//
+//	/*
+//	 * Connect the interrupt controller interrupt handler to the hardware
+//	 * interrupt handling logic in the ARM processor.
+//	 */
+//	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_IRQ_INT,
+//			(Xil_ExceptionHandler) XScuGic_InterruptHandler,
+//			(void *) InterruptController);
+//
+//	/*
+//	 * Enable interrupts in the ARM
+//	 */
+//	Xil_ExceptionEnable();
+//
+//
+//	if (Status != XST_SUCCESS) {
+//		return;
+//	}
+
 	return;
 }
 
@@ -87,6 +131,8 @@ void platform_enable_interrupts()
 void init_platform()
 {
 	platform_setup_interrupts();
+
+	platform_enable_interrupts();
 
 	return;
 }

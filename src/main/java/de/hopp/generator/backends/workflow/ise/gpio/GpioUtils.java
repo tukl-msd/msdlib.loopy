@@ -1,11 +1,11 @@
 package de.hopp.generator.backends.workflow.ise.gpio;
 
-import static de.hopp.generator.parser.MHS.Assignment;
-import static de.hopp.generator.parser.MHS.Attribute;
-import static de.hopp.generator.parser.MHS.Block;
-import static de.hopp.generator.parser.MHS.Ident;
-import static de.hopp.generator.parser.MHS.PARAMETER;
-import de.hopp.generator.parser.Block;
+import static de.hopp.generator.model.mhs.MHS.Assignment;
+import static de.hopp.generator.model.mhs.MHS.Attribute;
+import static de.hopp.generator.model.mhs.MHS.Block;
+import static de.hopp.generator.model.mhs.MHS.Ident;
+import static de.hopp.generator.model.mhs.MHS.PARAMETER;
+import de.hopp.generator.model.mhs.Block;
 
 /**
  *
@@ -14,12 +14,11 @@ import de.hopp.generator.parser.Block;
  */
 public class GpioUtils {
 
-    public static Block getMSSBlock(GpioComponent gpio, String version) {
+    public static Block getMSSBlock(String instance, String version) {
         return Block("DRIVER",
             Attribute(PARAMETER(), Assignment("DRIVER_NAME", Ident("gpio"))),
             Attribute(PARAMETER(), Assignment("DRIVER_VER",  Ident(version))),
-            Attribute(PARAMETER(), Assignment("HW_INSTANCE", Ident(gpio.hwInstance())))
+            Attribute(PARAMETER(), Assignment("HW_INSTANCE", Ident(instance)))
         );
     }
-
 }

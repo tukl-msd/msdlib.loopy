@@ -16,7 +16,7 @@ String flexSpec     = "$specDir/bdl.flex"
 String cupSpec      = "$specDir/bdl.cup"
 String bdlSpec      = "$specDir/bdl.katja"
 String mhsSpec      = "$specDir/mhs.katja"
-String modelSpec    = "$specDir/cmodel.katja"
+String modelSpec    = "$specDir/cpp.katja"
 
 String flexLib      = "$libDir/JFlex.jar"
 String cupLib       = "$libDir/java-cup-11a.jar"
@@ -25,7 +25,7 @@ String katja        = "$libDir/katja.jar"
 String katjaCommon  = "$genLibDir/katja.common.jar"
 String bdl          = "$genLibDir/BDL.jar"
 String mhs          = "$genLibDir/MHS.jar"
-String model        = "$genLibDir/Model.jar"
+String model        = "$genLibDir/CPP.jar"
 
 String cupParserFile = "BDLFileParser"
 String symbolFile    = "BDLFileSymbols"
@@ -40,6 +40,7 @@ repositories {
 dependencies {
   compile group: 'de.jflex', name: 'jflex', version: '1.4.3'
   compile group: 'commons-io', name: 'commons-io', version: '2.4'
+  compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.1'
   // compile group: 'net.sf.squirrel-sql.thirdparty-non-maven', name: 'java-cup', version: '0.11a'
   compile files("$cupLib")
   compile files("$katjaCommon", "$bdl", "$mhs", "$model")
@@ -103,7 +104,7 @@ task buildMHS {
 }
 
 // builds the c/c++ model used by the generator
-task buildModel {
+task buildCPP {
   inputs.files("$katja", "$modelSpec")
   outputs.files("$model")
   doLast {
@@ -146,7 +147,7 @@ clean.dependsOn removeGen
 //runKatja.dependsOn buildAST
 runKatja.dependsOn buildBDL
 runKatja.dependsOn buildMHS
-runKatja.dependsOn buildModel
+runKatja.dependsOn buildCPP
 
 generateResources.dependsOn runKatja
 generateResources.dependsOn runJFlex

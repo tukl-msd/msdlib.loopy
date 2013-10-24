@@ -1,7 +1,7 @@
-specification Model
+specification CPP
 
 backend java {
-    package de.hopp.generator.model
+    package de.hopp.generator.model.cpp
     import java.lang.String
     import java.lang.Boolean
     import java.lang.Integer

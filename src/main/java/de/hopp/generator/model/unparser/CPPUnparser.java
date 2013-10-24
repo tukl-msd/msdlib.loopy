@@ -1,23 +1,23 @@
-package de.hopp.generator.backends.unparser;
+package de.hopp.generator.model.unparser;
 
-import static de.hopp.generator.model.Model.PRIVATE;
+import static de.hopp.generator.model.cpp.CPP.PRIVATE;
 import katja.common.NE;
 import de.hopp.generator.exceptions.InvalidConstruct;
-import de.hopp.generator.model.*;
+import de.hopp.generator.model.cpp.*;
 
 /**
  * C++ unparser. Generates C++ code out of the given model.
  * Everything specifiable using the model will be unparsed.
  * @author Thomas Fischer
  */
-public class CppUnparser extends CUnparser {
+public class CPPUnparser extends CUnparser {
 
     /**
      * Create a MFile unparser
      * @param buffer the buffer to unparse into
      * @param name file name where the buffer should be unparsed to
      */
-    public CppUnparser(StringBuffer buffer, String name) {
+    public CPPUnparser(StringBuffer buffer, String name) {
         super(buffer, name);
     }
 

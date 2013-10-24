@@ -2,7 +2,7 @@ package de.hopp.generator.backends.host.cpp;
 
 import static de.hopp.generator.backends.BackendUtils.doxygen;
 import static de.hopp.generator.backends.BackendUtils.printMFile;
-import static de.hopp.generator.utils.Files.copy;
+import static de.hopp.generator.utils.Files.deploy;
 
 import java.io.IOException;
 
@@ -13,7 +13,7 @@ import de.hopp.generator.backends.BackendUtils.UnparserType;
 import de.hopp.generator.backends.GenerationFailed;
 import de.hopp.generator.backends.host.AbstractHostBackend;
 import de.hopp.generator.exceptions.InvalidConstruct;
-import de.hopp.generator.frontend.BDLFilePos;
+import de.hopp.generator.model.BDLFilePos;
 
 /**
  * Generation backend for a host-side C++ driver.
@@ -49,7 +49,7 @@ public class CPP extends AbstractHostBackend {
 
         // deploy generic client code
         try {
-            copy("deploy/client/cpp", config.hostDir(), IO);
+            deploy("deploy/client/cpp", config.hostDir(), IO);
         } catch(IOException e) {
             errors.addError(new GenerationFailed(""));
             return;

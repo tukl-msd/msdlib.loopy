@@ -1,7 +1,7 @@
 specification MHS
 
 backend java {
-  package de.hopp.generator.parser
+  package de.hopp.generator.model.mhs
   import java.lang.String
   import java.lang.Integer
 }
@@ -27,7 +27,7 @@ Value = Ident | MemAddr | Number | Range | STR
 
 Ident   ( String val )
 STR     ( String val )
-MemAddr ( String val )
+MemAddr ( Integer val )
 Number  ( Integer val )
 Range   ( Integer u, Integer l)
 

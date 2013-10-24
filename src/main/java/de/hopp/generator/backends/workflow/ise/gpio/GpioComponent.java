@@ -1,8 +1,5 @@
 package de.hopp.generator.backends.workflow.ise.gpio;
 
-import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
-import de.hopp.generator.parser.Attribute;
-import de.hopp.generator.parser.Block;
 
 /**
  *
@@ -10,18 +7,16 @@ import de.hopp.generator.parser.Block;
  * @since 2.8.2013
  */
 public interface GpioComponent extends de.hopp.generator.backends.board.GpioComponent {
+    public String instID();
 
-    public abstract Attribute getMHSAttribute();
+    public String getUCFConstraints();
 
-    public abstract Block getMHSBlock(IPCoreVersions version);
+    public String getINTCPort();
 
-    public abstract String getINTCPort();
+    public abstract String portID();
 
-    public abstract String getUCFConstraints();
-
-    public abstract String hwInstance();
-
-    public abstract String deviceID();
+    // SDK
+    public String deviceID();
 
     public abstract String deviceIntrChannel();
 

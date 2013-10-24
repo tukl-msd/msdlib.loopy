@@ -1,21 +1,21 @@
 package de.hopp.generator.frontend;
 
-import de.hopp.generator.backends.board.BoardIF;
+import de.hopp.generator.backends.board.BoardBackend;
 import de.hopp.generator.backends.board.virtex.virtex6.Virtex6;
 import de.hopp.generator.backends.board.zed.Zed;
 
 public enum Board {
-    VIRTEX6(new Virtex6());
-//    ZED(new Zed());
+    VIRTEX6(new Virtex6()),
+    ZED(new Zed());
 
     // one instance of the backend
-    private BoardIF instance;
+    private BoardBackend instance;
 
     /**
      * Each backend token has one instance of the backend, backends should be stateless
      * @param instance one instance of the backend
      */
-    Board(BoardIF instance) {
+    Board(BoardBackend instance) {
         this.instance = instance;
     }
 
@@ -23,7 +23,7 @@ public enum Board {
      * Returns an instance of this backend
      * @return an instance of this backend
      */
-    public BoardIF getInstance() {
+    public BoardBackend getInstance() {
         return instance;
     }
 
@@ -49,5 +49,10 @@ public enum Board {
             if(backend.instance.getName().toUpperCase().equals(name.toUpperCase())) return true;
 
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return instance.getName();
     }
 }
