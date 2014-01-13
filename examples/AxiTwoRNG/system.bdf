@@ -13,7 +13,7 @@ medium ethernet {
 // disable hardware queues
 hwqueue 0
 
-core AxiTwoRng 1.00.a {
+core axitworng 1.00.a {
   // list of vhdl sources
   source "vhdl_sources/AxiMst.vhd", "vhdl_sources/AxiSlv.vhd", "vhdl_sources/AxiTwoRng.vhd"
   source "vhdl_sources/RngUniformTausworthe88.vhd"
@@ -27,7 +27,7 @@ core AxiTwoRng 1.00.a {
   rst aresetn 0
 }
 
-instance AxiTwoRng 1.00.a rng_a {
+instance axitworng 1.00.a rng_a {
   cpu s_axis {
     // since this port is only used to configure the component once, a large queues are not required
     swqueue 8
