@@ -2,11 +2,9 @@ log host info "host.log"
 log board info "board.log"
 
 medium ethernet {
-  // USE YOUR BOARDS MAC AND DESIRED IP ADDRESS / PORT HERE ;)
-  mac "00:0a:35:01:FB:E3"
-  ip "192.168.1.10"
-  mask "255.255.255.0"
-  gate "192.168.1.1"
+  // USE YOUR BOARDS MAC AND DESIRED IP ADDRESS / PORT HERE
+  mac "00:0A:35:01:FB:E3"
+  dhcp
   port 8844
 }
 
