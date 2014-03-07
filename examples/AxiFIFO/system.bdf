@@ -4,7 +4,7 @@ log board info "board.log"
 medium ethernet {
   
   // USE YOUR BOARDS MAC AND DESIRED IP ADDRESS / PORT HERE ;)
-  mac "00:0a:35:02:31:95"
+  mac "00:0A:35:01:FB:E3"
   dhcp
   port 8844
 }
