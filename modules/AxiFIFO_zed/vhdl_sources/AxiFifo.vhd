@@ -39,7 +39,7 @@ end AxiFifo;
 
 architecture behavioral of AxiFifo is
 
-	component Fifo is
+	component fifo_generator_v9_3 is
 		port (
 		 s_aclk 		: in  std_logic;
 		 s_aresetn 		: in  std_logic;
@@ -56,7 +56,7 @@ architecture behavioral of AxiFifo is
 
 begin  -- behavioral
 
-	Fifo_1 : Fifo 
+	Fifo_1 : fifo_generator_v9_3
 		port map (
 		 s_aclk 				=> aclk,
 		 s_aresetn 				=> aresetn,	
