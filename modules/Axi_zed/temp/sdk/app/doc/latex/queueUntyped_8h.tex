@@ -1,0 +1,180 @@
+\hypertarget{queueUntyped_8h}{\section{src/queue\-Untyped.h File Reference}
+\label{queueUntyped_8h}\index{src/queue\-Untyped.\-h@{src/queue\-Untyped.\-h}}
+}
+
+
+Implementation of a linked queue.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structQueueNode}{Queue\-Node}
+\begin{DoxyCompactList}\small\item\em Structure for nodes of the linked queue. \end{DoxyCompactList}\item 
+struct \hyperlink{structQueue}{Queue}
+\begin{DoxyCompactList}\small\item\em Structure for a linked queue. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \hyperlink{structQueueNode}{Queue\-Node} \hyperlink{queueUntyped_8h_a7e6613f308c280e76b54ae685a49de7c}{Queue\-Node}
+\begin{DoxyCompactList}\small\item\em Structure for nodes of the linked queue. \end{DoxyCompactList}\item 
+typedef struct \hyperlink{structQueue}{Queue} \hyperlink{queueUntyped_8h_ad359c9a9ed21445fd95e01a05429c767}{Queue}
+\begin{DoxyCompactList}\small\item\em Structure for a linked queue. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structQueue}{Queue} $\ast$ \hyperlink{queueUntyped_8h_ad6a346452683f296241777dfa3c5f827}{create\-Queue} (int cap)
+\begin{DoxyCompactList}\small\item\em Allocates memory for an empty queue and returns the pointer. \end{DoxyCompactList}\item 
+int \hyperlink{queueUntyped_8h_aea02d16ecba322955817e356623ff60e}{put} (struct \hyperlink{structQueue}{Queue} $\ast$queue, int val)
+\begin{DoxyCompactList}\small\item\em Puts an element into a queue. \end{DoxyCompactList}\item 
+int \hyperlink{queueUntyped_8h_a39ff1274bd1aa5a6c7d323a3f922c702}{has\-Elems} (\hyperlink{structQueue}{Queue} $\ast$queue)
+\begin{DoxyCompactList}\small\item\em Checks if a queue contains eny elements or is empty. \end{DoxyCompactList}\item 
+int \hyperlink{queueUntyped_8h_af2d1972b9e58cd1ed3c335a661eb6237}{take} (struct \hyperlink{structQueue}{Queue} $\ast$queue)
+\begin{DoxyCompactList}\small\item\em Takes the first element from a queue and returns its value. \end{DoxyCompactList}\item 
+void \hyperlink{queueUntyped_8h_a2534c890db7c0eb374f472508c3214e1}{clear} (struct \hyperlink{structQueue}{Queue} $\ast$queue)
+\begin{DoxyCompactList}\small\item\em Clears all values from the queue. \end{DoxyCompactList}\item 
+int \hyperlink{queueUntyped_8h_a95eccdcadfc847a2a682ba03904c314e}{peek} (struct \hyperlink{structQueue}{Queue} $\ast$queue)
+\begin{DoxyCompactList}\small\item\em Read the first value of the queue without removing it. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Implementation of a linked queue. \begin{DoxyAuthor}{Author}
+Thomas Fischer 
+\end{DoxyAuthor}
+\begin{DoxySince}{Since}
+\-: 20.\-02.\-2013 
+\end{DoxySince}
+
+
+\subsection{Typedef Documentation}
+\hypertarget{queueUntyped_8h_ad359c9a9ed21445fd95e01a05429c767}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!Queue@{Queue}}
+\index{Queue@{Queue}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{Queue}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf Queue}  {\bf Queue}}}\label{queueUntyped_8h_ad359c9a9ed21445fd95e01a05429c767}
+
+
+Structure for a linked queue. 
+
+A linked queue is a mix of a linked list and a fifo queue. Elements can be appended only at the back and only removed from the front. However, it is possible to peek at all elements, starting with the first and using the next pointer. \hypertarget{queueUntyped_8h_a7e6613f308c280e76b54ae685a49de7c}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!Queue\-Node@{Queue\-Node}}
+\index{Queue\-Node@{Queue\-Node}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{Queue\-Node}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf Queue\-Node}  {\bf Queue\-Node}}}\label{queueUntyped_8h_a7e6613f308c280e76b54ae685a49de7c}
+
+
+Structure for nodes of the linked queue. 
+
+Contains the stored value as well as a a pointer to the next element in the queue. 
+
+\subsection{Function Documentation}
+\hypertarget{queueUntyped_8h_a2534c890db7c0eb374f472508c3214e1}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!clear@{clear}}
+\index{clear@{clear}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{clear}]{\setlength{\rightskip}{0pt plus 5cm}void clear (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Queue} $\ast$}]{queue}
+\end{DoxyParamCaption}
+)}}\label{queueUntyped_8h_a2534c890db7c0eb374f472508c3214e1}
+
+
+Clears all values from the queue. 
+
+Does however N\-O\-T remove free the memory reserved for the queue header itself. 
+\begin{DoxyParams}{Parameters}
+{\em queue} & The queue that should be cleared of elements. \\
+\hline
+\end{DoxyParams}
+\hypertarget{queueUntyped_8h_ad6a346452683f296241777dfa3c5f827}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!create\-Queue@{create\-Queue}}
+\index{create\-Queue@{create\-Queue}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{create\-Queue}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Queue}$\ast$ create\-Queue (
+\begin{DoxyParamCaption}
+\item[{int}]{cap}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [read]}}}\label{queueUntyped_8h_ad6a346452683f296241777dfa3c5f827}
+
+
+Allocates memory for an empty queue and returns the pointer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em cap} & Maximal capacity of the queue. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to a new, empty queue. 
+\end{DoxyReturn}
+\hypertarget{queueUntyped_8h_a39ff1274bd1aa5a6c7d323a3f922c702}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!has\-Elems@{has\-Elems}}
+\index{has\-Elems@{has\-Elems}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{has\-Elems}]{\setlength{\rightskip}{0pt plus 5cm}int has\-Elems (
+\begin{DoxyParamCaption}
+\item[{{\bf Queue} $\ast$}]{queue}
+\end{DoxyParamCaption}
+)}}\label{queueUntyped_8h_a39ff1274bd1aa5a6c7d323a3f922c702}
+
+
+Checks if a queue contains eny elements or is empty. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em queue} & The queue to be checked. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if the queue contains elements, false otherwise. 
+\end{DoxyReturn}
+\hypertarget{queueUntyped_8h_a95eccdcadfc847a2a682ba03904c314e}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!peek@{peek}}
+\index{peek@{peek}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{peek}]{\setlength{\rightskip}{0pt plus 5cm}int peek (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Queue} $\ast$}]{queue}
+\end{DoxyParamCaption}
+)}}\label{queueUntyped_8h_a95eccdcadfc847a2a682ba03904c314e}
+
+
+Read the first value of the queue without removing it. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em queue} & The queue which should be read. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The first value of the queue. 
+\end{DoxyReturn}
+\hypertarget{queueUntyped_8h_aea02d16ecba322955817e356623ff60e}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!put@{put}}
+\index{put@{put}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{put}]{\setlength{\rightskip}{0pt plus 5cm}int put (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Queue} $\ast$}]{queue, }
+\item[{int}]{val}
+\end{DoxyParamCaption}
+)}}\label{queueUntyped_8h_aea02d16ecba322955817e356623ff60e}
+
+
+Puts an element into a queue. 
+
+The element is appended at the back of the queue. 
+\begin{DoxyParams}{Parameters}
+{\em queue} & The queue, to which the element should be appended. \\
+\hline
+{\em val} & The element to append. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 if successful, 0 otherwise (i.\-e. capacity reached) 
+\end{DoxyReturn}
+\hypertarget{queueUntyped_8h_af2d1972b9e58cd1ed3c335a661eb6237}{\index{queue\-Untyped.\-h@{queue\-Untyped.\-h}!take@{take}}
+\index{take@{take}!queueUntyped.h@{queue\-Untyped.\-h}}
+\subsubsection[{take}]{\setlength{\rightskip}{0pt plus 5cm}int take (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Queue} $\ast$}]{queue}
+\end{DoxyParamCaption}
+)}}\label{queueUntyped_8h_af2d1972b9e58cd1ed3c335a661eb6237}
+
+
+Takes the first element from a queue and returns its value. 
+
+A\-L\-W\-A\-Y\-S check the size, before taking elements! 
+\begin{DoxyParams}{Parameters}
+{\em queue} & The queue, from which the element should be taken. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Value of the first element. 
+\end{DoxyReturn}

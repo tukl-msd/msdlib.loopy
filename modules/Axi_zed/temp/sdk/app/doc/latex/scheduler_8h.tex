@@ -1,0 +1,44 @@
+\hypertarget{scheduler_8h}{\section{src/scheduler.h File Reference}
+\label{scheduler_8h}\index{src/scheduler.\-h@{src/scheduler.\-h}}
+}
+
+
+A primitive scheduler.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{scheduler_8h_a7d06701ac073c331c83519e3909b7fce}{schedule} ()
+\begin{DoxyCompactList}\small\item\em Starts the scheduling loop. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+A primitive scheduler. Reads values from the medium, shifts values between Microblaze and V\-H\-D\-L components, and writes results back to the medium.
+
+\begin{DoxyAuthor}{Author}
+Thomas Fischer 
+\end{DoxyAuthor}
+\begin{DoxySince}{Since}
+18.\-02.\-2013 
+\end{DoxySince}
+
+
+\subsection{Function Documentation}
+\hypertarget{scheduler_8h_a7d06701ac073c331c83519e3909b7fce}{\index{scheduler.\-h@{scheduler.\-h}!schedule@{schedule}}
+\index{schedule@{schedule}!scheduler.h@{scheduler.\-h}}
+\subsubsection[{schedule}]{\setlength{\rightskip}{0pt plus 5cm}void schedule (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{scheduler_8h_a7d06701ac073c331c83519e3909b7fce}
+
+
+Starts the scheduling loop. 
+
+The scheduling loop performs the following actions in each iteration\-:
+\begin{DoxyItemize}
+\item read and process messages from the medium
+\item write values from Microblaze input queue to hardware input queue for each input stream
+\item write values from hardware output queue to the medium (caches several values before sending) 
+\end{DoxyItemize}

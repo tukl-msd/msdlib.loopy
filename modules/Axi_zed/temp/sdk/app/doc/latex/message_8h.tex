@@ -1,0 +1,134 @@
+\hypertarget{message_8h}{\section{src/medium/message.h File Reference}
+\label{message_8h}\index{src/medium/message.\-h@{src/medium/message.\-h}}
+}
+
+
+Describes out-\/going messages to be send over the medium.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structMessage}{Message}
+\begin{DoxyCompactList}\small\item\em Representation of an out-\/going message. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structMessage}{Message} $\ast$ \hyperlink{message_8h_a432daeafce2b133b790fc934aaba8777}{message\-\_\-new} ()
+\begin{DoxyCompactList}\small\item\em Allocates memory for a new message. \end{DoxyCompactList}\item 
+void \hyperlink{message_8h_adc2645d73065a475940949a0da0e2239}{message\-\_\-payload} (struct \hyperlink{structMessage}{Message} $\ast$m, int payload\mbox{[}$\,$\mbox{]}, int size)
+\begin{DoxyCompactList}\small\item\em Sets the payload of a message. \end{DoxyCompactList}\item 
+void \hyperlink{message_8h_a06c503766d10397d43ca5ed00a29a611}{message\-\_\-header} (struct \hyperlink{structMessage}{Message} $\ast$m, int header\mbox{[}$\,$\mbox{]}, int size)
+\begin{DoxyCompactList}\small\item\em Sets the header of a message. \end{DoxyCompactList}\item 
+void \hyperlink{message_8h_a6c0d104d91c861e40b4da973848a610e}{message\-\_\-free} (struct \hyperlink{structMessage}{Message} $\ast$m)
+\begin{DoxyCompactList}\small\item\em Frees the memory used by a message. \end{DoxyCompactList}\item 
+void \hyperlink{message_8h_a1fcfb53f38730919b623311f7ffeda68}{print\-\_\-message} (struct \hyperlink{structMessage}{Message} $\ast$m)
+\begin{DoxyCompactList}\small\item\em Prints a message using the specified debug print method. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Describes out-\/going messages to be send over the medium. \begin{DoxyAuthor}{Author}
+Thomas Fischer 
+\end{DoxyAuthor}
+\begin{DoxySince}{Since}
+27.\-02.\-2013 
+\end{DoxySince}
+
+
+\subsection{Function Documentation}
+\hypertarget{message_8h_a6c0d104d91c861e40b4da973848a610e}{\index{message.\-h@{message.\-h}!message\-\_\-free@{message\-\_\-free}}
+\index{message\-\_\-free@{message\-\_\-free}!message.h@{message.\-h}}
+\subsubsection[{message\-\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void message\-\_\-free (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Message} $\ast$}]{m}
+\end{DoxyParamCaption}
+)}}\label{message_8h_a6c0d104d91c861e40b4da973848a610e}
+
+
+Frees the memory used by a message. 
+
+Does N\-O\-T free the payload pointer (since this is usually a fixed block of memory reused by the driver). 
+\begin{DoxyParams}{Parameters}
+{\em m} & Pointer to the message to be removed. \\
+\hline
+\end{DoxyParams}
+\hypertarget{message_8h_a06c503766d10397d43ca5ed00a29a611}{\index{message.\-h@{message.\-h}!message\-\_\-header@{message\-\_\-header}}
+\index{message\-\_\-header@{message\-\_\-header}!message.h@{message.\-h}}
+\subsubsection[{message\-\_\-header}]{\setlength{\rightskip}{0pt plus 5cm}void message\-\_\-header (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Message} $\ast$}]{m, }
+\item[{int}]{header\mbox{[}$\,$\mbox{]}, }
+\item[{int}]{size}
+\end{DoxyParamCaption}
+)}}\label{message_8h_a06c503766d10397d43ca5ed00a29a611}
+
+
+Sets the header of a message. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em m} & The message to be modified. \\
+\hline
+{\em header} & The header to be added. \\
+\hline
+{\em size} & Size of the header (in 4-\/byte integer values). \\
+\hline
+\end{DoxyParams}
+\hypertarget{message_8h_a432daeafce2b133b790fc934aaba8777}{\index{message.\-h@{message.\-h}!message\-\_\-new@{message\-\_\-new}}
+\index{message\-\_\-new@{message\-\_\-new}!message.h@{message.\-h}}
+\subsubsection[{message\-\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}struct {\bf Message}$\ast$ message\-\_\-new (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [read]}}}\label{message_8h_a432daeafce2b133b790fc934aaba8777}
+
+
+Allocates memory for a new message. 
+
+Instantiates an empty header and payload. \begin{DoxyReturn}{Returns}
+Pointer to the allocated memory.
+\end{DoxyReturn}
+\begin{DoxyAuthor}{Author}
+Thomas Fischer 
+\end{DoxyAuthor}
+\begin{DoxySince}{Since}
+27.\-02.\-2013 
+\end{DoxySince}
+\hypertarget{message_8h_adc2645d73065a475940949a0da0e2239}{\index{message.\-h@{message.\-h}!message\-\_\-payload@{message\-\_\-payload}}
+\index{message\-\_\-payload@{message\-\_\-payload}!message.h@{message.\-h}}
+\subsubsection[{message\-\_\-payload}]{\setlength{\rightskip}{0pt plus 5cm}void message\-\_\-payload (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Message} $\ast$}]{m, }
+\item[{int}]{payload\mbox{[}$\,$\mbox{]}, }
+\item[{int}]{size}
+\end{DoxyParamCaption}
+)}}\label{message_8h_adc2645d73065a475940949a0da0e2239}
+
+
+Sets the payload of a message. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em m} & The message, for which the payload should be set. \\
+\hline
+{\em payload} & Pointer to the array representing the payload of the message \\
+\hline
+{\em size} & Size of the payload. \\
+\hline
+\end{DoxyParams}
+\hypertarget{message_8h_a1fcfb53f38730919b623311f7ffeda68}{\index{message.\-h@{message.\-h}!print\-\_\-message@{print\-\_\-message}}
+\index{print\-\_\-message@{print\-\_\-message}!message.h@{message.\-h}}
+\subsubsection[{print\-\_\-message}]{\setlength{\rightskip}{0pt plus 5cm}void print\-\_\-message (
+\begin{DoxyParamCaption}
+\item[{struct {\bf Message} $\ast$}]{m}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{message_8h_a1fcfb53f38730919b623311f7ffeda68}
+
+
+Prints a message using the specified debug print method. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em m} & Pointer to the message to be printed. \\
+\hline
+\end{DoxyParams}

@@ -1,0 +1,26 @@
+
+
+BEGIN axififo
+    OPTION IPTYPE = PERIPHERAL
+    OPTION IMP_NETLIST = TRUE
+    OPTION IP_GROUP = USER
+    OPTION HDL = MIXED
+    OPTION STYLE = MIX
+    OPTION RUN_NGCBUILD = TRUE
+    BUS_INTERFACE BUS = s_axis, BUS_STD = AXIS, BUS_TYPE = TARGET
+    PARAMETER C_s_axis_PROTOCOL = GENERIC, DT = string, TYPE = NON_HDL, ASSIGNMENT = CONSTANT, BUS = s_axis
+    PARAMETER C_s_axis_TDATA_WIDTH = 32, DT = integer, TYPE = NON_HDL, ASSIGNMENT = CONSTANT, BUS = s_axis
+    PORT s_axis_tready = TREADY, DIR = O, BUS = s_axis
+    PORT s_axis_tvalid = TVALID, DIR = I, BUS = s_axis
+    PORT s_axis_tdata = TDATA, DIR = I, BUS = s_axis, VEC = [31:0]
+    PORT s_axis_tlast = TLAST, DIR = I, BUS = s_axis
+    BUS_INTERFACE BUS = m_axis, BUS_STD = AXIS, BUS_TYPE = INITIATOR
+    PARAMETER C_m_axis_PROTOCOL = GENERIC, DT = string, TYPE = NON_HDL, ASSIGNMENT = CONSTANT, BUS = m_axis
+    PARAMETER C_m_axis_TDATA_WIDTH = 32, DT = integer, TYPE = NON_HDL, ASSIGNMENT = CONSTANT, BUS = m_axis
+    PORT m_axis_tready = TREADY, DIR = I, BUS = m_axis
+    PORT m_axis_tvalid = TVALID, DIR = O, BUS = m_axis
+    PORT m_axis_tdata = TDATA, DIR = O, BUS = m_axis, VEC = [31:0]
+    PORT m_axis_tlast = TLAST, DIR = O, BUS = m_axis
+    PORT aclk = "", DIR = I, SIGIS = CLK, ASSIGNMENT = REQUIRE
+    PORT aresetn = "", DIR = I, SIGIS = RST, ASSIGNMENT = REQUIRE
+END

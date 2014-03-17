@@ -1,0 +1,64 @@
+\hypertarget{structMessage}{\section{Message Struct Reference}
+\label{structMessage}\index{Message@{Message}}
+}
+
+
+Representation of an out-\/going message.  
+
+
+
+
+{\ttfamily \#include $<$message.\-h$>$}
+
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+int $\ast$ \hyperlink{structMessage_ac5433672aa52e04391534dcd73bb1286}{header}
+\begin{DoxyCompactList}\small\item\em Pointer to an array containing the header. \end{DoxyCompactList}\item 
+int $\ast$ \hyperlink{structMessage_a4e4b7d09227526e0999f2ef140606c64}{payload}
+\begin{DoxyCompactList}\small\item\em Pointer to an array containing the payload. \end{DoxyCompactList}\item 
+int \hyperlink{structMessage_ac6c78db74f1baf3454acd76d8830489a}{header\-Size}
+\begin{DoxyCompactList}\small\item\em Size of the referenced header array. \end{DoxyCompactList}\item 
+int \hyperlink{structMessage_ae17de6f21df9cca8b3fc9baf27f992f8}{payload\-Size}
+\begin{DoxyCompactList}\small\item\em Size of the referenced payload array. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Representation of an out-\/going message. 
+
+Differentiates between header and payload of the message. 
+
+\subsection{Field Documentation}
+\hypertarget{structMessage_ac5433672aa52e04391534dcd73bb1286}{\index{Message@{Message}!header@{header}}
+\index{header@{header}!Message@{Message}}
+\subsubsection[{header}]{\setlength{\rightskip}{0pt plus 5cm}int$\ast$ Message\-::header}}\label{structMessage_ac5433672aa52e04391534dcd73bb1286}
+
+
+Pointer to an array containing the header. 
+
+Memory should be managed by manipulating procedures. \hypertarget{structMessage_ac6c78db74f1baf3454acd76d8830489a}{\index{Message@{Message}!header\-Size@{header\-Size}}
+\index{header\-Size@{header\-Size}!Message@{Message}}
+\subsubsection[{header\-Size}]{\setlength{\rightskip}{0pt plus 5cm}int Message\-::header\-Size}}\label{structMessage_ac6c78db74f1baf3454acd76d8830489a}
+
+
+Size of the referenced header array. 
+
+\hypertarget{structMessage_a4e4b7d09227526e0999f2ef140606c64}{\index{Message@{Message}!payload@{payload}}
+\index{payload@{payload}!Message@{Message}}
+\subsubsection[{payload}]{\setlength{\rightskip}{0pt plus 5cm}int$\ast$ Message\-::payload}}\label{structMessage_a4e4b7d09227526e0999f2ef140606c64}
+
+
+Pointer to an array containing the payload. 
+
+Memory should N\-O\-T be managed by manipulating procedures in order to reuse the storage area of the sw queue. \hypertarget{structMessage_ae17de6f21df9cca8b3fc9baf27f992f8}{\index{Message@{Message}!payload\-Size@{payload\-Size}}
+\index{payload\-Size@{payload\-Size}!Message@{Message}}
+\subsubsection[{payload\-Size}]{\setlength{\rightskip}{0pt plus 5cm}int Message\-::payload\-Size}}\label{structMessage_ae17de6f21df9cca8b3fc9baf27f992f8}
+
+
+Size of the referenced payload array. 
+
+
+
+The documentation for this struct was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+src/medium/\hyperlink{message_8h}{message.\-h}\end{DoxyCompactItemize}

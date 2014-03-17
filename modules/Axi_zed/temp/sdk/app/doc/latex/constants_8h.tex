@@ -1,0 +1,279 @@
+\hypertarget{constants_8h}{\section{src/constants.h File Reference}
+\label{constants_8h}\index{src/constants.\-h@{src/constants.\-h}}
+}
+
+
+Defines several constants used by the server.  
+
+
+{\ttfamily \#include $<$stdio.\-h$>$}\\*
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{constants_8h_a90b2e06a02b5b39bc00210a97f61ce97}{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R}~0
+\begin{DoxyCompactList}\small\item\em Severity value of errors. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a8a4beaad24a39c4d4daf0ae81b5a7f92}{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N}~1
+\begin{DoxyCompactList}\small\item\em Severity value of warnings. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_ab50d8e439c7354c91146a0214d4b3704}{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O}~2
+\begin{DoxyCompactList}\small\item\em Severity value of info messages. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_aab29541d27a64eb2d49704f7f08ff4d8}{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E}~3
+\begin{DoxyCompactList}\small\item\em Severity value of debug messages. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a99ed8f03b695b37b6805532d8c9df9c2}{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R}~4
+\begin{DoxyCompactList}\small\item\em Severity value of finer debug messages. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a175e1339f1f5037564becf1b3afb1482}{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T}~5
+\begin{DoxyCompactList}\small\item\em Severity value of finest debug messages. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a32cb236167626142804aedde2608d220}{S\-E\-V\-E\-R\-I\-T\-Y}~2
+\begin{DoxyCompactList}\small\item\em Indicates, if additional messages should be logged on the console. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a6ae72553ea9805dd87a463d6f710364d}{log\-\_\-error}(...)~xil\-\_\-printf(\char`\"{}\textbackslash{}n\char`\"{}); xil\-\_\-printf(\-\_\-\-\_\-\-V\-A\-\_\-\-A\-R\-G\-S\-\_\-\-\_\-)
+\begin{DoxyCompactList}\small\item\em With the chosen debug level, errors will be reported to the host driver over Ethernet. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a04af09851c431d178f16b24fa1aac1e9}{log\-\_\-warn}(...)~xil\-\_\-printf(\char`\"{}\textbackslash{}n\char`\"{}); xil\-\_\-printf(\-\_\-\-\_\-\-V\-A\-\_\-\-A\-R\-G\-S\-\_\-\-\_\-)
+\begin{DoxyCompactList}\small\item\em With the chosen debug level, warnings will be reported to the host driver over Ethernet. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_aa1cfe5444875c8eca0ea6f6993977d6d}{log\-\_\-info}(...)~xil\-\_\-printf(\char`\"{}\textbackslash{}n\char`\"{}); xil\-\_\-printf(\-\_\-\-\_\-\-V\-A\-\_\-\-A\-R\-G\-S\-\_\-\-\_\-)
+\begin{DoxyCompactList}\small\item\em With the chosen debug level, info messages will be reported to the host driver over Ethernet. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a66859c92bb3c8bd9beee00c0c48a5c7b}{log\-\_\-fine}(...)
+\begin{DoxyCompactList}\small\item\em With the chosen debug level, fine info messages will not be reported to the host driver. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a50625e55ec7ac17934b0e5f40ebfcef6}{log\-\_\-finer}(...)
+\begin{DoxyCompactList}\small\item\em With the chosen debug level, finer info messages will not be reported to the host driver. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_ad50e21a7d0422580622e34a1ca63baf9}{log\-\_\-finest}(...)
+\begin{DoxyCompactList}\small\item\em With the chosen debug level, finest info messages will not be reported to the host driver. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_aa6213bee9e9bfc3f84616da041122993}{M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E}~1024
+\begin{DoxyCompactList}\small\item\em Maximal size of out-\/going software queues. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_ad34386a1c00776bdbabb91bad0d66caa}{P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N}~1
+\begin{DoxyCompactList}\small\item\em Denotes protocol version, that should be used for sending messages. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a1ed1b1ce817e3b1f944652dbf42eeb75}{M\-A\-C\-\_\-1}~0x00
+\begin{DoxyCompactList}\small\item\em The first 8 bits of the M\-A\-C address of this board. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a7e700c422211e8dde0cfdbdd925db8cf}{M\-A\-C\-\_\-2}~0x0\-A
+\begin{DoxyCompactList}\small\item\em The second 8 bits of the M\-A\-C address of this board. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a6dc5919cd48d4c97a5fc8797a71acd56}{M\-A\-C\-\_\-3}~0x35
+\begin{DoxyCompactList}\small\item\em The third 8 bits of the M\-A\-C address of this board. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_ada0ba80b8b70a5144ff6ad2995b02686}{M\-A\-C\-\_\-4}~0x01
+\begin{DoxyCompactList}\small\item\em The fourth 8 bits of the M\-A\-C address of this board. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_ac418fc3257b87de66d07db761d64fbf3}{M\-A\-C\-\_\-5}~0x\-F\-B
+\begin{DoxyCompactList}\small\item\em The fifth 8 bits of the M\-A\-C address of this board. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a13bcb5d843507989196f68d1c559ac2a}{M\-A\-C\-\_\-6}~0x\-E3
+\begin{DoxyCompactList}\small\item\em The sixth 8 bits of the M\-A\-C address of this board. \end{DoxyCompactList}\item 
+\hypertarget{constants_8h_a6be0a51f2a69809df437861db051bd61}{\#define \hyperlink{constants_8h_a6be0a51f2a69809df437861db051bd61}{D\-H\-C\-P}~1}\label{constants_8h_a6be0a51f2a69809df437861db051bd61}
+
+\begin{DoxyCompactList}\small\item\em D\-H\-C\-P flag. \end{DoxyCompactList}\item 
+\hypertarget{constants_8h_ae649bec53b19886cf06cc355ebcef646}{\#define \hyperlink{constants_8h_ae649bec53b19886cf06cc355ebcef646}{D\-H\-C\-P\-\_\-\-M\-A\-X\-\_\-\-A\-T\-T\-E\-M\-P\-T\-S}~10}\label{constants_8h_ae649bec53b19886cf06cc355ebcef646}
+
+\begin{DoxyCompactList}\small\item\em D\-H\-C\-P timeout (in seconds) \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a614217d263be1fb1a5f76e2ff7be19a2}{P\-O\-R\-T}~8844
+\begin{DoxyCompactList}\small\item\em The port for this boards T\-C\-P-\/connection. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a45ba202b05caf39795aeca91b0ae547e}{T\-I\-M\-E\-O\-U\-T}~2
+\begin{DoxyCompactList}\small\item\em Reception timeout for an attempt to free memory. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_ae0c19c986d2613068105f2e6b01fc449}{I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}~1
+\begin{DoxyCompactList}\small\item\em Number of in-\/going stream interfaces. \end{DoxyCompactList}\item 
+\#define \hyperlink{constants_8h_a192c75f93073e94ca3228caf8bea85e8}{O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}~1
+\begin{DoxyCompactList}\small\item\em Number of out-\/going stream interfaces. \end{DoxyCompactList}\item 
+\hypertarget{constants_8h_a80e9ae771daf6d596b0cddccf21541fa}{\#define \hyperlink{constants_8h_a80e9ae771daf6d596b0cddccf21541fa}{gpi\-\_\-count}~0}\label{constants_8h_a80e9ae771daf6d596b0cddccf21541fa}
+
+\begin{DoxyCompactList}\small\item\em Number of gpi components. \end{DoxyCompactList}\item 
+\hypertarget{constants_8h_a89bcc9faf407cc35e75a58428c0619c4}{\#define \hyperlink{constants_8h_a89bcc9faf407cc35e75a58428c0619c4}{gpo\-\_\-count}~0}\label{constants_8h_a89bcc9faf407cc35e75a58428c0619c4}
+
+\begin{DoxyCompactList}\small\item\em Number of gpo components. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Defines several constants used by the server. This includes medium-\/specific configuration. 
+
+\subsection{Macro Definition Documentation}
+\hypertarget{constants_8h_ae0c19c986d2613068105f2e6b01fc449}{\index{constants.\-h@{constants.\-h}!I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T@{I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}}
+\index{I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T@{I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}!constants.h@{constants.\-h}}
+\subsubsection[{I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}]{\setlength{\rightskip}{0pt plus 5cm}\#define I\-N\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T~1}}\label{constants_8h_ae0c19c986d2613068105f2e6b01fc449}
+
+
+Number of in-\/going stream interfaces. 
+
+\hypertarget{constants_8h_a6ae72553ea9805dd87a463d6f710364d}{\index{constants.\-h@{constants.\-h}!log\-\_\-error@{log\-\_\-error}}
+\index{log\-\_\-error@{log\-\_\-error}!constants.h@{constants.\-h}}
+\subsubsection[{log\-\_\-error}]{\setlength{\rightskip}{0pt plus 5cm}\#define log\-\_\-error(
+\begin{DoxyParamCaption}
+\item[{}]{...}
+\end{DoxyParamCaption}
+)~xil\-\_\-printf(\char`\"{}\textbackslash{}n\char`\"{}); xil\-\_\-printf(\-\_\-\-\_\-\-V\-A\-\_\-\-A\-R\-G\-S\-\_\-\-\_\-)}}\label{constants_8h_a6ae72553ea9805dd87a463d6f710364d}
+
+
+With the chosen debug level, errors will be reported to the host driver over Ethernet. 
+
+\hypertarget{constants_8h_a66859c92bb3c8bd9beee00c0c48a5c7b}{\index{constants.\-h@{constants.\-h}!log\-\_\-fine@{log\-\_\-fine}}
+\index{log\-\_\-fine@{log\-\_\-fine}!constants.h@{constants.\-h}}
+\subsubsection[{log\-\_\-fine}]{\setlength{\rightskip}{0pt plus 5cm}\#define log\-\_\-fine(
+\begin{DoxyParamCaption}
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}}\label{constants_8h_a66859c92bb3c8bd9beee00c0c48a5c7b}
+
+
+With the chosen debug level, fine info messages will not be reported to the host driver. 
+
+\hypertarget{constants_8h_a50625e55ec7ac17934b0e5f40ebfcef6}{\index{constants.\-h@{constants.\-h}!log\-\_\-finer@{log\-\_\-finer}}
+\index{log\-\_\-finer@{log\-\_\-finer}!constants.h@{constants.\-h}}
+\subsubsection[{log\-\_\-finer}]{\setlength{\rightskip}{0pt plus 5cm}\#define log\-\_\-finer(
+\begin{DoxyParamCaption}
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}}\label{constants_8h_a50625e55ec7ac17934b0e5f40ebfcef6}
+
+
+With the chosen debug level, finer info messages will not be reported to the host driver. 
+
+\hypertarget{constants_8h_ad50e21a7d0422580622e34a1ca63baf9}{\index{constants.\-h@{constants.\-h}!log\-\_\-finest@{log\-\_\-finest}}
+\index{log\-\_\-finest@{log\-\_\-finest}!constants.h@{constants.\-h}}
+\subsubsection[{log\-\_\-finest}]{\setlength{\rightskip}{0pt plus 5cm}\#define log\-\_\-finest(
+\begin{DoxyParamCaption}
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}}\label{constants_8h_ad50e21a7d0422580622e34a1ca63baf9}
+
+
+With the chosen debug level, finest info messages will not be reported to the host driver. 
+
+\hypertarget{constants_8h_aa1cfe5444875c8eca0ea6f6993977d6d}{\index{constants.\-h@{constants.\-h}!log\-\_\-info@{log\-\_\-info}}
+\index{log\-\_\-info@{log\-\_\-info}!constants.h@{constants.\-h}}
+\subsubsection[{log\-\_\-info}]{\setlength{\rightskip}{0pt plus 5cm}\#define log\-\_\-info(
+\begin{DoxyParamCaption}
+\item[{}]{...}
+\end{DoxyParamCaption}
+)~xil\-\_\-printf(\char`\"{}\textbackslash{}n\char`\"{}); xil\-\_\-printf(\-\_\-\-\_\-\-V\-A\-\_\-\-A\-R\-G\-S\-\_\-\-\_\-)}}\label{constants_8h_aa1cfe5444875c8eca0ea6f6993977d6d}
+
+
+With the chosen debug level, info messages will be reported to the host driver over Ethernet. 
+
+\hypertarget{constants_8h_a04af09851c431d178f16b24fa1aac1e9}{\index{constants.\-h@{constants.\-h}!log\-\_\-warn@{log\-\_\-warn}}
+\index{log\-\_\-warn@{log\-\_\-warn}!constants.h@{constants.\-h}}
+\subsubsection[{log\-\_\-warn}]{\setlength{\rightskip}{0pt plus 5cm}\#define log\-\_\-warn(
+\begin{DoxyParamCaption}
+\item[{}]{...}
+\end{DoxyParamCaption}
+)~xil\-\_\-printf(\char`\"{}\textbackslash{}n\char`\"{}); xil\-\_\-printf(\-\_\-\-\_\-\-V\-A\-\_\-\-A\-R\-G\-S\-\_\-\-\_\-)}}\label{constants_8h_a04af09851c431d178f16b24fa1aac1e9}
+
+
+With the chosen debug level, warnings will be reported to the host driver over Ethernet. 
+
+\hypertarget{constants_8h_a1ed1b1ce817e3b1f944652dbf42eeb75}{\index{constants.\-h@{constants.\-h}!M\-A\-C\-\_\-1@{M\-A\-C\-\_\-1}}
+\index{M\-A\-C\-\_\-1@{M\-A\-C\-\_\-1}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-C\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-C\-\_\-1~0x00}}\label{constants_8h_a1ed1b1ce817e3b1f944652dbf42eeb75}
+
+
+The first 8 bits of the M\-A\-C address of this board. 
+
+\hypertarget{constants_8h_a7e700c422211e8dde0cfdbdd925db8cf}{\index{constants.\-h@{constants.\-h}!M\-A\-C\-\_\-2@{M\-A\-C\-\_\-2}}
+\index{M\-A\-C\-\_\-2@{M\-A\-C\-\_\-2}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-C\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-C\-\_\-2~0x0\-A}}\label{constants_8h_a7e700c422211e8dde0cfdbdd925db8cf}
+
+
+The second 8 bits of the M\-A\-C address of this board. 
+
+\hypertarget{constants_8h_a6dc5919cd48d4c97a5fc8797a71acd56}{\index{constants.\-h@{constants.\-h}!M\-A\-C\-\_\-3@{M\-A\-C\-\_\-3}}
+\index{M\-A\-C\-\_\-3@{M\-A\-C\-\_\-3}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-C\-\_\-3}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-C\-\_\-3~0x35}}\label{constants_8h_a6dc5919cd48d4c97a5fc8797a71acd56}
+
+
+The third 8 bits of the M\-A\-C address of this board. 
+
+\hypertarget{constants_8h_ada0ba80b8b70a5144ff6ad2995b02686}{\index{constants.\-h@{constants.\-h}!M\-A\-C\-\_\-4@{M\-A\-C\-\_\-4}}
+\index{M\-A\-C\-\_\-4@{M\-A\-C\-\_\-4}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-C\-\_\-4}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-C\-\_\-4~0x01}}\label{constants_8h_ada0ba80b8b70a5144ff6ad2995b02686}
+
+
+The fourth 8 bits of the M\-A\-C address of this board. 
+
+\hypertarget{constants_8h_ac418fc3257b87de66d07db761d64fbf3}{\index{constants.\-h@{constants.\-h}!M\-A\-C\-\_\-5@{M\-A\-C\-\_\-5}}
+\index{M\-A\-C\-\_\-5@{M\-A\-C\-\_\-5}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-C\-\_\-5}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-C\-\_\-5~0x\-F\-B}}\label{constants_8h_ac418fc3257b87de66d07db761d64fbf3}
+
+
+The fifth 8 bits of the M\-A\-C address of this board. 
+
+\hypertarget{constants_8h_a13bcb5d843507989196f68d1c559ac2a}{\index{constants.\-h@{constants.\-h}!M\-A\-C\-\_\-6@{M\-A\-C\-\_\-6}}
+\index{M\-A\-C\-\_\-6@{M\-A\-C\-\_\-6}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-C\-\_\-6}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-C\-\_\-6~0x\-E3}}\label{constants_8h_a13bcb5d843507989196f68d1c559ac2a}
+
+
+The sixth 8 bits of the M\-A\-C address of this board. 
+
+\hypertarget{constants_8h_aa6213bee9e9bfc3f84616da041122993}{\index{constants.\-h@{constants.\-h}!M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E@{M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E}}
+\index{M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E@{M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E}!constants.h@{constants.\-h}}
+\subsubsection[{M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\-A\-X\-\_\-\-O\-U\-T\-\_\-\-S\-W\-\_\-\-Q\-U\-E\-U\-E\-\_\-\-S\-I\-Z\-E~1024}}\label{constants_8h_aa6213bee9e9bfc3f84616da041122993}
+
+
+Maximal size of out-\/going software queues. 
+
+\hypertarget{constants_8h_a192c75f93073e94ca3228caf8bea85e8}{\index{constants.\-h@{constants.\-h}!O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T@{O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}}
+\index{O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T@{O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}!constants.h@{constants.\-h}}
+\subsubsection[{O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T}]{\setlength{\rightskip}{0pt plus 5cm}\#define O\-U\-T\-\_\-\-S\-T\-R\-E\-A\-M\-\_\-\-C\-O\-U\-N\-T~1}}\label{constants_8h_a192c75f93073e94ca3228caf8bea85e8}
+
+
+Number of out-\/going stream interfaces. 
+
+\hypertarget{constants_8h_a614217d263be1fb1a5f76e2ff7be19a2}{\index{constants.\-h@{constants.\-h}!P\-O\-R\-T@{P\-O\-R\-T}}
+\index{P\-O\-R\-T@{P\-O\-R\-T}!constants.h@{constants.\-h}}
+\subsubsection[{P\-O\-R\-T}]{\setlength{\rightskip}{0pt plus 5cm}\#define P\-O\-R\-T~8844}}\label{constants_8h_a614217d263be1fb1a5f76e2ff7be19a2}
+
+
+The port for this boards T\-C\-P-\/connection. 
+
+\hypertarget{constants_8h_ad34386a1c00776bdbabb91bad0d66caa}{\index{constants.\-h@{constants.\-h}!P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N@{P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N}}
+\index{P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N@{P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N}!constants.h@{constants.\-h}}
+\subsubsection[{P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N}]{\setlength{\rightskip}{0pt plus 5cm}\#define P\-R\-O\-T\-O\-\_\-\-V\-E\-R\-S\-I\-O\-N~1}}\label{constants_8h_ad34386a1c00776bdbabb91bad0d66caa}
+
+
+Denotes protocol version, that should be used for sending messages. 
+
+\hypertarget{constants_8h_a32cb236167626142804aedde2608d220}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y@{S\-E\-V\-E\-R\-I\-T\-Y}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y@{S\-E\-V\-E\-R\-I\-T\-Y}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y~2}}\label{constants_8h_a32cb236167626142804aedde2608d220}
+
+
+Indicates, if additional messages should be logged on the console. 
+
+\hypertarget{constants_8h_a90b2e06a02b5b39bc00210a97f61ce97}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-E\-R\-R\-O\-R~0}}\label{constants_8h_a90b2e06a02b5b39bc00210a97f61ce97}
+
+
+Severity value of errors. 
+
+\hypertarget{constants_8h_aab29541d27a64eb2d49704f7f08ff4d8}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E~3}}\label{constants_8h_aab29541d27a64eb2d49704f7f08ff4d8}
+
+
+Severity value of debug messages. 
+
+\hypertarget{constants_8h_a99ed8f03b695b37b6805532d8c9df9c2}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-R~4}}\label{constants_8h_a99ed8f03b695b37b6805532d8c9df9c2}
+
+
+Severity value of finer debug messages. 
+
+\hypertarget{constants_8h_a175e1339f1f5037564becf1b3afb1482}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-F\-I\-N\-E\-S\-T~5}}\label{constants_8h_a175e1339f1f5037564becf1b3afb1482}
+
+
+Severity value of finest debug messages. 
+
+\hypertarget{constants_8h_ab50d8e439c7354c91146a0214d4b3704}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-I\-N\-F\-O~2}}\label{constants_8h_ab50d8e439c7354c91146a0214d4b3704}
+
+
+Severity value of info messages. 
+
+\hypertarget{constants_8h_a8a4beaad24a39c4d4daf0ae81b5a7f92}{\index{constants.\-h@{constants.\-h}!S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N}}
+\index{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N@{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N}!constants.h@{constants.\-h}}
+\subsubsection[{S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-E\-V\-E\-R\-I\-T\-Y\-\_\-\-W\-A\-R\-N~1}}\label{constants_8h_a8a4beaad24a39c4d4daf0ae81b5a7f92}
+
+
+Severity value of warnings. 
+
+\hypertarget{constants_8h_a45ba202b05caf39795aeca91b0ae547e}{\index{constants.\-h@{constants.\-h}!T\-I\-M\-E\-O\-U\-T@{T\-I\-M\-E\-O\-U\-T}}
+\index{T\-I\-M\-E\-O\-U\-T@{T\-I\-M\-E\-O\-U\-T}!constants.h@{constants.\-h}}
+\subsubsection[{T\-I\-M\-E\-O\-U\-T}]{\setlength{\rightskip}{0pt plus 5cm}\#define T\-I\-M\-E\-O\-U\-T~2}}\label{constants_8h_a45ba202b05caf39795aeca91b0ae547e}
+
+
+Reception timeout for an attempt to free memory. 
+

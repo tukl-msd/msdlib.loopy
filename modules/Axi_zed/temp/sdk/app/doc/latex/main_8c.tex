@@ -1,0 +1,114 @@
+\hypertarget{main_8c}{\section{src/main.c File Reference}
+\label{main_8c}\index{src/main.\-c@{src/main.\-c}}
+}
+
+
+Main of the board-\/side application.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{main_8c_afddcfa5cf23f52259c9da7f926a4af57}{void \hyperlink{main_8c_afddcfa5cf23f52259c9da7f926a4af57}{init\-\_\-platform} ()}\label{main_8c_afddcfa5cf23f52259c9da7f926a4af57}
+
+\begin{DoxyCompactList}\small\item\em Xilinx platform-\/initalisation. \end{DoxyCompactList}\item 
+\hypertarget{main_8c_a9ef83cd7675981f1b5fca112a2a04f9d}{int \hyperlink{main_8c_a9ef83cd7675981f1b5fca112a2a04f9d}{init\-\_\-medium} ()}\label{main_8c_a9ef83cd7675981f1b5fca112a2a04f9d}
+
+\begin{DoxyCompactList}\small\item\em initialise the communication medium \end{DoxyCompactList}\item 
+void \hyperlink{main_8c_ad22c950b6392a91d8262f7da13070021}{init\-\_\-components} ()
+\begin{DoxyCompactList}\small\item\em Initialises all components on this board. \end{DoxyCompactList}\item 
+\hypertarget{main_8c_ae733fe874122894bac75e1be37326ceb}{void {\bfseries init\-\_\-queue} ()}\label{main_8c_ae733fe874122894bac75e1be37326ceb}
+
+\item 
+void \hyperlink{main_8c_a7d06701ac073c331c83519e3909b7fce}{schedule} ()
+\begin{DoxyCompactList}\small\item\em Starts the scheduling loop. \end{DoxyCompactList}\item 
+void \hyperlink{main_8c_a9ad4854530538f29d6b293fac292ffe6}{reset\-\_\-components} ()
+\begin{DoxyCompactList}\small\item\em Resets all components in this board. \end{DoxyCompactList}\item 
+void \hyperlink{main_8c_a9e6884a5d87a5681077d13251c4f3247}{reset\-\_\-queues} ()
+\begin{DoxyCompactList}\small\item\em Resets all software queues. \end{DoxyCompactList}\item 
+\hypertarget{main_8c_a074e46b818accd4588b2fdf6dee7ec00}{void \hyperlink{main_8c_a074e46b818accd4588b2fdf6dee7ec00}{cleanup\-\_\-platform} ()}\label{main_8c_a074e46b818accd4588b2fdf6dee7ec00}
+
+\begin{DoxyCompactList}\small\item\em Xilinx platform-\/cleanup. \end{DoxyCompactList}\item 
+\hypertarget{main_8c_ad20897c5c8bd47f5d4005989bead0e55}{void \hyperlink{main_8c_ad20897c5c8bd47f5d4005989bead0e55}{reset} ()}\label{main_8c_ad20897c5c8bd47f5d4005989bead0e55}
+
+\begin{DoxyCompactList}\small\item\em Resets all components and corresponding queues. \end{DoxyCompactList}\item 
+int \hyperlink{main_8c_ae66f6b31b5ad750f1fe042a706a4e3d4}{main} ()
+\begin{DoxyCompactList}\small\item\em Initialises components and starts scheduling loop. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Main of the board-\/side application. Initialises the boards components and starts the scheduling loop.
+
+\begin{DoxyAuthor}{Author}
+Thomas Fischer 
+\end{DoxyAuthor}
+\begin{DoxySince}{Since}
+01.\-02.\-2013 
+\end{DoxySince}
+
+
+\subsection{Function Documentation}
+\hypertarget{main_8c_ad22c950b6392a91d8262f7da13070021}{\index{main.\-c@{main.\-c}!init\-\_\-components@{init\-\_\-components}}
+\index{init\-\_\-components@{init\-\_\-components}!main.c@{main.\-c}}
+\subsubsection[{init\-\_\-components}]{\setlength{\rightskip}{0pt plus 5cm}void init\-\_\-components (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{main_8c_ad22c950b6392a91d8262f7da13070021}
+
+
+Initialises all components on this board. 
+
+This includes gpio components and user-\/defined I\-P\-Cores, but not the communication medium this board is attached with. \hypertarget{main_8c_ae66f6b31b5ad750f1fe042a706a4e3d4}{\index{main.\-c@{main.\-c}!main@{main}}
+\index{main@{main}!main.c@{main.\-c}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{main_8c_ae66f6b31b5ad750f1fe042a706a4e3d4}
+
+
+Initialises components and starts scheduling loop. 
+
+\begin{DoxyReturn}{Returns}
+0. 
+\end{DoxyReturn}
+\hypertarget{main_8c_a9ad4854530538f29d6b293fac292ffe6}{\index{main.\-c@{main.\-c}!reset\-\_\-components@{reset\-\_\-components}}
+\index{reset\-\_\-components@{reset\-\_\-components}!main.c@{main.\-c}}
+\subsubsection[{reset\-\_\-components}]{\setlength{\rightskip}{0pt plus 5cm}void reset\-\_\-components (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{main_8c_a9ad4854530538f29d6b293fac292ffe6}
+
+
+Resets all components in this board. 
+
+This includes gpio components and user-\/defined I\-P\-Cores, but not the communication medium, this board is attached with. \hypertarget{main_8c_a9e6884a5d87a5681077d13251c4f3247}{\index{main.\-c@{main.\-c}!reset\-\_\-queues@{reset\-\_\-queues}}
+\index{reset\-\_\-queues@{reset\-\_\-queues}!main.c@{main.\-c}}
+\subsubsection[{reset\-\_\-queues}]{\setlength{\rightskip}{0pt plus 5cm}void reset\-\_\-queues (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{main_8c_a9e6884a5d87a5681077d13251c4f3247}
+
+
+Resets all software queues. 
+
+Note, that a hardware reset has to be performed as well. T\-O\-D\-O The reset has probably be performed in parallel, in order to guarantee that no more values remain somewhere -\/$>$ input queue -\/$>$ hw reset -\/$>$ output queue \hypertarget{main_8c_a7d06701ac073c331c83519e3909b7fce}{\index{main.\-c@{main.\-c}!schedule@{schedule}}
+\index{schedule@{schedule}!main.c@{main.\-c}}
+\subsubsection[{schedule}]{\setlength{\rightskip}{0pt plus 5cm}void schedule (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{main_8c_a7d06701ac073c331c83519e3909b7fce}
+
+
+Starts the scheduling loop. 
+
+The scheduling loop performs the following actions in each iteration\-:
+\begin{DoxyItemize}
+\item read and process messages from the medium
+\item write values from Microblaze input queue to hardware input queue for each input stream
+\item write values from hardware output queue to the medium (caches several values before sending) 
+\end{DoxyItemize}

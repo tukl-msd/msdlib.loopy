@@ -1,0 +1,37 @@
+\hypertarget{structQueue}{\section{Queue Struct Reference}
+\label{structQueue}\index{Queue@{Queue}}
+}
+
+
+Structure for a linked queue.  
+
+
+
+
+{\ttfamily \#include $<$queue\-Untyped.\-h$>$}
+
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{structQueue_ab531b3cd4761aaf61a99c8e72a54c522}{struct \hyperlink{structQueueNode}{Queue\-Node} $\ast$ \hyperlink{structQueue_ab531b3cd4761aaf61a99c8e72a54c522}{first}}\label{structQueue_ab531b3cd4761aaf61a99c8e72a54c522}
+
+\begin{DoxyCompactList}\small\item\em Pointer to the first node in the queue. \end{DoxyCompactList}\item 
+\hypertarget{structQueue_a459f24bb614023ccc601d1c6e63e8bfc}{struct \hyperlink{structQueueNode}{Queue\-Node} $\ast$ \hyperlink{structQueue_a459f24bb614023ccc601d1c6e63e8bfc}{last}}\label{structQueue_a459f24bb614023ccc601d1c6e63e8bfc}
+
+\begin{DoxyCompactList}\small\item\em Pointer to the last node in the queue. \end{DoxyCompactList}\item 
+\hypertarget{structQueue_aaea99c2b90ab1465f5e2909f83373afe}{unsigned int \hyperlink{structQueue_aaea99c2b90ab1465f5e2909f83373afe}{size}}\label{structQueue_aaea99c2b90ab1465f5e2909f83373afe}
+
+\begin{DoxyCompactList}\small\item\em Number of nodes currently stored in the queue. \end{DoxyCompactList}\item 
+\hypertarget{structQueue_a8789ba7d081e47c31599e8b9b51ac20f}{unsigned int \hyperlink{structQueue_a8789ba7d081e47c31599e8b9b51ac20f}{cap}}\label{structQueue_a8789ba7d081e47c31599e8b9b51ac20f}
+
+\begin{DoxyCompactList}\small\item\em Capacity of the queue (maximum number of nodes) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Structure for a linked queue. 
+
+A linked queue is a mix of a linked list and a fifo queue. Elements can be appended only at the back and only removed from the front. However, it is possible to peek at all elements, starting with the first and using the next pointer. 
+
+The documentation for this struct was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{queueUntyped_8h}{queue\-Untyped.\-h}\end{DoxyCompactItemize}
