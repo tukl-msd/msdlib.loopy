@@ -8,6 +8,7 @@ public class IPCoreVersions {
     public static IPCoreVersions ISE14_4 = create14_4();
     public static IPCoreVersions ISE14_5 = create14_5();
     public static IPCoreVersions ISE14_6 = create14_6();
+	public static IPCoreVersions ISE14_7 = create14_7();
 
     public String ise;
 
