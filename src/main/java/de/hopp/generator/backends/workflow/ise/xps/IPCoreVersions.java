@@ -119,5 +119,16 @@ public class IPCoreVersions {
 
         return versions;
     }
+	
+
+		private static IPCoreVersions create14_7() {
+        IPCoreVersions versions = create14_6();
+
+        versions.ise               = "14.7";
+
+        versions.microblaze        = "8.50.c";
+
+        return versions;
+    }
 }
 
