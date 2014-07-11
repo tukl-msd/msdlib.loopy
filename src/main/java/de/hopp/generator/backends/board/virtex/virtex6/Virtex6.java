@@ -17,6 +17,7 @@ import de.hopp.generator.backends.board.virtex.virtex6.gpio.Gpio;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_1;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_4;
 import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_6;
+import de.hopp.generator.backends.workflow.ise.ISEBoard.ISEBoard_14_7;
 import de.hopp.generator.backends.workflow.ise.gpio.GpioComponent;
 import de.hopp.generator.backends.workflow.ise.sdk.DriverVersions;
 import de.hopp.generator.backends.workflow.ise.xps.IPCoreVersions;
@@ -34,7 +35,7 @@ import de.hopp.generator.model.GPIO;
  * @author Thomas Fischer
  * @since 1.8.2013
  */
-public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
+public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6, ISEBoard_14_7 {
 
     protected static final String folder =
         "deploy" + File.separator +
@@ -119,6 +120,16 @@ public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6 {
     @Override
     public SDK getSDK_14_6(Configuration config, ErrorCollection errors) {
         return new SDK(config, DriverVersions.ISE14_6, errors);
+    }
+	
+	@Override
+    public MHS getMHS_14_7(ErrorCollection errors) {
+        return new MHS(this, IPCoreVersions.ISE14_7, errors);
+    }
+
+    @Override
+    public SDK getSDK_14_7(Configuration config, ErrorCollection errors) {
+        return new SDK(config, DriverVersions.ISE14_7, errors);
     }
 
     /**
