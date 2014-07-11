@@ -11,7 +11,7 @@ public enum Workflow {
     ISE_14_1(new ISE_14_1()),
     ISE_14_4(new ISE_14_4()),
     ISE_14_6(new ISE_14_6()),
-	ISE_14_7(new ISE_14_7());
+    ISE_14_7(new ISE_14_7());
 
     // one instance of the backend
     private WorkflowBackend instance;

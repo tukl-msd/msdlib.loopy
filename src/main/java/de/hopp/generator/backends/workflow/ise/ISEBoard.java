@@ -111,13 +111,13 @@ public interface ISEBoard extends BoardBackend {
 
         public SDKGenerator getSDK_14_6(Configuration config, ErrorCollection errors);
     }
-	
-	/**
+    
+    /**
      * Interface for boards that can be synthesised with ise version 14.7
      * @author Thomas Fischer
      */
-	 //FIXME: Adapt this to possible changes in ISE 14.7
-	public interface ISEBoard_14_7 extends ISEBoard {
+    //FIXME: Adapt this to possible changes in ISE 14.7
+    public interface ISEBoard_14_7 extends ISEBoard {
         /**
          * Generate an MHS visitor for the board and an ise 14.7 workflow.
          * The visitor has to be capable of creating an .mhs file for ise 14.7

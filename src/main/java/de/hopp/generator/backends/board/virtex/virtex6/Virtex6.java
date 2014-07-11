@@ -121,8 +121,8 @@ public class Virtex6 implements ISEBoard_14_1, ISEBoard_14_4, ISEBoard_14_6, ISE
     public SDK getSDK_14_6(Configuration config, ErrorCollection errors) {
         return new SDK(config, DriverVersions.ISE14_6, errors);
     }
-	
-	@Override
+    
+    @Override
     public MHS getMHS_14_7(ErrorCollection errors) {
         return new MHS(this, IPCoreVersions.ISE14_7, errors);
     }

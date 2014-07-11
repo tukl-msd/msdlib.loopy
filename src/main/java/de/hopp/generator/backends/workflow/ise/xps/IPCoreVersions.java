@@ -120,9 +120,9 @@ public class IPCoreVersions {
 
         return versions;
     }
-	
+    
 
-	private static IPCoreVersions create14_7() {
+    private static IPCoreVersions create14_7() {
         IPCoreVersions versions = create14_6();
 
         versions.ise               = "14.7";

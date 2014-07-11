@@ -8,7 +8,7 @@ public class DriverVersions {
     public static DriverVersions ISE14_4 = create14_4();
     public static DriverVersions ISE14_5 = create14_5();
     public static DriverVersions ISE14_6 = create14_6();
-	public static DriverVersions ISE14_7 = create14_7();
+    public static DriverVersions ISE14_7 = create14_7();
 
     public String mss;
 
@@ -133,9 +133,9 @@ public class DriverVersions {
         DriverVersions versions = create14_5();
         return versions;
     }
-	
-	//FIXME: Adapt this to possible changes in ISE 14.7
-	private static DriverVersions create14_7() {
+    
+    //FIXME: Adapt this to possible changes in ISE 14.7
+    private static DriverVersions create14_7() {
         DriverVersions versions = create14_6();
         return versions;
     }
