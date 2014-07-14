@@ -8,6 +8,7 @@ public class IPCoreVersions {
     public static IPCoreVersions ISE14_4 = create14_4();
     public static IPCoreVersions ISE14_5 = create14_5();
     public static IPCoreVersions ISE14_6 = create14_6();
+	public static IPCoreVersions ISE14_7 = create14_7();
 
     public String ise;
 
@@ -116,6 +117,17 @@ public class IPCoreVersions {
         versions.microblaze        = "8.50.b";
 
         versions.axi_intc          = "1.04.a";
+
+        return versions;
+    }
+    
+
+    private static IPCoreVersions create14_7() {
+        IPCoreVersions versions = create14_6();
+
+        versions.ise               = "14.7";
+
+        versions.microblaze        = "8.50.c";
 
         return versions;
     }
