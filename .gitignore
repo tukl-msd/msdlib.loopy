@@ -21,6 +21,8 @@ doc/tex/*.log
 doc/tex/*.out
 doc/tex/*.synctex.gz
 doc/tex/*.toc
+.idea
+*.iml
 
 syntax: regexp
 ^\.project$
