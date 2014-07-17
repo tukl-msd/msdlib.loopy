@@ -737,6 +737,11 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
         addConst("MAC_6", "0x" + mac[5], "The sixth  8 bits of the MAC address of this board.");
     }
 
+    @Override
+    public void visit(ChecksumPos checksumPos) throws NE {
+        addConst("CHECKSUM", checksumPos.term().checksum(), "The checksum of the project file this board side driver was generated from");
+    }
+
     private void addConst(String id, String val, String doc, MInclude ... needed) {
         constants = add(constants, MDef(MDocumentation(Strings(doc)), MModifiers(PUBLIC()), id, val, needed));
     }

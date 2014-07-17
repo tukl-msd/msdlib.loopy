@@ -185,6 +185,9 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
     public void visit(CorePos  term) { visit(term.ports()); }
     public void visit(CLKPos   term) { } //frequencies.add(term.frequency().term()); }
 
+    // the checksum of the file
+    public void visit(ChecksumPos checksumPos) throws NE { }
+
     // imports and backends should be handled before this visitor
     public void visit(ImportsPos  term) { }
     public void visit(ImportPos   term) { }

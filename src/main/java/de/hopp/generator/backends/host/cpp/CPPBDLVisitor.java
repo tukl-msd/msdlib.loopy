@@ -114,6 +114,12 @@ public class CPPBDLVisitor extends Visitor<NE> {
             )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo)));
     }
 
+    public void visit(ChecksumPos checksumPos) throws NE {
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM", checksumPos.term().checksum()));
+    }
+
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos term)   { }
 

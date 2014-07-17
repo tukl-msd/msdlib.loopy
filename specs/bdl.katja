@@ -17,7 +17,9 @@ external String
 external Integer
 external Boolean
 
-BDLFile (Imports imports, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
+BDLFile (Checksum checksum, Imports imports, Logs logs, Options opts, Cores cores, GPIOs gpios, Instances insts, Medium medium, Scheduler scheduler)
+
+Checksum (String checksum)
 
 Decl = Import | Logs | Option | Core | GPIO | Instance | Medium | Scheduler
 

@@ -1,10 +1,6 @@
 package de.hopp.generator.frontend;
 
-import static de.hopp.generator.model.BDL.BDLFile;
-import static de.hopp.generator.model.BDL.Cores;
-import static de.hopp.generator.model.BDL.Import;
-import static de.hopp.generator.model.BDL.Imports;
-import static de.hopp.generator.model.BDL.Logs;
+import static de.hopp.generator.model.BDL.*;
 import static org.apache.commons.io.FileUtils.getFile;
 import static org.apache.commons.io.FilenameUtils.getBaseName;
 import static org.apache.commons.io.FilenameUtils.getFullPath;
@@ -13,6 +9,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -33,6 +32,19 @@ public class Parser {
 
     private IOHandler IO;
     private ErrorCollection errors;
+
+
+
+    private static MessageDigest initDigest() {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("MD5");
+            return digest;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Could not initialize checksum digester", e);
+        }
+    }
 
     public Parser(Configuration config, ErrorCollection errors) {
         IO = config.IOHANDLER();
@@ -66,6 +78,7 @@ public class Parser {
 
         // get the first file from the list and remove it
         File file = files.remove();
+        MessageDigest messageDigest = initDigest();
 
         try {
             // If the file has already been parsed earlier, continue with the next file
@@ -73,7 +86,9 @@ public class Parser {
 
             // construct scanner and parser
             InputStream input = new FileInputStream(file);
-            BDLFileScanner scanner = new BDLFileScanner(input);
+            // digest the input while parsing so we can create a checksum of the file
+            DigestInputStream dis = new DigestInputStream(input, messageDigest);
+            BDLFileScanner scanner = new BDLFileScanner(dis);
             BDLFileParser parser = new BDLFileParser(scanner);
 
             // set attributes of the parser
@@ -91,6 +106,8 @@ public class Parser {
 
                 // otherwise, cast the result to a BDLFile
                 BDLFile bdl = (BDLFile) symbol.value;
+                // assign the checksum of the file (can only be done after parsing)
+                bdl = bdl.replaceChecksum(Checksum(toHexString(messageDigest.digest())));
 
                 // normalize the sources of the bdl
                 bdl = normalizeSources(bdl, directory, file.getCanonicalPath());
@@ -164,7 +181,15 @@ public class Parser {
         if(file1 == null) return file2;
         if(file2 == null) return file1;
 
+        MessageDigest messageDigest = initDigest();
+        messageDigest.update(file1.checksum().checksum().getBytes());
+        messageDigest.update(file2.checksum().checksum().getBytes());
+        byte[] checksumRaw = messageDigest.digest();
+
+        String combinedChecksum = toHexString(checksumRaw);
+
         return BDLFile(
+            Checksum(combinedChecksum),
             file1.imports().addAll(file2.imports()),
             merge(file1.logs(), file2.logs()),
             file1.opts().addAll(file2.opts()),
@@ -174,6 +199,16 @@ public class Parser {
             merge(file1.medium(), file2.medium()),
             merge(file1.scheduler(), file2.scheduler())
         );
+    }
+
+    private static String toHexString(byte[] checksumRaw) {
+        StringBuilder builder = new StringBuilder();
+        for(byte b : checksumRaw) {
+            String hex = Integer.toHexString(0xff & b);
+            if(hex.length()==1) builder.append('0');
+            builder.append(hex);
+        }
+        return builder.toString();
     }
 
     private static Logs merge(Logs l1, Logs l2) throws ParserError{
