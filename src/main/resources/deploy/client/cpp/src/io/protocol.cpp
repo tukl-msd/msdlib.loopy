@@ -120,7 +120,8 @@ void protocol_v1::decode(int first) {
 
         if(received_cs[0] != CHECKSUM1 || received_cs[1] != CHECKSUM2 || received_cs[2] != CHECKSUM3 || received_cs[3] != CHECKSUM4) {
             //TODO better way to inform about checksum failure?
-            logger_host << "checksum of board-side driver and host-side api do not match!" << std::endl;
+            std::cerr << "ERROR: checksum of board-side driver and host-side api do not match!" << std::endl;
+            logger_host << "ERROR: checksum of board-side driver and host-side api do not match!" << std::endl;
             std::exit(1);
         }
 
