@@ -1,5 +1,6 @@
 /**
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 19.02.2013
  */
 
@@ -16,6 +17,7 @@
 
 // others
 #include "io.h"
+#include "../constants.h"
 #include "../exceptions.h"
 #include "../logger.h"
 
@@ -25,12 +27,14 @@ protocol *proto = new protocol_v1();
 protocol::protocol() {}
 
 // message types
-#define reset 0
-#define debug 7
-#define data  9
-#define poll 10
-#define gpio 14
-#define ack  15
+#define reset    0
+#define reqcheck 1
+#define checksum 2
+#define debug    7
+#define data     9
+#define poll    10
+#define gpio    14
+#define ack     15
 
 #define info    3
 #define warning 8
@@ -83,6 +87,8 @@ void protocol_v1::decode(int first) {
 	// encoding v2
 	// 00xx config related
 	//  0000 soft reset    0
+	//  0001 request checksum 1
+	//  0010 checksum      2
 	//  0011 info          3
 	// 01xx data related
 	//  0100 data          4
@@ -94,6 +100,29 @@ void protocol_v1::decode(int first) {
 			 // receiving a soft reset from the board indicates, that the board performed a successful reset.
 		     // signal the application (since reset() is a blocking call)
 		break;
+    case reqcheck:
+        // should only be sent to the board, not the host
+        break;
+    case checksum:
+        int received_cs[4];
+
+        unsigned int i;
+        for(i = 0; i<4; i++) {
+            try {
+                if(intrfc->waitForData(0,250000)) intrfc->readInt(received_cs + i);
+            } catch(mediumException &e) {
+                logger_host << ERROR << e.what() << std::endl;
+                intrfc->waitForData(0,250000);
+            }
+        }
+
+        if(received_cs[0] != CHECKSUM1 || received_cs[1] != CHECKSUM2 || received_cs[2] != CHECKSUM3 || received_cs[3] != CHECKSUM4) {
+            //TODO better way to inform about checksum failure?
+            logger_host << ERROR << e.what() << std::endl;
+            std::exit(1);
+        }
+
+        break;
     case  debug: // This is an error message. It should be stored in some error queue (throw it, if the call was synchronous?)
         // severity
         // 0011  3 info
@@ -241,6 +270,12 @@ std::vector<int> protocol_v1::encode_gpio(unsigned char gid, unsigned char val) 
 std::vector<int> protocol_v1::encode_reset() {
 	std::vector<int> v;
 	v.push_back(construct_header(reset, 0, 0));
+	return v;
+}
+
+std::vector<int> protocol_v1::encode_request_checksum() {
+	std::vector<int> v;
+	v.push_back(construct_header(reqcheck, 0, 0));
 	return v;
 }
 

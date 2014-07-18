@@ -2,6 +2,7 @@
  * Wrapper for setting up and shutting down the driver.
  * @file
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 16.04.2013
  */
 
@@ -28,6 +29,11 @@ void startup(std::string ip);
  * Shuts down the writer and reader threads.
  */
 void shutdown();
+
+/**
+ * Checks that the checksum of the board and the host match up.
+ */
+void check_checksum();
 
 #endif /* SETUP_H_ */
 

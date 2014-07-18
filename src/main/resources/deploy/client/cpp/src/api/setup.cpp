@@ -1,5 +1,6 @@
 /*
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 16.04.2013
  */
 
@@ -49,6 +50,11 @@ void shutdown() {
 	shutdownWriteLoop();
 	writerThread->join(); writerThread = NULL;
 	readerThread->join(); readerThread = NULL;
+}
+
+void check_checksum() {
+    send_checksum_request();
+    // TODO maybe wait for the checksum check to complete?
 }
 
 

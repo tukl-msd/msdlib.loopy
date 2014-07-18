@@ -87,12 +87,11 @@ void send_gpio(unsigned char gid, unsigned char val) {
 
 void send_checksum() {
     struct Message *m = encode_checksum();
-    int checksum[] = {CHECKSUM1, CHECKSUM2, CHECKSUM3 CHECKSUM4};
+    int checksum[] = {CHECKSUM1, CHECKSUM2, CHECKSUM3, CHECKSUM4};
     message_payload(m, checksum, 4);
     print_message(m);
     medium_send(m);
     message_free(m);
-    free(checksum);
 }
 
 //void XUartLite_SendByte(u32 BaseAddress, u8 Data);
