@@ -72,6 +72,8 @@ void protocol_v1::decode(int first) {
 	// 4 bit message type
 	//   0xxx Config related
 	//     0000 "Soft Reset"
+	//     0001 request checksum
+	//     0010 checksum
 	//     0111 Error
 	//   1xxx Data related
 	//     1000 Data Non-Blocking
@@ -118,7 +120,7 @@ void protocol_v1::decode(int first) {
 
         if(received_cs[0] != CHECKSUM1 || received_cs[1] != CHECKSUM2 || received_cs[2] != CHECKSUM3 || received_cs[3] != CHECKSUM4) {
             //TODO better way to inform about checksum failure?
-            logger_host << ERROR << e.what() << std::endl;
+            logger_host << "checksum of board-side driver and host-side api do not match!" << std::endl;
             std::exit(1);
         }
 

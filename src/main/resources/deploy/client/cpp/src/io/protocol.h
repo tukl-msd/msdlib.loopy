@@ -90,6 +90,7 @@ public:
 	std::vector<int> encode_poll(unsigned char pid, unsigned int count);
 	std::vector<int> encode_gpio(unsigned char gid, unsigned char val);
 	std::vector<int> encode_reset();
+	std::vector<int> encode_request_checksum();
 };
 
 /** Instance of the protocol used for sending */

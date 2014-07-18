@@ -83,7 +83,8 @@ int decode_header(int first) {
 		     // Afterwards, answer with a reset type message to acknowledge successful reset.
 		break;
 	case reqcheck:
-
+	    log_fine("FINE: sending checksum to host.");
+        send_checksum();
 	    break;
 	case checksum:
         log_warn("WARNING: got checksum message without requesting it. The board will not check the checksum. Frame ignored.", type);
