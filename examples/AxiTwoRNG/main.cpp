@@ -38,6 +38,8 @@ void randomTest() {
 int main() {
   startup();
 
+  check_checksum();
+
   randomTest();
 
   shutdown();

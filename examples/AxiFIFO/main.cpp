@@ -8,14 +8,14 @@
 
 void YourFunction() {
 
-  // init test sequence  
+  // init test sequence
   int value1 = 0x88cb47c9;
   int value2 = 0x8a9cdf65;
   int value3 = 0xcaf40ed9;
 
   // init vector
   std::vector<std::bitset<32> > values;
-  
+
   //seeds.push_back(reset);
   values.push_back(value1);
   values.push_back(value2);
@@ -42,6 +42,8 @@ void YourFunction() {
 int main()
 {
   startup("131.246.74.3");
+
+  check_checksum();
 
   YourFunction();
 
