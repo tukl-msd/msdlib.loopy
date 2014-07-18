@@ -5,6 +5,7 @@
  * board over axi-stream.
  * @file
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 27.02.2013
  */
 
@@ -56,6 +57,11 @@ void send_poll(unsigned char pid);
  * @param val State of the gpio component.
  */
 void send_gpio(unsigned char gid, unsigned char val);
+
+/**
+ * Sends the checksum of the board-side driver to the host-side driver
+ */
+void send_checksum();
 
 /**
  * Flushes the software output queue and sends its contents to the host-side client.

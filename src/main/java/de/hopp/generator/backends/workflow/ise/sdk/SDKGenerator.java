@@ -204,6 +204,7 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
         addConst("PROTO_VERSION", "1", "Denotes protocol version, that should be used for sending messages.");
 
         // visit board components
+        visit(board.checksum());
         visit(board.medium());
         visit(board.scheduler());
         visit(board.gpios());
@@ -739,7 +740,14 @@ public abstract class SDKGenerator extends Visitor<NE> implements SDK {
 
     @Override
     public void visit(ChecksumPos checksumPos) throws NE {
-        addConst("CHECKSUM", checksumPos.term().checksum(), "The checksum of the project file this board side driver was generated from");
+        //TODO remove in favor of 4 ints
+        addConst("CHECKSUM", "\"" + checksumPos.term().checksum() + "\"",
+                "The checksum of the project file this board side driver was generated from");
+
+        addConst("CHECKSUM1", "0x" + checksumPos.term().checksum().substring(0, 8), "The checksum of the project file this board side driver was generated from");
+        addConst("CHECKSUM2", "0x" + checksumPos.term().checksum().substring(8, 16), "The checksum of the project file this board side driver was generated from");
+        addConst("CHECKSUM3", "0x" + checksumPos.term().checksum().substring(16, 24), "The checksum of the project file this board side driver was generated from");
+        addConst("CHECKSUM4", "0x" + checksumPos.term().checksum().substring(24, 32), "The checksum of the project file this board side driver was generated from");
     }
 
     private void addConst(String id, String val, String doc, MInclude ... needed) {

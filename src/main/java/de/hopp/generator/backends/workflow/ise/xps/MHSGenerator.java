@@ -89,6 +89,7 @@ public abstract class MHSGenerator extends Visitor<NE> implements MHS {
                 globalSWQueueSize = ((SWQUEUEPos)opt).qsize().term();
 
         // visit boards components
+        visit(term.checksum());
         visit(term.gpios());
         visit(term.insts());
         visit(term.medium());

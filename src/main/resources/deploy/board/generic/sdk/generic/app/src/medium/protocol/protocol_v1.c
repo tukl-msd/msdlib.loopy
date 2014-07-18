@@ -1,5 +1,6 @@
 /**
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 01.02.2013
  */
 
@@ -37,12 +38,14 @@ void xil_printf(const char *ctrl1, ...);
 #define version 1
 
 // message types
-#define reset 0
-#define debug 7
-#define data  9
-#define poll 10
-#define gpio 14
-#define ack  15
+#define reset    0
+#define reqcheck 1
+#define checksum 2
+#define debug    7
+#define data     9
+#define poll    10
+#define gpio    14
+#define ack     15
 
 /**
  * Decode a header version 1.
@@ -79,7 +82,13 @@ int decode_header(int first) {
 		     // Clear all queues and propagate a hardware reset.
 		     // Afterwards, answer with a reset type message to acknowledge successful reset.
 		break;
-		// 1-6 are not assigned
+	case reqcheck:
+
+	    break;
+	case checksum:
+        log_warn("WARNING: got checksum message without requesting it. The board will not check the checksum. Frame ignored.", type);
+	    return 1;
+		// 3-6 are not assigned
 	case  debug: // This is an error message.
 		     // By design, error messages should only be sent by the server.
 		     // Consequently, receiving such a message is an error ;)
@@ -157,6 +166,13 @@ struct Message* encode_debug(unsigned char type, unsigned int size) {
 	int header = (version << 24) + (debug << 20) + (type << 16) + size;
 	message_header(m, &header, 1);
 	return m;
+}
+
+struct Message* encode_checksum() {
+    struct Message *m = message_new();
+    int header = (version << 24) + (checksum << 20);
+    message_header(m, &header, 1);
+    return m;
 }
 
 #endif /* PROTO_VERSION */
