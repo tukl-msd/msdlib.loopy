@@ -18,6 +18,7 @@
 #include "lwip/init.h"
 #include "lwip/tcp.h"
 #include "lwip/err.h"
+#include "lwip/inet.h"
 #if DHCP
 #include "lwip/dhcp.h"
 #endif
