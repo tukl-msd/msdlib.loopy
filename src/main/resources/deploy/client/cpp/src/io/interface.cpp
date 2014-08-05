@@ -161,6 +161,11 @@ void ethernet::send(int buf[], int size) {
 	}
 	logger_host << " ...";
 
+    // convert to network byte order
+    for(i = 0; i < size; i++) {
+        buf[i] = htonl(buf[i]);
+    }
+
 	// write data
 	if(write(socketFD_send, buf, size*4) < 0) throw mediumException(
 			std::string("failed writing to socket: ") +

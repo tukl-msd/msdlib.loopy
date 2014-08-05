@@ -55,40 +55,6 @@ static inline void usleep(unsigned int useconds) {
 /* ********************************* SENDING & RECEIVING ********************************* */
 /* *************************************************************************************** */
 
-static inline void set_unaligned ( int *target, int *data ) {
-    int offset, i;
-    char *byte, *res;
-
-    offset = ((int)target) % 4;
-    if (offset != 0) {
-        byte = (void*)data;
-        res = (void*)target;
-        for (i=0; i<4; i++) *(res++) = ((*(byte++)) & 0xFF);
-    } else *target = *data;
-}
-
-static inline int get_unaligned ( int *data ) {
-    unsigned int offset, res, tmp;
-    int i;
-    char *byte;
-
-    offset = ((int)data) % 4;
-    if (offset != 0) {
-        byte = (void*)data;
-        res = 0;
-        for (i=0; i<4; i++) {
-            // make sure only rightmost 8bit are processed
-            tmp = (*(byte++)) & 0xFF;
-            // shift the value to the correct position
-            tmp <<= (i*8);
-            // sum up the 32bit value
-            res += tmp;
-        }
-        return res;
-    }
-    return *data;
-}
-
 /** stores a received message */
 static struct pbuf *msgFst = NULL, *msgCurSeg = NULL;
 /** stores the position of the next word to read in the received message */
@@ -160,7 +126,7 @@ static inline int tcp_enque(int* vals, int size) {
     // unalign values (not sure, if this is still required)
     int i;
     for(i = 0; i < size; i++)
-        set_unaligned(vals+i, vals+i);
+        htonl(vals+i, vals+i);
 
     err_t err;
     do {
@@ -246,7 +212,7 @@ int medium_recv_int() {
     while(msgFst == NULL) xemacif_input(netif_ptr);
 
     // get an integer value
-    int word = get_unaligned(msgCurSeg->payload + rWordIndex*4);
+    int word = ntohl(msgCurSeg->payload + rWordIndex*4);
 
     // increment word indices
     wordIndex++; rWordIndex++;
