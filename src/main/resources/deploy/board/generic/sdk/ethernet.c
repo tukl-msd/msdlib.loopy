@@ -127,7 +127,7 @@ static inline int tcp_enque(int* vals, int size) {
     // unalign values (not sure, if this is still required)
     int i;
     for(i = 0; i < size; i++)
-        htonl(vals+i, vals+i);
+        vals[i] = htonl(vals[i]);
 
     err_t err;
     do {
@@ -213,7 +213,7 @@ int medium_recv_int() {
     while(msgFst == NULL) xemacif_input(netif_ptr);
 
     // get an integer value
-    int word = ntohl(msgCurSeg->payload + rWordIndex*4);
+    int word = ntohl(msgCurSeg->payload[rWordIndex]);
 
     // increment word indices
     wordIndex++; rWordIndex++;
