@@ -126,7 +126,7 @@ public class SDK extends de.hopp.generator.backends.workflow.ise.sdk.SDKGenerato
             MParameter(VALUE(), MPointerType(MType("int")), "val"), MParameter(VALUE(), MType("int"), "target")
         ), MCode(Strings(
             "log_finer(\"\\nreading from out-going port %d ...\", target);",
-            "if(target > 0) {",
+            "if(target > " + (axiStreamIdSlave-1) + ") {",
             "    log_error(\"unknown axi stream port %d\", target);",
             "    return 1;",
             "}",
