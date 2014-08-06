@@ -18,7 +18,7 @@
 #include "lwip/init.h"
 #include "lwip/tcp.h"
 #include "lwip/err.h"
-#include "lwip/inet.h"
+#include "lwip/arch.h"
 #if DHCP
 #include "lwip/dhcp.h"
 #endif
@@ -213,7 +213,7 @@ int medium_recv_int() {
     while(msgFst == NULL) xemacif_input(netif_ptr);
 
     // get an integer value
-    int word = ntohl(msgCurSeg->payload[rWordIndex]);
+    int word = ntohl(((int*)msgCurSeg->payload)[rWordIndex]);
 
     // increment word indices
     wordIndex++; rWordIndex++;
