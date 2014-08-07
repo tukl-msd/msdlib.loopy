@@ -61,7 +61,7 @@ static inline void set_unaligned ( int *target, int *data ) {
 
     offset = ((int)target) % 4;
     if (offset != 0) {
-        datai = *data;
+        int datai = *data;
         res = (void*)target;
         for (i=3; i>=0; i--) *(res++) = ((datai >> (i*8)) & 0xFF);
     } else *target = *data;
