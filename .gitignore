@@ -27,3 +27,4 @@ out
 
 syntax: regexp
 ^\.project$
+work
