@@ -167,3 +167,8 @@ jar {
   // also add the deploy folder
   //from "deploy"
 }
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '1.11'
+}
+

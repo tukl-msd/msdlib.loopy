@@ -21,7 +21,7 @@ action code {:
 :}
 
 parser code {:
-//  protected BDLFile board = BDL.BDLFile(BDL.Imports(), BDL.Logs(BDL.NONE(), BDL.NONE()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
+//  protected BDLFile board = BDL.BDLFile(BDL.Checksum(""), BDL.Imports(), BDL.Logs(BDL.NONE(), BDL.NONE()), BDL.Options(), BDL.DEFAULT(), BDL.Medium("", ""), BDL.Cores(), BDL.GPIOs());
 //
 //  public BDLFile getBDLFile() {
 //    return board;
@@ -115,6 +115,7 @@ start with file;
 file ::=
      decl_list:l
      {:
+         Checksum checksum   = BDL.Checksum("");
          Imports imports     = BDL.Imports();
          Logs logs           = BDL.Logs(BDL.NONE(), BDL.NONE());
          Options opts        = BDL.Options();
@@ -158,7 +159,7 @@ file ::=
              scheduler = (Scheduler)d;
            }
          }
-         RESULT = BDL.BDLFile(imports, logs, opts, cores, gpios, insts, medium, scheduler);
+         RESULT = BDL.BDLFile(checksum, imports, logs, opts, cores, gpios, insts, medium, scheduler);
      :}
   ;
 

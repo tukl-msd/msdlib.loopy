@@ -80,6 +80,8 @@ public class CPPBDLVisitor extends Visitor<NE> {
 //            if(o instanceof DEBUG)   debug = true;
         }
 
+        visit(term.checksum());
+
         // add derived constants
         consts = add(consts, MDef(MDocumentation(Strings(
                 "If set, enables additional console output for debugging purposes"
@@ -112,6 +114,26 @@ public class CPPBDLVisitor extends Visitor<NE> {
         consts = add(consts, MDef(MDocumentation(Strings(
                 "The number of gpo components"
             )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo)));
+    }
+
+    public void visit(ChecksumPos checksumPos) throws NE {
+        //TODO remove in favor of 4 ints
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM", "\"" + checksumPos.term().checksum() + "\""));
+
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM1", "0x" + checksumPos.term().checksum().substring(0, 8)));
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM2", "0x" + checksumPos.term().checksum().substring(8, 16)));
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM3", "0x" + checksumPos.term().checksum().substring(16, 24)));
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM4", "0x" + checksumPos.term().checksum().substring(24, 32)));
     }
 
     // We assume all imports to be accumulated at the parser

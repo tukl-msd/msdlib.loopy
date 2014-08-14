@@ -1,5 +1,6 @@
 /**
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 18.02.2013
  */
 
@@ -188,9 +189,18 @@ void send_poll(unsigned char pid, unsigned int count) {
 	std::vector<int> val = proto->encode_poll(pid, count);
 	try {
 		intrfc->send(val);
-		} catch (mediumException &e) {
-		} catch (protocolException &e) {
-		}
+    } catch (mediumException &e) {
+    } catch (protocolException &e) {
+    }
+}
+
+void send_checksum_request() {
+	std::vector<int> val = proto->encode_request_checksum();
+	try {
+		intrfc->send(val);
+    } catch (mediumException &e) {
+    } catch (protocolException &e) {
+    }
 }
 
 /**

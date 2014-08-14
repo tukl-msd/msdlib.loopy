@@ -6,6 +6,7 @@
  * stored in the constants file (which has been specified by the user).
  * @file
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 01.02.2013
  */
 
@@ -71,5 +72,10 @@ struct Message* encode_debug(unsigned char type, unsigned int size);
  * @return Pointer to an empty message with the generated header.
  */
 struct Message* encode_data(unsigned char pid, unsigned int size);
+
+/**
+ * Delegates calls to the respective protocol encoder for the protocol version the checksum message should be encoded with.
+ */
+struct Message* encode_checksum();
 
 #endif /* PROTOCOL_H_ */
