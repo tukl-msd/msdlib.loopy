@@ -16,7 +16,7 @@ core axififo 1.00.a {
 
   // list of vhdl and netlist sources
   source "vhdl_sources/AxiFifo.vhd"  
-  source "vhdl_sources/Fifo.ngc"  
+  source "vhdl_sources/fifo_generator_v9_3.ngc"  
 
   // declaration of the components interface
   port in s_axis
