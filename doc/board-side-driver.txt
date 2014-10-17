@@ -1,0 +1,123 @@
+Basic layout of the loopy board-side driver:
+
+main.c
+------
+main()
+  init_platform()
+  -> platform.c
+
+  init_components()
+  -> components/components.c
+
+  init_medium()
+  -> medium/medium.c
+
+  schedule()
+  -> scheduler.c
+
+  cleanup_platform()
+  -> platform.c
+
+
+components/components.c
+-----------------------
+init_components()
+
+axi_write(int val, int target)
+  putdfslx(int val, int target, FSL_NONBLOCKING)
+  -> fsl.h
+
+  fsl_isinvalid(int)
+  -> fsl.h
+
+axi_read(int *val, int target)
+  getdfslx(int *val, int target, FSL_NONBLOCKING)
+  -> fsl.h
+
+  fsl_isinvalid(int)
+  -> fsl.h
+
+
+scheduler.c
+-----------
+schedule()
+  medium_read()
+  -> medium/medium.c
+
+  axi_write(int val, int target)
+  -> components/components.c
+
+  send_poll(int target)
+  -> io.c
+
+  axi_read(int *val, int target)
+  -> components/components.c
+
+
+medium/medium.c
+---------------
+medium_read()
+  xemacif_input(netif *netif_ptr)
+  -> netif/xadapter.h (lwip)
+
+  medium_recv_int()
+  -> medium/medium.c
+
+  decode_header(int header)
+  -> medium/protocol/protocol_v1.c
+
+medium_send(struct Message *m)
+  tcp_sndbuf(tcp_pcb *con)
+  -> lwip/tcp.h (lwip)
+
+  tcp_enque(int *vals, int size)
+  -> medium/medium.c
+
+tcp_enque(int *vals, int size)
+  tcp_write(tcp_pcb *con, void *vals, u16_t size, TCP_WRITE_FLAG_COPY)
+  -> lwip/tcp.h (lwip)
+
+
+
+MicoBlaze Processor Fast Simplex Link (FSL) Interface [fsl.h]
+-----------------------------------------------------
+
+Provides access to all of the functionality of the MicroBlaze FSL feature in one simple and
+parameterized interface. Some capabilities are available on MicroBlaze v7.00a and later only.
+
+In the macro descriptions, val refers to a variable in your program that can be the source of the
+sink of the FSL operation.
+
+putdfslx(val, id, flags)
+  Performs a put function on an input FSL of the MicroBlaze processor; id is the FSL identifier and
+  is an integer value or variable in the range of 0 to 15. The semantics of the instruction is
+  determinied by the valid FSL macro flags. This macro is available on MicroBlaze processor v7.00.a
+  and later only.
+
+getdfslx(val, id, falgs)
+  Performs a get function on an input FSL of the MicroBlaze processor; id is the FSL identifier and
+  is an integer value or variable in the range 0 to 15. The semantics of the instruction is
+  determined by the valid FSL macro flags. This macro is available on MicroBlaze processor v7.00.a
+  and later only.
+
+fsl_isinvalid(invalid)
+  Checks if the last FSL operation returned valid data. This macro is applicable after invoking a
+  non-blocking FSL put or get instruction. If there was no data on the FSL channel on a get, or if
+  the FSL channel was full on a put, invalid is set to 1; otherwise, it is set to 0;
+
+FSL_NONBLOCKING
+  Non-blocking semantics; When non-blocking semantics are not applied, blocking semantics are
+  implied.
+
+
+See documentation at this site:
+
+http://www.xilinx.com/support/documentation/sw_manuals/xilinx12_3/oslib_rm.pdf
+
+under Standalone (v.3.00.a) and this paper:
+
+http://www.xilinx.com/support/documentation/application_notes/xapp529.pdf
+
+about connecting customized IP to the MicroBlaze Soft Processor.
+
+
