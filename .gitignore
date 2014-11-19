@@ -24,6 +24,7 @@ doc/tex/*.toc
 out
 .idea
 *.iml
+.tags
 
 syntax: regexp
 ^\.project$
