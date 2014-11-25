@@ -56,38 +56,34 @@ static inline void usleep(unsigned int useconds) {
 /* *************************************************************************************** */
 
 static inline void set_unaligned ( int *target, int *data ) {
-    int offset, i;
-    char *byte, *res;
+    int i;
+    char *res;
 
-    offset = ((int)target) % 4;
-    if (offset != 0) {
-        byte = (void*)data;
-        res = (void*)target;
-        for (i=0; i<4; i++) *(res++) = ((*(byte++)) & 0xFF);
-    } else *target = *data;
+    int datai = *data;
+    res = (void*)target;
+    for (i=3; i>=0; i--) {
+         *(res++) = (char)((datai >> (i*8)) & 0xFF);
+    }
 }
 
 static inline int get_unaligned ( int *data ) {
-    unsigned int offset, res, tmp;
+    unsigned int res, tmp;
     int i;
     char *byte;
 
-    offset = ((int)data) % 4;
-    if (offset != 0) {
-        byte = (void*)data;
-        res = 0;
-        for (i=0; i<4; i++) {
-            // make sure only rightmost 8bit are processed
-            tmp = (*(byte++)) & 0xFF;
-            // shift the value to the correct position
-            tmp <<= (i*8);
-            // sum up the 32bit value
-            res += tmp;
-        }
-        return res;
+    byte = (void*)data;
+    res = 0;
+    for (i=3; i>=0; i--) {
+        // make sure only rightmost 8bit are processed
+        tmp = (*(byte++)) & 0xFF;
+        // shift the value to the correct position
+        tmp <<= (i*8);
+        // sum up the 32bit value
+        res += tmp;
     }
-    return *data;
+    return res;
 }
+
 
 /** stores a received message */
 static struct pbuf *msgFst = NULL, *msgCurSeg = NULL;
@@ -161,6 +157,7 @@ static inline int tcp_enque(int* vals, int size) {
     int i;
     for(i = 0; i < size; i++)
         set_unaligned(vals+i, vals+i);
+
 
     err_t err;
     do {
@@ -247,6 +244,7 @@ int medium_recv_int() {
 
     // get an integer value
     int word = get_unaligned(msgCurSeg->payload + rWordIndex*4);
+
 
     // increment word indices
     wordIndex++; rWordIndex++;

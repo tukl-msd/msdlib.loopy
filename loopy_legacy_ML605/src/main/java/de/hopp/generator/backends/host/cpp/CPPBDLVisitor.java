@@ -80,6 +80,8 @@ public class CPPBDLVisitor extends Visitor<NE> {
 //            if(o instanceof DEBUG)   debug = true;
         }
 
+        visit(term.checksum());
+
         // add derived constants
         consts = add(consts, MDef(MDocumentation(Strings(
                 "If set, enables additional console output for debugging purposes"
@@ -114,6 +116,26 @@ public class CPPBDLVisitor extends Visitor<NE> {
             )), MModifiers(PUBLIC()), "GPO_COUNT", String.valueOf(gpo)));
     }
 
+    public void visit(ChecksumPos checksumPos) throws NE {
+        //TODO remove in favor of 4 ints
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM", "\"" + checksumPos.term().checksum() + "\""));
+
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM1", "0x" + checksumPos.term().checksum().substring(0, 8)));
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM2", "0x" + checksumPos.term().checksum().substring(8, 16)));
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM3", "0x" + checksumPos.term().checksum().substring(16, 24)));
+        consts = add(consts, MDef(MDocumentation(Strings(
+                "The checksum of the project configuration this project was generated from"
+        )), MModifiers(PUBLIC()), "CHECKSUM4", "0x" + checksumPos.term().checksum().substring(24, 32)));
+    }
+
     // We assume all imports to be accumulated at the parser
     public void visit(ImportsPos term)   { }
 
@@ -125,7 +147,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
     private void addLogger(final String name, final String prefix, final Log log) {
         MInitList initList = log.Switch(new Log.Switch<MInitList, NE>() {
             public MInitList CaseNONE(NONE term) {
-                return MInitList(Strings("NULL", "0", "\"" + prefix + "\""));
+                return MInitList(Strings("NULL", "ERROR", "\"" + prefix + "\""));
             }
             public MInitList CaseCONSOLE(CONSOLE term) {
                 return MInitList(Strings("&std::cout", term.sev().sortName(), "\"" + prefix + "\""));
@@ -162,7 +184,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
 
         public void visit(GPIOPos term) {
         // construct init block according to GPIO direction
-        MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude(PRIVATE(), "gpio.h")));
+        MInitList init = MInitList(Strings(), MIncludes(MQuoteInclude(PUBLIC(), "gpio.h")));
 
         GpioComponent gpio;
         try {
@@ -181,7 +203,7 @@ public class CPPBDLVisitor extends Visitor<NE> {
         // add attribute for the GPIO component
         comps = add(comps, MAttribute(MDocumentation(Strings(
                 "An instance of the #" + gpio.id() + " core."
-            )), MModifiers(PUBLIC()), MType("class " + (gpio.isGPI() ? "gpi" : "gpo") + "<" + gpio.width() + ">"),
+            )), MModifiers(PUBLIC()), MType((gpio.isGPI() ? "gpi" : "gpo") + "<" + gpio.width() + ">"),
             "gpio_"+ gpio.id(), init));
     }
 

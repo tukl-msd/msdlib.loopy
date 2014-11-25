@@ -2,6 +2,7 @@
  * Handles protocol-specific encoding and decoding.
  * @file
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 19.02.2013
  */
 
@@ -65,6 +66,12 @@ public:
 	 * @return The encoded message.
 	 */
 	virtual std::vector<int> encode_reset() = 0;
+
+	/**
+	 * Generates a request checksum message.
+	 * @return The encoded message
+	 */
+	virtual std::vector<int> encode_request_checksum() = 0;
 };
 
 /**
@@ -83,6 +90,7 @@ public:
 	std::vector<int> encode_poll(unsigned char pid, unsigned int count);
 	std::vector<int> encode_gpio(unsigned char gid, unsigned char val);
 	std::vector<int> encode_reset();
+	std::vector<int> encode_request_checksum();
 };
 
 /** Instance of the protocol used for sending */

@@ -1,9 +1,11 @@
 /**
  * @author Thomas Fischer
+ * @author Mathias Weber
  * @since 27.02.2013
  */
 
 #include "io.h"
+#include "constants.h"
 #include "medium/message.h"
 #include "medium/medium.h"
 #include "medium/protocol/protocol.h"
@@ -81,6 +83,15 @@ void send_gpio(unsigned char gid, unsigned char val) {
     print_message(m);
 	medium_send(m);
 	message_free(m);
+}
+
+void send_checksum() {
+    struct Message *m = encode_checksum();
+    int checksum[] = {CHECKSUM1, CHECKSUM2, CHECKSUM3, CHECKSUM4};
+    message_payload(m, checksum, 4);
+    print_message(m);
+    medium_send(m);
+    message_free(m);
 }
 
 //void XUartLite_SendByte(u32 BaseAddress, u8 Data);

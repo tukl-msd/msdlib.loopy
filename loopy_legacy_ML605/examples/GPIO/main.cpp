@@ -82,6 +82,8 @@ void gpi_test() {
 int main() {
   startup();
 
+  check_checksum();
+
   led_test();
 
   gpi_test();

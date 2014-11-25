@@ -38,6 +38,10 @@ void scheduleReader();
  */
 void send_poll(unsigned char pid, unsigned int count);
 /**
+ * Request the checksum from the board.
+ */
+void send_checksum_request();
+/**
  * Processes a server acknowledgment.
  * Removes the number of acknowledged values from the queue and
  * updates states accordingly.
