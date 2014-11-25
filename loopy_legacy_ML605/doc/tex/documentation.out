@@ -1,0 +1,43 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.1.1}{Origins and Goals}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{Terminology}{chapter.1}% 3
+\BOOKMARK [0][-]{chapter.2}{Getting Started}{}% 4
+\BOOKMARK [1][-]{section.2.1}{Setup}{chapter.2}% 5
+\BOOKMARK [1][-]{section.2.2}{Board Description Language}{chapter.2}% 6
+\BOOKMARK [1][-]{section.2.3}{Generation Backends}{chapter.2}% 7
+\BOOKMARK [1][-]{section.2.4}{Process}{chapter.2}% 8
+\BOOKMARK [2][-]{subsection.2.4.1}{Checking out the Generator}{section.2.4}% 9
+\BOOKMARK [2][-]{subsection.2.4.2}{Building the Generator}{section.2.4}% 10
+\BOOKMARK [2][-]{subsection.2.4.3}{Running the Generator}{section.2.4}% 11
+\BOOKMARK [2][-]{subsection.2.4.4}{Executing your Application}{section.2.4}% 12
+\BOOKMARK [0][-]{chapter.3}{Driver Description}{}% 13
+\BOOKMARK [1][-]{section.3.1}{API}{chapter.3}% 14
+\BOOKMARK [2][-]{subsection.3.1.1}{Component}{section.3.1}% 15
+\BOOKMARK [2][-]{subsection.3.1.2}{Port}{section.3.1}% 16
+\BOOKMARK [2][-]{subsection.3.1.3}{State}{section.3.1}% 17
+\BOOKMARK [1][-]{section.3.2}{Architecture}{chapter.3}% 18
+\BOOKMARK [2][-]{subsection.3.2.1}{Queueing}{section.3.2}% 19
+\BOOKMARK [2][-]{subsection.3.2.2}{Forwarding}{section.3.2}% 20
+\BOOKMARK [2][-]{subsection.3.2.3}{I/O Threads}{section.3.2}% 21
+\BOOKMARK [2][-]{subsection.3.2.4}{Bitwidth Translation}{section.3.2}% 22
+\BOOKMARK [1][-]{section.3.3}{Protocol}{chapter.3}% 23
+\BOOKMARK [2][-]{subsection.3.3.1}{Control Flow}{section.3.3}% 24
+\BOOKMARK [2][-]{subsection.3.3.2}{Message Encoding}{section.3.3}% 25
+\BOOKMARK [1][-]{section.3.4}{Current Driver Implementations}{chapter.3}% 26
+\BOOKMARK [2][-]{subsection.3.4.1}{C++ Host-Side Driver}{section.3.4}% 27
+\BOOKMARK [2][-]{subsection.3.4.2}{Virtex 6 ML 605 Board-Side Driver}{section.3.4}% 28
+\BOOKMARK [2][-]{subsection.3.4.3}{ZedBoard}{section.3.4}% 29
+\BOOKMARK [0][-]{chapter.4}{Generator}{}% 30
+\BOOKMARK [1][-]{section.4.1}{Used Libraries}{chapter.4}% 31
+\BOOKMARK [2][-]{subsection.4.1.1}{JFlex \046 CUP}{section.4.1}% 32
+\BOOKMARK [2][-]{subsection.4.1.2}{Katja}{section.4.1}% 33
+\BOOKMARK [2][-]{subsection.4.1.3}{Apache Commons}{section.4.1}% 34
+\BOOKMARK [1][-]{section.4.2}{Generation Process}{chapter.4}% 35
+\BOOKMARK [1][-]{section.4.3}{Models}{chapter.4}% 36
+\BOOKMARK [2][-]{subsection.4.3.1}{Board Model}{section.4.3}% 37
+\BOOKMARK [2][-]{subsection.4.3.2}{C/C++ Model}{section.4.3}% 38
+\BOOKMARK [2][-]{subsection.4.3.3}{MHS Model}{section.4.3}% 39
+\BOOKMARK [1][-]{section.4.4}{Extensions}{chapter.4}% 40
+\BOOKMARK [2][-]{subsection.4.4.1}{Adding Host Drivers}{section.4.4}% 41
+\BOOKMARK [2][-]{subsection.4.4.2}{Adding Workflows and Boards}{section.4.4}% 42
+\BOOKMARK [2][-]{subsection.4.4.3}{Utility Classes}{section.4.4}% 43
