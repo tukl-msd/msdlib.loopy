@@ -69,6 +69,9 @@ int decode_header(int first) {
 	int size = fmod(first, pow(2, 16));
 	log_finest("payload size: %d", size);
 
+
+  printf("Message received: (type: %d, id: %d, size: %d)", type, id, size);
+
 	// 8 bit protocol version
 	// 4 bit message type
 	// 4 bit component identifier
@@ -104,6 +107,8 @@ int decode_header(int first) {
 			int i;
 			for(i = 0; i < size; i++) {
 				payload[i] = medium_recv_int();
+        printf("value: %d: %d", i, payload[i]);
+
 				log_finest("value %d: %d", i, payload[i]);
 			}
 
