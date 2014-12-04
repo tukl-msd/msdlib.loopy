@@ -46,10 +46,10 @@ int axi_write ( int val, int target ) {
     printf("\nwriting value to DMA: %d", val);
     write(fd, &val, sizeof(int));
     close(fd);
-    return 1;
+    return 0;
   } else {
     fprintf(stderr, "ERROR: target larger than maximum available DMA port: %d", target);
-    return 0;
+    return 1;
   }
 }
 
@@ -86,7 +86,7 @@ int axi_read ( int *val, int target ) {
   } else {
     fprintf(stderr, "ERROR: target larger than maximum available DMA port: %d", target);
     *val = 0;
-    return 0;
+    return 1;
   }
 }
 
