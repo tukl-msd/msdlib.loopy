@@ -79,7 +79,7 @@ tcp_enque(int *vals, int size)
 
 
 
-MicoBlaze Processor Fast Simplex Link (FSL) Interface [fsl.h]
+icoBlaze Processor Fast Simplex Link (FSL) Interface [fsl.h]
 -----------------------------------------------------
 
 Provides access to all of the functionality of the MicroBlaze FSL feature in one simple and

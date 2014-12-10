@@ -45,7 +45,7 @@ GPIO (String name, Position pos, Code callback)
 NONE()
 
 // Definition of the attached medium
-Medium = NONE
+edium = NONE
        | DefinedMedium
 DefinedMedium = ETHERNET(Position pos, MOptions opts)
               | UART    (Position pos, MOptions opts)
@@ -71,7 +71,7 @@ LogSeverity = ERROR()
             | FINER()
             | FINEST()
 
-MOption = MAC    (Position pos, String val)
+Option = MAC    (Position pos, String val)
         | IP     (Position pos, String val)
         | MASK   (Position pos, String val)
         | GATE   (Position pos, String val)
@@ -88,7 +88,7 @@ Position (String filename, Integer line)
 // List types
 Imports   * Import
 Options   * Option
-MOptions  * MOption
+Options  * MOption
 Cores     * Core
 GPIOs     * GPIO
 Instances * Instance
