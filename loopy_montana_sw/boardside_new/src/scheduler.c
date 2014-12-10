@@ -21,11 +21,17 @@ void schedule ( ) {
     while(1) {
         // receive all available packages from the interface
         // esp stores data packages in sw queue
-        while(medium_read()) { }
+        printf("\nreading from ethernet...");
+        while(medium_read()) {
+          printf("\nfinished reading next package");
+        }
 
         // write data from sw queue to hw queue (if possible)
+        printf("\nwriting data to DMA controller...");
         for(pid = 0; pid < IN_STREAM_COUNT; pid++) {
+            printf("\ntransfering port %d", pid);
             for(i = 0; i < inQueue[pid]->cap; i++) {
+                printf("\nwriting package %d", i);
                 // go to next port if the sw queue is empty
                 if(inQueue[pid]->size == 0) break;
 
@@ -45,8 +51,11 @@ void schedule ( ) {
 
         // read data from hw queue (if available) and cache in sw queue
         // flush sw queue, if it's full or the hw queue is empty
+        printf("\nreading data from DMA controller...");
         for(pid = 0; pid < OUT_STREAM_COUNT; pid++) {
+            printf("\nreading data for port %d", pid);
             for(i = 0; i < outQueueCap[pid] && ((!isPolling[pid]) || pollCount[pid] > 0); i++) {
+                printf("\nreading package %d", i);
                 // try to read, break if if fails
                 if(axi_read(&outQueue[outQueueSize], pid)) break;
 

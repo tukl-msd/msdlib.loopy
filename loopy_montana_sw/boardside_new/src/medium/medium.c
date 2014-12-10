@@ -179,7 +179,7 @@ int medium_send(struct Message *m) {
 uint32_t medium_recv_int() {
   uint32_t val;
 
-  if (recv(con, &val, sizeof(uint32_t), 0) < 0) {
+  if (recv(con, &val, sizeof(uint32_t), MSG_WAITALL) < 0) {
     perror("recv");
     exit(EXIT_FAILURE);
   }
@@ -197,15 +197,26 @@ uint32_t medium_recv_int() {
  */
 int medium_read() {
   uint32_t val;
-  if(recv(con, &val, sizeof(uint32_t), MSG_DONTWAIT) < 0) {
+  ssize_t bytes_received;
+
+  bytes_received = recv(con, &val, sizeof(uint32_t), MSG_DONTWAIT | MSG_PEEK);
+  if(bytes_received < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      printf("\nwould block, return 0");
       return 0;
     } else {
       perror("revc: nonblocking");
       exit(EXIT_FAILURE);
     }
+  } else if(bytes_received == 0) {
+    printf("\nnothing to receive on medium");
+    return 0;
   }
-  decode_header(val);
+  // receive the complete integer
+  printf("\nreceiving next int...");
+  recv(con, &val, sizeof(uint32_t), MSG_WAITALL);
+  printf("\nsucessfully received int");
+  decode_header(ntohl(val));
 
   return 1;
 }
@@ -304,3 +315,4 @@ int init_medium() {
 
   return rslt;
 }
+

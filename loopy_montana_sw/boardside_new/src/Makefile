@@ -1,6 +1,6 @@
-CC=gcc
+CC=arm-xilinx-linux-gnueabi-gcc
 CFLAGS=-c -Wall
-LDFLAGS=
+LDFLAGS=-lm
 SOURCES=main.c io.c queueUntyped.c scheduler.c components/components.c medium/medium.c medium/message.c medium/protocol/protocol_v1.c medium/protocol/protocol_v2.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=board-side
@@ -16,3 +16,4 @@ $(EXECUTABLE): $(OBJECTS)
 clean:
 	rm -rf $(OBJECTS)
 	rm -rf $(EXECUTABLE)
+
