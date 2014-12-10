@@ -181,3 +181,4 @@ struct Message* encode_checksum() {
 }
 
 #endif /* PROTO_VERSION */
+

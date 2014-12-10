@@ -16,3 +16,4 @@ $(EXECUTABLE): $(OBJECTS)
 clean:
 	rm -rf $(OBJECTS)
 	rm -rf $(EXECUTABLE)
+

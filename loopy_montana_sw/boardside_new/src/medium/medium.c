@@ -315,3 +315,4 @@ int init_medium() {
 
   return rslt;
 }
+

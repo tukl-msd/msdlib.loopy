@@ -31,3 +31,4 @@ loopy_montana_sw/boardside_new/src/board-side
 syntax: regexp
 ^\.project$
 work
+
